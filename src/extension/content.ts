@@ -27,6 +27,21 @@ const noVision: VisionClient = {
 };
 
 const BTN_CLASS = 'bookcatcher-save-btn';
+
+/**
+ * Boundary tracing. This extension coordinates three isolated contexts, so a failure
+ * anywhere in the chain looks identical from the page: nothing happens. Logging each
+ * hand-off is what makes "it does nothing" diagnosable.
+ * Silence it with: localStorage.bookcatcherQuiet = '1'
+ */
+const trace = (...args: unknown[]): void => {
+  try {
+    if (localStorage.getItem('bookcatcherQuiet') === '1') return;
+  } catch {
+    /* storage can be blocked; log anyway */
+  }
+  console.info('[BookCatcher]', ...args);
+};
 const PALETTE = {
   ink: '#211c1a',
   paper: '#f3efe7',
@@ -198,6 +213,8 @@ function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): v
 
 // ---------------------------------------------------------------- injection
 
+let injected = 0;
+
 function addButton(article: HTMLElement): void {
   if (article.querySelector(`.${BTN_CLASS}`)) return;
   const actions = article.querySelector('[role="group"]');
@@ -209,7 +226,11 @@ function addButton(article: HTMLElement): void {
   btn.title = 'Save book to your shelf';
   btn.style.cssText = 'cursor:pointer;background:transparent;border:none;font-size:16px;margin-left:8px';
 
-  btn.addEventListener('click', async (e) => {
+  // Capture phase: X delegates clicks from high up the tree, so a bubble-phase
+  // listener can be pre-empted by their handler before it ever runs.
+  btn.addEventListener(
+    'click',
+    async (e) => {
     e.stopPropagation();
     e.preventDefault();
     if (btn.disabled) return;
@@ -219,9 +240,19 @@ function addButton(article: HTMLElement): void {
     btn.disabled = true;
     btn.textContent = '…';
     try {
-      const candidates = await recognize(scrapeTweet(article));
-      if (!article.isConnected) return; // scrolled away mid-lookup
+      const tweet = scrapeTweet(article);
+      trace('clicked. scraped:', {
+        text: tweet.text.slice(0, 60),
+        images: tweet.imageUrls.length,
+        links: tweet.links.length,
+      });
+
+      const candidates = await recognize(tweet);
+      trace('lookup returned', candidates.length, 'candidate(s)', candidates);
+
+      if (!article.isConnected) return trace('tweet scrolled away; dropping result');
       openPicker(btn, candidates, tweetPermalink(article) ?? location.href);
+      trace('picker opened');
     } catch (err) {
       console.error('[BookCatcher] lookup failed', err);
       toast('Book lookup failed — try again in a moment.');
@@ -229,9 +260,12 @@ function addButton(article: HTMLElement): void {
       btn.textContent = '📚';
       btn.disabled = false;
     }
-  });
+    },
+    true, // capture
+  );
 
   actions.appendChild(btn);
+  injected++;
 }
 
 function scan(root: ParentNode = document): void {
@@ -257,6 +291,7 @@ new MutationObserver(requestScan).observe(feed, { childList: true, subtree: true
 // or text only), which a childList-only observer never sees.
 setInterval(scan, 2000);
 scan();
+trace(`content script ready on ${location.host}; ${injected} button(s) injected so far`);
 
 chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse) => {
   if (msg?.type === 'toast') {

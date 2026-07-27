@@ -16,6 +16,14 @@ function getWorker() {
       workerPath: chrome.runtime.getURL('dist/tesseract/worker.min.js'),
       corePath: chrome.runtime.getURL('dist/tesseract/'),
       langPath: chrome.runtime.getURL('dist/tesseract/'),
+      // REQUIRED in an extension - do not remove.
+      // tesseract.js defaults this to true, which spawns the worker from a blob: URL
+      // whose body is `importScripts("chrome-extension://.../worker.min.js")`. A blob
+      // worker has an opaque origin, so Chrome refuses that cross-origin import and
+      // every OCR call dies with "Failed to execute 'importScripts'". false takes
+      // spawnWorker's other branch, `new Worker(workerPath)`, which is same-origin
+      // with this offscreen document.
+      workerBlobURL: false,
     }).catch((err: unknown) => {
       // A rejected promise is still truthy, so caching it would disable OCR for the
       // rest of the session. Clear it so the next attempt can retry.

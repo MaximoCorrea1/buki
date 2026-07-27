@@ -140,6 +140,29 @@ glue layer (the recognizer core came through clean). Fixed:
 Still open: the 4 extension entry points have no automated tests (chrome glue; covered
 by the manual pass instead), and CSV export is unbuilt.
 
+## First-run bug: OCR worker refused to load (2026-07-23)
+
+**Symptom.** Right-click → "Save book to shelf" always ended in "Couldn't read that
+image." Service worker console:
+`Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at
+'chrome-extension://<id>/dist/tesseract/worker.min.js' failed to load.`
+
+**Root cause.** tesseract.js defaults `workerBlobURL: true`. With that set,
+`spawnWorker.js` builds a Blob whose entire body is
+`importScripts("<workerPath>")` and runs the worker from a `blob:` URL. A blob worker
+has an opaque origin, so Chrome refuses the cross-origin import of a
+`chrome-extension://` script and the worker never initializes. The asset was present
+and the path was correct — the *loading strategy* was wrong.
+
+**Fix.** Pass `workerBlobURL: false`, taking spawnWorker's other branch
+(`new Worker(workerPath)`), which is same-origin with the offscreen document.
+**Do not remove that option** — the failure it prevents looks like a missing file.
+
+**Ruled out along the way** (recorded so nobody re-investigates): OpenLibrary CORS is
+fine (`access-control-allow-origin: *`), the worker/core/traineddata assets are all
+present after the LSTM-only build filter, and the option merge is
+`{...defaultOptions, ..._options}` so the override genuinely wins.
+
 ## Approaches Considered
 
 ### Approach A: Weekend MVP (local, yours only) [CHOSEN]
