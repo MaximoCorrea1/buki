@@ -97,6 +97,49 @@ Empirically checked with a real Tesseract.js run + live grounding, not just unit
   carried by the text/link pre-checks on the easy cases. Keep Gemini Flash-Lite as a
   one-line `VisionClient` swap for the covers OCR mangles.
 
+## Review pass (2026-07-23) — what changed
+
+A 9-persona review before first browser run found 3 P0s and 12 P1s, all in the browser
+glue layer (the recognizer core came through clean). Fixed:
+
+- **Silent data loss (P0).** `storage.add()` was an unlocked read-modify-write; two
+  overlapping saves dropped one book while toasting success for both — reproduced live.
+  All writes now serialize through a promise queue. Never write to the storage key
+  outside `createLibrary`.
+- **Unrecoverable wrong saves (P0).** The OCR flow auto-saved the first fuzzy match with
+  no relevance check, and nothing could delete it. Added: a match must share a
+  significant word with the query, entries carry an id, `remove()` exists, and the popup
+  has a delete button. Auto-save is kept deliberately — it is the flow's whole point.
+- **Invisible operation (P0).** The context menu appeared on every image on every site,
+  but the toast content script only exists on x.com — so off-Twitter the pipeline ran
+  and mutated the shelf with zero feedback. Menu is now scoped via `documentUrlPatterns`
+  and `host_permissions` narrowed from `<all_urls>` to the five hosts actually used.
+  *To broaden beyond Twitter later, add a `chrome.notifications` feedback channel first.*
+- **Signature feature was broken.** `info.pageUrl` is the tab's URL, not the tweet's, so
+  every right-click save recorded `x.com/home`. The background worker now asks the
+  content script to resolve the permalink from the image, and provenance is stored as
+  `{url, kind: 'tweet' | 'page'}` so the popup can label it honestly.
+- **Reliability:** `getWorker()` resets on failure (a rejected promise is truthy, so one
+  transient error disabled OCR for the whole session); `ensureOffscreen()` shares one
+  in-flight promise; the 150ms readiness guess became a real ping/ack handshake; all
+  network calls carry `AbortSignal.timeout`; `res.ok` is checked before `.json()`; errors
+  are staged so a lookup failure no longer blames OCR.
+- **Query blowup:** OCR queries capped at `MAX_QUERIES` (was unbounded — a dense image
+  could fire 50-100+ sequential requests).
+- **UI races:** button `disabled` guards (the old `textContent`-as-state could stick the
+  button on `…` forever), single-picker enforcement with one cleanup path, toast
+  stacking, and a rAF-coalesced observer scoped to `main[role="main"]` plus an interval
+  safety net for in-place node recycling.
+- **Security:** retailer-host allowlist before trusting a scraped `/dp/` link, truncated
+  link text dropped, `http(s)`-only source links.
+- **Removed as unreachable:** `ocrVision.ts`, `tesseractOcr.ts` (a trap — no path
+  overrides, would have fetched from a CDN and failed CSP), `googleBooks.ts`.
+- **Build:** dropped 3 unreachable non-LSTM Tesseract cores (54MB -> 30MB), `tsc` chained
+  into `build`, `noUncheckedIndexedAccess` on, icons generated, repo initialized.
+
+Still open: the 4 extension entry points have no automated tests (chrome glue; covered
+by the manual pass instead), and CSV export is unbuilt.
+
 ## Approaches Considered
 
 ### Approach A: Weekend MVP (local, yours only) [CHOSEN]
