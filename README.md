@@ -33,13 +33,22 @@ select this folder. Requires Chrome 116+.
 
 | Command | What it does |
 | --- | --- |
-| `npm run build` | Typechecks, bundles, and stages the Tesseract assets into `dist/` |
+| `node build.mjs` | Typechecks, bundles, and stages the Tesseract assets into `dist/` |
+| `npm run build` | Same thing, via npm |
 | `npm test` | Runs the vitest suite |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run icons` | Regenerates `icons/*.png` |
 
-`npm run build` downloads the English OCR model (~11 MB) into `dist/` on first run and
-caches it after that.
+The build typechecks first and refuses to bundle on a type error — esbuild only strips
+types, it never checks them.
+
+It downloads the English OCR model (~11 MB) into `dist/` on first run and caches it
+afterwards.
+
+**On Windows:** prefer `node build.mjs`. It works from PowerShell *and* Git Bash, while
+`npm run <script>` hands the script to `cmd.exe`, whose shim quoting can fail from a
+Git Bash session with `"node" is not recognized`. Everything is deliberately reachable
+through a single `node` entry point for that reason.
 
 ## How recognition works
 

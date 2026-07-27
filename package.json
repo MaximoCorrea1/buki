@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Catch books from Twitter/X into your own reading list before they get lost.",
   "scripts": {
-    "build": "npm run typecheck && node build.mjs",
+    "build": "node build.mjs",
     "icons": "node tools/make-icons.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
