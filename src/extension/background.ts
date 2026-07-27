@@ -2,7 +2,7 @@
 // Right-click a book cover -> OCR (offscreen) -> ground-as-filter against OpenLibrary
 // -> save the top match -> toast on the page.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
-import { recognizeFromOcrText } from '../recognizer/recognizeFromOcr';
+import { groundText } from '../recognizer/groundText';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
 import type { ContentRequest, ContentResponse, OffscreenRequest, OffscreenResponse } from './messages';
 
@@ -102,6 +102,13 @@ async function tellTab<T>(tabId: number | undefined, msg: ContentRequest): Promi
 const toast = (tabId: number | undefined, text: string): Promise<unknown> =>
   tellTab(tabId, { type: 'toast', text });
 
+/** An in-progress stage - stays on screen until the next update replaces it. */
+const progress = (tabId: number | undefined, text: string): Promise<unknown> =>
+  tellTab(tabId, { type: 'toast', text, sticky: true });
+
+/** Whether OCR has run since this worker started - the first run loads ~14MB of WASM. */
+let ocrWarm = false;
+
 /**
  * Resolve the permalink of the tweet holding this image. `info.pageUrl` is the tab's
  * URL (x.com/home), not the tweet - saving that would break "the tweet that sold you",
@@ -123,13 +130,19 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
   const tabId = tab?.id;
 
-  await toast(tabId, 'Reading the cover…');
+  // Report each stage. Reading a cover takes several seconds - much longer on the
+  // first run of a session - and a single opening message made that look like a hang.
+  await progress(
+    tabId,
+    ocrWarm ? 'Reading the cover…' : 'Starting the reader… (first one takes a moment)',
+  );
 
-  // Each stage reports its own failure: one catch-all blamed OCR for storage and
+  // Each stage also reports its own failure: one catch-all blamed OCR for storage and
   // network errors alike, sending you off to retake a photo that was never the problem.
   let text: string;
   try {
     text = await ocrImage(info.srcUrl);
+    ocrWarm = true;
   } catch (err) {
     console.error('[BookCatcher] OCR failed', err);
     await toast(tabId, "Couldn't read that image.");
@@ -138,7 +151,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   let candidates;
   try {
-    candidates = await recognizeFromOcrText(text, books);
+    await progress(tabId, 'Looking up the book…');
+    candidates = await groundText(text, books);
   } catch (err) {
     console.error('[BookCatcher] book lookup failed', err);
     await toast(tabId, 'Book lookup failed — try again in a moment.');

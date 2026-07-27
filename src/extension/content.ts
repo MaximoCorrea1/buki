@@ -2,6 +2,7 @@
 // and save the pick to your own reading list. Also renders feedback for the
 // background worker's right-click OCR flow.
 import { recognizeBook } from '../recognizer/recognizer';
+import { groundText } from '../recognizer/groundText';
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
 import type { VisionClient, Tweet, Book } from '../recognizer/types';
 import { createLibrary, type Intent, type StorageArea } from './storage';
@@ -90,32 +91,53 @@ async function recognize(tweet: Tweet): Promise<Book[]> {
   const result = await recognizeBook(tweet, { vision: noVision, books });
   if (result.candidates.length) return result.candidates;
 
-  // Fallback: search the tweet text itself (catches "reading X by Y" tweets).
-  const q = tweet.text.replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
-  return q ? (await books.search({ title: q })).slice(0, 3) : [];
+  // Fall back to the same line-by-line grounding the OCR flow uses. Searching the
+  // whole tweet as one query found nothing on the common cases - a tweet listing ten
+  // books has its titles on separate lines, and the blob matches none of them.
+  return groundText(tweet.text, books);
 }
 
 // ---------------------------------------------------------------- toasts
 
-const activeToasts: HTMLElement[] = [];
+/**
+ * One status pill, reused. The OCR flow reports several stages in a row; separate
+ * toasts either stacked up or replaced each other invisibly, so a multi-second
+ * operation looked like nothing was happening.
+ */
+let statusEl: HTMLElement | null = null;
+let statusTimer: number | undefined;
 
-function toast(msg: string): void {
-  const t = document.createElement('div');
-  t.textContent = msg;
-  t.style.cssText =
-    `position:fixed;right:20px;z-index:99999;background:${PALETTE.ink};color:${PALETTE.lamp};` +
-    'padding:10px 14px;border-radius:8px;font:14px system-ui;box-shadow:0 4px 16px rgba(0,0,0,.4)';
-  // Stack rather than overlap: the OCR flow fires two toasts inside one lifetime.
-  t.style.bottom = `${20 + activeToasts.length * 48}px`;
+function toast(msg: string, opts: { sticky?: boolean } = {}): void {
+  if (!statusEl) {
+    statusEl = document.createElement('div');
+    statusEl.style.cssText =
+      `position:fixed;bottom:20px;right:20px;z-index:99999;background:${PALETTE.ink};` +
+      `color:${PALETTE.lamp};padding:10px 14px;border-radius:8px;font:14px system-ui;` +
+      'box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:320px;opacity:0;' +
+      'transform:translateY(6px);transition:opacity .16s ease-out,transform .16s ease-out';
+    document.body.appendChild(statusEl);
+    // Next frame, so the transition has a starting value to animate from.
+    requestAnimationFrame(() => {
+      if (statusEl) {
+        statusEl.style.opacity = '1';
+        statusEl.style.transform = 'translateY(0)';
+      }
+    });
+  }
 
-  document.body.appendChild(t);
-  activeToasts.push(t);
-  setTimeout(() => {
-    t.remove();
-    const i = activeToasts.indexOf(t);
-    if (i !== -1) activeToasts.splice(i, 1);
-    activeToasts.forEach((el, n) => (el.style.bottom = `${20 + n * 48}px`));
-  }, 2500);
+  statusEl.textContent = msg;
+  clearTimeout(statusTimer);
+
+  // Sticky = an in-progress stage; it stays until the next update replaces it.
+  if (opts.sticky) return;
+  statusTimer = window.setTimeout(() => {
+    const el = statusEl;
+    statusEl = null;
+    if (!el) return;
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(6px)';
+    setTimeout(() => el.remove(), 200);
+  }, 2800);
 }
 
 // ---------------------------------------------------------------- picker
@@ -139,8 +161,8 @@ function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): v
 
   if (!candidates.length) {
     const empty = document.createElement('div');
-    empty.textContent = 'No match found. Try the right-click flow on the cover image.';
-    empty.style.opacity = '.7';
+    empty.textContent = 'No book named here. Right-click the cover image to read it instead.';
+    empty.style.cssText = 'opacity:.75;line-height:1.45';
     panel.appendChild(empty);
   } else {
     candidates.forEach((book) => {
@@ -247,11 +269,13 @@ function addButton(article: HTMLElement): void {
         links: tweet.links.length,
       });
 
+      toast('Looking up the book…', { sticky: true });
       const candidates = await recognize(tweet);
       trace('lookup returned', candidates.length, 'candidate(s)', candidates);
 
       if (!article.isConnected) return trace('tweet scrolled away; dropping result');
       openPicker(btn, candidates, tweetPermalink(article) ?? location.href);
+      toast(candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet');
       trace('picker opened');
     } catch (err) {
       console.error('[BookCatcher] lookup failed', err);
@@ -293,13 +317,28 @@ setInterval(scan, 2000);
 scan();
 trace(`content script ready on ${location.host}; ${injected} button(s) injected so far`);
 
+/**
+ * Twitter serves the same media under several query strings (?format=jpg&name=small),
+ * so the URL the context menu reports rarely equals the `src` in the DOM byte for byte.
+ * Compare just the path - that's the media id.
+ */
+function sameImage(a: string, b: string): boolean {
+  try {
+    return new URL(a).pathname === new URL(b).pathname;
+  } catch {
+    return a === b;
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse) => {
   if (msg?.type === 'toast') {
-    toast(msg.text);
+    toast(msg.text, { sticky: msg.sticky });
     return;
   }
   if (msg?.type === 'resolvePermalink') {
-    const img = Array.from(document.querySelectorAll('img')).find((i) => i.src === msg.srcUrl);
+    const img = Array.from(document.querySelectorAll('img')).find((i) =>
+      sameImage(i.src, msg.srcUrl),
+    );
     const article = img?.closest('article[data-testid="tweet"]') as HTMLElement | null;
     const response: ContentResponse = { permalink: article ? tweetPermalink(article) : null };
     sendResponse(response);

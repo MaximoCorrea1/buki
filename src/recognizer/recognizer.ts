@@ -6,7 +6,7 @@ import type { Tweet, RecognitionResult, VisionClient, BooksDb } from './types';
  * highest-precision signal available first.
  *
  * Used by content.ts's tweet-scrape flow. The right-click/OCR flow is a separate
- * pipeline - see recognizeFromOcr.ts.
+ * pipeline - see groundText.ts.
  *
  * Dependencies (vision, books) are injected so this stays pure and testable. Today
  * content.ts passes a no-op VisionClient plus the OpenLibrary client; a real vision

@@ -19,7 +19,8 @@ export type OffscreenResponse =
 
 /** background -> content script */
 export type ContentRequest =
-  | { type: 'toast'; text: string }
+  /** `sticky` marks an in-progress stage: it stays until the next update replaces it. */
+  | { type: 'toast'; text: string; sticky?: boolean }
   /** "which tweet contains this image?" - so a save records the tweet, not the feed URL */
   | { type: 'resolvePermalink'; srcUrl: string };
 
