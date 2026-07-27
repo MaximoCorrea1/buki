@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.env
+.env.local
+
+# Tesseract downloads its language model into the working directory when run
+# from Node. Regenerable, ~5MB - never commit it.
+*.traineddata
+*.traineddata.gz

@@ -1,0 +1,23 @@
+{
+  "name": "book-catcher",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Catch books from Twitter/X into your own reading list before they get lost.",
+  "scripts": {
+    "build": "npm run typecheck && node build.mjs",
+    "icons": "node tools/make-icons.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.2.2",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "tesseract.js": "^7.0.0"
+  }
+}
