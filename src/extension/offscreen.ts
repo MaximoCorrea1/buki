@@ -34,23 +34,35 @@ function getWorker() {
   return workerPromise;
 }
 
-/** Shrink oversized images before OCR - a full-res photo costs far more for no gain. */
-async function toRecognizable(blob: Blob): Promise<Blob | ImageBitmap> {
+/**
+ * Shrink oversized images before OCR - a full-res photo costs far more for no gain.
+ *
+ * The return type is `Blob` and must stay that way. tesseract.js's loadImage accepts
+ * only string | HTMLElement | OffscreenCanvas | File | Blob; anything else falls
+ * through to `new Uint8Array(value)`, producing garbage bytes that surface as
+ * Leptonica's "truncated file / Unknown format: no pix returned". Handing it an
+ * ImageBitmap is exactly what broke OCR on first run, so let the compiler forbid it.
+ */
+async function toRecognizable(blob: Blob): Promise<Blob> {
+  let bitmap: ImageBitmap | undefined;
   try {
-    const bitmap = await createImageBitmap(blob);
+    bitmap = await createImageBitmap(blob);
     const scale = MAX_EDGE / Math.max(bitmap.width, bitmap.height);
-    if (scale >= 1) return bitmap;
+    if (scale >= 1) return blob; // already small enough - hand back the original
 
     const canvas = new OffscreenCanvas(
       Math.round(bitmap.width * scale),
       Math.round(bitmap.height * scale),
     );
     const ctx = canvas.getContext('2d');
-    if (!ctx) return bitmap;
+    if (!ctx) return blob;
+
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     return await canvas.convertToBlob();
   } catch {
-    return blob; // decoding is best-effort; Tesseract can take the raw blob
+    return blob; // resizing is best-effort; Tesseract can take the raw blob
+  } finally {
+    bitmap?.close();
   }
 }
 

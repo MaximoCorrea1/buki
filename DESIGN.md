@@ -163,6 +163,27 @@ fine (`access-control-allow-origin: *`), the worker/core/traineddata assets are 
 present after the LSTM-only build filter, and the option merge is
 `{...defaultOptions, ..._options}` so the override genuinely wins.
 
+### Second failure, one layer down: Tesseract couldn't decode the image
+
+Once the worker loaded, every OCR ended in Leptonica errors: `findFileFormatStream:
+truncated file` / `Unknown format: no pix returned` / `Image file /input cannot be read!`
+
+**Root cause.** The downscale helper added for performance returned an `ImageBitmap`
+whenever an image was already under the size cap — which is most tweet images.
+tesseract.js's `loadImage` accepts only `string | HTMLElement | OffscreenCanvas |
+File | Blob`; anything else falls through to `new Uint8Array(value)`, yielding garbage
+bytes that Leptonica reports as a corrupt file. The image was fine; the container was
+wrong.
+
+**Fix.** `toRecognizable()` always returns a `Blob`. The return type is the guard —
+`tsc` now rejects an `ImageBitmap` return outright (verified by planting one), which is
+a better regression check than a test for browser-only code.
+
+**Lesson worth keeping:** both first-run failures were *interface* mismatches with
+tesseract.js, not logic errors, and both reported as something else — a missing file,
+then a corrupt image. When integrating a library at a boundary, read what it actually
+accepts before trusting an error message's framing.
+
 ## Approaches Considered
 
 ### Approach A: Weekend MVP (local, yours only) [CHOSEN]
