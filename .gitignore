@@ -8,3 +8,4 @@ dist/
 # from Node. Regenerable, ~5MB - never commit it.
 *.traineddata
 *.traineddata.gz
+.gstack/

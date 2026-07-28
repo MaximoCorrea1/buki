@@ -43,13 +43,103 @@ const trace = (...args: unknown[]): void => {
   }
   console.info('[BookCatcher]', ...args);
 };
-const PALETTE = {
-  ink: '#211c1a',
-  paper: '#f3efe7',
-  lamp: '#e7b24c',
-  teal: '#2e5d5a',
-  rule: '#47505c',
-};
+/**
+ * One stylesheet rather than inline cssText: :active press feedback, hover gating and
+ * prefers-reduced-motion cannot be expressed inline, and those are the parts that decide
+ * whether this reads as part of X or bolted onto it.
+ *
+ * Motion is rationed by how often a surface is seen. The button is hit dozens of times a
+ * day, so it only ever presses - no entrance animation. The panel and pill appear once
+ * per catch, so they can afford one.
+ */
+const STYLE = `
+.bc-btn {
+  cursor: pointer; background: transparent; border: 0; padding: 4px 6px;
+  margin-left: 4px; border-radius: 999px; font-size: 15px; line-height: 1;
+  opacity: .72; transition: opacity 140ms cubic-bezier(.23,1,.32,1),
+    transform 140ms cubic-bezier(.23,1,.32,1), background-color 140ms ease;
+}
+.bc-btn:disabled { cursor: default; }
+.bc-btn:active { transform: scale(.9); }
+.bc-btn:focus-visible { outline: 2px solid #e7b24c; outline-offset: 1px; opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .bc-btn:hover { opacity: 1; background: rgba(231,178,76,.14); }
+}
+
+/* The pill reports one operation, so it updates in place. Blurring on swap makes two
+   different strings read as one object changing rather than a crossfade of two. */
+.bc-pill {
+  position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
+  max-width: 330px; padding: 10px 14px; border-radius: 10px;
+  background: #211c1a; color: #e7b24c; border: 1px solid #3a322e;
+  font: 13.5px/1.4 system-ui, sans-serif; box-shadow: 0 6px 22px rgba(0,0,0,.45);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 180ms cubic-bezier(.23,1,.32,1),
+    transform 180ms cubic-bezier(.23,1,.32,1), filter 130ms ease;
+}
+.bc-pill.bc-in { opacity: 1; transform: none; }
+.bc-pill.bc-swap { filter: blur(2.5px); opacity: .55; }
+
+.bc-panel {
+  position: absolute; z-index: 2147483000; width: 288px; padding: 6px;
+  background: #211c1a; color: #f3efe7; border: 1px solid #3a322e;
+  border-radius: 11px; box-shadow: 0 12px 34px rgba(0,0,0,.55);
+  font: 13.5px/1.45 system-ui, sans-serif;
+  /* Origin at the trigger: the panel should look like it came out of the button. */
+  transform-origin: top left; opacity: 0; transform: scale(.96) translateY(-2px);
+  transition: opacity 180ms cubic-bezier(.23,1,.32,1),
+    transform 180ms cubic-bezier(.23,1,.32,1);
+}
+.bc-panel.bc-in { opacity: 1; transform: none; }
+
+.bc-cand { position: relative; padding: 7px 8px 8px 16px; border-radius: 6px; }
+.bc-cand + .bc-cand { margin-top: 1px; }
+.bc-cand::before {
+  content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 4px;
+  border-radius: 1px; background: var(--cloth, #47505c);
+}
+.bc-cand::after {
+  content: ''; position: absolute; left: 5px; top: 11px; width: 4px; height: 1px;
+  background: rgba(231,178,76,.5); box-shadow: 0 15px 0 rgba(231,178,76,.5);
+}
+.bc-t { font-weight: 600; letter-spacing: -.006em; }
+.bc-a { font-size: 12px; opacity: .55; }
+
+.bc-row { display: flex; gap: 4px; margin-top: 6px; }
+.bc-intent {
+  flex: 1; cursor: pointer; border: 0; border-radius: 6px; padding: 5px 0;
+  background: #2b2422; color: #f3efe7; font: 500 11.5px/1 ui-monospace, Menlo, monospace;
+  letter-spacing: .06em; text-transform: uppercase;
+  transition: background-color 140ms ease, transform 140ms cubic-bezier(.23,1,.32,1);
+}
+.bc-intent:active { transform: scale(.96); }
+.bc-intent:disabled { opacity: .45; cursor: default; }
+.bc-intent:focus-visible { outline: 2px solid #e7b24c; outline-offset: 1px; }
+@media (hover: hover) and (pointer: fine) {
+  .bc-intent:not(:disabled):hover { background: #2e5d5a; }
+}
+
+.bc-none { padding: 10px 10px 11px; opacity: .7; line-height: 1.5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bc-panel, .bc-pill { transition-duration: 1ms; transform: none; }
+  .bc-btn, .bc-intent { transition-duration: 1ms; }
+}
+`;
+
+const CLOTH = ['#7c3a2e', '#c8873f', '#2e5d5a', '#47505c', '#6e7a5a'];
+
+/** Same book, same binding - so a shelf looks varied the way a real one does. */
+function clothFor(book: Book): string {
+  const key = book.isbn ?? `${book.title}|${book.author}`;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  return CLOTH[hash % CLOTH.length] ?? CLOTH[0]!;
+}
+
+const styleEl = document.createElement('style');
+styleEl.textContent = STYLE;
+document.head.appendChild(styleEl);
 
 // ---------------------------------------------------------------- scraping
 
@@ -108,35 +198,37 @@ let statusEl: HTMLElement | null = null;
 let statusTimer: number | undefined;
 
 function toast(msg: string, opts: { sticky?: boolean } = {}): void {
+  const fresh = !statusEl;
   if (!statusEl) {
     statusEl = document.createElement('div');
-    statusEl.style.cssText =
-      `position:fixed;bottom:20px;right:20px;z-index:99999;background:${PALETTE.ink};` +
-      `color:${PALETTE.lamp};padding:10px 14px;border-radius:8px;font:14px system-ui;` +
-      'box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:320px;opacity:0;' +
-      'transform:translateY(6px);transition:opacity .16s ease-out,transform .16s ease-out';
+    statusEl.className = 'bc-pill';
+    statusEl.setAttribute('role', 'status');
     document.body.appendChild(statusEl);
+  }
+  const el = statusEl;
+
+  if (fresh) {
+    el.textContent = msg;
     // Next frame, so the transition has a starting value to animate from.
-    requestAnimationFrame(() => {
-      if (statusEl) {
-        statusEl.style.opacity = '1';
-        statusEl.style.transform = 'translateY(0)';
-      }
-    });
+    requestAnimationFrame(() => el.classList.add('bc-in'));
+  } else {
+    // Already on screen: blur out, swap the words, blur back. One object changing
+    // its mind, rather than two strings crossfading through each other.
+    el.classList.add('bc-swap');
+    setTimeout(() => {
+      el.textContent = msg;
+      el.classList.remove('bc-swap');
+    }, 110);
   }
 
-  statusEl.textContent = msg;
   clearTimeout(statusTimer);
 
-  // Sticky = an in-progress stage; it stays until the next update replaces it.
+  // Sticky = a stage still running; it holds until the next update replaces it.
   if (opts.sticky) return;
   statusTimer = window.setTimeout(() => {
-    const el = statusEl;
     statusEl = null;
-    if (!el) return;
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(6px)';
-    setTimeout(() => el.remove(), 200);
+    el.classList.remove('bc-in');
+    setTimeout(() => el.remove(), 220);
   }, 2800);
 }
 
@@ -154,37 +246,33 @@ function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): v
   closePanel(); // only ever one picker; a second would strand the first
 
   const panel = document.createElement('div');
-  panel.style.cssText =
-    `position:absolute;z-index:99999;background:${PALETTE.ink};color:${PALETTE.paper};` +
-    `border:1px solid ${PALETTE.rule};border-radius:10px;padding:8px;width:270px;` +
-    'font:13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,.5)';
+  panel.className = 'bc-panel';
 
   if (!candidates.length) {
     const empty = document.createElement('div');
+    empty.className = 'bc-none';
     empty.textContent = 'No book named here. Right-click the cover image to read it instead.';
-    empty.style.cssText = 'opacity:.75;line-height:1.45';
     panel.appendChild(empty);
   } else {
     candidates.forEach((book) => {
       const row = document.createElement('div');
-      row.style.cssText = 'padding:6px 0;border-bottom:1px solid #333';
+      row.className = 'bc-cand';
+      row.style.setProperty('--cloth', clothFor(book));
 
       const title = document.createElement('div');
-      title.style.fontWeight = '600';
+      title.className = 'bc-t';
       title.textContent = book.title;
       const author = document.createElement('div');
-      author.style.opacity = '.7';
+      author.className = 'bc-a';
       author.textContent = book.author;
       row.append(title, author);
 
       const btns = document.createElement('div');
-      btns.style.marginTop = '5px';
+      btns.className = 'bc-row';
       (['now', 'next', 'someday'] as Intent[]).forEach((intent) => {
         const b = document.createElement('button');
+        b.className = 'bc-intent';
         b.textContent = intent;
-        b.style.cssText =
-          `margin-right:4px;cursor:pointer;background:${PALETTE.teal};color:#fff;border:none;` +
-          'border-radius:6px;padding:3px 8px';
         b.addEventListener('click', async () => {
           // Disable the whole row: a second click would re-enter the save and race
           // the storage write.
@@ -216,6 +304,8 @@ function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): v
   };
   place();
   document.body.appendChild(panel);
+  // Next frame, so it scales out of the button rather than appearing at full size.
+  requestAnimationFrame(() => panel.classList.add('bc-in'));
 
   const onClickAway = (e: MouseEvent): void => {
     if (!panel.contains(e.target as Node) && e.target !== anchor) closePanel();
@@ -243,10 +333,10 @@ function addButton(article: HTMLElement): void {
   if (!actions) return;
 
   const btn = document.createElement('button');
-  btn.className = BTN_CLASS;
+  btn.className = `${BTN_CLASS} bc-btn`;
   btn.textContent = '📚';
   btn.title = 'Save book to your shelf';
-  btn.style.cssText = 'cursor:pointer;background:transparent;border:none;font-size:16px;margin-left:8px';
+  btn.setAttribute('aria-label', 'Save book to your shelf');
 
   // Capture phase: X delegates clicks from high up the tree, so a bubble-phase
   // listener can be pre-empted by their handler before it ever runs.

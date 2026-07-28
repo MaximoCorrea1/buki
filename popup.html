@@ -4,51 +4,251 @@
     <meta charset="utf-8" />
     <title>Book Catcher</title>
     <style>
-      :root { color-scheme: dark; }
+      /* ------------------------------------------------------------------
+         Book Catcher - "Spines"
+
+         Books lie flat with the spine facing you. The identity detail is the
+         pair of gilt hairlines on each cloth edge: the raised cords of a
+         hardcover binding. Cloth colour is derived from the book itself, so a
+         shelf looks varied the way a real one does, rather than colour-coded.
+         ------------------------------------------------------------------ */
+      :root {
+        color-scheme: dark;
+
+        --ink: #211c1a;        /* espresso - the dark of a reading lamp at night */
+        --ink-raised: #292320;  /* a shade up, for the shelf board */
+        --paper: #f3efe7;
+        --lamp: #e7b24c;        /* gilt / lamplight - the only bright note */
+        --rule: #3a322e;
+
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      * { box-sizing: border-box; }
+
       body {
-        width: 300px;
-        max-height: 520px;
+        width: 316px;
+        max-height: 540px;
         overflow-y: auto;
+        overflow-x: hidden;
         margin: 0;
-        padding: 14px 16px;
-        background: #211c1a;
-        color: #f3efe7;
-        font: 14px/1.4 system-ui, sans-serif;
+        padding: 0 0 14px;
+        background: var(--ink);
+        color: var(--paper);
+        font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
       }
-      h1 { font-size: 15px; margin: 0 0 10px; color: #e7b24c; letter-spacing: 0.02em; }
-      h3 {
-        margin: 14px 0 4px;
+      body::-webkit-scrollbar { width: 10px; }
+      body::-webkit-scrollbar-thumb {
+        background: var(--rule);
+        border: 3px solid var(--ink);
+        border-radius: 5px;
+      }
+
+      /* --- masthead ------------------------------------------------------ */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 14px 16px 10px;
+        background: linear-gradient(var(--ink) 72%, transparent);
+      }
+      h1 {
+        margin: 0;
         font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        opacity: 0.6;
+        color: var(--lamp);
       }
-      a { color: #e7b24c; text-decoration: none; font-size: 11px; }
-      a:hover { text-decoration: underline; }
-      .muted { opacity: 0.6; }
-      .row { position: relative; padding: 4px 22px 4px 0; }
-      .title { font-weight: 600; }
-      .author { opacity: 0.7; font-size: 12px; }
+      .count {
+        font: 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+        color: var(--paper);
+        opacity: 0.4;
+        letter-spacing: 0.04em;
+      }
+
+      /* --- shelf board ---------------------------------------------------
+         Each group sits on a board: a hairline with a soft shadow beneath, so
+         the books read as resting on something. */
+      h2 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 18px 16px 9px;
+        font: 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--paper);
+        opacity: 0.42;
+      }
+      h2::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--rule);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+      }
+
+      /* --- a book, lying flat, spine out ---------------------------------- */
+      .spine {
+        position: relative;
+        margin: 0 16px;
+        padding: 9px 26px 10px 24px;
+        border-radius: 2px;
+      }
+      /* The cloth edge. Wide enough to read as a spine rather than a border, with a
+         gradient across it so the binding looks round where it catches the lamp. */
+      .spine::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 1px;
+        bottom: 1px;
+        width: 11px;
+        border-radius: 2px;
+        background: linear-gradient(
+          to right,
+          rgba(0, 0, 0, 0.45),
+          var(--cloth, #47505c) 42%,
+          var(--cloth, #47505c) 62%,
+          rgba(255, 255, 255, 0.16)
+        );
+        background-color: var(--cloth, #47505c);
+      }
+      /* The raised cords: the gilt bands across a hardcover spine. This is the one
+         detail the whole design is built on, so it has to actually be visible. */
+      .spine::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 12px;
+        width: 11px;
+        height: 2px;
+        background: rgba(231, 178, 76, 0.82);
+        box-shadow: 0 var(--cords, 18px) 0 rgba(231, 178, 76, 0.82),
+          0 1px 0 rgba(0, 0, 0, 0.4),
+          0 calc(var(--cords, 18px) + 1px) 0 rgba(0, 0, 0, 0.4);
+      }
+      /* Books stand next to each other on a shelf - no gap between the bindings. */
+      .spine + .spine { margin-top: 1px; }
+
+      .title {
+        font-weight: 600;
+        letter-spacing: -0.006em;
+        overflow-wrap: anywhere;
+      }
+      .author {
+        font-size: 12px;
+        opacity: 0.55;
+        overflow-wrap: anywhere;
+      }
+      .source {
+        display: inline-block;
+        margin-top: 3px;
+        font: 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+        letter-spacing: 0.03em;
+        color: var(--lamp);
+        opacity: 0.75;
+        text-decoration: none;
+      }
+      .source:hover { opacity: 1; text-decoration: underline; }
+      .source:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+
+      /* --- remove --------------------------------------------------------
+         Hidden until you want it. OCR gets books wrong, so this has to exist,
+         but it shouldn't be the loudest thing in a row you're proud of. */
       .remove {
         position: absolute;
-        top: 4px;
-        right: 0;
-        background: transparent;
+        top: 5px;
+        right: 2px;
+        width: 20px;
+        height: 20px;
+        padding: 0;
         border: none;
-        color: #f3efe7;
-        opacity: 0.35;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--paper);
         font-size: 15px;
         line-height: 1;
         cursor: pointer;
-        padding: 2px 4px;
+        opacity: 0;
+        transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out),
+          color 140ms var(--ease-out);
       }
-      .remove:hover { opacity: 1; color: #7c3a2e; }
-      .remove:focus-visible { outline: 2px solid #e7b24c; opacity: 1; }
+      .spine:hover .remove,
+      .remove:focus-visible { opacity: 0.4; }
+      .remove:hover { opacity: 1; color: #c8756a; }
+      .remove:active { transform: scale(0.88); }
+      .remove:focus-visible { outline: 2px solid var(--lamp); outline-offset: 1px; }
+
+      /* leaving: the row collapses, so the shelf visibly closes the gap */
+      .spine.leaving {
+        overflow: hidden;
+        transition: opacity 130ms var(--ease-out), transform 130ms var(--ease-out),
+          height 190ms var(--ease-out), margin 190ms var(--ease-out),
+          padding 190ms var(--ease-out);
+        opacity: 0;
+        transform: translateX(-6px);
+        height: 0 !important;
+        margin-top: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      /* --- arrival -------------------------------------------------------- */
+      @keyframes shelve {
+        to { opacity: 1; transform: none; }
+      }
+      .spine,
+      h2 {
+        opacity: 0;
+        transform: translateY(4px);
+        animation: shelve 240ms var(--ease-out) forwards;
+      }
+
+      /* --- empty ---------------------------------------------------------- */
+      .empty {
+        margin: 26px 16px;
+        padding-left: 17px;
+        position: relative;
+        font-size: 13px;
+        line-height: 1.55;
+        opacity: 0.6;
+      }
+      .empty::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 2px;
+        bottom: 2px;
+        width: 5px;
+        border-radius: 1px;
+        background: repeating-linear-gradient(
+          var(--rule) 0 4px,
+          transparent 4px 8px
+        );
+      }
+      .empty b { font-weight: 600; opacity: 0.85; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .spine,
+        h2 { animation-duration: 1ms; }
+        .spine.leaving { transition-duration: 60ms; }
+      }
     </style>
   </head>
   <body>
-    <h1>your shelf</h1>
-    <div id="app"></div>
+    <header>
+      <h1>Book Catcher</h1>
+      <span class="count" id="count"></span>
+    </header>
+    <main id="app"></main>
     <script src="dist/popup.js"></script>
   </body>
 </html>
