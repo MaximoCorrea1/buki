@@ -281,3 +281,40 @@ you a day of guessing.
   us find the actual product in one move.
 - You reached for two design skills before writing a line of code. You care how it
   feels. For a tool you will live in daily, that instinct is the moat.
+
+## Confidence-tiered save + recognition log (2026-07-28)
+
+Spec: `docs/superpowers/specs/2026-07-28-prove-recognition-design.md`.
+Plan: `docs/superpowers/plans/2026-07-28-prove-recognition.md`.
+
+The match score `groundText` already computed was being discarded, so every vision
+result was treated identically no matter how well the books DB backed it. It is now
+carried out as `GroundedBook { book, score }`, and confidence follows it: two or more
+shared words is `high` and auto-saves from the right-click menu; one word, or text-only
+evidence, opens the picker instead.
+
+Text alone never reaches `high` however well it scores. A post listing ten books can
+ground the wrong line to a real book, and that failure is invisible — you never learn to
+distrust a shelf entry you had no reason to doubt.
+
+The post-text fallback moved out of `background.ts` and into `recognizeBook`. It was the
+one row of the confidence table living in code no test imports, and the worker was
+quietly maintaining a second pipeline that had to be kept in step with the first.
+
+Every attempt appends one event to a 200-entry ring buffer in `chrome.storage.local`.
+The background worker is its **only writer**; the content script, popup, and options page
+send it finished events. That is stricter than the spec asked for, and it buys two
+things: no cross-context race, and a right-click attempt still gets recorded on a tab
+whose content script never loaded. Nothing pending is held in worker memory, because a
+service worker is terminated after ~30s idle and every open picker would lose its event —
+the draft travels with the message instead.
+
+`wrong` is inferred rather than asked for: deleting a book within ten minutes of saving
+it marks its event wrong. Later deletions are changing your mind. That is what keeps
+dogfooding from turning into grading homework.
+
+Note on the spec's "serialize through the same write queue as the shelf": the log uses
+its own `createWriteQueue()` instead. `storage.set({ [key]: value })` replaces only the
+keys it is given, so a log write cannot clobber `savedBooks` — sharing one queue would
+only make diagnostics wait on the shelf. What the spec was protecting against, an
+unserialized read-modify-write, is fully covered.

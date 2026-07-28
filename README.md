@@ -10,9 +10,10 @@ on it, and files it under **Now / Next / Someday**.
 
 ## Two ways to catch a book
 
-**Right-click a cover image → "Save book to shelf."** The cover is read with OCR
-(Tesseract, running locally), the text is grounded against OpenLibrary, and the match is
-saved. This is the one that works on a photo with no link and no title in the text.
+**Right-click a cover image → "Save book to shelf."** The cover and the post's words go
+to a vision model together, the guess is grounded against OpenLibrary, and a strong
+match is saved outright. A weaker one opens the picker at the image so you decide. This
+is the one that works on a photo with no link and no title in the text.
 
 **Hit 📚 on a tweet.** Reads the tweet's links and text, shows you the candidates, and
 you pick the intent. Fastest when the tweet links to a retailer or names the book.
@@ -45,7 +46,7 @@ Without a key, links and post text still resolve books; only cover reading is of
 
 | Command | What it does |
 | --- | --- |
-| `node build.mjs` | Typechecks, bundles, and stages the Tesseract assets into `dist/` |
+| `node build.mjs` | Typechecks and bundles into `dist/` |
 | `npm run build` | Same thing, via npm |
 | `npm test` | Runs the vitest suite |
 | `npm run typecheck` | `tsc --noEmit` |
@@ -53,9 +54,6 @@ Without a key, links and post text still resolve books; only cover reading is of
 
 The build typechecks first and refuses to bundle on a type error — esbuild only strips
 types, it never checks them.
-
-It downloads the English OCR model (~11 MB) into `dist/` on first run and caches it
-afterwards.
 
 **On Windows:** prefer `node build.mjs`. It works from PowerShell *and* Git Bash, while
 `npm run <script>` hands the script to `cmd.exe`, whose shim quoting can fail from a
@@ -89,7 +87,7 @@ lookup. A vision model reads the picture instead of the letters.
 - No sync, no export. A Goodreads-format CSV export is the planned bridge — Goodreads
   closed its write API in 2020, so importing a CSV is the only route into both Goodreads
   and StoryGraph.
-- No cloud vision model. A `VisionClient` seam exists if you want to swap one in.
+- No keyless setup. Recognition needs your own key until there's a proxy that holds one.
 
 ## Privacy
 
@@ -97,12 +95,15 @@ Everything is local except book lookups: recognized cover text and tweet text ar
 to **openlibrary.org** as search queries to identify the book. No account, no telemetry,
 no analytics. Your shelf never leaves `chrome.storage.local`.
 
+Book Catcher also keeps the last 200 recognition attempts on your computer — what it
+guessed, how confident it was, and whether you kept the book — so the shelf can show how
+often it gets it right. That log is never transmitted, and you can clear it from the
+options page.
+
 ## Third-party
 
-OCR by [tesseract.js](https://github.com/naptha/tesseract.js) (Apache-2.0; its LICENSE
-ships in `dist/tesseract/`). Book data from the
-[OpenLibrary API](https://openlibrary.org/developers/api), a project of the Internet
-Archive.
+Book data from the [OpenLibrary API](https://openlibrary.org/developers/api), a project
+of the Internet Archive.
 
 ## License
 

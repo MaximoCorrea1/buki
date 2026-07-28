@@ -1,6 +1,16 @@
 import { readSettings, writeSettings, DEFAULT_SETTINGS } from './settings';
+import { createRecognitionLog } from './recognitionLog';
+import type { StorageArea } from './storage';
+import type { BackgroundRequest } from './messages';
 
 const $ = <T extends HTMLElement>(id: string): T | null => document.getElementById(id) as T | null;
+
+const storage: StorageArea = {
+  get: (key) => chrome.storage.local.get(key),
+  set: (items) => chrome.storage.local.set(items),
+};
+/** Reads only - the background worker is the log's single writer. */
+const log = createRecognitionLog({ storage, now: () => Date.now() });
 
 async function main(): Promise<void> {
   const key = $<HTMLInputElement>('key');
@@ -41,6 +51,33 @@ async function main(): Promise<void> {
     endpoint.value = DEFAULT_SETTINGS.endpoint;
     model.value = DEFAULT_SETTINGS.model;
     say('Provider reset to Gemini.');
+  });
+
+  const clearLog = $<HTMLButtonElement>('clearLog');
+  const logStatus = $<HTMLElement>('logStatus');
+  if (!clearLog || !logStatus) return;
+
+  const showCount = async (): Promise<void> => {
+    try {
+      const events = await log.list();
+      logStatus.textContent = events.length ? `${events.length} recorded` : 'Nothing recorded yet';
+    } catch (err) {
+      console.error('[BookCatcher] could not read the log', err);
+    }
+  };
+  void showCount();
+
+  clearLog.addEventListener('click', async () => {
+    clearLog.disabled = true;
+    try {
+      await chrome.runtime.sendMessage({ type: 'clearLog' } satisfies BackgroundRequest);
+      logStatus.textContent = 'Cleared';
+    } catch (err) {
+      console.error('[BookCatcher] could not clear the log', err);
+      logStatus.textContent = "Couldn't clear it";
+    } finally {
+      clearLog.disabled = false;
+    }
   });
 }
 

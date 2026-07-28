@@ -30,6 +30,13 @@
         color: var(--lamp);
       }
       .lede { margin: 0 0 30px; opacity: 0.65; }
+      h2 {
+        margin: 34px 0 8px;
+        font: 500 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        opacity: 0.5;
+      }
 
       /* Reading the cover is the one step that needs an outside service, so the page
          says exactly what it is and what it costs before asking for anything. */
@@ -171,6 +178,16 @@
           <span id="status" role="status"></span>
         </div>
       </form>
+
+      <h2>Recognition log</h2>
+      <p class="hint">
+        Book Catcher keeps the last 200 recognition attempts on this computer, so the
+        shelf can tell you how often it got the book right. It is never sent anywhere.
+      </p>
+      <div class="actions">
+        <button class="ghost" type="button" id="clearLog">Clear the log</button>
+        <span id="logStatus" role="status"></span>
+      </div>
     </main>
     <script src="dist/options.js"></script>
   </body>
