@@ -69,7 +69,7 @@ The shelf's promise queue is about to have a second user. Extracting it first me
 - Consumes: nothing.
 - Produces: `createWriteQueue(): <T>(job: () => Promise<T>) => Promise<T>` from `src/extension/writeQueue.ts`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/extension/writeQueue.test.ts`:
 
@@ -109,12 +109,12 @@ describe('createWriteQueue', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `./node_modules/.bin/vitest run src/extension/writeQueue.test.ts`
 Expected: FAIL — `Failed to resolve import "./writeQueue"`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/extension/writeQueue.ts`:
 
@@ -139,12 +139,12 @@ export function createWriteQueue(): <T>(job: () => Promise<T>) => Promise<T> {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `./node_modules/.bin/vitest run src/extension/writeQueue.test.ts`
 Expected: PASS — 2 tests.
 
-- [ ] **Step 5: Use it in the shelf**
+- [x] **Step 5: Use it in the shelf**
 
 In `src/extension/storage.ts`, add to the imports at the top of the file:
 
@@ -160,12 +160,12 @@ Then replace lines 46-53 (the `let queue` declaration and the `serialize` functi
 
 Leave the `createLibrary` doc comment above it unchanged — it still explains *why* the queue exists.
 
-- [ ] **Step 6: Run the whole suite**
+- [x] **Step 6: Run the whole suite**
 
 Run: `./node_modules/.bin/vitest run`
 Expected: PASS — 28 tests. In particular `keeps both books when two saves overlap (no lost update)` still passes; that test is what proves the extraction was behaviour-preserving.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/extension/writeQueue.ts src/extension/writeQueue.test.ts src/extension/storage.ts
@@ -191,7 +191,7 @@ git commit -m "refactor: extract the write queue so the recognition log can reus
   - `rank(query: string, results: Book[]): GroundedBook[]` from `src/recognizer/groundText.ts` — filters score 0, sorts best first
   - `groundText(ocrText: string, books: BooksDb): Promise<GroundedBook[]>`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `src/recognizer/groundText.test.ts`, change the import on line 2 to:
 
@@ -253,12 +253,12 @@ Finally, update the four existing assertions that read a `Book` directly:
 
 The two `toEqual([])` assertions (lines 40 and 47) need no change — an empty array is still an empty array.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `./node_modules/.bin/vitest run src/recognizer/groundText.test.ts`
 Expected: FAIL — `rank` is not exported (`does not provide an export named 'rank'`).
 
-- [ ] **Step 3: Add the types**
+- [x] **Step 3: Add the types**
 
 In `src/recognizer/types.ts`, replace the `RecognitionResult` block (lines 28-35) with:
 
@@ -286,7 +286,7 @@ export interface RecognitionResult {
 }
 ```
 
-- [ ] **Step 4: Write minimal implementation**
+- [x] **Step 4: Write minimal implementation**
 
 In `src/recognizer/groundText.ts`, change the import on line 1 to:
 
@@ -351,7 +351,7 @@ Also update `matchScore`'s doc comment (lines 28-36) — its second paragraph no
  */
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run src/recognizer/groundText.test.ts`
 Expected: PASS — 10 tests.
@@ -361,7 +361,7 @@ The whole suite will NOT pass yet: `src/extension/background.ts:56` returns `gro
 Run: `node node_modules/typescript/bin/tsc --noEmit`
 Expected: exactly one error, in `src/extension/background.ts`, about `GroundedBook[]` not being assignable to `Book[]`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/recognizer/types.ts src/recognizer/groundText.ts src/recognizer/groundText.test.ts
@@ -382,7 +382,7 @@ The post-text fallback currently lives in `background.ts`, which no test imports
 - Consumes: `rank`, `groundText` and `GroundedBook` from Task 2.
 - Produces: `recognizeBook(tweet, deps): Promise<RecognitionResult>` — unchanged signature, but `confidence` now follows the table, the post-text fallback happens inside it, and `source` is `'none'` when nothing resolved.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `src/recognizer/recognizer.test.ts`, **change the existing assertion on line 68** from:
 
@@ -534,12 +534,12 @@ Then append these tests inside the same `describe`:
   });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `./node_modules/.bin/vitest run src/recognizer/recognizer.test.ts`
 Expected: FAIL — 5 failures. The `medium`/`high` assertions fail because every vision result is currently hard-coded to `medium`; `source` is `'vision'` where `'none'` and `'text'` are expected, because the text fallback still lives in `background.ts`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `src/recognizer/recognizer.ts`, change the imports (lines 1-2) to:
 
@@ -598,12 +598,12 @@ Then replace the vision block and the final return (lines 31-52) with:
   return { candidates: [], confidence: 'low', source: 'none' };
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run src/recognizer/recognizer.test.ts`
 Expected: PASS — 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/recognizer/recognizer.ts src/recognizer/recognizer.test.ts
@@ -631,7 +631,7 @@ git commit -m "feat: derive confidence from how well the match backs the guess"
   - `const MAX_EVENTS = 200`
   - `createRecognitionLog(deps): { record(e: PendingEvent): Promise<void>; list(): Promise<RecognitionEvent[]>; clear(): Promise<void> }`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/extension/recognitionLog.test.ts`:
 
@@ -729,12 +729,12 @@ describe('createRecognitionLog', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `./node_modules/.bin/vitest run src/extension/recognitionLog.test.ts`
 Expected: FAIL — `Failed to resolve import "./recognitionLog"`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/extension/recognitionLog.ts`:
 
@@ -813,12 +813,12 @@ export function createRecognitionLog(deps: { storage: StorageArea; now: () => nu
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run src/extension/recognitionLog.test.ts`
 Expected: PASS — 6 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/extension/recognitionLog.ts src/extension/recognitionLog.test.ts
@@ -843,7 +843,7 @@ Deleting a wrong match is both the fix and the measurement — that's the whole 
   - `markWrong(savedId: string): Promise<void>` on the object returned by `createRecognitionLog`
   - `summarize(events: RecognitionEvent[]): { caught: number; keptPct: number | null }` — a standalone export, pure
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `src/extension/recognitionLog.test.ts`, change the import on line 2 to:
 
@@ -947,12 +947,12 @@ describe('summarize', () => {
 
 Note the placement: the three `markWrong` tests go **inside** the existing describe, then that describe closes with `});` and `describe('summarize', ...)` opens. The final `});` already at the end of the file closes the new describe.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `./node_modules/.bin/vitest run src/extension/recognitionLog.test.ts`
 Expected: FAIL — `does not provide an export named 'summarize'`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `src/extension/recognitionLog.ts`, add below `MAX_EVENTS`:
 
@@ -1010,12 +1010,12 @@ export function summarize(events: RecognitionEvent[]): { caught: number; keptPct
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run src/extension/recognitionLog.test.ts`
 Expected: PASS — 13 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/extension/recognitionLog.ts src/extension/recognitionLog.test.ts
@@ -1039,7 +1039,7 @@ This is chrome-glue, verified by hand rather than unit-tested — consistent wit
   - `BackgroundRequest` becomes a union including `{ type: 'logEvent'; event: PendingEvent }`, `{ type: 'markWrong'; savedId: string }`, `{ type: 'clearLog' }`
   - `BackgroundResponse` success case becomes `{ ok: true; result: RecognitionResult; draft: AttemptDraft }`
 
-- [ ] **Step 1: Rewrite the message contracts**
+- [x] **Step 1: Rewrite the message contracts**
 
 Replace the whole of `src/extension/messages.ts` with:
 
@@ -1096,7 +1096,7 @@ export type BackgroundResponse =
   | { ok: false; needsKey: boolean; error: string };
 ```
 
-- [ ] **Step 2: Rewrite the background worker**
+- [x] **Step 2: Rewrite the background worker**
 
 Replace the whole of `src/extension/background.ts` with:
 
@@ -1356,12 +1356,12 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
 });
 ```
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 Run: `node node_modules/typescript/bin/tsc --noEmit`
 Expected: errors only in `src/extension/content.ts` — it still reads `resp.candidates`, which no longer exists. Task 7 closes them. If any error names `background.ts` or `messages.ts`, fix it before moving on.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/extension/messages.ts src/extension/background.ts
@@ -1379,7 +1379,7 @@ git commit -m "feat: route weak right-click matches to the picker and log every 
 - Consumes: the `pick` message and `BackgroundResponse` from Task 6.
 - Produces: nothing other tasks depend on.
 
-- [ ] **Step 1: Add the corner-anchored panel style**
+- [x] **Step 1: Add the corner-anchored panel style**
 
 In `src/extension/content.ts`, inside the `STYLE` template literal, add after the `.bc-panel.bc-in` rule (line 86):
 
@@ -1393,7 +1393,7 @@ In `src/extension/content.ts`, inside the `STYLE` template literal, add after th
 }
 ```
 
-- [ ] **Step 2: Report outcomes to the background**
+- [x] **Step 2: Report outcomes to the background**
 
 In `src/extension/content.ts`, change the imports (lines 4-11) to:
 
@@ -1446,7 +1446,7 @@ function report(event: PendingEvent): void {
 }
 ```
 
-- [ ] **Step 3: Let the picker report its own outcome and survive a missing anchor**
+- [x] **Step 3: Let the picker report its own outcome and survive a missing anchor**
 
 Replace `openPicker` (lines 251-330) with:
 
@@ -1571,7 +1571,7 @@ function openPicker(
 }
 ```
 
-- [ ] **Step 4: Update the button flow's call site**
+- [x] **Step 4: Update the button flow's call site**
 
 In `addButton`'s click handler, replace the body of the `try` block (lines 361-375) with:
 
@@ -1603,7 +1603,7 @@ In `addButton`'s click handler, replace the body of the `try` block (lines 361-3
       trace('picker opened');
 ```
 
-- [ ] **Step 5: Handle the `pick` message**
+- [x] **Step 5: Handle the `pick` message**
 
 In the `chrome.runtime.onMessage.addListener` at the bottom of `src/extension/content.ts`, add before the `tweetContextFor` branch:
 
@@ -1624,7 +1624,7 @@ In the `chrome.runtime.onMessage.addListener` at the bottom of `src/extension/co
   }
 ```
 
-- [ ] **Step 6: Typecheck and build**
+- [x] **Step 6: Typecheck and build**
 
 Run: `node node_modules/typescript/bin/tsc --noEmit`
 Expected: no output (clean).
@@ -1632,12 +1632,12 @@ Expected: no output (clean).
 Run: `node build.mjs`
 Expected: `Typecheck` passes and the bundle is written to `dist/`.
 
-- [ ] **Step 7: Run the whole suite**
+- [x] **Step 7: Run the whole suite**
 
 Run: `./node_modules/.bin/vitest run`
 Expected: PASS — 49 tests.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/extension/content.ts
@@ -1656,7 +1656,7 @@ git commit -m "feat: show the picker at the right-clicked image when evidence is
 - Consumes: `createRecognitionLog`, `summarize` (Tasks 4-5); `BackgroundRequest` (Task 6).
 - Produces: nothing other tasks depend on.
 
-- [ ] **Step 1: Read the log and send deletions to the background**
+- [x] **Step 1: Read the log and send deletions to the background**
 
 In `src/extension/popup.ts`, change the imports (line 1) to:
 
@@ -1677,7 +1677,7 @@ Add below the `library` declaration (after line 11):
 const log = createRecognitionLog({ storage, now: () => Date.now() });
 ```
 
-- [ ] **Step 2: Flag the match when a book is removed**
+- [x] **Step 2: Flag the match when a book is removed**
 
 In `renderBook`'s remove handler, replace the line `await library.remove(saved.id);` with:
 
@@ -1691,7 +1691,7 @@ In `renderBook`'s remove handler, replace the line `await library.remove(saved.i
         .catch((err: unknown) => console.error('[BookCatcher] could not flag the match', err));
 ```
 
-- [ ] **Step 3: Render the stats line**
+- [x] **Step 3: Render the stats line**
 
 In `src/extension/popup.ts`, add above `render`:
 
@@ -1737,14 +1737,14 @@ with:
 
 and delete the now-unused `const countEl = document.getElementById('count');` on the line above `if (!app) return;`.
 
-- [ ] **Step 4: Build and check the popup by hand**
+- [x] **Step 4: Build and check the popup by hand**
 
 Run: `node build.mjs`
 Expected: clean.
 
 Then reload the extension at `chrome://extensions` and open the popup. Expected: with an empty log and books on the shelf, the masthead shows the plain count exactly as before — the upgrade path, not a regression.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/extension/popup.ts
@@ -1765,7 +1765,7 @@ git commit -m "feat: show caught and kept rate in the shelf masthead"
 - Consumes: `createRecognitionLog` (Task 4), `BackgroundRequest` (Task 6).
 - Produces: nothing.
 
-- [ ] **Step 1: Add the markup**
+- [x] **Step 1: Add the markup**
 
 In `options.html`, add this rule to the `<style>` block, immediately after the `.lede` rule:
 
@@ -1793,7 +1793,7 @@ Then add this immediately after the closing `</form>` tag:
       </div>
 ```
 
-- [ ] **Step 2: Wire the button**
+- [x] **Step 2: Wire the button**
 
 In `src/extension/options.ts`, change the imports (line 1) to:
 
@@ -1848,7 +1848,7 @@ Then inside `main`, after the `reset.addEventListener` block, add:
 
 Note: `logStatus` uses the `.hint` styling only if you give it that class; it is inside `.actions`, so leave it unstyled — it inherits the body font and reads as a quiet counter next to the button.
 
-- [ ] **Step 3: Update the README**
+- [x] **Step 3: Update the README**
 
 `README.md` still describes Tesseract as the live recognizer in three places. Fix them:
 
@@ -1872,7 +1872,7 @@ often it gets it right. That log is never transmitted, and you can clear it from
 options page.
 ```
 
-- [ ] **Step 4: Update DESIGN.md**
+- [x] **Step 4: Update DESIGN.md**
 
 Append a section at the end of `DESIGN.md`:
 
@@ -1904,7 +1904,7 @@ it marks its event wrong. Later deletions are changing your mind. That is what k
 dogfooding from turning into grading homework.
 ```
 
-- [ ] **Step 5: Build, test, typecheck**
+- [x] **Step 5: Build, test, typecheck**
 
 Run: `node build.mjs`
 Expected: clean.
@@ -1912,7 +1912,7 @@ Expected: clean.
 Run: `./node_modules/.bin/vitest run`
 Expected: PASS — 49 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add options.html src/extension/options.ts README.md DESIGN.md
