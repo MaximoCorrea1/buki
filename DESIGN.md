@@ -318,3 +318,27 @@ its own `createWriteQueue()` instead. `storage.set({ [key]: value })` replaces o
 keys it is given, so a log write cannot clobber `savedBooks` — sharing one queue would
 only make diagnostics wait on the shelf. What the spec was protecting against, an
 unserialized read-modify-write, is fully covered.
+
+### Live check against real OpenLibrary (2026-07-28)
+
+Ran the text path end to end against the live API rather than fakes. Four findings:
+
+1. **The score-0 filter is a weaker guard than it reads.** `groundText('HOME')` was
+   supposed to return nothing. It returns *Fun Home*, *Coming Home*, and *An Island home
+   Box 12.* — all of which genuinely share the queried word, so the filter never sees
+   them. The unit test only passed because its fake returned a book sharing nothing,
+   which is not what the real API does. The real protection is the tier: an incidental
+   one-word overlap scores 1, and 1 never auto-saves. Pinned by a characterization test.
+2. **A tweet naming a book in prose grounds to nothing.** "just finished Structure and
+   Interpretation of Computer Programs, incredible" returns no candidates: the whole
+   sentence goes out as one query and the filler words sink it. Line-by-line splitting
+   fixed listicles, not prose.
+3. **A listicle grounds on its headline, not its books.** "10 books that could replace an
+   economics degree" matched *Basic Economics* on the word "economics" and returned
+   before reaching the numbered lines. First-line-wins is doing the wrong thing when the
+   first line is a headline.
+4. **The ISBN short-circuit works live** — `source: 'link'`, `confidence: 'high'`, ~1s.
+
+2 and 3 are recognizer quality, which this cycle deliberately measures rather than tunes.
+Both now produce `medium` and open the picker, so neither can put a wrong book on the
+shelf silently — and the log will say how often they happen before anything is changed.

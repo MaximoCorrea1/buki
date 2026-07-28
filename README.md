@@ -72,8 +72,10 @@ Cheapest, highest-precision signal first:
    resolves to a real book. A post listing ten books has its titles on separate lines, so
    searching the whole blob finds nothing while searching each line finds plenty.
 
-Whatever the source, a match must share a real word with what was searched before it's
-saved, and **every entry can be removed** with the `×` button.
+Whatever the source, a match must share a real word with what was searched, and how
+*many* words it shares decides what happens next: a strong match saves outright, a
+one-word match asks first. Only a link or a cover the model and the books database agree
+on is ever saved without asking, and **every entry can be removed** with the `×` button.
 
 Local OCR (Tesseract) was tried first and measured at roughly **5%** on real covers — it
 reads characters, and cover typography is exactly what it's worst at. It also added 30 MB

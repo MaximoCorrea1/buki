@@ -149,6 +149,37 @@ describe('recognizeBook', () => {
     expect(result.confidence).toBe('high');
   });
 
+  it('asks rather than saving when the post only incidentally shares a word', async () => {
+    // Characterization test, written from a live OpenLibrary call. The word "HOME" on a
+    // meme returns Fun Home / Coming Home / An Island home - all of which genuinely
+    // DO share the queried word, so the score-0 filter never sees them.
+    //
+    // The filter is therefore a weaker guard than it looks, and the real protection is
+    // the tier: one incidental word scores 1, and 1 never auto-saves. If this ever
+    // reports 'high', a meme can put a book on the shelf without being asked.
+    const vision: VisionClient = {
+      async guessBook() {
+        return null;
+      },
+    };
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search() {
+        return [{ title: 'Fun Home', author: 'Alison Bechdel' }];
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: 'HOME', imageUrls: [], links: [] },
+      { vision, books },
+    );
+
+    expect(result.candidates[0]?.title).toBe('Fun Home');
+    expect(result.confidence).not.toBe('high');
+  });
+
   it('falls back to the post text when the image gives nothing', async () => {
     const vision: VisionClient = {
       async guessBook() {

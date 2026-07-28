@@ -2,7 +2,7 @@
 // and save the pick to your own reading list. Also renders feedback for the
 // background worker's right-click OCR flow.
 import type { Tweet, Book } from '../recognizer/types';
-import { createLibrary, type Intent, type StorageArea } from './storage';
+import { createLibrary, type Intent, type SavedSource, type StorageArea } from './storage';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
@@ -271,8 +271,17 @@ function closePanel(): void {
 type PickOutcome = { outcome: 'confirmed'; savedId: string } | { outcome: 'dismissed' };
 
 interface PickerOptions {
-  source?: string;
+  source?: SavedSource;
   onOutcome?: (result: PickOutcome) => void;
+}
+
+/**
+ * Only a permalink is "the tweet that sold you". Falling back to the feed URL but still
+ * labelling it a tweet would put `x.com/home` behind that link, which is the failure the
+ * whole source field exists to prevent.
+ */
+function sourceFor(permalink: string | null): SavedSource {
+  return permalink ? { url: permalink, kind: 'tweet' } : { url: location.href, kind: 'page' };
 }
 
 function openPicker(
@@ -324,11 +333,7 @@ function openPicker(
           // the storage write.
           btns.querySelectorAll('button').forEach((el) => (el.disabled = true));
           try {
-            const saved = await library.add(
-              book,
-              intent,
-              opts.source ? { url: opts.source, kind: 'tweet' } : undefined,
-            );
+            const saved = await library.add(book, intent, opts.source);
             settle({ outcome: 'confirmed', savedId: saved.id });
             closePanel();
             toast(`Saved: ${book.title} → ${intent}`);
@@ -434,7 +439,7 @@ function addButton(article: HTMLElement): void {
       if (!candidates.length) report({ ...draft, outcome: 'no-match' });
 
       openPicker(btn, candidates, {
-        source: tweetPermalink(article) ?? location.href,
+        source: sourceFor(tweetPermalink(article)),
         ...(candidates.length ? { onOutcome: (o) => report({ ...draft, ...o }) } : {}),
       });
       toast(candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet');
@@ -505,7 +510,7 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
       sameImage(i.src, msg.srcUrl),
     );
     openPicker(img ?? null, candidates, {
-      source: permalink ?? location.href,
+      source: sourceFor(permalink),
       onOutcome: (o) => report({ ...draft, ...o }),
     });
     sendResponse({ shown: true });

@@ -87,14 +87,19 @@ function renderBook(saved: SavedBook, index: number, onChange: () => void): HTML
       // Deleting a wrong match is both the fix and the measurement. The background
       // decides whether this was soon enough after saving to count against the
       // recognizer, rather than you simply changing your mind about reading it.
-      void chrome.runtime
+      //
+      // Started here but awaited below: waking a sleeping service worker can take long
+      // enough that a re-render would read the old kept rate and appear not to have
+      // noticed the delete. The collapse plays during the round trip either way.
+      const flagged = chrome.runtime
         .sendMessage({ type: 'markWrong', savedId: saved.id } satisfies BackgroundRequest)
         .catch((err: unknown) => console.error('[BookCatcher] could not flag the match', err));
+
       // Collapse the row before re-rendering, so the shelf is seen closing the
       // gap rather than the book simply blinking out of existence.
       row.style.height = `${row.offsetHeight}px`;
       requestAnimationFrame(() => row.classList.add('leaving'));
-      setTimeout(onChange, 200);
+      setTimeout(() => void flagged.then(onChange), 200);
     } catch (err) {
       console.error('[BookCatcher] remove failed', err);
       remove.disabled = false;
