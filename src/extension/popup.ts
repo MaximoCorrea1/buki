@@ -1,4 +1,6 @@
 import { createLibrary, type StorageArea, type SavedBook, type Intent } from './storage';
+import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
+import type { BackgroundRequest } from './messages';
 
 const storage: StorageArea = {
   get: (key) => chrome.storage.local.get(key),
@@ -9,6 +11,13 @@ const library = createLibrary({
   now: () => Date.now(),
   newId: () => crypto.randomUUID(),
 });
+
+/**
+ * Reads only. Every write goes through the background worker so the log has exactly one
+ * writer - see background.ts. Constructing the full object here just avoids a second way
+ * to spell the storage key.
+ */
+const log = createRecognitionLog({ storage, now: () => Date.now() });
 
 const INTENTS: Intent[] = ['now', 'next', 'someday'];
 const LABELS: Record<Intent, string> = { now: 'Reading now', next: 'Up next', someday: 'Someday' };
@@ -75,6 +84,12 @@ function renderBook(saved: SavedBook, index: number, onChange: () => void): HTML
     remove.disabled = true;
     try {
       await library.remove(saved.id);
+      // Deleting a wrong match is both the fix and the measurement. The background
+      // decides whether this was soon enough after saving to count against the
+      // recognizer, rather than you simply changing your mind about reading it.
+      void chrome.runtime
+        .sendMessage({ type: 'markWrong', savedId: saved.id } satisfies BackgroundRequest)
+        .catch((err: unknown) => console.error('[BookCatcher] could not flag the match', err));
       // Collapse the row before re-rendering, so the shelf is seen closing the
       // gap rather than the book simply blinking out of existence.
       row.style.height = `${row.offsetHeight}px`;
@@ -104,9 +119,34 @@ function renderEmpty(app: HTMLElement): void {
   app.replaceChildren(empty);
 }
 
+/**
+ * One line, in the masthead: `23 caught · 78% kept`. The kept rate is the only number
+ * worth watching, and it costs nothing to produce - deleting a wrong match is already
+ * the fix.
+ */
+async function renderStats(shelfCount: number): Promise<void> {
+  const el = document.getElementById('count');
+  if (!el) return;
+
+  let events: RecognitionEvent[] = [];
+  try {
+    events = await log.list();
+  } catch (err) {
+    console.error('[BookCatcher] could not read the log', err);
+  }
+
+  const { caught, keptPct } = summarize(events);
+
+  // A shelf that predates the log would otherwise read "0 caught" next to real books.
+  if (!caught) {
+    el.textContent = shelfCount ? `${shelfCount}` : '';
+    return;
+  }
+  el.textContent = keptPct === null ? `${caught} caught` : `${caught} caught · ${keptPct}% kept`;
+}
+
 async function render(): Promise<void> {
   const app = document.getElementById('app');
-  const countEl = document.getElementById('count');
   if (!app) return;
 
   let all: SavedBook[];
@@ -121,7 +161,7 @@ async function render(): Promise<void> {
     return;
   }
 
-  if (countEl) countEl.textContent = all.length ? `${all.length}` : '';
+  void renderStats(all.length);
 
   if (!all.length) {
     renderEmpty(app);
