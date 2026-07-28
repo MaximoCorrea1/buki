@@ -23,11 +23,23 @@ Your shelf lives in the extension. Nothing is synced anywhere.
 
 ```bash
 npm install
-npm run build
+node build.mjs
 ```
 
 Then in Chrome: `chrome://extensions` → enable **Developer mode** → **Load unpacked** →
-select this folder. Requires Chrome 116+.
+select this folder. Requires Chrome 110+.
+
+**One-time setup.** Reading a cover from a photo is the only thing Book Catcher can't do
+on your machine, so it needs a vision model. The options page opens on install: paste a
+free key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (about two
+minutes, no billing details). Google's free tier covers normal use and the key never
+leaves your computer.
+
+Any OpenAI-compatible endpoint works instead — Gemini, Cloudflare Workers AI, OpenRouter,
+or your own proxy. A proxy that holds its own credential lets you leave the key blank,
+which is how a hosted build keeps users keyless.
+
+Without a key, links and post text still resolve books; only cover reading is off.
 
 ## Scripts
 
@@ -54,16 +66,21 @@ through a single `node` entry point for that reason.
 
 Cheapest, highest-precision signal first:
 
-1. **A retailer link** in the tweet (Amazon/Goodreads/Bookshop) → resolve the ISBN
+1. **A retailer link** in the post (Amazon/Goodreads/Bookshop) → resolve the ISBN
    directly. Free and near-certain, so it skips everything below.
-2. **The tweet's text**, cleaned and searched.
-3. **OCR of the cover**, using *ground-as-filter*: each line of recognized text is tried
-   as a search until one resolves to a real book. Rather than guessing which line is the
-   title, the books database decides — garbage lines simply match nothing.
+2. **The cover and the post's words together** → a vision model names the book. Sending
+   both matters: the caption is often the clue that makes an unreadable cover legible.
+3. **The post's text**, grounded line by line: each line is tried as a search until one
+   resolves to a real book. A post listing ten books has its titles on separate lines, so
+   searching the whole blob finds nothing while searching each line finds plenty.
 
-OCR is imperfect on stylized or angled covers, so a match must share a real word with
-what was searched before it's saved, and **every entry can be removed** from the shelf
-with the `×` button.
+Whatever the source, a match must share a real word with what was searched before it's
+saved, and **every entry can be removed** with the `×` button.
+
+Local OCR (Tesseract) was tried first and measured at roughly **5%** on real covers — it
+reads characters, and cover typography is exactly what it's worst at. It also added 30 MB
+to the extension for a capability that needed the network anyway, since grounding is a
+lookup. A vision model reads the picture instead of the letters.
 
 ## What it doesn't do (yet)
 

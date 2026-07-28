@@ -1,7 +1,12 @@
 /** Minimal shape of fetch we depend on, so tests need no DOM or global fetch types. */
 export type FetchLike = (
   url: string,
-  init?: { signal?: AbortSignal },
+  init?: {
+    signal?: AbortSignal;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+  },
 ) => Promise<{ ok?: boolean; status?: number; json(): Promise<unknown> }>;
 
 /** A tweet, reduced to just what the recognizer needs. */

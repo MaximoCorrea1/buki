@@ -1,10 +1,14 @@
-// Background service worker: the right-click flow.
-// Right-click a book cover -> OCR (offscreen) -> ground-as-filter against OpenLibrary
-// -> save the top match -> toast on the page.
+// Background service worker. Owns recognition for both flows, so the tweet button and
+// the right-click menu resolve books exactly the same way - and so cross-origin calls
+// happen where host_permissions apply, rather than from a content script.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
+import { createLlmVision } from '../recognizer/llmVision';
 import { groundText } from '../recognizer/groundText';
+import { recognizeBook } from '../recognizer/recognizer';
+import type { Book, Tweet } from '../recognizer/types';
+import { readSettings, toVisionConfig } from './settings';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
-import type { ContentRequest, ContentResponse, OffscreenRequest, OffscreenResponse } from './messages';
+import type { BackgroundRequest, BackgroundResponse, ContentRequest, TweetContext } from './messages';
 
 const MENU_ID = 'bookcatcher-save-image';
 
@@ -20,10 +24,39 @@ const library = createLibrary({
   now: () => Date.now(),
   newId: () => crypto.randomUUID(),
 });
-const books = createOpenLibraryClient({ fetch: (url: string) => fetch(url) });
+const books = createOpenLibraryClient({ fetch: (url, init) => fetch(url, init) });
 
-chrome.runtime.onInstalled.addListener(() => {
-  // removeAll first so a dev reload can't fail on a duplicate id.
+class NoKeyError extends Error {}
+
+/** Settings are read per call, so a newly saved key takes effect without a reload. */
+async function visionClient() {
+  const settings = await readSettings();
+
+  // A blank key is legitimate against a proxy holding its own credential, but against a
+  // public provider it just means setup is unfinished - worth saying so rather than
+  // firing a request that can only 401.
+  const providerNeedsKey = /googleapis\.com|openai\.com|openrouter\.ai/.test(settings.endpoint);
+  if (!settings.apiKey && providerNeedsKey) throw new NoKeyError('no key');
+
+  return createLlmVision({
+    fetch: (url, init) => fetch(url, init),
+    config: toVisionConfig(settings),
+  });
+}
+
+/**
+ * Cheapest, highest-precision signal first: a retailer link resolves an ISBN outright,
+ * then the cover and the post text go to the vision model together, and finally the
+ * post text is grounded line by line.
+ */
+async function recognize(tweet: Tweet): Promise<Book[]> {
+  const vision = await visionClient();
+  const result = await recognizeBook(tweet, { vision, books });
+  if (result.candidates.length) return result.candidates;
+  return groundText(tweet.text, books);
+}
+
+chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create(
       {
@@ -34,61 +67,12 @@ chrome.runtime.onInstalled.addListener(() => {
         // would run and mutate the shelf with no visible feedback at all.
         documentUrlPatterns: SUPPORTED_PAGES,
       },
-      () => void chrome.runtime.lastError, // surface nothing; checking clears the warning
+      () => void chrome.runtime.lastError,
     );
   });
+  // Recognition needs a key, so say so once rather than failing silently on first use.
+  if (details.reason === 'install') void chrome.runtime.openOptionsPage();
 });
-
-/** Shared in-flight creation - Chrome allows exactly one offscreen document. */
-let creating: Promise<void> | null = null;
-
-async function ensureOffscreen(): Promise<void> {
-  if (await chrome.offscreen.hasDocument()) return;
-  if (creating) return creating; // a concurrent right-click is already creating it
-
-  creating = chrome.offscreen
-    .createDocument({
-      url: 'offscreen.html',
-      reasons: [chrome.offscreen.Reason.WORKERS],
-      justification: 'Run Tesseract OCR on a book cover image.',
-    })
-    .finally(() => {
-      creating = null;
-    });
-  await creating;
-}
-
-async function send<T extends OffscreenResponse>(req: OffscreenRequest): Promise<T | undefined> {
-  try {
-    return (await chrome.runtime.sendMessage(req)) as T;
-  } catch {
-    return undefined; // no listener yet
-  }
-}
-
-/**
- * Wait until the offscreen document answers. Replaces a fixed 150ms sleep, which was a
- * guess at how long offscreen.html + the tesseract bundle take to parse - too short on
- * a cold start meant the very first right-click failed for no discoverable reason.
- */
-async function waitForOffscreen(): Promise<void> {
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const pong = await send({ target: 'offscreen', type: 'ping' });
-    if (pong?.ok) return;
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  throw new Error('Offscreen document never became ready');
-}
-
-async function ocrImage(srcUrl: string): Promise<string> {
-  await ensureOffscreen();
-  await waitForOffscreen();
-
-  const resp = await send({ target: 'offscreen', type: 'ocr', srcUrl });
-  if (!resp) throw new Error('No response from the OCR worker');
-  if (!resp.ok) throw new Error(resp.error);
-  return 'text' in resp ? resp.text : '';
-}
 
 async function tellTab<T>(tabId: number | undefined, msg: ContentRequest): Promise<T | undefined> {
   if (tabId == null) return undefined;
@@ -106,56 +90,41 @@ const toast = (tabId: number | undefined, text: string): Promise<unknown> =>
 const progress = (tabId: number | undefined, text: string): Promise<unknown> =>
   tellTab(tabId, { type: 'toast', text, sticky: true });
 
-/** Whether OCR has run since this worker started - the first run loads ~14MB of WASM. */
-let ocrWarm = false;
-
-/**
- * Resolve the permalink of the tweet holding this image. `info.pageUrl` is the tab's
- * URL (x.com/home), not the tweet - saving that would break "the tweet that sold you",
- * which is the whole point of keeping a source at all.
- */
-async function resolveSource(
-  tabId: number | undefined,
-  info: chrome.contextMenus.OnClickData,
-): Promise<SavedSource | undefined> {
-  const resolved = await tellTab<ContentResponse>(tabId, {
-    type: 'resolvePermalink',
-    srcUrl: info.srcUrl ?? '',
-  });
-  if (resolved?.permalink) return { url: resolved.permalink, kind: 'tweet' };
-  return info.pageUrl ? { url: info.pageUrl, kind: 'page' } : undefined;
+function sourceFrom(ctx: TweetContext | undefined, pageUrl: string | undefined): SavedSource | undefined {
+  // `pageUrl` is the tab's URL (x.com/home), not the tweet - saving that would break
+  // "the tweet that sold you", which is the point of keeping a source at all.
+  if (ctx?.permalink) return { url: ctx.permalink, kind: 'tweet' };
+  return pageUrl ? { url: pageUrl, kind: 'page' } : undefined;
 }
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
   const tabId = tab?.id;
 
-  // Report each stage. Reading a cover takes several seconds - much longer on the
-  // first run of a session - and a single opening message made that look like a hang.
-  await progress(
-    tabId,
-    ocrWarm ? 'Reading the cover…' : 'Starting the reader… (first one takes a moment)',
-  );
+  await progress(tabId, 'Reading the cover…');
 
-  // Each stage also reports its own failure: one catch-all blamed OCR for storage and
-  // network errors alike, sending you off to retake a photo that was never the problem.
-  let text: string;
-  try {
-    text = await ocrImage(info.srcUrl);
-    ocrWarm = true;
-  } catch (err) {
-    console.error('[BookCatcher] OCR failed', err);
-    await toast(tabId, "Couldn't read that image.");
-    return;
-  }
+  // The post's words are the best hint for a hard-to-read cover, so pull the whole
+  // tweet around the clicked image rather than sending the picture on its own.
+  const ctx = await tellTab<TweetContext>(tabId, {
+    type: 'tweetContextFor',
+    srcUrl: info.srcUrl,
+  });
 
-  let candidates;
+  let candidates: Book[];
   try {
-    await progress(tabId, 'Looking up the book…');
-    candidates = await groundText(text, books);
+    candidates = await recognize({
+      text: ctx?.text ?? '',
+      imageUrls: [info.srcUrl],
+      links: ctx?.links ?? [],
+    });
   } catch (err) {
-    console.error('[BookCatcher] book lookup failed', err);
-    await toast(tabId, 'Book lookup failed — try again in a moment.');
+    if (err instanceof NoKeyError) {
+      await toast(tabId, 'Add a recognition key in Book Catcher settings to read covers.');
+      void chrome.runtime.openOptionsPage();
+      return;
+    }
+    console.error('[BookCatcher] recognition failed', err);
+    await toast(tabId, "Couldn't read that cover — try again in a moment.");
     return;
   }
 
@@ -166,11 +135,28 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 
   try {
-    const source = await resolveSource(tabId, info);
-    await library.add(book, 'someday', source);
+    await library.add(book, 'someday', sourceFrom(ctx, info.pageUrl));
     await toast(tabId, `Saved: ${book.title} → someday`);
   } catch (err) {
     console.error('[BookCatcher] save failed', err);
     await toast(tabId, "Couldn't save to your shelf.");
   }
+});
+
+// The tweet button asks the worker to recognize, so both flows share one pipeline and
+// the cross-origin calls stay where host_permissions apply.
+chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendResponse) => {
+  if (msg?.type !== 'recognize') return;
+
+  recognize(msg.tweet)
+    .then((candidates) => sendResponse({ ok: true, candidates } satisfies BackgroundResponse))
+    .catch((err: unknown) => {
+      if (!(err instanceof NoKeyError)) console.error('[BookCatcher] recognition failed', err);
+      sendResponse({
+        ok: false,
+        needsKey: err instanceof NoKeyError,
+        error: String(err),
+      } satisfies BackgroundResponse);
+    });
+  return true; // async response
 });

@@ -1,12 +1,14 @@
 // Book Catcher content script: inject a Save button on tweets, scrape + recognize,
 // and save the pick to your own reading list. Also renders feedback for the
 // background worker's right-click OCR flow.
-import { recognizeBook } from '../recognizer/recognizer';
-import { groundText } from '../recognizer/groundText';
-import { createOpenLibraryClient } from '../recognizer/openLibrary';
-import type { VisionClient, Tweet, Book } from '../recognizer/types';
+import type { Tweet, Book } from '../recognizer/types';
 import { createLibrary, type Intent, type StorageArea } from './storage';
-import type { ContentRequest, ContentResponse } from './messages';
+import type {
+  BackgroundRequest,
+  BackgroundResponse,
+  ContentRequest,
+  TweetContext,
+} from './messages';
 
 const storage: StorageArea = {
   get: (key) => chrome.storage.local.get(key),
@@ -17,15 +19,6 @@ const library = createLibrary({
   now: () => Date.now(),
   newId: () => crypto.randomUUID(),
 });
-const books = createOpenLibraryClient({ fetch: (url, init) => fetch(url, init) });
-
-// The tweet flow reads links + text only. Image recognition lives in the right-click
-// flow (background -> offscreen Tesseract), which is where the cover actually gets read.
-const noVision: VisionClient = {
-  async guessBook() {
-    return null;
-  },
-};
 
 const BTN_CLASS = 'bookcatcher-save-btn';
 
@@ -177,14 +170,27 @@ function scrapeTweet(article: HTMLElement): Tweet {
   };
 }
 
+/**
+ * Recognition happens in the background worker, not here: it owns the vision key, and
+ * cross-origin calls belong where host_permissions apply. It also means this button and
+ * the right-click menu resolve books through exactly the same pipeline - including
+ * reading the cover image, which this flow previously ignored.
+ */
 async function recognize(tweet: Tweet): Promise<Book[]> {
-  const result = await recognizeBook(tweet, { vision: noVision, books });
-  if (result.candidates.length) return result.candidates;
+  const resp = (await chrome.runtime.sendMessage({
+    type: 'recognize',
+    tweet,
+  } satisfies BackgroundRequest)) as BackgroundResponse | undefined;
 
-  // Fall back to the same line-by-line grounding the OCR flow uses. Searching the
-  // whole tweet as one query found nothing on the common cases - a tweet listing ten
-  // books has its titles on separate lines, and the blob matches none of them.
-  return groundText(tweet.text, books);
+  if (!resp) throw new Error('No response from the recognizer');
+  if (!resp.ok) {
+    if (resp.needsKey) {
+      toast('Add a recognition key in Book Catcher settings to read covers.');
+      return [];
+    }
+    throw new Error(resp.error);
+  }
+  return resp.candidates;
 }
 
 // ---------------------------------------------------------------- toasts
@@ -425,13 +431,17 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
     toast(msg.text, { sticky: msg.sticky });
     return;
   }
-  if (msg?.type === 'resolvePermalink') {
+  if (msg?.type === 'tweetContextFor') {
     const img = Array.from(document.querySelectorAll('img')).find((i) =>
       sameImage(i.src, msg.srcUrl),
     );
     const article = img?.closest('article[data-testid="tweet"]') as HTMLElement | null;
-    const response: ContentResponse = { permalink: article ? tweetPermalink(article) : null };
-    sendResponse(response);
+    // The post's words are the strongest hint for a hard-to-read cover, so send them
+    // along with the permalink rather than making the model work from pixels alone.
+    const context: TweetContext = article
+      ? { permalink: tweetPermalink(article), ...scrapeTweet(article) }
+      : { permalink: null, text: '', links: [] };
+    sendResponse({ permalink: context.permalink, text: context.text, links: context.links });
     return true;
   }
 });

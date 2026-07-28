@@ -1,35 +1,31 @@
+import type { Book, Tweet } from '../recognizer/types';
+
 /**
  * The message contracts between the extension's contexts, in one place.
  *
- * These used to be untyped object literals duplicated in background.ts and
- * offscreen.ts: `chrome.runtime.sendMessage` defaults its response to `any`, so a
- * renamed field compiled clean on both sides and only broke at runtime - reported as
- * a misleading "OCR failed".
+ * These were once untyped object literals duplicated across files:
+ * `chrome.runtime.sendMessage` defaults its response to `any`, so a renamed field
+ * compiled clean on both sides and broke only at runtime - reported as a misleading
+ * "OCR failed".
  */
 
-/** background -> offscreen */
-export type OffscreenRequest =
-  | { target: 'offscreen'; type: 'ping' }
-  | { target: 'offscreen'; type: 'ocr'; srcUrl: string };
-
-export type OffscreenResponse =
-  | { ok: true; text: string }
-  | { ok: true; ready: true }
-  | { ok: false; error: string };
+/** What the content script can tell us about the tweet around an image. */
+export interface TweetContext {
+  permalink: string | null;
+  text: string;
+  links: string[];
+}
 
 /** background -> content script */
 export type ContentRequest =
   /** `sticky` marks an in-progress stage: it stays until the next update replaces it. */
   | { type: 'toast'; text: string; sticky?: boolean }
-  /** "which tweet contains this image?" - so a save records the tweet, not the feed URL */
-  | { type: 'resolvePermalink'; srcUrl: string };
+  /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
+  | { type: 'tweetContextFor'; srcUrl: string };
 
-export type ContentResponse = { permalink: string | null };
+/** content script -> background */
+export type BackgroundRequest = { type: 'recognize'; tweet: Tweet };
 
-export function isOffscreenRequest(msg: unknown): msg is OffscreenRequest {
-  return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as { target?: unknown }).target === 'offscreen'
-  );
-}
+export type BackgroundResponse =
+  | { ok: true; candidates: Book[] }
+  | { ok: false; needsKey: boolean; error: string };
