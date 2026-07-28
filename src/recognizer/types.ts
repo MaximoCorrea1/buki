@@ -27,11 +27,24 @@ export interface Book {
 
 export type Confidence = 'high' | 'medium' | 'low';
 
+/** Where a result came from. `none` means nothing resolved at all. */
+export type RecognitionSource = 'link' | 'vision' | 'text' | 'none';
+
+/**
+ * A book plus the evidence behind it: how many words of four or more characters it
+ * shares with the query that found it. 0 means the books DB just fuzzy-matched
+ * something unrelated, which is why 0 never survives ranking.
+ */
+export interface GroundedBook {
+  book: Book;
+  score: number;
+}
+
 /** What the recognizer hands back. `candidates` is ordered best-first. */
 export interface RecognitionResult {
   candidates: Book[];
   confidence: Confidence;
-  source: 'link' | 'text' | 'vision';
+  source: RecognitionSource;
 }
 
 /**

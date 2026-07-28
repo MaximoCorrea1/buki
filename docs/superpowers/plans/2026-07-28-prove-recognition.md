@@ -358,7 +358,7 @@ Expected: PASS — 10 tests.
 
 The whole suite will NOT pass yet: `src/extension/background.ts:56` returns `groundText(...)` where `Book[]` is expected. Task 3 and Task 6 close that. Verify with:
 
-Run: `npx tsc --noEmit`
+Run: `node node_modules/typescript/bin/tsc --noEmit`
 Expected: exactly one error, in `src/extension/background.ts`, about `GroundedBook[]` not being assignable to `Book[]`.
 
 - [ ] **Step 6: Commit**
@@ -610,7 +610,7 @@ git add src/recognizer/recognizer.ts src/recognizer/recognizer.test.ts
 git commit -m "feat: derive confidence from how well the match backs the guess"
 ```
 
-`npx tsc --noEmit` still reports the one `background.ts` error from Task 2 — the worker keeps its own now-redundant `groundText` call until Task 6 removes it.
+`node node_modules/typescript/bin/tsc --noEmit` still reports the one `background.ts` error from Task 2 — the worker keeps its own now-redundant `groundText` call until Task 6 removes it.
 
 ---
 
@@ -1358,7 +1358,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
 
 - [ ] **Step 3: Typecheck**
 
-Run: `npx tsc --noEmit`
+Run: `node node_modules/typescript/bin/tsc --noEmit`
 Expected: errors only in `src/extension/content.ts` — it still reads `resp.candidates`, which no longer exists. Task 7 closes them. If any error names `background.ts` or `messages.ts`, fix it before moving on.
 
 - [ ] **Step 4: Commit**
@@ -1626,7 +1626,7 @@ In the `chrome.runtime.onMessage.addListener` at the bottom of `src/extension/co
 
 - [ ] **Step 6: Typecheck and build**
 
-Run: `npx tsc --noEmit`
+Run: `node node_modules/typescript/bin/tsc --noEmit`
 Expected: no output (clean).
 
 Run: `node build.mjs`
