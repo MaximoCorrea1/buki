@@ -1,4 +1,5 @@
 import type { Book } from '../recognizer/types';
+import { createWriteQueue } from './writeQueue';
 
 export type Intent = 'now' | 'next' | 'someday';
 
@@ -43,14 +44,7 @@ export function createLibrary(deps: {
   now: () => number;
   newId: () => string;
 }) {
-  let queue: Promise<unknown> = Promise.resolve();
-
-  /** Run `job` after every previously queued write, so read+write can't interleave. */
-  function serialize<T>(job: () => Promise<T>): Promise<T> {
-    const run = queue.then(job);
-    queue = run.catch(() => undefined); // a failed write must not wedge the queue
-    return run;
-  }
+  const serialize = createWriteQueue();
 
   async function read(): Promise<SavedBook[]> {
     const got = await deps.storage.get(KEY);
