@@ -3,6 +3,7 @@
 // background worker's right-click OCR flow.
 import type { Tweet, Book } from '../recognizer/types';
 import { createLibrary, type Intent, type StorageArea } from './storage';
+import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
   BackgroundResponse,
@@ -84,6 +85,14 @@ const STYLE = `
     transform 180ms cubic-bezier(.23,1,.32,1);
 }
 .bc-panel.bc-in { opacity: 1; transform: none; }
+
+/* No anchor: the feed recycled the image away mid-recognition. Park the panel in the
+   corner rather than dropping the result - losing a recognized book is the exact
+   failure this extension exists to prevent. Clear of the status pill at bottom: 20px. */
+.bc-panel.bc-corner {
+  position: fixed; left: auto; top: auto; right: 20px; bottom: 72px;
+  transform-origin: bottom right;
+}
 
 .bc-cand { position: relative; padding: 7px 8px 8px 16px; border-radius: 6px; }
 .bc-cand + .bc-cand { margin-top: 1px; }
@@ -176,7 +185,7 @@ function scrapeTweet(article: HTMLElement): Tweet {
  * the right-click menu resolve books through exactly the same pipeline - including
  * reading the cover image, which this flow previously ignored.
  */
-async function recognize(tweet: Tweet): Promise<Book[]> {
+async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: AttemptDraft } | null> {
   const resp = (await chrome.runtime.sendMessage({
     type: 'recognize',
     tweet,
@@ -186,11 +195,21 @@ async function recognize(tweet: Tweet): Promise<Book[]> {
   if (!resp.ok) {
     if (resp.needsKey) {
       toast('Add a recognition key in Book Catcher settings to read covers.');
-      return [];
+      return null;
     }
     throw new Error(resp.error);
   }
-  return resp.candidates;
+  return { candidates: resp.result.candidates, draft: resp.draft };
+}
+
+/**
+ * Hand a finished event to the background, which is the log's only writer. Diagnostics:
+ * a failure here must never surface as a failed save.
+ */
+function report(event: PendingEvent): void {
+  void chrome.runtime
+    .sendMessage({ type: 'logEvent', event } satisfies BackgroundRequest)
+    .catch((err: unknown) => console.error('[BookCatcher] log write failed', err));
 }
 
 // ---------------------------------------------------------------- toasts
@@ -248,11 +267,32 @@ function closePanel(): void {
   openPanel = null;
 }
 
-function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): void {
+/** What the user did with a panel. Exactly one of these fires per panel, ever. */
+type PickOutcome = { outcome: 'confirmed'; savedId: string } | { outcome: 'dismissed' };
+
+interface PickerOptions {
+  source?: string;
+  onOutcome?: (result: PickOutcome) => void;
+}
+
+function openPicker(
+  anchor: HTMLElement | null,
+  candidates: Book[],
+  opts: PickerOptions = {},
+): void {
   closePanel(); // only ever one picker; a second would strand the first
 
   const panel = document.createElement('div');
-  panel.className = 'bc-panel';
+  panel.className = anchor ? 'bc-panel' : 'bc-panel bc-corner';
+
+  // Every close path runs cleanup, and cleanup reports a dismissal - so the guard is
+  // what stops a successful save being logged twice, once as confirmed and once as not.
+  let settled = false;
+  const settle = (result: PickOutcome): void => {
+    if (settled) return;
+    settled = true;
+    opts.onOutcome?.(result);
+  };
 
   if (!candidates.length) {
     const empty = document.createElement('div');
@@ -284,7 +324,12 @@ function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): v
           // the storage write.
           btns.querySelectorAll('button').forEach((el) => (el.disabled = true));
           try {
-            await library.add(book, intent, source ? { url: source, kind: 'tweet' } : undefined);
+            const saved = await library.add(
+              book,
+              intent,
+              opts.source ? { url: opts.source, kind: 'tweet' } : undefined,
+            );
+            settle({ outcome: 'confirmed', savedId: saved.id });
             closePanel();
             toast(`Saved: ${book.title} → ${intent}`);
           } catch (err) {
@@ -301,16 +346,27 @@ function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): v
   }
 
   const place = (): void => {
+    if (!anchor) return; // corner-anchored; the stylesheet holds it in place
     // The feed is virtualized; if the tweet was recycled away, close rather than
     // leave the panel pinned to a zeroed rect in the corner.
     if (!anchor.isConnected) return closePanel();
+
     const rect = anchor.getBoundingClientRect();
-    panel.style.left = `${rect.left + window.scrollX}px`;
-    panel.style.top = `${rect.bottom + window.scrollY + 4}px`;
+    // Below the anchor if it fits, above it if not. A tweet image is tall enough that
+    // its bottom edge is often below the fold, and a panel rendered off-screen loses
+    // the book just as surely as never showing one.
+    const height = panel.offsetHeight || 120;
+    const below = rect.bottom + 4;
+    const top = below + height <= window.innerHeight ? below : Math.max(8, rect.top - height - 4);
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 296));
+
+    panel.style.left = `${left + window.scrollX}px`;
+    panel.style.top = `${top + window.scrollY}px`;
   };
   place();
   document.body.appendChild(panel);
-  // Next frame, so it scales out of the button rather than appearing at full size.
+  place(); // again now it has a measurable height, so the flip-above check is real
+  // Next frame, so it scales out of the trigger rather than appearing at full size.
   requestAnimationFrame(() => panel.classList.add('bc-in'));
 
   const onClickAway = (e: MouseEvent): void => {
@@ -321,6 +377,7 @@ function openPicker(anchor: HTMLElement, candidates: Book[], source?: string): v
     document.removeEventListener('click', onClickAway);
     window.removeEventListener('scroll', place, true);
     window.removeEventListener('resize', place);
+    settle({ outcome: 'dismissed' }); // no-op if a pick already settled it
   };
   setTimeout(() => document.addEventListener('click', onClickAway), 0);
   window.addEventListener('scroll', place, true);
@@ -366,11 +423,20 @@ function addButton(article: HTMLElement): void {
       });
 
       toast('Looking up the book…', { sticky: true });
-      const candidates = await recognize(tweet);
+      const recognized = await recognize(tweet);
+      if (!recognized) return; // no key; recognize() already said so
+      const { candidates, draft } = recognized;
       trace('lookup returned', candidates.length, 'candidate(s)', candidates);
 
       if (!article.isConnected) return trace('tweet scrolled away; dropping result');
-      openPicker(btn, candidates, tweetPermalink(article) ?? location.href);
+
+      // A no-match panel has nothing to pick, so its outcome is already known.
+      if (!candidates.length) report({ ...draft, outcome: 'no-match' });
+
+      openPicker(btn, candidates, {
+        source: tweetPermalink(article) ?? location.href,
+        ...(candidates.length ? { onOutcome: (o) => report({ ...draft, ...o }) } : {}),
+      });
       toast(candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet');
       trace('picker opened');
     } catch (err) {
@@ -430,6 +496,20 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
   if (msg?.type === 'toast') {
     toast(msg.text, { sticky: msg.sticky });
     return;
+  }
+  if (msg?.type === 'pick') {
+    const { candidates, draft, permalink } = msg;
+    // The same URL-path lookup that resolves the permalink also positions the panel, so
+    // it opens at the image being pointed at.
+    const img = Array.from(document.querySelectorAll('img')).find((i) =>
+      sameImage(i.src, msg.srcUrl),
+    );
+    openPicker(img ?? null, candidates, {
+      source: permalink ?? location.href,
+      onOutcome: (o) => report({ ...draft, ...o }),
+    });
+    sendResponse({ shown: true });
+    return true;
   }
   if (msg?.type === 'tweetContextFor') {
     const img = Array.from(document.querySelectorAll('img')).find((i) =>
