@@ -1,4 +1,5 @@
-import type { Book, Tweet } from '../recognizer/types';
+import type { Book, RecognitionResult, Tweet } from '../recognizer/types';
+import type { AttemptDraft, PendingEvent } from './recognitionLog';
 
 /**
  * The message contracts between the extension's contexts, in one place.
@@ -21,11 +22,29 @@ export type ContentRequest =
   /** `sticky` marks an in-progress stage: it stays until the next update replaces it. */
   | { type: 'toast'; text: string; sticky?: boolean }
   /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
-  | { type: 'tweetContextFor'; srcUrl: string };
+  | { type: 'tweetContextFor'; srcUrl: string }
+  /**
+   * "I recognized something, but not confidently enough to decide for you." The panel
+   * anchors to the image that was right-clicked, so it appears at the thing being
+   * pointed at. Answered with `{ shown }` - the background must know whether anyone
+   * took ownership of the outcome.
+   */
+  | {
+      type: 'pick';
+      candidates: Book[];
+      srcUrl: string;
+      permalink: string | null;
+      draft: AttemptDraft;
+    };
 
-/** content script -> background */
-export type BackgroundRequest = { type: 'recognize'; tweet: Tweet };
+/** content script / popup / options -> background */
+export type BackgroundRequest =
+  | { type: 'recognize'; tweet: Tweet }
+  /** The background is the log's only writer; everyone else hands it finished events. */
+  | { type: 'logEvent'; event: PendingEvent }
+  | { type: 'markWrong'; savedId: string }
+  | { type: 'clearLog' };
 
 export type BackgroundResponse =
-  | { ok: true; candidates: Book[] }
+  | { ok: true; result: RecognitionResult; draft: AttemptDraft }
   | { ok: false; needsKey: boolean; error: string };

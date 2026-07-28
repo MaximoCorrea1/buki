@@ -1,13 +1,17 @@
 // Background service worker. Owns recognition for both flows, so the tweet button and
 // the right-click menu resolve books exactly the same way - and so cross-origin calls
 // happen where host_permissions apply, rather than from a content script.
+//
+// It is also the recognition log's ONLY writer. Every other context sends it a finished
+// event. One writer means no cross-context race, and it means the right-click flow still
+// records an attempt on a tab whose content script never loaded.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
 import { createLlmVision } from '../recognizer/llmVision';
-import { groundText } from '../recognizer/groundText';
 import { recognizeBook } from '../recognizer/recognizer';
-import type { Book, Tweet } from '../recognizer/types';
+import type { RecognitionResult, Tweet } from '../recognizer/types';
 import { readSettings, toVisionConfig } from './settings';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
+import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import type { BackgroundRequest, BackgroundResponse, ContentRequest, TweetContext } from './messages';
 
 const MENU_ID = 'bookcatcher-save-image';
@@ -24,9 +28,23 @@ const library = createLibrary({
   now: () => Date.now(),
   newId: () => crypto.randomUUID(),
 });
+const log = createRecognitionLog({ storage, now: () => Date.now() });
 const books = createOpenLibraryClient({ fetch: (url, init) => fetch(url, init) });
 
 class NoKeyError extends Error {}
+
+/** The shelf is the product; the log is diagnostics. A log failure never breaks a save. */
+function note(event: PendingEvent): void {
+  void log.record(event).catch((err) => console.error('[BookCatcher] log write failed', err));
+}
+
+/**
+ * A failed attempt is still a miss. Recording it keeps the rate honest - a log that only
+ * sees lookups that completed reports a quality the extension doesn't have.
+ */
+function noteFailure(ms: number, flow: AttemptDraft['flow']): void {
+  note({ ms, flow, source: 'none', confidence: 'low', outcome: 'no-match' });
+}
 
 /** Settings are read per call, so a newly saved key takes effect without a reload. */
 async function visionClient() {
@@ -45,15 +63,24 @@ async function visionClient() {
 }
 
 /**
- * Cheapest, highest-precision signal first: a retailer link resolves an ISBN outright,
- * then the cover and the post text go to the vision model together, and finally the
- * post text is grounded line by line.
+ * The whole pipeline lives in `recognizeBook`; this only supplies the vision client,
+ * which is the one dependency that needs the worker's settings and host permissions.
  */
-async function recognize(tweet: Tweet): Promise<Book[]> {
+async function recognize(tweet: Tweet): Promise<RecognitionResult> {
   const vision = await visionClient();
-  const result = await recognizeBook(tweet, { vision, books });
-  if (result.candidates.length) return result.candidates;
-  return groundText(tweet.text, books);
+  return recognizeBook(tweet, { vision, books });
+}
+
+/** The evidence half of an event, ready to be finished by whoever learns the outcome. */
+function draftFrom(result: RecognitionResult, ms: number, flow: AttemptDraft['flow']): AttemptDraft {
+  const top = result.candidates[0];
+  return {
+    ms,
+    flow,
+    source: result.source,
+    confidence: result.confidence,
+    ...(top ? { guess: { title: top.title, author: top.author } } : {}),
+  };
 }
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -110,9 +137,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     srcUrl: info.srcUrl,
   });
 
-  let candidates: Book[];
+  const startedAt = Date.now();
+  let result: RecognitionResult;
   try {
-    candidates = await recognize({
+    result = await recognize({
       text: ctx?.text ?? '',
       imageUrls: [info.srcUrl],
       links: ctx?.links ?? [],
@@ -124,18 +152,40 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       return;
     }
     console.error('[BookCatcher] recognition failed', err);
+    noteFailure(Date.now() - startedAt, 'contextmenu');
     await toast(tabId, "Couldn't read that cover — try again in a moment.");
     return;
   }
 
-  const book = candidates[0];
+  const draft = draftFrom(result, Date.now() - startedAt, 'contextmenu');
+  const book = result.candidates[0];
+
   if (!book) {
+    note({ ...draft, outcome: 'no-match' });
     await toast(tabId, "Couldn't match that cover to a book.");
     return;
   }
 
+  // Weak evidence asks instead of deciding. A confident wrong answer costs more than ten
+  // misses, because it makes the whole shelf suspect.
+  if (result.confidence !== 'high') {
+    const shown = await tellTab<{ shown: boolean }>(tabId, {
+      type: 'pick',
+      candidates: result.candidates,
+      srcUrl: info.srcUrl,
+      permalink: ctx?.permalink ?? null,
+      draft,
+    });
+    // The content script owns the outcome from here. If it never answered there is no
+    // content script on this tab, so saving would mutate the shelf with zero feedback -
+    // the exact thing the menu is scoped to x.com to avoid.
+    if (!shown?.shown) note({ ...draft, outcome: 'dismissed' });
+    return;
+  }
+
   try {
-    await library.add(book, 'someday', sourceFrom(ctx, info.pageUrl));
+    const saved = await library.add(book, 'someday', sourceFrom(ctx, info.pageUrl));
+    note({ ...draft, outcome: 'auto-saved', savedId: saved.id });
     await toast(tabId, `Saved: ${book.title} → someday`);
   } catch (err) {
     console.error('[BookCatcher] save failed', err);
@@ -146,12 +196,49 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 // The tweet button asks the worker to recognize, so both flows share one pipeline and
 // the cross-origin calls stay where host_permissions apply.
 chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendResponse) => {
-  if (msg?.type !== 'recognize') return;
+  if (msg?.type === 'logEvent') {
+    note(msg.event);
+    sendResponse({ ok: true });
+    return false;
+  }
 
+  if (msg?.type === 'markWrong') {
+    void log.markWrong(msg.savedId).catch((err) => {
+      console.error('[BookCatcher] could not flag the match', err);
+    });
+    sendResponse({ ok: true });
+    return false;
+  }
+
+  if (msg?.type === 'clearLog') {
+    log
+      .clear()
+      .then(() => sendResponse({ ok: true }))
+      .catch((err: unknown) => {
+        console.error('[BookCatcher] could not clear the log', err);
+        sendResponse({ ok: false });
+      });
+    return true; // async response
+  }
+
+  if (msg?.type !== 'recognize') return false;
+
+  const startedAt = Date.now();
   recognize(msg.tweet)
-    .then((candidates) => sendResponse({ ok: true, candidates } satisfies BackgroundResponse))
+    .then((result) =>
+      sendResponse({
+        ok: true,
+        result,
+        draft: draftFrom(result, Date.now() - startedAt, 'button'),
+      } satisfies BackgroundResponse),
+    )
     .catch((err: unknown) => {
-      if (!(err instanceof NoKeyError)) console.error('[BookCatcher] recognition failed', err);
+      // A missing key is unfinished setup, not a miss - logging it would make the
+      // recognizer look bad for something it was never given a chance to do.
+      if (!(err instanceof NoKeyError)) {
+        console.error('[BookCatcher] recognition failed', err);
+        noteFailure(Date.now() - startedAt, 'button');
+      }
       sendResponse({
         ok: false,
         needsKey: err instanceof NoKeyError,
