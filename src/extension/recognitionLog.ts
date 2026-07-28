@@ -40,6 +40,15 @@ const KEY = 'recognitionLog';
  */
 export const MAX_EVENTS = 200;
 
+/**
+ * How long after a save a deletion still counts as "that was the wrong book". Past this
+ * you are changing your mind about reading it, which says nothing about the recognizer.
+ */
+export const WRONG_WINDOW_MS = 10 * 60 * 1000;
+
+/** Below this many catches a percentage is noise, so no rate is shown at all. */
+export const MIN_FOR_RATE = 5;
+
 export function createRecognitionLog(deps: { storage: StorageArea; now: () => number }) {
   const serialize = createWriteQueue();
 
@@ -58,6 +67,27 @@ export function createRecognitionLog(deps: { storage: StorageArea; now: () => nu
       });
     },
 
+    /**
+     * Deleting a wrong match is both the fix and the measurement - it is the only signal
+     * this log gets for free, which is why dogfooding doesn't need a grading step.
+     */
+    async markWrong(savedId: string): Promise<void> {
+      return serialize(async () => {
+        const existing = await read();
+        const now = deps.now();
+        let changed = false;
+
+        const next = existing.map((event) => {
+          if (event.savedId !== savedId || event.wrong) return event;
+          if (now - event.at > WRONG_WINDOW_MS) return event;
+          changed = true;
+          return { ...event, wrong: true };
+        });
+
+        if (changed) await deps.storage.set({ [KEY]: next });
+      });
+    },
+
     /** Oldest first, so the newest event is the last one. */
     async list(): Promise<RecognitionEvent[]> {
       return read();
@@ -68,5 +98,19 @@ export function createRecognitionLog(deps: { storage: StorageArea; now: () => nu
         await deps.storage.set({ [KEY]: [] });
       });
     },
+  };
+}
+
+/**
+ * The one number worth watching: of the books this put on your shelf, how many did you
+ * keep? Pure, so the popup renders it and the tests check the maths without storage.
+ */
+export function summarize(events: RecognitionEvent[]): { caught: number; keptPct: number | null } {
+  const saved = events.filter((e) => e.outcome === 'auto-saved' || e.outcome === 'confirmed');
+  const kept = saved.filter((e) => !e.wrong).length;
+
+  return {
+    caught: saved.length,
+    keptPct: saved.length < MIN_FOR_RATE ? null : Math.round((kept / saved.length) * 100),
   };
 }
