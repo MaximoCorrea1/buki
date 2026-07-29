@@ -12,6 +12,7 @@ import type { RecognitionResult, Tweet } from '../recognizer/types';
 import { readSettings, toVisionConfig } from './settings';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
+import { bestQuality } from './twitterImage';
 import type { BackgroundRequest, BackgroundResponse, ContentRequest, TweetContext } from './messages';
 
 const MENU_ID = 'bookcatcher-save-image';
@@ -89,7 +90,10 @@ async function visionClient() {
  */
 async function recognize(tweet: Tweet): Promise<{ result: RecognitionResult; model: string }> {
   const { vision, model } = await visionClient();
-  return { result: await recognizeBook(tweet, { vision, books }), model };
+  // Upgraded here rather than at either call site, so the button and the right-click menu
+  // cannot drift apart on image quality - the whole reason recognition moved in here.
+  const full: Tweet = { ...tweet, imageUrls: tweet.imageUrls.map(bestQuality) };
+  return { result: await recognizeBook(full, { vision, books }), model };
 }
 
 /** The evidence half of an event, ready to be finished by whoever learns the outcome. */

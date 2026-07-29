@@ -159,6 +159,18 @@ describe('createLlmVision', () => {
     ).rejects.toMatchObject({ status: 503, permanent: false });
   });
 
+  it('says a timeout in words, and treats it as worth retrying', async () => {
+    // The raw abort surfaces as "TimeoutError: signal timed out", which reads like a bug
+    // in the extension rather than a model that took too long.
+    const fetch: FetchLike = async () => {
+      throw Object.assign(new Error('signal timed out'), { name: 'TimeoutError' });
+    };
+
+    await expect(
+      createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
+    ).rejects.toMatchObject({ permanent: false, message: /took too long/ });
+  });
+
   it('still reports the status when the error body cannot be read', async () => {
     // Not every provider answers errors with JSON. Losing the status too would leave
     // nothing at all to go on.

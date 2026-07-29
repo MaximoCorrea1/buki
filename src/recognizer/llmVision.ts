@@ -39,6 +39,9 @@ export const GEMINI: Omit<VisionConfig, 'apiKey'> = {
 
 const TIMEOUT_MS = 25_000;
 
+/** Request Timeout. Not a status any provider sends here - we raise it ourselves. */
+const TIMEOUT_STATUS = 408;
+
 /**
  * A rejected request, carrying whether waiting could ever help.
  *
@@ -53,9 +56,9 @@ export class VisionHttpError extends Error {
   constructor(readonly status: number, message: string) {
     super(message);
     this.name = 'VisionHttpError';
-    // 429 is a client-class status that clears on its own; everything else below 500 is
-    // something about this request that will not change until the setup does.
-    this.permanent = status < 500 && status !== 429;
+    // 429 and 408 are client-class statuses that clear on their own; everything else
+    // below 500 is something about this request that will not change until the setup does.
+    this.permanent = status < 500 && status !== 429 && status !== TIMEOUT_STATUS;
   }
 }
 
@@ -119,23 +122,38 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
-      const res = await deps.fetch(endpoint, {
-        method: 'POST',
-        headers,
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: `${INSTRUCTION}\n\nPost text:\n${caption || '(none)'}` },
-                { type: 'image_url', image_url: { url: image } },
-              ],
-            },
-          ],
-        }),
+      const body = JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: `${INSTRUCTION}\n\nPost text:\n${caption || '(none)'}` },
+              { type: 'image_url', image_url: { url: image } },
+            ],
+          },
+        ],
       });
+
+      let res;
+      try {
+        res = await deps.fetch(endpoint, {
+          method: 'POST',
+          headers,
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+          body,
+        });
+      } catch (err) {
+        // An aborted fetch surfaces as "TimeoutError: signal timed out", which reads like
+        // a bug in the extension rather than a model that took too long to answer.
+        if (err instanceof Error && /timeout|abort/i.test(`${err.name} ${err.message}`)) {
+          throw new VisionHttpError(
+            TIMEOUT_STATUS,
+            `Reading the cover took too long (over ${TIMEOUT_MS / 1000}s).`,
+          );
+        }
+        throw err;
+      }
 
       if (res.ok === false) {
         const status = res.status ?? 0;

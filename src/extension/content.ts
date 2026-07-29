@@ -221,42 +221,53 @@ function report(event: PendingEvent): void {
  * toasts either stacked up or replaced each other invisibly, so a multi-second
  * operation looked like nothing was happening.
  */
-let statusEl: HTMLElement | null = null;
-let statusTimer: number | undefined;
+let pill: HTMLElement | null = null;
+let swapTimer: number | undefined;
+let hideTimer: number | undefined;
 
+/**
+ * One pill, created once and reused for the life of the page.
+ *
+ * It used to be removed from the DOM on dismissal, with the reference nulled 220ms
+ * BEFORE the element actually left. A save landing inside that window saw no pill, built
+ * a second one, and appended it at the same fixed position - so the previous book's
+ * title sat on top of the new one, still mid-fade. That is why a save sometimes named
+ * the book before it.
+ *
+ * Reusing a single node makes stacking impossible. Cancelling both timers on every call
+ * makes a stale message impossible too: the old swap can no longer land after the new one.
+ */
 function toast(msg: string, opts: { sticky?: boolean } = {}): void {
-  const fresh = !statusEl;
-  if (!statusEl) {
-    statusEl = document.createElement('div');
-    statusEl.className = 'bc-pill';
-    statusEl.setAttribute('role', 'status');
-    document.body.appendChild(statusEl);
-  }
-  const el = statusEl;
+  clearTimeout(swapTimer);
+  clearTimeout(hideTimer);
 
-  if (fresh) {
+  const onScreen = pill?.classList.contains('bc-in') ?? false;
+  if (!pill) {
+    pill = document.createElement('div');
+    pill.className = 'bc-pill';
+    pill.setAttribute('role', 'status');
+    document.body.appendChild(pill);
+  }
+  const el = pill;
+
+  if (!onScreen) {
     el.textContent = msg;
+    el.classList.remove('bc-swap'); // a fade interrupted mid-swap would stay blurred
     // Next frame, so the transition has a starting value to animate from.
     requestAnimationFrame(() => el.classList.add('bc-in'));
   } else {
     // Already on screen: blur out, swap the words, blur back. One object changing
     // its mind, rather than two strings crossfading through each other.
     el.classList.add('bc-swap');
-    setTimeout(() => {
+    swapTimer = window.setTimeout(() => {
       el.textContent = msg;
       el.classList.remove('bc-swap');
     }, 110);
   }
 
-  clearTimeout(statusTimer);
-
   // Sticky = a stage still running; it holds until the next update replaces it.
   if (opts.sticky) return;
-  statusTimer = window.setTimeout(() => {
-    statusEl = null;
-    el.classList.remove('bc-in');
-    setTimeout(() => el.remove(), 220);
-  }, 2800);
+  hideTimer = window.setTimeout(() => el.classList.remove('bc-in'), 2800);
 }
 
 // ---------------------------------------------------------------- picker
@@ -435,12 +446,17 @@ function addButton(article: HTMLElement): void {
       const { candidates, draft } = recognized;
       trace('lookup returned', candidates.length, 'candidate(s)', candidates);
 
-      if (!article.isConnected) return trace('tweet scrolled away; dropping result');
+      // The feed recycles tweets while a lookup is in flight. This used to drop the
+      // result, which loses a book that was successfully recognized - the exact failure
+      // the extension exists to prevent. Fall back to the corner, as the right-click
+      // flow already does.
+      const anchor = btn.isConnected ? btn : null;
+      if (!anchor) trace('tweet scrolled away; anchoring the picker to the corner');
 
       // A no-match panel has nothing to pick, so its outcome is already known.
       if (!candidates.length) report({ ...draft, outcome: 'no-match' });
 
-      openPicker(btn, candidates, {
+      openPicker(anchor, candidates, {
         source: sourceFor(tweetPermalink(article)),
         ...(candidates.length ? { onOutcome: (o) => report({ ...draft, ...o }) } : {}),
       });
