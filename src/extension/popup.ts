@@ -93,7 +93,7 @@ function renderBook(saved: SavedBook, index: number, onChange: () => void): HTML
       // noticed the delete. The collapse plays during the round trip either way.
       const flagged = chrome.runtime
         .sendMessage({ type: 'markWrong', savedId: saved.id } satisfies BackgroundRequest)
-        .catch((err: unknown) => console.error('[BookCatcher] could not flag the match', err));
+        .catch((err: unknown) => console.error('[Shelfy] could not flag the match', err));
 
       // Collapse the row before re-rendering, so the shelf is seen closing the
       // gap rather than the book simply blinking out of existence.
@@ -101,7 +101,7 @@ function renderBook(saved: SavedBook, index: number, onChange: () => void): HTML
       requestAnimationFrame(() => row.classList.add('leaving'));
       setTimeout(() => void flagged.then(onChange), 200);
     } catch (err) {
-      console.error('[BookCatcher] remove failed', err);
+      console.error('[Shelfy] remove failed', err);
       remove.disabled = false;
     }
   });
@@ -137,7 +137,7 @@ async function renderStats(shelfCount: number): Promise<void> {
   try {
     events = await log.list();
   } catch (err) {
-    console.error('[BookCatcher] could not read the log', err);
+    console.error('[Shelfy] could not read the log', err);
   }
 
   const { caught, keptPct } = summarize(events);
@@ -158,7 +158,7 @@ async function render(): Promise<void> {
   try {
     all = await library.list();
   } catch (err) {
-    console.error('[BookCatcher] could not read the shelf', err);
+    console.error('[Shelfy] could not read the shelf', err);
     const failed = document.createElement('p');
     failed.className = 'empty';
     failed.textContent = "The shelf didn't load. Close this and open it again.";

@@ -42,7 +42,7 @@ async function main(): Promise<void> {
       });
       say(key.value.trim() ? 'Saved. Recognition is on.' : 'Saved. Add a key to read covers.');
     } catch (err) {
-      console.error('[BookCatcher] could not save settings', err);
+      console.error('[Shelfy] could not save settings', err);
       say("Couldn't save. Try again.");
     }
   });
@@ -64,7 +64,7 @@ async function main(): Promise<void> {
       const events = await log.list();
       logStatus.textContent = events.length ? `${events.length} recorded` : 'Nothing recorded yet';
     } catch (err) {
-      console.error('[BookCatcher] could not read the log', err);
+      console.error('[Shelfy] could not read the log', err);
     }
   };
   void showCount();
@@ -75,7 +75,7 @@ async function main(): Promise<void> {
       await chrome.runtime.sendMessage({ type: 'clearLog' } satisfies BackgroundRequest);
       logStatus.textContent = 'Cleared';
     } catch (err) {
-      console.error('[BookCatcher] could not clear the log', err);
+      console.error('[Shelfy] could not clear the log', err);
       logStatus.textContent = "Couldn't clear it";
     } finally {
       clearLog.disabled = false;

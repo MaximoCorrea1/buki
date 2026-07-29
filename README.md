@@ -1,11 +1,10 @@
-# Book Catcher
+# Shelfy
 
-Catch books you see on Twitter/X into your own reading list, before they get lost in
-your bookmarks.
+Catch books you see on X into your own shelf, before they get lost in your bookmarks.
 
-You spot a book in a tweet, save it, and never see it again — it sinks under memes and
-threads with no way to tell the ones you meant it about from the impulse saves. Book
-Catcher gives those books a place: it recognizes the book, keeps the post that sold you
+You spot a book in a post, save it, and never see it again — it sinks under memes and
+threads with no way to tell the ones you meant it about from the impulse saves. Shelfy
+gives those books a place: it recognizes the book, keeps the post that sold you
 on it, and files it under **Now / Next / Someday**.
 
 ## Two ways to catch a book
@@ -15,8 +14,8 @@ to a vision model together, the guess is grounded against OpenLibrary, and a str
 match is saved outright. A weaker one opens the picker at the image so you decide. This
 is the one that works on a photo with no link and no title in the text.
 
-**Hit 📚 on a tweet.** Reads the tweet's links and text, shows you the candidates, and
-you pick the intent. Fastest when the tweet links to a retailer or names the book.
+**Hit 📚 on a post.** Reads the post's links and text, shows you the candidates, and
+you pick the intent. Fastest when the post links to a retailer or names the book.
 
 Your shelf lives in the extension. Nothing is synced anywhere.
 
@@ -30,7 +29,7 @@ node build.mjs
 Then in Chrome: `chrome://extensions` → enable **Developer mode** → **Load unpacked** →
 select this folder. Requires Chrome 110+.
 
-**One-time setup.** Reading a cover from a photo is the only thing Book Catcher can't do
+**One-time setup.** Reading a cover from a photo is the only thing Shelfy can't do
 on your machine, so it needs a vision model. The options page opens on install: paste a
 free key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (about two
 minutes, no billing details). Google's free tier covers normal use and the key never
@@ -93,11 +92,11 @@ lookup. A vision model reads the picture instead of the letters.
 
 ## Privacy
 
-Everything is local except book lookups: recognized cover text and tweet text are sent
+Everything is local except book lookups: recognized cover text and post text are sent
 to **openlibrary.org** as search queries to identify the book. No account, no telemetry,
 no analytics. Your shelf never leaves `chrome.storage.local`.
 
-Book Catcher also keeps the last 200 recognition attempts on your computer — what it
+Shelfy also keeps the last 200 recognition attempts on your computer — what it
 guessed, how confident it was, and whether you kept the book — so the shelf can show how
 often it gets it right. That log is never transmitted, and you can clear it from the
 options page.

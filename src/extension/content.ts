@@ -1,4 +1,4 @@
-// Book Catcher content script: inject a Save button on tweets, scrape + recognize,
+// Shelfy content script: inject a Save button on tweets, scrape + recognize,
 // and save the pick to your own reading list. Also renders feedback for the
 // background worker's right-click OCR flow.
 import type { Tweet, Book } from '../recognizer/types';
@@ -21,21 +21,21 @@ const library = createLibrary({
   newId: () => crypto.randomUUID(),
 });
 
-const BTN_CLASS = 'bookcatcher-save-btn';
+const BTN_CLASS = 'shelfy-save-btn';
 
 /**
  * Boundary tracing. This extension coordinates three isolated contexts, so a failure
  * anywhere in the chain looks identical from the page: nothing happens. Logging each
  * hand-off is what makes "it does nothing" diagnosable.
- * Silence it with: localStorage.bookcatcherQuiet = '1'
+ * Silence it with: localStorage.shelfyQuiet = '1'
  */
 const trace = (...args: unknown[]): void => {
   try {
-    if (localStorage.getItem('bookcatcherQuiet') === '1') return;
+    if (localStorage.getItem('shelfyQuiet') === '1') return;
   } catch {
     /* storage can be blocked; log anyway */
   }
-  console.info('[BookCatcher]', ...args);
+  console.info('[Shelfy]', ...args);
 };
 /**
  * One stylesheet rather than inline cssText: :active press feedback, hover gating and
@@ -211,7 +211,7 @@ async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: Att
 function report(event: PendingEvent): void {
   void chrome.runtime
     .sendMessage({ type: 'logEvent', event } satisfies BackgroundRequest)
-    .catch((err: unknown) => console.error('[BookCatcher] log write failed', err));
+    .catch((err: unknown) => console.error('[Shelfy] log write failed', err));
 }
 
 // ---------------------------------------------------------------- toasts
@@ -351,7 +351,7 @@ function openPicker(
             closePanel();
             toast(`Saved: ${book.title} → ${intent}`);
           } catch (err) {
-            console.error('[BookCatcher] save failed', err);
+            console.error('[Shelfy] save failed', err);
             btns.querySelectorAll('button').forEach((el) => (el.disabled = false));
             toast("Couldn't save to your shelf.");
           }
@@ -416,8 +416,8 @@ function addButton(article: HTMLElement): void {
   const btn = document.createElement('button');
   btn.className = `${BTN_CLASS} bc-btn`;
   btn.textContent = '📚';
-  btn.title = 'Save book to your shelf';
-  btn.setAttribute('aria-label', 'Save book to your shelf');
+  btn.title = 'Save this book to your shelf';
+  btn.setAttribute('aria-label', 'Save this book to your shelf');
 
   // Capture phase: X delegates clicks from high up the tree, so a bubble-phase
   // listener can be pre-empted by their handler before it ever runs.
@@ -463,7 +463,7 @@ function addButton(article: HTMLElement): void {
       toast(candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet');
       trace('picker opened');
     } catch (err) {
-      console.error('[BookCatcher] lookup failed', err);
+      console.error('[Shelfy] lookup failed', err);
       toast('Book lookup failed — try again in a moment.');
     } finally {
       btn.textContent = '📚';

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Book Catcher",
-  "version": "0.2.0",
-  "description": "Catch books from Twitter/X into your own reading list before they get lost.",
+  "name": "Shelfy",
+  "version": "1.0.0",
+  "description": "Catch books you see on X into your own shelf, before they get lost in your bookmarks.",
   "minimum_chrome_version": "110",
   "permissions": ["storage", "contextMenus"],
   "host_permissions": [
@@ -26,7 +26,7 @@
   "options_page": "options.html",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Book Catcher - your shelf",
+    "default_title": "Shelfy — your shelf",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
