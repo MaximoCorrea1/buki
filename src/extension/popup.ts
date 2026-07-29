@@ -7,6 +7,7 @@ import {
 } from './storage';
 import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
 import { buyLink, type Store } from './buyLink';
+import { clothFor } from './cloth';
 import { readSettings } from './settings';
 import type { BackgroundRequest, ShelfResponse } from './messages';
 
@@ -49,25 +50,6 @@ const SOURCE_LABEL = { tweet: 'the post that sold you', page: 'where you found i
 
 /** Past this many books the shelf needs finding, not just scrolling. */
 const FILTER_FROM = 15;
-
-/**
- * Bookcloth. A shelf looks like a shelf because the bindings differ, so each book
- * keeps its own colour rather than being colour-coded by status - the grouping
- * already says which pile it's in.
- */
-const CLOTH = ['#ff6352', '#FFB020', '#2FB88A', '#6C7BFF', '#B265D9'];
-
-/**
- * Same book, same cloth, forever - derived from the book, not from insertion order.
- * djb2 rather than a naive *31: the simple version bunched real titles onto the same
- * two colours, which defeats the point of having a varied shelf.
- */
-function clothFor(book: SavedBook['book']): string {
-  const key = book.isbn ?? `${book.title}|${book.author}`;
-  let hash = 5381;
-  for (let i = 0; i < key.length; i++) hash = ((hash << 5) + hash + key.charCodeAt(i)) >>> 0;
-  return CLOTH[hash % CLOTH.length] ?? CLOTH[0]!;
-}
 
 function blankCover(initial: string): HTMLElement {
   const blank = document.createElement('div');

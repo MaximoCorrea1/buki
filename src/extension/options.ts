@@ -77,8 +77,11 @@ async function main(): Promise<void> {
   clearLog.addEventListener('click', async () => {
     clearLog.disabled = true;
     try {
-      await chrome.runtime.sendMessage({ type: 'clearLog' } satisfies BackgroundRequest);
-      logStatus.textContent = 'Cleared';
+      // The worker answers {ok}; without checking it, a failed clear read as success.
+      const resp = (await chrome.runtime.sendMessage({
+        type: 'clearLog',
+      } satisfies BackgroundRequest)) as { ok?: boolean } | undefined;
+      logStatus.textContent = resp?.ok ? 'Cleared' : "Couldn't clear it";
     } catch (err) {
       console.error('[Shelfy] could not clear the log', err);
       logStatus.textContent = "Couldn't clear it";

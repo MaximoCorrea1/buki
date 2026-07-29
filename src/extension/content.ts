@@ -3,6 +3,7 @@
 // background worker's right-click OCR flow.
 import type { Tweet, Book } from '../recognizer/types';
 import type { Intent, SavedBook, SavedSource } from './storage';
+import { clothFor } from './cloth';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
@@ -133,16 +134,6 @@ const STYLE = `
   .bc-btn, .bc-intent { transition-duration: 1ms; }
 }
 `;
-
-const CLOTH = ['#ff6352', '#FFB020', '#2FB88A', '#6C7BFF', '#B265D9'];
-
-/** Same book, same binding - so a shelf looks varied the way a real one does. */
-function clothFor(book: Book): string {
-  const key = book.isbn ?? `${book.title}|${book.author}`;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  return CLOTH[hash % CLOTH.length] ?? CLOTH[0]!;
-}
 
 const styleEl = document.createElement('style');
 styleEl.textContent = STYLE;
@@ -513,6 +504,9 @@ function addButton(article: HTMLElement): void {
     btn.textContent = '…';
     try {
       const tweet = scrapeTweet(article);
+      // Captured now, not after the await: the feed can recycle this node in place while
+      // recognition runs, and re-reading it then attributes the book to another post.
+      const permalink = tweetPermalink(article);
       trace('clicked. scraped:', {
         text: tweet.text.slice(0, 60),
         images: tweet.imageUrls.length,
@@ -536,7 +530,7 @@ function addButton(article: HTMLElement): void {
       if (!candidates.length) report({ ...draft, outcome: 'no-match' });
 
       openPicker(anchor, candidates, {
-        source: sourceFor(tweetPermalink(article)),
+        source: sourceFor(permalink),
         ...(candidates.length ? { onOutcome: (o) => report({ ...draft, ...o }) } : {}),
       });
       toast(candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet');

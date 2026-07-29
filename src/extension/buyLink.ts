@@ -35,7 +35,7 @@ export function buyLink(book: Book, store: Store, affiliate: Affiliate = AFFILIA
     // The /a/ path is what attributes the sale; without an id there is nothing to
     // attribute, so send the reader to the search they wanted anyway.
     return affiliate.bookshopId && book.isbn
-      ? `https://bookshop.org/a/${affiliate.bookshopId}/${book.isbn}`
+      ? `https://bookshop.org/a/${affiliate.bookshopId}/${encodeURIComponent(book.isbn)}`
       : `https://bookshop.org/search?keywords=${encodeURIComponent(query)}`;
   }
 
