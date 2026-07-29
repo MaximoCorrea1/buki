@@ -110,7 +110,7 @@ of the Internet Archive.
 
 | What | Where |
 | --- | --- |
-| Privacy policy — must be published at a public URL and linked in the listing | [`docs/privacy.md`](docs/privacy.md) |
+| Landing page + privacy policy, served by GitHub Pages from `/docs` | [`docs/index.html`](docs/index.html), [`docs/privacy.html`](docs/privacy.html) |
 | Store listing copy, screenshot shot-list, promo tile | [`docs/store/listing.md`](docs/store/listing.md) |
 | Permission justifications and the data-usage declaration | [`docs/store/permissions.md`](docs/store/permissions.md) |
 

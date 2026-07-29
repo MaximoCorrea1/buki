@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shelfy — catch books you see on X</title>
+    <meta
+      name="description"
+      content="A Chrome extension that recognises books in posts on X and files them on your own shelf, under Now, Next or Someday. Your list stays on your computer."
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --paper: #f4f2fb;
+        --board: #e2def0;
+        --ink: #171526;
+        --muted: #6b6785;
+        --accent: #6c7bff;
+        --sunk: #ffffff;
+        --coral: #ff6352;
+        --marigold: #ffb020;
+        --jade: #2fb88a;
+        --plum: #b265d9;
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #17151f;
+          --board: #2a2637;
+          --ink: #f2f0fa;
+          --muted: #9d98b8;
+          --sunk: #1f1c2b;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 0 22px 80px;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main { max-width: 660px; margin: 0 auto; }
+
+      header { display: flex; align-items: center; gap: 11px; padding: 34px 0 0; }
+      header svg { display: block; flex: none; }
+      .word { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+
+      h1 {
+        margin: 46px 0 0;
+        font-size: clamp(32px, 6.4vw, 46px);
+        font-weight: 800;
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+      }
+      .lede { margin: 18px 0 0; font-size: 18px; color: var(--muted); max-width: 34em; }
+
+      .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 30px 0 0; }
+      .btn {
+        display: inline-block;
+        padding: 12px 20px;
+        border-radius: 9px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        text-decoration: none;
+        transition: transform 140ms var(--ease-out), background-color 140ms ease;
+      }
+      .btn:active { transform: scale(0.97); }
+      .btn:hover { background: #5a6bf5; }
+      .btn.ghost { background: transparent; color: var(--muted); }
+      .btn.ghost:hover { background: var(--board); color: var(--ink); }
+
+      /* The shelf itself is the hero — it is the thing the product makes. */
+      .shelf {
+        margin: 48px 0 0;
+        border: 1px solid var(--board);
+        border-radius: 14px;
+        background: var(--sunk);
+        overflow: hidden;
+      }
+      .shelf-top {
+        display: flex; align-items: center; gap: 9px;
+        padding: 13px 16px;
+        border-bottom: 1px solid var(--board);
+        font: 700 13px/1 system-ui, sans-serif;
+      }
+      .stat {
+        margin-left: auto;
+        font: 600 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+        color: var(--muted);
+      }
+      .grp {
+        padding: 13px 16px 6px;
+        font: 700 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 8px 34px 1fr;
+        align-items: center;
+        gap: 11px;
+        padding: 9px 16px 10px;
+        border-bottom: 1px solid var(--board);
+      }
+      .row:last-child { border-bottom: 0; }
+      .edge {
+        align-self: stretch; min-height: 50px; border-radius: 2px;
+        background:
+          linear-gradient(rgba(255,255,255,.55) 1px, transparent 1px) 0 14px / 100% 2px no-repeat,
+          linear-gradient(rgba(0,0,0,.25) 1px, transparent 1px) 0 15px / 100% 2px no-repeat,
+          linear-gradient(rgba(255,255,255,.55) 1px, transparent 1px) 0 34px / 100% 2px no-repeat,
+          linear-gradient(rgba(0,0,0,.25) 1px, transparent 1px) 0 35px / 100% 2px no-repeat,
+          var(--c);
+      }
+      .thumb {
+        width: 34px; height: 50px; border-radius: 2px;
+        background-image: linear-gradient(150deg, rgba(255,255,255,.25), rgba(0,0,0,.45));
+        background-color: var(--c);
+        box-shadow: 0 1px 3px rgba(23,21,38,.22);
+      }
+      .t { font-weight: 700; font-size: 14px; letter-spacing: -0.011em; }
+      .a { font-size: 12px; color: var(--muted); }
+      .links { display: flex; align-items: center; gap: 8px; margin-top: 3px; font-size: 11px; font-weight: 600; }
+      .links .src { color: var(--muted); }
+      .buy { padding: 3px 9px; border-radius: 999px; background: #dff5ec; color: #14795a; }
+      @media (prefers-color-scheme: dark) {
+        .buy { background: #1e332c; color: #6ee7b7; }
+      }
+
+      h2 {
+        margin: 56px 0 0;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h3 { margin: 26px 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+      p { margin: 8px 0 0; }
+      .grid { display: grid; gap: 26px; margin-top: 6px; }
+      @media (min-width: 620px) { .grid { grid-template-columns: 1fr 1fr; gap: 30px 34px; } }
+
+      .note {
+        margin: 44px 0 0;
+        padding: 16px 18px;
+        background: var(--sunk);
+        border: 1px solid var(--board);
+        border-radius: 10px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .note b { color: var(--ink); }
+      a { color: var(--accent); }
+      footer {
+        margin: 54px 0 0;
+        padding-top: 20px;
+        border-top: 1px solid var(--board);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      footer a { margin-right: 16px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff6352" />
+          <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#2fb88a" />
+          <rect x="10.6" y="4" width="3.2" height="10.5" rx="1" fill="#6c7bff"
+                transform="rotate(11 12.2 9.25)" />
+          <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
+        </svg>
+        <span class="word">Shelfy</span>
+      </header>
+
+      <h1>You saw a book. Then you forgot it.</h1>
+      <p class="lede">
+        Shelfy recognises books in posts on X — from the cover photo, not just the text —
+        and files them on a shelf that's yours. It lives in your browser. No account, no
+        sync, nothing to sign up for.
+      </p>
+
+      <div class="cta">
+        <a class="btn" href="https://github.com/MaxoCorrea/shelfy">Get it on GitHub</a>
+        <a class="btn ghost" href="privacy.html">Privacy</a>
+      </div>
+
+      <div class="shelf">
+        <div class="shelf-top">
+          <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff6352" />
+            <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#2fb88a" />
+            <rect x="10.6" y="4" width="3.2" height="10.5" rx="1" fill="#6c7bff"
+                  transform="rotate(11 12.2 9.25)" />
+            <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
+          </svg>
+          Shelfy
+          <span class="stat">23 caught · 87% kept</span>
+        </div>
+
+        <div class="grp">Reading now</div>
+        <div class="row" style="--c: #6c7bff">
+          <div class="edge"></div>
+          <div class="thumb"></div>
+          <div>
+            <div class="t">Signals and Systems</div>
+            <div class="a">Alan V. Oppenheim</div>
+            <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+          </div>
+        </div>
+
+        <div class="grp">Up next</div>
+        <div class="row" style="--c: #ffb020">
+          <div class="edge"></div>
+          <div class="thumb"></div>
+          <div>
+            <div class="t">Structure and Interpretation of Computer Programs</div>
+            <div class="a">Abelson, Sussman</div>
+            <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+          </div>
+        </div>
+        <div class="row" style="--c: #2fb88a">
+          <div class="edge"></div>
+          <div class="thumb"></div>
+          <div>
+            <div class="t">Dune</div>
+            <div class="a">Frank Herbert</div>
+            <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+          </div>
+        </div>
+      </div>
+
+      <h2>How it works</h2>
+      <div class="grid">
+        <div>
+          <h3>Right-click the cover</h3>
+          <p>
+            Choose <b>Save book to shelf</b>. Shelfy sends the cover and the post's words
+            to a vision model together — the caption is often what makes an unreadable
+            cover legible — then checks the answer against OpenLibrary before saving it.
+          </p>
+        </div>
+        <div>
+          <h3>Or hit the book icon</h3>
+          <p>
+            It sits in the post's action bar, beside reply and repost. Same recognition,
+            and you choose where the book goes.
+          </p>
+        </div>
+        <div>
+          <h3>Now, Next, or Someday</h3>
+          <p>
+            Every book gets an intention, so something you mean to read next month doesn't
+            sit in the same pile as something you saved on a whim. Mark it finished when
+            you're done.
+          </p>
+        </div>
+        <div>
+          <h3>It admits when it's unsure</h3>
+          <p>
+            A strong match saves outright. A weak one asks first, rather than quietly
+            putting the wrong book on your shelf. Shelfy keeps a private count of how
+            often it got it right, so you can decide how much to trust it.
+          </p>
+        </div>
+      </div>
+
+      <h2>What it does with your data</h2>
+      <p>
+        Your shelf never leaves your computer. The only things sent anywhere are the image
+        you asked Shelfy to identify, which goes to the vision provider you configured, and
+        the recognised title, which goes to OpenLibrary to confirm the book exists. There
+        is no Shelfy server, no account, and no analytics.
+        <a href="privacy.html">Read the privacy policy</a>.
+      </p>
+
+      <p class="note">
+        <b>Affiliate disclosure.</b> Saved books carry a <b>Buy</b> link. As an Amazon
+        Associate, Shelfy earns from qualifying purchases, at no extra cost to you. The
+        link appears only on books you have already chosen to save, and it never changes
+        which books Shelfy shows you or in what order. You can point it at Bookshop.org
+        instead, which supports independent bookshops.
+      </p>
+
+      <footer>
+        <a href="https://github.com/MaxoCorrea/shelfy">Source</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://github.com/MaxoCorrea/shelfy/issues">Report a problem</a>
+        <p>Made by Maximo Correa. MIT licensed.</p>
+      </footer>
+    </main>
+  </body>
+</html>
