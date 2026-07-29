@@ -13,7 +13,13 @@ import { readSettings, toVisionConfig, type Settings } from './settings';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality } from './twitterImage';
-import type { BackgroundRequest, BackgroundResponse, ContentRequest, TweetContext } from './messages';
+import type {
+  BackgroundRequest,
+  BackgroundResponse,
+  ContentRequest,
+  ShelfResponse,
+  TweetContext,
+} from './messages';
 
 const MENU_ID = 'shelfy-save-image';
 
@@ -234,6 +240,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
+  // Saving needs somewhere to say so. If the tab never answered, there is no content
+  // script on it, and a silent shelf mutation is the exact thing this menu is scoped to
+  // x.com to avoid - so drop the result rather than change the shelf invisibly.
+  const alive = await tellTab<{ ok: true }>(tabId, { type: 'ping' });
+  if (!alive) {
+    note({ ...draft, outcome: 'dismissed' });
+    return;
+  }
+
   try {
     const saved = await library.add(book, 'someday', sourceFrom(ctx, info.pageUrl));
     note({ ...draft, outcome: 'auto-saved', savedId: saved.id });
@@ -253,12 +268,35 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     return false;
   }
 
-  if (msg?.type === 'markWrong') {
-    void log.markWrong(msg.savedId).catch((err) => {
-      console.error('[Shelfy] could not flag the match', err);
-    });
-    sendResponse({ ok: true });
-    return false;
+  // The worker is the only writer of `savedBooks`. Other contexts ask; they never write.
+  if (msg?.type === 'saveBook') {
+    library
+      .add(msg.book, msg.intent, msg.source)
+      .then((saved) => sendResponse({ ok: true, saved } satisfies ShelfResponse))
+      .catch((err: unknown) => {
+        console.error('[Shelfy] save failed', err);
+        sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
+      });
+    return true; // async response
+  }
+
+  if (msg?.type === 'removeBook') {
+    const savedId = msg.savedId;
+    library
+      .remove(savedId)
+      // Flagged in the same round trip. The popup used to send this separately and wait a
+      // fixed 170ms for it, which raced a sleeping worker and left the kept rate stale.
+      .then(() =>
+        log
+          .markWrong(savedId)
+          .catch((err: unknown) => console.error('[Shelfy] could not flag the match', err)),
+      )
+      .then(() => sendResponse({ ok: true } satisfies ShelfResponse))
+      .catch((err: unknown) => {
+        console.error('[Shelfy] remove failed', err);
+        sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
+      });
+    return true; // async response
   }
 
   if (msg?.type === 'clearLog') {

@@ -2,24 +2,15 @@
 // and save the pick to your own reading list. Also renders feedback for the
 // background worker's right-click OCR flow.
 import type { Tweet, Book } from '../recognizer/types';
-import { createLibrary, type Intent, type SavedSource, type StorageArea } from './storage';
+import type { Intent, SavedBook, SavedSource } from './storage';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
   BackgroundResponse,
   ContentRequest,
+  ShelfResponse,
   TweetContext,
 } from './messages';
-
-const storage: StorageArea = {
-  get: (key) => chrome.storage.local.get(key),
-  set: (items) => chrome.storage.local.set(items),
-};
-const library = createLibrary({
-  storage,
-  now: () => Date.now(),
-  newId: () => crypto.randomUUID(),
-});
 
 const BTN_CLASS = 'shelfy-save-btn';
 
@@ -238,6 +229,25 @@ async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: Att
 }
 
 /**
+ * Ask the worker to write to the shelf. It owns `savedBooks` outright: a per-context
+ * write queue cannot see a sibling context's write, and two of them interleaving is how
+ * a book gets silently dropped.
+ */
+async function saveBook(book: Book, intent: Intent, source?: SavedSource): Promise<SavedBook> {
+  const resp = (await chrome.runtime.sendMessage({
+    type: 'saveBook',
+    book,
+    intent,
+    ...(source ? { source } : {}),
+  } satisfies BackgroundRequest)) as ShelfResponse | undefined;
+
+  if (!resp) throw new Error('No response from the shelf');
+  if (!resp.ok) throw new Error(resp.error);
+  if (!resp.saved) throw new Error('Shelf did not return the saved book');
+  return resp.saved;
+}
+
+/**
  * Hand a finished event to the background, which is the log's only writer. Diagnostics:
  * a failure here must never surface as a failed save.
  */
@@ -376,6 +386,12 @@ function openPicker(
     opts.onOutcome?.(result);
   };
 
+  // A click is an unambiguous confirmation, but the write is a round trip to the worker.
+  // Without this flag an eviction during that trip (a scroll, a click away, a second
+  // recognition) reached cleanup first and logged a save the user DID make as
+  // "dismissed" - quietly corrupting the one number the log exists to produce.
+  let saving = false;
+
   if (!candidates.length) {
     const empty = document.createElement('div');
     empty.className = 'bc-none';
@@ -405,15 +421,17 @@ function openPicker(
           // Disable the whole row: a second click would re-enter the save and race
           // the storage write.
           btns.querySelectorAll('button').forEach((el) => (el.disabled = true));
+          saving = true;
           try {
-            const saved = await library.add(book, intent, opts.source);
+            const saved = await saveBook(book, intent, opts.source);
             settle({ outcome: 'confirmed', savedId: saved.id });
             closePanel();
             toast(`Saved: ${book.title} → ${intent}`);
           } catch (err) {
             console.error('[Shelfy] save failed', err);
+            saving = false;
             btns.querySelectorAll('button').forEach((el) => (el.disabled = false));
-            toast("Couldn't save to your shelf.");
+            toast(orphaned(err) ? REFRESH : "Couldn't save to your shelf.");
           }
         });
         btns.appendChild(b);
@@ -455,7 +473,8 @@ function openPicker(
     document.removeEventListener('click', onClickAway);
     window.removeEventListener('scroll', place, true);
     window.removeEventListener('resize', place);
-    settle({ outcome: 'dismissed' }); // no-op if a pick already settled it
+    // Not while a confirmed save is still in flight - that click already decided this.
+    if (!saving) settle({ outcome: 'dismissed' });
   };
   setTimeout(() => document.addEventListener('click', onClickAway), 0);
   window.addEventListener('scroll', place, true);
@@ -580,8 +599,16 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
     toast(msg.text, { sticky: msg.sticky });
     return;
   }
+  if (msg?.type === 'ping') {
+    sendResponse({ ok: true });
+    return true;
+  }
   if (msg?.type === 'pick') {
     const { candidates, draft, permalink } = msg;
+    // Every other outcome ends in a non-sticky toast, which clears the in-progress pill.
+    // This path ends in a panel, so it has to clear it explicitly - otherwise "Reading
+    // the cover..." stays on screen for the rest of the session.
+    if (stage) dismiss(stage);
     // The same URL-path lookup that resolves the permalink also positions the panel, so
     // it opens at the image being pointed at.
     const img = Array.from(document.querySelectorAll('img')).find((i) =>

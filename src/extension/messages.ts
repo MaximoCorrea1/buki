@@ -1,5 +1,6 @@
 import type { Book, RecognitionResult, Tweet } from '../recognizer/types';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
+import type { Intent, SavedBook, SavedSource } from './storage';
 
 /**
  * The message contracts between the extension's contexts, in one place.
@@ -23,6 +24,8 @@ export type ContentRequest =
   | { type: 'toast'; text: string; sticky?: boolean }
   /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
   | { type: 'tweetContextFor'; srcUrl: string }
+  /** "Are you there?" - asked before a silent auto-save, which needs somewhere to report. */
+  | { type: 'ping' }
   /**
    * "I recognized something, but not confidently enough to decide for you." The panel
    * anchors to the image that was right-clicked, so it appears at the thing being
@@ -40,9 +43,18 @@ export type ContentRequest =
 /** content script / popup / options -> background */
 export type BackgroundRequest =
   | { type: 'recognize'; tweet: Tweet }
-  /** The background is the log's only writer; everyone else hands it finished events. */
+  /**
+   * The background is the ONLY writer of both `savedBooks` and `recognitionLog`.
+   *
+   * `createLibrary`'s queue only serializes writes made through one instance, and there
+   * was an instance per context - so a popup delete could interleave with a content
+   * script save and drop a book, which is the exact data loss the queue was built to
+   * prevent. Other contexts now ask the worker to write; they still read directly.
+   */
+  | { type: 'saveBook'; book: Book; intent: Intent; source?: SavedSource }
+  /** Removes AND flags the recognition, so the popup needs one round trip, not two. */
+  | { type: 'removeBook'; savedId: string }
   | { type: 'logEvent'; event: PendingEvent }
-  | { type: 'markWrong'; savedId: string }
   | { type: 'clearLog' };
 
 export type BackgroundResponse =
@@ -53,3 +65,6 @@ export type BackgroundResponse =
    * for the user, provider explanation included.
    */
   | { ok: false; needsSetup: boolean; error: string };
+
+/** Answer to a shelf write. `saved` is present for saveBook, absent for removeBook. */
+export type ShelfResponse = { ok: true; saved?: SavedBook } | { ok: false; error: string };

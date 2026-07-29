@@ -8,17 +8,28 @@ import {
 import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
 import { buyLink, type Store } from './buyLink';
 import { readSettings } from './settings';
-import type { BackgroundRequest } from './messages';
+import type { BackgroundRequest, ShelfResponse } from './messages';
 
 const storage: StorageArea = {
   get: (key) => chrome.storage.local.get(key),
   set: (items) => chrome.storage.local.set(items),
 };
+/**
+ * Reads only. Every WRITE goes through the background worker, which owns `savedBooks`:
+ * a per-context write queue cannot see a sibling context's write, and two interleaving
+ * is how a book gets silently dropped.
+ */
 const library = createLibrary({
   storage,
   now: () => Date.now(),
   newId: () => crypto.randomUUID(),
 });
+
+async function shelf(request: BackgroundRequest): Promise<void> {
+  const resp = (await chrome.runtime.sendMessage(request)) as ShelfResponse | undefined;
+  if (!resp) throw new Error('No response from the shelf');
+  if (!resp.ok) throw new Error(resp.error);
+}
 
 /**
  * Reads only. Every write goes through the background worker so the log has exactly one
@@ -146,8 +157,9 @@ function renderBook(
     done.addEventListener('click', async () => {
       done.disabled = true;
       try {
-        // Finishing is not a wrong match, so it must never flag the recognition.
-        await library.add(saved.book, 'read', saved.source);
+        // Finishing is not a wrong match, so it must never flag the recognition -
+        // only removeBook does that.
+        await shelf({ type: 'saveBook', book: saved.book, intent: 'read', ...(saved.source ? { source: saved.source } : {}) });
         onChange();
       } catch (err) {
         console.error('[Shelfy] could not mark it finished', err);
@@ -164,23 +176,17 @@ function renderBook(
   remove.setAttribute('aria-label', `Remove ${saved.book.title}`);
   remove.addEventListener('click', async () => {
     remove.disabled = true;
+    // Play the collapse immediately; the worker's answer decides when to re-render.
+    row.classList.add('leaving');
     try {
-      await library.remove(saved.id);
-      // Deleting a wrong match is both the fix and the measurement. The background
-      // decides whether this was soon enough after saving to count against the
-      // recognizer, rather than you simply changing your mind about reading it.
-      //
-      // Started here but awaited below: waking a sleeping service worker can take long
-      // enough that a re-render would read the old kept rate and appear not to have
-      // noticed the delete. The collapse plays during the round trip either way.
-      const flagged = chrome.runtime
-        .sendMessage({ type: 'markWrong', savedId: saved.id } satisfies BackgroundRequest)
-        .catch((err: unknown) => console.error('[Shelfy] could not flag the match', err));
-
-      row.classList.add('leaving');
-      setTimeout(() => void flagged.then(onChange), 170);
+      // One round trip removes the book AND flags the recognition. Deleting a wrong
+      // match is both the fix and the measurement, so the kept rate is guaranteed fresh
+      // by the time this resolves - no fixed timer racing a sleeping worker.
+      await shelf({ type: 'removeBook', savedId: saved.id });
+      onChange();
     } catch (err) {
       console.error('[Shelfy] remove failed', err);
+      row.classList.remove('leaving');
       remove.disabled = false;
     }
   });
