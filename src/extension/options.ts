@@ -19,12 +19,14 @@ async function main(): Promise<void> {
   const status = $<HTMLElement>('status');
   const form = $<HTMLFormElement>('form');
   const reset = $<HTMLButtonElement>('reset');
-  if (!key || !endpoint || !model || !status || !form || !reset) return;
+  const store = $<HTMLSelectElement>('store');
+  if (!key || !endpoint || !model || !status || !form || !reset || !store) return;
 
   const current = await readSettings();
   key.value = current.apiKey;
   endpoint.value = current.endpoint;
   model.value = current.model;
+  store.value = current.store;
 
   const say = (msg: string): void => {
     status.textContent = msg;
@@ -39,7 +41,9 @@ async function main(): Promise<void> {
         apiKey: key.value.trim(),
         endpoint: endpoint.value.trim() || DEFAULT_SETTINGS.endpoint,
         model: model.value.trim() || DEFAULT_SETTINGS.model,
-        store: current.store,
+        // Narrowed rather than cast: a hand-edited DOM cannot smuggle a third value
+        // into storage and break every buy link.
+        store: store.value === 'bookshop' ? 'bookshop' : 'amazon',
       });
       say(key.value.trim() ? 'Saved. Recognition is on.' : 'Saved. Add a key to read covers.');
     } catch (err) {

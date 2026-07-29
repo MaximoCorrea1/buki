@@ -55,9 +55,9 @@ const STYLE = `
 }
 .bc-btn:disabled { cursor: default; }
 .bc-btn:active { transform: scale(.9); }
-.bc-btn:focus-visible { outline: 2px solid #e7b24c; outline-offset: 1px; opacity: 1; }
+.bc-btn:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
-  .bc-btn:hover { opacity: 1; background: rgba(231,178,76,.14); }
+  .bc-btn:hover { opacity: 1; background: rgba(108,123,255,.18); }
 }
 
 /* The pill reports one operation, so it updates in place. Blurring on swap makes two
@@ -65,7 +65,7 @@ const STYLE = `
 .bc-pill {
   position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
   max-width: 330px; padding: 10px 14px; border-radius: 10px;
-  background: #211c1a; color: #e7b24c; border: 1px solid #3a322e;
+  background: #17151f; color: #f2f0fa; border: 1px solid #2a2637;
   font: 13.5px/1.4 system-ui, sans-serif; box-shadow: 0 6px 22px rgba(0,0,0,.45);
   opacity: 0; transform: translateY(6px);
   transition: opacity 180ms cubic-bezier(.23,1,.32,1),
@@ -76,7 +76,7 @@ const STYLE = `
 
 .bc-panel {
   position: absolute; z-index: 2147483000; width: 288px; padding: 6px;
-  background: #211c1a; color: #f3efe7; border: 1px solid #3a322e;
+  background: #17151f; color: #f2f0fa; border: 1px solid #2a2637;
   border-radius: 11px; box-shadow: 0 12px 34px rgba(0,0,0,.55);
   font: 13.5px/1.45 system-ui, sans-serif;
   /* Origin at the trigger: the panel should look like it came out of the button. */
@@ -98,11 +98,14 @@ const STYLE = `
 .bc-cand + .bc-cand { margin-top: 1px; }
 .bc-cand::before {
   content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 4px;
-  border-radius: 1px; background: var(--cloth, #47505c);
+  border-radius: 1px; background: var(--cloth, #6c7bff);
 }
 .bc-cand::after {
+  /* Cords as a highlight over a shadow, never flat gilt - a gold line vanishes on
+     marigold cloth, which is how the shelf's signature detail once shipped invisible. */
   content: ''; position: absolute; left: 5px; top: 11px; width: 4px; height: 1px;
-  background: rgba(231,178,76,.5); box-shadow: 0 15px 0 rgba(231,178,76,.5);
+  background: rgba(255,255,255,.55);
+  box-shadow: 0 1px 0 rgba(0,0,0,.3), 0 15px 0 rgba(255,255,255,.55), 0 16px 0 rgba(0,0,0,.3);
 }
 .bc-t { font-weight: 600; letter-spacing: -.006em; }
 .bc-a { font-size: 12px; opacity: .55; }
@@ -110,15 +113,15 @@ const STYLE = `
 .bc-row { display: flex; gap: 4px; margin-top: 6px; }
 .bc-intent {
   flex: 1; cursor: pointer; border: 0; border-radius: 6px; padding: 5px 0;
-  background: #2b2422; color: #f3efe7; font: 500 11.5px/1 ui-monospace, Menlo, monospace;
+  background: #241f33; color: #f2f0fa; font: 600 11.5px/1 ui-monospace, Menlo, monospace;
   letter-spacing: .06em; text-transform: uppercase;
   transition: background-color 140ms ease, transform 140ms cubic-bezier(.23,1,.32,1);
 }
 .bc-intent:active { transform: scale(.96); }
 .bc-intent:disabled { opacity: .45; cursor: default; }
-.bc-intent:focus-visible { outline: 2px solid #e7b24c; outline-offset: 1px; }
+.bc-intent:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; }
 @media (hover: hover) and (pointer: fine) {
-  .bc-intent:not(:disabled):hover { background: #2e5d5a; }
+  .bc-intent:not(:disabled):hover { background: #6c7bff; color: #fff; }
 }
 
 .bc-none { padding: 10px 10px 11px; opacity: .7; line-height: 1.5; }
@@ -129,7 +132,7 @@ const STYLE = `
 }
 `;
 
-const CLOTH = ['#7c3a2e', '#c8873f', '#2e5d5a', '#47505c', '#6e7a5a'];
+const CLOTH = ['#ff6352', '#FFB020', '#2FB88A', '#6C7BFF', '#B265D9'];
 
 /** Same book, same binding - so a shelf looks varied the way a real one does. */
 function clothFor(book: Book): string {
