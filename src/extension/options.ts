@@ -50,7 +50,9 @@ async function main(): Promise<void> {
   reset.addEventListener('click', () => {
     endpoint.value = DEFAULT_SETTINGS.endpoint;
     model.value = DEFAULT_SETTINGS.model;
-    say('Provider reset to Gemini.');
+    // The button only fills the fields, so claiming it reset the provider would be a
+    // lie you discover later, when recognition still fails.
+    say('Fields filled — hit Save to apply.');
   });
 
   const clearLog = $<HTMLButtonElement>('clearLog');

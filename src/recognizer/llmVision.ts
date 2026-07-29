@@ -20,10 +20,21 @@ export interface VisionConfig {
   apiKey?: string;
 }
 
-/** Google's OpenAI-compatible endpoint. Free tier; key from aistudio.google.com. */
+/**
+ * Google's OpenAI-compatible endpoint. Free tier; key from aistudio.google.com.
+ *
+ * The model is an ALIAS, deliberately. Pinned versions are retired for new users while
+ * continuing to serve existing ones, so a pinned default keeps working on the developer's
+ * machine and 404s on every fresh install - invisible to the person who could fix it.
+ * Two pinned models (`gemini-2.5-flash-lite`, `gemini-2.5-flash`) were found dead this
+ * way within a single afternoon.
+ *
+ * The trade is that the model can change under us. `RecognitionEvent.model` records which
+ * one answered, so a shift in the kept rate can be told apart from a shift in the model.
+ */
 export const GEMINI: Omit<VisionConfig, 'apiKey'> = {
   endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-flash-lite-latest',
 };
 
 const TIMEOUT_MS = 25_000;

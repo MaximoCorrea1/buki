@@ -14,6 +14,12 @@ export interface RecognitionEvent {
   flow: 'button' | 'contextmenu';
   source: RecognitionSource;
   confidence: Confidence;
+  /**
+   * Which model answered. The default is an alias that can be repointed without notice,
+   * so without this a drop in the kept rate is indistinguishable from Google swapping
+   * the model underneath it.
+   */
+  model?: string;
   guess?: { title: string; author: string };
   outcome: 'auto-saved' | 'confirmed' | 'dismissed' | 'no-match';
   /** Links this attempt to its `SavedBook`, so a later delete can mark it wrong. */

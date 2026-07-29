@@ -73,29 +73,38 @@ async function visionClient() {
   const providerNeedsKey = /googleapis\.com|openai\.com|openrouter\.ai/.test(settings.endpoint);
   if (!settings.apiKey && providerNeedsKey) throw new NoKeyError('no key');
 
-  return createLlmVision({
-    fetch: (url, init) => fetch(url, init),
-    config: toVisionConfig(settings),
-  });
+  return {
+    vision: createLlmVision({
+      fetch: (url, init) => fetch(url, init),
+      config: toVisionConfig(settings),
+    }),
+    // Carried out so the log can record which model produced the guess.
+    model: settings.model,
+  };
 }
 
 /**
  * The whole pipeline lives in `recognizeBook`; this only supplies the vision client,
  * which is the one dependency that needs the worker's settings and host permissions.
  */
-async function recognize(tweet: Tweet): Promise<RecognitionResult> {
-  const vision = await visionClient();
-  return recognizeBook(tweet, { vision, books });
+async function recognize(tweet: Tweet): Promise<{ result: RecognitionResult; model: string }> {
+  const { vision, model } = await visionClient();
+  return { result: await recognizeBook(tweet, { vision, books }), model };
 }
 
 /** The evidence half of an event, ready to be finished by whoever learns the outcome. */
-function draftFrom(result: RecognitionResult, ms: number, flow: AttemptDraft['flow']): AttemptDraft {
+function draftFrom(
+  { result, model }: { result: RecognitionResult; model: string },
+  ms: number,
+  flow: AttemptDraft['flow'],
+): AttemptDraft {
   const top = result.candidates[0];
   return {
     ms,
     flow,
     source: result.source,
     confidence: result.confidence,
+    model,
     ...(top ? { guess: { title: top.title, author: top.author } } : {}),
   };
 }
@@ -155,9 +164,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   });
 
   const startedAt = Date.now();
-  let result: RecognitionResult;
+  let recognized: { result: RecognitionResult; model: string };
   try {
-    result = await recognize({
+    recognized = await recognize({
       text: ctx?.text ?? '',
       imageUrls: [info.srcUrl],
       links: ctx?.links ?? [],
@@ -175,7 +184,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  const draft = draftFrom(result, Date.now() - startedAt, 'contextmenu');
+  const { result } = recognized;
+  const draft = draftFrom(recognized, Date.now() - startedAt, 'contextmenu');
   const book = result.candidates[0];
 
   if (!book) {
@@ -243,11 +253,11 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
 
   const startedAt = Date.now();
   recognize(msg.tweet)
-    .then((result) =>
+    .then((recognized) =>
       sendResponse({
         ok: true,
-        result,
-        draft: draftFrom(result, Date.now() - startedAt, 'button'),
+        result: recognized.result,
+        draft: draftFrom(recognized, Date.now() - startedAt, 'button'),
       } satisfies BackgroundResponse),
     )
     .catch((err: unknown) => {

@@ -342,3 +342,34 @@ Ran the text path end to end against the live API rather than fakes. Four findin
 2 and 3 are recognizer quality, which this cycle deliberately measures rather than tunes.
 Both now produce `medium` and open the picker, so neither can put a wrong book on the
 shelf silently — and the log will say how often they happen before anything is changed.
+
+### Model selection: alias, not pin (2026-07-29)
+
+The first real recognition returned HTTP 404. Not the key, not the URL — Google had
+retired the pinned default **for new users only**, so it would have kept working forever
+on a machine that already had it and failed on every fresh install. `gemini-2.5-flash`
+turned out to be dead the same way. Two pins rotted in one afternoon.
+
+The default is therefore the alias `gemini-flash-lite-latest`. A pinned model in a
+distributed extension is a time bomb whose blast radius is *everyone except the
+developer*, which is the worst possible shape: the person who can fix it is the last
+person to see it.
+
+Verified live against a real cover before committing to it:
+
+| model | | |
+| --- | --- | --- |
+| `gemini-flash-lite-latest` | 200, 3.4s | correct title + author |
+| `gemini-3.5-flash-lite` | 200, 2.3s | correct, with subtitle |
+| `gemini-2.5-flash` | 404 | retired for new users |
+| `gemini-2.0-flash` | 429 | free-tier quota exhausted |
+
+The cost of an alias is that the model can change without notice, so
+`RecognitionEvent.model` now records which one answered — otherwise a drop in the kept
+rate is indistinguishable from Google swapping the model underneath the measurement.
+
+Two things worth noting for later. The vision call alone is 2-3s, and the spec's bar is
+**under 6s end to end** including OpenLibrary grounding (~1-3s measured), so the headroom
+is thin. And `gemini-2.0-flash` answering 429 in 238ms is a reminder that free-tier quota
+is per-model and real — the number that decides whether a keyless Cloudflare proxy is
+viable is that quota, not Cloudflare's.
