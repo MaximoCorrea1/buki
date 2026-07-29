@@ -103,6 +103,50 @@ describe('createLlmVision', () => {
     ).rejects.toThrow(/429/);
   });
 
+  it("includes the provider's explanation, not just the status code", async () => {
+    // A bare "HTTP 404" points at the URL, which is the wrong layer: the URL is fine and
+    // the model name is not. Twice before, this project chased an error message that
+    // described a different problem than the real one. The body says which.
+    //
+    // Google wraps the error in an ARRAY - verified against the live endpoint, not
+    // assumed.
+    const fetch: FetchLike = async () => ({
+      ok: false,
+      status: 404,
+      async json() {
+        return [
+          {
+            error: {
+              code: 404,
+              message: 'models/gemini-x is not found for API version v1beta',
+              status: 'NOT_FOUND',
+            },
+          },
+        ];
+      },
+    });
+
+    await expect(
+      createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
+    ).rejects.toThrow(/is not found for API version/);
+  });
+
+  it('still reports the status when the error body cannot be read', async () => {
+    // Not every provider answers errors with JSON. Losing the status too would leave
+    // nothing at all to go on.
+    const fetch: FetchLike = async () => ({
+      ok: false,
+      status: 502,
+      async json(): Promise<unknown> {
+        throw new Error('<html>gateway error</html>');
+      },
+    });
+
+    await expect(
+      createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
+    ).rejects.toThrow(/502/);
+  });
+
   it('returns null without calling out when there is no image', async () => {
     let called = false;
     const fetch: FetchLike = async () => {

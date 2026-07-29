@@ -41,6 +41,27 @@ interface ChatReply {
   choices?: { message?: { content?: string } }[];
 }
 
+/**
+ * Pull the provider's own explanation out of an error response.
+ *
+ * A bare status code points at the wrong layer: "HTTP 404" reads as a broken URL when
+ * the URL is fine and the model name is not. Google answers a bad model with the exact
+ * name it could not find, which turns a guessing game into a one-line fix.
+ *
+ * Google wraps its error in an array; OpenAI and OpenRouter use a bare object. Both
+ * shapes are read, and an unreadable body still leaves the status.
+ */
+async function explain(res: { json(): Promise<unknown> }): Promise<string> {
+  try {
+    const body = await res.json();
+    const first = Array.isArray(body) ? body[0] : body;
+    const message = (first as { error?: { message?: unknown } } | null)?.error?.message;
+    return typeof message === 'string' && message ? ` - ${message.slice(0, 300)}` : '';
+  } catch {
+    return ''; // HTML from a gateway, an empty body, a truncated response
+  }
+}
+
 /** Models fence their JSON no matter how firmly the prompt says not to. */
 function parseGuess(raw: string): { title: string; author: string } | null {
   const match = raw.match(/\{[\s\S]*\}/);
@@ -85,7 +106,9 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
         }),
       });
 
-      if (res.ok === false) throw new Error(`Recognition service failed (HTTP ${res.status})`);
+      if (res.ok === false) {
+        throw new Error(`Recognition service failed (HTTP ${res.status})${await explain(res)}`);
+      }
 
       const data = (await res.json()) as ChatReply | null;
       const raw = data?.choices?.[0]?.message?.content;
