@@ -47,4 +47,9 @@ export type BackgroundRequest =
 
 export type BackgroundResponse =
   | { ok: true; result: RecognitionResult; draft: AttemptDraft }
-  | { ok: false; needsKey: boolean; error: string };
+  /**
+   * `needsSetup` means opening settings is the fix and retrying never will be - a
+   * missing key, a retired model, a revoked credential. `error` is then already phrased
+   * for the user, provider explanation included.
+   */
+  | { ok: false; needsSetup: boolean; error: string };

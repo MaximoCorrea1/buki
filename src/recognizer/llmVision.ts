@@ -28,6 +28,26 @@ export const GEMINI: Omit<VisionConfig, 'apiKey'> = {
 
 const TIMEOUT_MS = 25_000;
 
+/**
+ * A rejected request, carrying whether waiting could ever help.
+ *
+ * A retired model answers 404 forever, but the extension used to tell people to "try
+ * again in a moment" - advice that could never work. Rate limits and outages really do
+ * pass; a wrong model, a revoked key or a bad endpoint never do, and the honest response
+ * is to send the user to settings.
+ */
+export class VisionHttpError extends Error {
+  readonly permanent: boolean;
+
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = 'VisionHttpError';
+    // 429 is a client-class status that clears on its own; everything else below 500 is
+    // something about this request that will not change until the setup does.
+    this.permanent = status < 500 && status !== 429;
+  }
+}
+
 const INSTRUCTION = [
   'You identify books from photographs.',
   'The image usually shows a book cover; the text is the social media post it appeared in.',
@@ -107,7 +127,11 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
       });
 
       if (res.ok === false) {
-        throw new Error(`Recognition service failed (HTTP ${res.status})${await explain(res)}`);
+        const status = res.status ?? 0;
+        throw new VisionHttpError(
+          status,
+          `Recognition service failed (HTTP ${status})${await explain(res)}`,
+        );
       }
 
       const data = (await res.json()) as ChatReply | null;

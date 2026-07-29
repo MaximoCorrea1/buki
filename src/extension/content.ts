@@ -193,8 +193,10 @@ async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: Att
 
   if (!resp) throw new Error('No response from the recognizer');
   if (!resp.ok) {
-    if (resp.needsKey) {
-      toast('Add a recognition key in Book Catcher settings to read covers.');
+    // Already phrased for the user, and retrying cannot help - say what is wrong rather
+    // than throwing it onto the generic "try again in a moment" path.
+    if (resp.needsSetup) {
+      toast(resp.error);
       return null;
     }
     throw new Error(resp.error);

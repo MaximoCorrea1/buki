@@ -131,6 +131,34 @@ describe('createLlmVision', () => {
     ).rejects.toThrow(/is not found for API version/);
   });
 
+  it('separates a misconfiguration from a bad moment', async () => {
+    // Real case: a pinned model was retired for new users. The extension told people to
+    // "try again in a moment", which was advice that could never work - retrying a 404
+    // forever is worse than saying the setup is wrong.
+    const dead: FetchLike = async () => ({
+      ok: false,
+      status: 404,
+      async json() {
+        return [{ error: { message: 'This model is no longer available to new users.' } }];
+      },
+    });
+    const busy: FetchLike = async () => ({ ok: false, status: 429, async json() { return {}; } });
+    const broken: FetchLike = async () => ({ ok: false, status: 503, async json() { return {}; } });
+    const img = { imageUrls: ['http://c.jpg'], text: '' };
+
+    await expect(
+      createLlmVision({ fetch: dead, config: CFG }).guessBook(img),
+    ).rejects.toMatchObject({ status: 404, permanent: true });
+
+    // Rate limiting and outages pass; waiting is genuinely the right advice for these.
+    await expect(
+      createLlmVision({ fetch: busy, config: CFG }).guessBook(img),
+    ).rejects.toMatchObject({ status: 429, permanent: false });
+    await expect(
+      createLlmVision({ fetch: broken, config: CFG }).guessBook(img),
+    ).rejects.toMatchObject({ status: 503, permanent: false });
+  });
+
   it('still reports the status when the error body cannot be read', async () => {
     // Not every provider answers errors with JSON. Losing the status too would leave
     // nothing at all to go on.

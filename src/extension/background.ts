@@ -6,7 +6,7 @@
 // event. One writer means no cross-context race, and it means the right-click flow still
 // records an attempt on a tab whose content script never loaded.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
-import { createLlmVision } from '../recognizer/llmVision';
+import { createLlmVision, VisionHttpError } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { RecognitionResult, Tweet } from '../recognizer/types';
 import { readSettings, toVisionConfig } from './settings';
@@ -32,6 +32,23 @@ const log = createRecognitionLog({ storage, now: () => Date.now() });
 const books = createOpenLibraryClient({ fetch: (url, init) => fetch(url, init) });
 
 class NoKeyError extends Error {}
+
+/**
+ * Would opening settings fix this? A missing key or a retired model will fail forever;
+ * a rate limit or an outage will not. Saying "try again in a moment" to the first kind
+ * sends people in circles - a retired model answered 404 on every retry for real.
+ */
+const needsSetup = (err: unknown): boolean =>
+  err instanceof NoKeyError || (err instanceof VisionHttpError && err.permanent);
+
+function setupMessage(err: unknown): string {
+  if (err instanceof NoKeyError) {
+    return 'Add a recognition key in Book Catcher settings to read covers.';
+  }
+  // The provider's own words: it names the retired model, the revoked key, the bad
+  // endpoint. Far more use than "something went wrong".
+  return `Recognition needs setting up: ${err instanceof Error ? err.message : String(err)}`;
+}
 
 /** The shelf is the product; the log is diagnostics. A log failure never breaks a save. */
 function note(event: PendingEvent): void {
@@ -146,8 +163,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       links: ctx?.links ?? [],
     });
   } catch (err) {
-    if (err instanceof NoKeyError) {
-      await toast(tabId, 'Add a recognition key in Book Catcher settings to read covers.');
+    if (needsSetup(err)) {
+      if (!(err instanceof NoKeyError)) console.error('[BookCatcher] recognition failed', err);
+      await toast(tabId, setupMessage(err));
       void chrome.runtime.openOptionsPage();
       return;
     }
@@ -233,16 +251,15 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
       } satisfies BackgroundResponse),
     )
     .catch((err: unknown) => {
-      // A missing key is unfinished setup, not a miss - logging it would make the
-      // recognizer look bad for something it was never given a chance to do.
-      if (!(err instanceof NoKeyError)) {
-        console.error('[BookCatcher] recognition failed', err);
-        noteFailure(Date.now() - startedAt, 'button');
-      }
+      // Unfinished setup is not a miss - logging it would make the recognizer look bad
+      // for something it was never given a chance to do.
+      if (!(err instanceof NoKeyError)) console.error('[BookCatcher] recognition failed', err);
+      if (!needsSetup(err)) noteFailure(Date.now() - startedAt, 'button');
+
       sendResponse({
         ok: false,
-        needsKey: err instanceof NoKeyError,
-        error: String(err),
+        needsSetup: needsSetup(err),
+        error: needsSetup(err) ? setupMessage(err) : String(err),
       } satisfies BackgroundResponse);
     });
   return true; // async response
