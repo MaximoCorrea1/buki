@@ -6,12 +6,12 @@ import type { Tweet, RecognitionResult, VisionClient, BooksDb } from './types';
  * Turn a tweet into a recognized book (or a few candidates), using the cheapest,
  * highest-precision signal available first.
  *
- * Used by content.ts's tweet-scrape flow. The right-click/OCR flow is a separate
- * pipeline - see groundText.ts.
+ * Called only from background.ts's recognize(), which both the tweet button and the
+ * right-click menu go through - so the two flows cannot resolve books differently.
  *
- * Dependencies (vision, books) are injected so this stays pure and testable. Today
- * content.ts passes a no-op VisionClient plus the OpenLibrary client; a real vision
- * model can be dropped in without touching this logic.
+ * Dependencies (vision, books) are injected so this stays pure and testable. The vision
+ * client the worker passes is lazy: a post carrying a retailer link resolves in step 1
+ * without ever needing a key.
  */
 export async function recognizeBook(
   tweet: Tweet,

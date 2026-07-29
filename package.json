@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Catch books from Twitter/X into your own reading list before they get lost.",
+  "description": "Catch books you see on X into your own shelf, before they get lost in your bookmarks.",
   "scripts": {
     "build": "node build.mjs",
     "icons": "node tools/make-icons.mjs",

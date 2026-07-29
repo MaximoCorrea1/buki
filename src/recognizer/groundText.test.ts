@@ -27,9 +27,9 @@ describe('groundText', () => {
         },
       ],
     });
-    const ocr = 'Second Eton Tm iT\nStructure and Interpretation of Computer Programs';
+    const text = 'Second Eton Tm iT\nStructure and Interpretation of Computer Programs';
 
-    const result = await groundText(ocr, books);
+    const result = await groundText(text, books);
 
     expect(result[0]?.book.author).toBe('Abelson, Sussman');
     expect(queriesTried[0]).toBe('Second Eton Tm iT'); // proves the miss was tried first
@@ -76,6 +76,30 @@ describe('groundText', () => {
     const result = await groundText(tweet, books);
 
     expect(result[0]?.book.title).toBe('Economics in One Lesson');
+  });
+
+  it('fires its queries together, not one after another', async () => {
+    // Serially this cost up to MAX_QUERIES round trips against a 6s end-to-end budget.
+    // Asserting elapsed time beats asserting call order: a regression to `await` inside
+    // the loop keeps the order identical and only shows up as latency.
+    const DELAY = 40;
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search() {
+        await new Promise((resolve) => setTimeout(resolve, DELAY));
+        return [];
+      },
+    };
+    const text = ['alpha line', 'beta line', 'gamma line', 'delta line'].join('\n');
+
+    const started = Date.now();
+    await groundText(text, books);
+    const elapsed = Date.now() - started;
+
+    // Five queries (four lines plus the whole-text join). Serial would be ~200ms.
+    expect(elapsed).toBeLessThan(DELAY * 3);
   });
 
   it('ranks the closest match first rather than trusting the API order', async () => {

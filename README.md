@@ -5,7 +5,8 @@ Catch books you see on X into your own shelf, before they get lost in your bookm
 You spot a book in a post, save it, and never see it again — it sinks under memes and
 threads with no way to tell the ones you meant it about from the impulse saves. Shelfy
 gives those books a place: it recognizes the book, keeps the post that sold you
-on it, and files it under **Now / Next / Someday**.
+on it, and files it under **Now / Next / Someday**. Mark a book finished when you're
+done, and every saved book carries a quiet Buy link.
 
 ## Two ways to catch a book
 
@@ -14,8 +15,8 @@ to a vision model together, the guess is grounded against OpenLibrary, and a str
 match is saved outright. A weaker one opens the picker at the image so you decide. This
 is the one that works on a photo with no link and no title in the text.
 
-**Hit 📚 on a post.** Reads the post's links and text, shows you the candidates, and
-you pick the intent. Fastest when the post links to a retailer or names the book.
+**Hit 📚 on a post.** Same recognition — link, then cover and words together, then the
+post's text — and you pick where the book goes.
 
 Your shelf lives in the extension. Nothing is synced anywhere.
 
