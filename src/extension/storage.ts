@@ -1,7 +1,11 @@
 import type { Book } from '../recognizer/types';
 import { createWriteQueue } from './writeQueue';
 
-export type Intent = 'now' | 'next' | 'someday';
+/**
+ * What you mean to do about a book. `read` is an end state rather than an intention, but
+ * it lives in the same field because a book is only ever in one of these piles.
+ */
+export type Intent = 'now' | 'next' | 'someday' | 'read';
 
 /** Where a book was caught. Not always a tweet - the right-click flow works on any page. */
 export interface SavedSource {
@@ -86,4 +90,16 @@ export function createLibrary(deps: {
       return read();
     },
   };
+}
+
+/**
+ * Does this book answer to what was typed? Title or author, case-insensitive - you
+ * remember who wrote something as often as what it was called.
+ *
+ * Here rather than in the popup so it can be tested: `popup.ts` renders on import.
+ */
+export function matchesFilter(saved: SavedBook, needle: string): boolean {
+  const trimmed = needle.trim().toLowerCase();
+  if (!trimmed) return true;
+  return `${saved.book.title} ${saved.book.author}`.toLowerCase().includes(trimmed);
 }

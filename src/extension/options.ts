@@ -39,6 +39,7 @@ async function main(): Promise<void> {
         apiKey: key.value.trim(),
         endpoint: endpoint.value.trim() || DEFAULT_SETTINGS.endpoint,
         model: model.value.trim() || DEFAULT_SETTINGS.model,
+        store: current.store,
       });
       say(key.value.trim() ? 'Saved. Recognition is on.' : 'Saved. Add a key to read covers.');
     } catch (err) {

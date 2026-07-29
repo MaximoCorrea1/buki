@@ -19,8 +19,13 @@ const library = createLibrary({
  */
 const log = createRecognitionLog({ storage, now: () => Date.now() });
 
-const INTENTS: Intent[] = ['now', 'next', 'someday'];
-const LABELS: Record<Intent, string> = { now: 'Reading now', next: 'Up next', someday: 'Someday' };
+const INTENTS: Intent[] = ['now', 'next', 'someday', 'read'];
+const LABELS: Record<Intent, string> = {
+  now: 'Reading now',
+  next: 'Up next',
+  someday: 'Someday',
+  read: 'Finished',
+};
 const SOURCE_LABEL = { tweet: 'the tweet that sold you', page: 'where you found it' } as const;
 
 /**

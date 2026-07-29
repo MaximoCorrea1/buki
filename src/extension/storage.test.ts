@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createLibrary, type StorageArea } from './storage';
+import { createLibrary, matchesFilter, type StorageArea } from './storage';
 
 function fakeStorage(): StorageArea {
   const store: Record<string, unknown> = {};
@@ -75,5 +75,46 @@ describe('createLibrary', () => {
     const all = await lib.list();
     expect(all).toHaveLength(1);
     expect(all[0]?.intent).toBe('now'); // re-saving updates the intent
+  });
+
+  it('moves a book to finished without disturbing anything else', async () => {
+    const lib = makeLibrary();
+    const book = { title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593' };
+    await lib.add(book, 'now');
+    await lib.add({ title: 'SICP', author: 'Abelson' }, 'next');
+
+    // Re-adding an identical book updates it in place, which is how finishing works -
+    // the shelf keeps one entry per book, and its intent is what changes.
+    await lib.add(book, 'read');
+
+    const all = await lib.list();
+    expect(all).toHaveLength(2);
+    expect(all.find((s) => s.book.title === 'Dune')?.intent).toBe('read');
+    expect(all.find((s) => s.book.title === 'SICP')?.intent).toBe('next');
+  });
+});
+
+describe('matchesFilter', () => {
+  const saved = {
+    id: 'a',
+    book: { title: 'Signals and Systems', author: 'Alan V. Oppenheim' },
+    intent: 'now' as const,
+    savedAt: 1,
+  };
+
+  it('matches on the title regardless of case', () => {
+    expect(matchesFilter(saved, 'signals')).toBe(true);
+  });
+
+  it('matches on the author too - you remember the writer as often as the title', () => {
+    expect(matchesFilter(saved, 'oppenheim')).toBe(true);
+  });
+
+  it('rejects what is on neither', () => {
+    expect(matchesFilter(saved, 'dune')).toBe(false);
+  });
+
+  it('keeps everything when nothing is typed', () => {
+    expect(matchesFilter(saved, '')).toBe(true);
   });
 });
