@@ -60,18 +60,29 @@ const STYLE = `
   .bc-btn:hover { opacity: 1; background: rgba(108,123,255,.18); }
 }
 
-/* The pill reports one operation, so it updates in place. Blurring on swap makes two
-   different strings read as one object changing rather than a crossfade of two. */
-.bc-pill {
+/* Toasts stack rather than replace: saving three books in a row should show three
+   confirmations, not one that keeps being overwritten before it can be read. Oldest at
+   the top, newest nearest the corner, which is the direction they leave in. */
+.bc-stack {
   position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  pointer-events: none;
+}
+
+/* An in-progress stage still updates in place. Blurring on swap makes two different
+   strings read as one object changing its mind rather than a crossfade of two. */
+.bc-pill {
   max-width: 330px; padding: 10px 14px; border-radius: 10px;
   background: #17151f; color: #f2f0fa; border: 1px solid #2a2637;
   font: 13.5px/1.4 system-ui, sans-serif; box-shadow: 0 6px 22px rgba(0,0,0,.45);
-  opacity: 0; transform: translateY(6px);
+  opacity: 0; transform: translateY(8px) scale(.97);
+  /* Transitions, not keyframes: toasts arrive in bursts, and a keyframe restarts from
+     zero when interrupted where a transition retargets from where it is. */
   transition: opacity 180ms cubic-bezier(.23,1,.32,1),
     transform 180ms cubic-bezier(.23,1,.32,1), filter 130ms ease;
 }
 .bc-pill.bc-in { opacity: 1; transform: none; }
+.bc-pill.bc-out { opacity: 0; transform: translateY(4px) scale(.97); }
 .bc-pill.bc-swap { filter: blur(2.5px); opacity: .55; }
 
 .bc-panel {
@@ -188,7 +199,26 @@ function scrapeTweet(article: HTMLElement): Tweet {
  * the right-click menu resolve books through exactly the same pipeline - including
  * reading the cover image, which this flow previously ignored.
  */
+/**
+ * Was this content script left behind by an extension reload or update?
+ *
+ * Chrome does not re-inject content scripts into pages that are already open, so after
+ * every update the old script keeps running against a background worker that no longer
+ * exists, and every message throws "Extension context invalidated". Refreshing the tab is
+ * the only fix, so say that rather than "try again in a moment" - which never works.
+ */
+const orphaned = (err?: unknown): boolean =>
+  !chrome.runtime?.id ||
+  (err instanceof Error && /context invalidated|receiving end does not exist/i.test(err.message));
+
+const REFRESH = 'Shelfy just updated — refresh this page to keep catching books.';
+
 async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: AttemptDraft } | null> {
+  if (orphaned()) {
+    toast(REFRESH);
+    return null;
+  }
+
   const resp = (await chrome.runtime.sendMessage({
     type: 'recognize',
     tweet,
@@ -224,53 +254,80 @@ function report(event: PendingEvent): void {
  * toasts either stacked up or replaced each other invisibly, so a multi-second
  * operation looked like nothing was happening.
  */
-let pill: HTMLElement | null = null;
+let stack: HTMLElement | null = null;
+/** The one in-progress pill, if any. Stages update it instead of piling up. */
+let stage: HTMLElement | null = null;
 let swapTimer: number | undefined;
-let hideTimer: number | undefined;
+
+/** Beyond this the corner becomes a wall of text nobody reads. */
+const MAX_TOASTS = 3;
+
+function toastHost(): HTMLElement {
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'bc-stack';
+    document.body.appendChild(stack);
+  }
+  return stack;
+}
+
+function dismiss(el: HTMLElement): void {
+  if (el.classList.contains('bc-out')) return;
+  if (stage === el) stage = null;
+  el.classList.add('bc-out');
+  el.classList.remove('bc-in');
+  setTimeout(() => el.remove(), 220);
+}
+
+/** Only pills still on their way in or sitting there - not the ones already leaving. */
+const living = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.children).filter(
+    (c): c is HTMLElement => !c.classList.contains('bc-out'),
+  );
 
 /**
- * One pill, created once and reused for the life of the page.
+ * Show a message. Saving three books in a row shows three confirmations rather than one
+ * that keeps being overwritten before it can be read.
  *
- * It used to be removed from the DOM on dismissal, with the reference nulled 220ms
- * BEFORE the element actually left. A save landing inside that window saw no pill, built
- * a second one, and appended it at the same fixed position - so the previous book's
- * title sat on top of the new one, still mid-fade. That is why a save sometimes named
- * the book before it.
- *
- * Reusing a single node makes stacking impossible. Cancelling both timers on every call
- * makes a stale message impossible too: the old swap can no longer land after the new one.
+ * A `sticky` message is a stage of work still running, and there is only ever one of
+ * those: it updates in place instead of stacking, and the next finished message clears
+ * it, because the work it described is over.
  */
 function toast(msg: string, opts: { sticky?: boolean } = {}): void {
-  clearTimeout(swapTimer);
-  clearTimeout(hideTimer);
+  const host = toastHost();
 
-  const onScreen = pill?.classList.contains('bc-in') ?? false;
-  if (!pill) {
-    pill = document.createElement('div');
-    pill.className = 'bc-pill';
-    pill.setAttribute('role', 'status');
-    document.body.appendChild(pill);
-  }
-  const el = pill;
-
-  if (!onScreen) {
-    el.textContent = msg;
-    el.classList.remove('bc-swap'); // a fade interrupted mid-swap would stay blurred
-    // Next frame, so the transition has a starting value to animate from.
-    requestAnimationFrame(() => el.classList.add('bc-in'));
-  } else {
-    // Already on screen: blur out, swap the words, blur back. One object changing
-    // its mind, rather than two strings crossfading through each other.
+  if (opts.sticky && stage) {
+    // Blur out, swap the words, blur back: one object changing its mind rather than
+    // two strings crossfading through each other.
+    const el = stage;
+    clearTimeout(swapTimer);
     el.classList.add('bc-swap');
     swapTimer = window.setTimeout(() => {
       el.textContent = msg;
       el.classList.remove('bc-swap');
     }, 110);
+    return;
   }
 
-  // Sticky = a stage still running; it holds until the next update replaces it.
-  if (opts.sticky) return;
-  hideTimer = window.setTimeout(() => el.classList.remove('bc-in'), 2800);
+  // A finished message means whatever was in progress is finished.
+  if (!opts.sticky && stage) dismiss(stage);
+
+  const el = document.createElement('div');
+  el.className = 'bc-pill';
+  el.setAttribute('role', 'status');
+  el.textContent = msg;
+  host.appendChild(el);
+  // Next frame, so the transition has a starting value to animate from.
+  requestAnimationFrame(() => el.classList.add('bc-in'));
+
+  // Oldest first in the DOM, so trimming from the front drops the stalest.
+  for (const old of living(host).slice(0, -MAX_TOASTS)) dismiss(old);
+
+  if (opts.sticky) {
+    stage = el;
+    return;
+  }
+  setTimeout(() => dismiss(el), 2800);
 }
 
 // ---------------------------------------------------------------- picker
@@ -467,7 +524,7 @@ function addButton(article: HTMLElement): void {
       trace('picker opened');
     } catch (err) {
       console.error('[Shelfy] lookup failed', err);
-      toast('Book lookup failed — try again in a moment.');
+      toast(orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.');
     } finally {
       btn.textContent = '📚';
       btn.disabled = false;
