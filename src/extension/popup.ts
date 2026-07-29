@@ -83,11 +83,12 @@ function coverFor(saved: SavedBook): HTMLElement {
   return img;
 }
 
-function link(href: string, text: string): HTMLAnchorElement {
+function link(href: string, text: string, className: string): HTMLAnchorElement {
   const a = document.createElement('a');
   a.href = href;
   a.target = '_blank';
   a.rel = 'noreferrer';
+  a.className = className;
   a.textContent = text;
   return a;
 }
@@ -127,17 +128,10 @@ function renderBook(
   // Only http(s): the source is browser-supplied today, but this keeps a future
   // paste/import path from putting a javascript: URL on the shelf.
   if (saved.source && /^https?:\/\//i.test(saved.source.url)) {
-    links.appendChild(link(saved.source.url, SOURCE_LABEL[saved.source.kind]));
+    links.appendChild(link(saved.source.url, SOURCE_LABEL[saved.source.kind], 'src'));
   }
   const buy = buyLink(saved.book, store);
-  if (buy) {
-    if (links.childElementCount) {
-      const dot = document.createElement('span');
-      dot.textContent = '·';
-      links.appendChild(dot);
-    }
-    links.appendChild(link(buy, 'buy'));
-  }
+  if (buy) links.appendChild(link(buy, 'Buy', 'buy'));
   if (links.childElementCount) meta.appendChild(links);
 
   const actions = document.createElement('div');

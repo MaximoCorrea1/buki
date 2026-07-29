@@ -23,6 +23,12 @@
         --accent: #6c7bff;
         --sunk: #ffffff;
 
+        /* The buy pill. Jade rather than the accent, so it reads as its own kind of
+           action and never competes with a focus ring. 4.75:1 — legible at 11px. */
+        --buy-bg: #dff5ec;
+        --buy-bg-hi: #cdeee0;
+        --buy-ink: #14795a;
+
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
       }
 
@@ -33,6 +39,9 @@
           --ink: #f2f0fa;
           --muted: #9d98b8;
           --sunk: #1f1c2b;
+          --buy-bg: #1e332c;
+          --buy-bg-hi: #264038;
+          --buy-ink: #6ee7b7;
         }
       }
 
@@ -199,12 +208,34 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .links { margin-top: 3px; font-size: 11px; font-weight: 600; }
-      .links a { color: var(--muted); text-decoration: none; }
-      .links a:hover { color: var(--accent); text-decoration: underline; }
+      .links {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .links a { text-decoration: none; }
       .links a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-      /* --board is a divider colour; as a glyph on the same ground it vanishes. */
-      .links span { color: var(--muted); opacity: 0.45; margin: 0 5px; }
+
+      .src { color: var(--muted); }
+      .src:hover { color: var(--accent); text-decoration: underline; }
+
+      /* A pill, so it reads as an action rather than another link. Deliberately small:
+         it sits below the author, never above the title, and carries no urgency. */
+      .buy {
+        flex: none;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: var(--buy-bg);
+        color: var(--buy-ink);
+        transition: transform 140ms var(--ease-out), background-color 140ms ease;
+      }
+      .buy:active { transform: scale(0.95); }
+      @media (hover: hover) and (pointer: fine) {
+        .buy:hover { background: var(--buy-bg-hi); }
+      }
 
       .actions { display: flex; gap: 2px; align-self: start; }
       .act {
