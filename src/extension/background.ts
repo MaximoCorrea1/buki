@@ -152,8 +152,16 @@ chrome.runtime.onInstalled.addListener((details) => {
       () => void chrome.runtime.lastError,
     );
   });
-  // Recognition needs a key, so say so once rather than failing silently on first use.
-  if (details.reason === 'install') void chrome.runtime.openOptionsPage();
+  // Recognition needs a key, so say so rather than failing silently on first use. Also
+  // on update: someone who installed before cover reading existed has never seen this,
+  // and would otherwise meet it as an error message.
+  if (details.reason === 'install') {
+    void chrome.runtime.openOptionsPage();
+  } else if (details.reason === 'update') {
+    void readSettings().then((s) => {
+      if (!s.apiKey) void chrome.runtime.openOptionsPage();
+    });
+  }
 });
 
 async function tellTab<T>(tabId: number | undefined, msg: ContentRequest): Promise<T | undefined> {

@@ -56,10 +56,19 @@ words. Only reading a cover from a photo needs one.
 The build typechecks first and refuses to bundle on a type error — esbuild only strips
 types, it never checks them.
 
-**On Windows:** prefer `node build.mjs`. It works from PowerShell *and* Git Bash, while
-`npm run <script>` hands the script to `cmd.exe`, whose shim quoting can fail from a
-Git Bash session with `"node" is not recognized`. Everything is deliberately reachable
-through a single `node` entry point for that reason.
+**On Windows:** from Git Bash, `npm run <script>` and `npx` both fail — npm hands the
+script to `cmd.exe`, whose shim quoting breaks with `"node" is not recognized`. They all
+work from PowerShell. From Git Bash use the `node` entry points directly:
+
+| Instead of | Run |
+| --- | --- |
+| `npm run build` | `node build.mjs` |
+| `npm test` | `./node_modules/.bin/vitest run` |
+| `npm run typecheck` | `node node_modules/typescript/bin/tsc --noEmit` |
+| `npm run icons` | `node tools/make-icons.mjs` |
+
+Only the build has a real single-file entry point; the other two are invoked directly
+because they are third-party binaries.
 
 ## How recognition works
 

@@ -13,6 +13,7 @@
     "https://covers.openlibrary.org/*",
     "https://generativelanguage.googleapis.com/*"
   ],
+  "optional_host_permissions": ["https://*/*"],
   "background": {
     "service_worker": "dist/background.js"
   },

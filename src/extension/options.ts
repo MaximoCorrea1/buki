@@ -34,12 +34,33 @@ async function main(): Promise<void> {
     setTimeout(() => status.classList.remove('shown'), 2400);
   };
 
+  /**
+   * A cross-origin fetch needs a matching host permission. Without this, choosing any
+   * provider other than the default failed with an opaque network error - while the
+   * field's own help text advertised OpenRouter, Cloudflare and self-hosted proxies.
+   */
+  async function allowEndpoint(url: string): Promise<boolean> {
+    let origin: string;
+    try {
+      origin = `${new URL(url).origin}/*`;
+    } catch {
+      return true; // not a URL we can ask about; writeSettings will fall back to default
+    }
+    if (await chrome.permissions.contains({ origins: [origin] })) return true;
+    return chrome.permissions.request({ origins: [origin] });
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
+      const wanted = endpoint.value.trim() || DEFAULT_SETTINGS.endpoint;
+      if (!(await allowEndpoint(wanted))) {
+        say('Not saved — Shelfy needs permission to reach that endpoint.');
+        return;
+      }
       await writeSettings({
         apiKey: key.value.trim(),
-        endpoint: endpoint.value.trim() || DEFAULT_SETTINGS.endpoint,
+        endpoint: wanted,
         model: model.value.trim() || DEFAULT_SETTINGS.model,
         // Narrowed rather than cast: a hand-edited DOM cannot smuggle a third value
         // into storage and break every buy link.

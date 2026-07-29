@@ -26,7 +26,7 @@ const library = createLibrary({
   newId: () => crypto.randomUUID(),
 });
 
-async function shelf(request: BackgroundRequest): Promise<void> {
+async function writeShelf(request: BackgroundRequest): Promise<void> {
   const resp = (await chrome.runtime.sendMessage(request)) as ShelfResponse | undefined;
   if (!resp) throw new Error('No response from the shelf');
   if (!resp.ok) throw new Error(resp.error);
@@ -141,7 +141,7 @@ function renderBook(
       try {
         // Finishing is not a wrong match, so it must never flag the recognition -
         // only removeBook does that.
-        await shelf({ type: 'saveBook', book: saved.book, intent: 'read', ...(saved.source ? { source: saved.source } : {}) });
+        await writeShelf({ type: 'saveBook', book: saved.book, intent: 'read', ...(saved.source ? { source: saved.source } : {}) });
         onChange();
       } catch (err) {
         console.error('[Shelfy] could not mark it finished', err);
@@ -164,7 +164,7 @@ function renderBook(
       // One round trip removes the book AND flags the recognition. Deleting a wrong
       // match is both the fix and the measurement, so the kept rate is guaranteed fresh
       // by the time this resolves - no fixed timer racing a sleeping worker.
-      await shelf({ type: 'removeBook', savedId: saved.id });
+      await writeShelf({ type: 'removeBook', savedId: saved.id });
       onChange();
     } catch (err) {
       console.error('[Shelfy] remove failed', err);
@@ -218,18 +218,31 @@ async function renderStats(shelfCount: number): Promise<void> {
   el.textContent = keptPct === null ? `${caught} caught` : `${caught} caught · ${keptPct}% kept`;
 }
 
+/**
+ * Reading and drawing are separate on purpose. Typing in the filter changes nothing on
+ * disk, so it repaints from what is already in memory - the previous version re-read the
+ * whole shelf AND the settings from chrome.storage on every keystroke.
+ */
+let shelf: SavedBook[] = [];
+let store: Store = 'amazon';
 let filterText = '';
+let loadFailed = false;
 
-async function render(): Promise<void> {
+async function load(): Promise<void> {
+  try {
+    [shelf, store] = await Promise.all([library.list(), readSettings().then((s) => s.store)]);
+    loadFailed = false;
+  } catch (err) {
+    console.error('[Shelfy] could not read the shelf', err);
+    loadFailed = true;
+  }
+}
+
+function paint(): void {
   const app = document.getElementById('app');
   if (!app) return;
 
-  let all: SavedBook[];
-  let store: Store;
-  try {
-    [all, store] = await Promise.all([library.list(), readSettings().then((s) => s.store)]);
-  } catch (err) {
-    console.error('[Shelfy] could not read the shelf', err);
+  if (loadFailed) {
     const failed = document.createElement('p');
     failed.className = 'empty';
     failed.textContent = "The shelf didn't load. Close this and open it again.";
@@ -237,11 +250,18 @@ async function render(): Promise<void> {
     return;
   }
 
-  void renderStats(all.length);
-  const disclosure = document.getElementById('disclosure');
-  if (disclosure) disclosure.hidden = all.length === 0;
+  // Snapshot focus before the rebuild, whatever caused it. Restoring only inside the
+  // filter's own handler meant a delete or a finish landing mid-type silently kicked
+  // the user out of the search box.
+  const active = document.activeElement as HTMLInputElement | null;
+  const hadFocus = active?.id === 'filter';
+  const caret = hadFocus ? (active?.selectionStart ?? 0) : 0;
 
-  if (!all.length) {
+  void renderStats(shelf.length);
+  const disclosure = document.getElementById('disclosure');
+  if (disclosure) disclosure.hidden = shelf.length === 0;
+
+  if (!shelf.length) {
     renderEmpty(app);
     return;
   }
@@ -249,21 +269,15 @@ async function render(): Promise<void> {
   app.replaceChildren();
 
   // A search box on a shelf of four is chrome for its own sake.
-  if (all.length > FILTER_FROM) {
+  if (shelf.length > FILTER_FROM) {
     const filter = document.createElement('input');
     filter.id = 'filter';
     filter.type = 'search';
-    filter.placeholder = `Find among ${all.length} books`;
+    filter.placeholder = `Find among ${shelf.length} books`;
     filter.value = filterText;
     filter.addEventListener('input', () => {
       filterText = filter.value;
-      void render().then(() => {
-        const next = document.getElementById('filter') as HTMLInputElement | null;
-        if (!next) return;
-        next.focus();
-        // Without this the caret jumps to the start of the field on every keystroke.
-        next.setSelectionRange(next.value.length, next.value.length);
-      });
+      paint(); // synchronous: no storage read, no await, no render race
     });
     app.appendChild(filter);
   }
@@ -271,7 +285,7 @@ async function render(): Promise<void> {
   let index = 0;
   let shown = 0;
   for (const intent of INTENTS) {
-    const group = all.filter((s) => s.intent === intent && matchesFilter(s, filterText));
+    const group = shelf.filter((s) => s.intent === intent && matchesFilter(s, filterText));
     if (!group.length) continue;
     shown += group.length;
 
@@ -284,7 +298,7 @@ async function render(): Promise<void> {
     app.appendChild(heading);
 
     group.forEach((saved) => {
-      app.appendChild(renderBook(saved, index, store, () => void render()));
+      app.appendChild(renderBook(saved, index, store, () => void refresh()));
       index++;
     });
   }
@@ -295,6 +309,19 @@ async function render(): Promise<void> {
     none.textContent = `Nothing matches "${filterText.trim()}".`;
     app.appendChild(none);
   }
+
+  if (hadFocus) {
+    const next = document.getElementById('filter') as HTMLInputElement | null;
+    next?.focus();
+    // Without this the caret jumps to the start of the field on every repaint.
+    next?.setSelectionRange(caret, caret);
+  }
 }
 
-void render();
+/** The shelf changed on disk: re-read it, then draw. */
+async function refresh(): Promise<void> {
+  await load();
+  paint();
+}
+
+void refresh();
