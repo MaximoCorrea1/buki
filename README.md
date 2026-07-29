@@ -32,14 +32,15 @@ select this folder. Requires Chrome 110+.
 **One-time setup.** Reading a cover from a photo is the only thing Shelfy can't do
 on your machine, so it needs a vision model. The options page opens on install: paste a
 free key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (about two
-minutes, no billing details). Google's free tier covers normal use and the key never
-leaves your computer.
+minutes, no billing details). Google's free tier covers normal use, and the key is
+stored locally and sent only to the provider you configure.
 
 Any OpenAI-compatible endpoint works instead — Gemini, Cloudflare Workers AI, OpenRouter,
 or your own proxy. A proxy that holds its own credential lets you leave the key blank,
 which is how a hosted build keeps users keyless.
 
-Without a key, links and post text still resolve books; only cover reading is off.
+Without a key, Shelfy still catches books from retailer links and from a post's own
+words. Only reading a cover from a photo needs one.
 
 ## Scripts
 
@@ -117,7 +118,7 @@ Vercel serves `docs/` as the site root (see `vercel.json`). Deploy with
 
 | What | Where |
 | --- | --- |
-| Landing page + privacy policy, served by GitHub Pages from `/docs` | [`docs/index.html`](docs/index.html), [`docs/privacy.html`](docs/privacy.html) |
+| Landing page + privacy policy, served by Vercel from `/docs` | [`docs/index.html`](docs/index.html), [`docs/privacy.html`](docs/privacy.html) |
 | Store listing copy, screenshot shot-list, promo tile | [`docs/store/listing.md`](docs/store/listing.md) |
 | Permission justifications and the data-usage declaration | [`docs/store/permissions.md`](docs/store/permissions.md) |
 

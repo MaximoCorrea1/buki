@@ -184,8 +184,8 @@
       <p class="why">
         <b>Why this is needed.</b> Reading a book cover from a photo is the one thing
         Shelfy can't do on your machine. It sends the cover and the post's text to a
-        vision model, which names the book. Google's free tier covers normal use, and the
-        key stays on this computer.
+        vision model, which names the book. Google's free tier covers normal use. Your key
+        is stored on this computer and sent only to that provider.
         <br /><br />
         Get one at
         <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
@@ -198,8 +198,9 @@
         <label for="key">API key</label>
         <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…" />
         <p class="hint">
-          Stored locally, sent only to the provider below. Leave it empty and covers stay
-          unreadable — links and post text still work.
+          Stored locally, sent only to the provider below. Leave it empty and Shelfy still
+          catches books from retailer links and from a post's own words — only reading a
+          cover from a photo needs a key.
         </p>
 
         <label for="store">Where buy links go</label>

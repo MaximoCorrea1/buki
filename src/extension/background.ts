@@ -8,8 +8,8 @@
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
 import { createLlmVision, VisionHttpError } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
-import type { RecognitionResult, Tweet } from '../recognizer/types';
-import { readSettings, toVisionConfig } from './settings';
+import type { RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
+import { readSettings, toVisionConfig, type Settings } from './settings';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality } from './twitterImage';
@@ -64,36 +64,55 @@ function noteFailure(ms: number, flow: AttemptDraft['flow']): void {
   note({ ms, flow, source: 'none', confidence: 'low', outcome: 'no-match' });
 }
 
-/** Settings are read per call, so a newly saved key takes effect without a reload. */
-async function visionClient() {
-  const settings = await readSettings();
-
+function visionFor(settings: Settings) {
   // A blank key is legitimate against a proxy holding its own credential, but against a
   // public provider it just means setup is unfinished - worth saying so rather than
   // firing a request that can only 401.
   const providerNeedsKey = /googleapis\.com|openai\.com|openrouter\.ai/.test(settings.endpoint);
   if (!settings.apiKey && providerNeedsKey) throw new NoKeyError('no key');
 
-  return {
-    vision: createLlmVision({
-      fetch: (url, init) => fetch(url, init),
-      config: toVisionConfig(settings),
-    }),
-    // Carried out so the log can record which model produced the guess.
-    model: settings.model,
-  };
+  return createLlmVision({
+    fetch: (url, init) => fetch(url, init),
+    config: toVisionConfig(settings),
+  });
 }
 
 /**
  * The whole pipeline lives in `recognizeBook`; this only supplies the vision client,
  * which is the one dependency that needs the worker's settings and host permissions.
+ *
+ * The client is built LAZILY, and a missing key is swallowed until the end. Building it
+ * up front made the key mandatory for every recognition, including the ones that never
+ * need it: a post carrying a retailer link resolves for free in step 1, and post text
+ * grounds for free in step 4. Three separate documents promised those still worked
+ * without a key, and none of them did.
+ *
+ * So: no key means no cover reading, exactly as advertised. The prompt to set one up
+ * appears only if nothing cheaper found the book.
  */
 async function recognize(tweet: Tweet): Promise<{ result: RecognitionResult; model: string }> {
-  const { vision, model } = await visionClient();
+  const settings = await readSettings(); // read per call, so a new key needs no reload
+  let keyWasMissing = false;
+
+  const vision: VisionClient = {
+    async guessBook(input) {
+      try {
+        return await visionFor(settings).guessBook(input);
+      } catch (err) {
+        if (!(err instanceof NoKeyError)) throw err;
+        keyWasMissing = true;
+        return null; // fall through to grounding the post's own words
+      }
+    },
+  };
+
   // Upgraded here rather than at either call site, so the button and the right-click menu
   // cannot drift apart on image quality - the whole reason recognition moved in here.
   const full: Tweet = { ...tweet, imageUrls: tweet.imageUrls.map(bestQuality) };
-  return { result: await recognizeBook(full, { vision, books }), model };
+  const result = await recognizeBook(full, { vision, books });
+
+  if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');
+  return { result, model: settings.model };
 }
 
 /** The evidence half of an event, ready to be finished by whoever learns the outcome. */

@@ -52,7 +52,8 @@ Reading a cover from a photo is the one thing Shelfy can't do on your machine, s
 needs a vision model. Paste a free key from Google AI Studio — about two minutes, no
 billing details. Any OpenAI-compatible endpoint works instead.
 
-Without a key, links and post text still find books; only cover reading is off.
+Without a key, Shelfy still catches books from retailer links and from a post's own
+words. Only reading a cover from a photo needs one.
 
 AFFILIATE DISCLOSURE
 
@@ -79,14 +80,15 @@ in the user's own browser.
 
 ## Privacy policy URL
 
-Publish `docs/privacy.md` to a public URL and paste it here. GitHub Pages off this repo
-is the least work:
+Already live. Paste this:
 
 ```
-Settings → Pages → Deploy from a branch → main → /docs
+https://shelfy-pearl.vercel.app/privacy
 ```
 
-which serves it at `https://<user>.github.io/shelfy/privacy`.
+Vercel serves `docs/` as the site root (see `vercel.json`). Redeploy with
+`vercel deploy --prod`. Use the project's production domain, never a raw deployment URL —
+those are SSO-protected on this account and a reviewer would hit a login wall.
 
 ## Screenshots — 1280×800, at least one, up to five
 
