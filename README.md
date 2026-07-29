@@ -106,6 +106,18 @@ options page.
 Book data from the [OpenLibrary API](https://openlibrary.org/developers/api), a project
 of the Internet Archive.
 
+## Shipping
+
+| What | Where |
+| --- | --- |
+| Privacy policy — must be published at a public URL and linked in the listing | [`docs/privacy.md`](docs/privacy.md) |
+| Store listing copy, screenshot shot-list, promo tile | [`docs/store/listing.md`](docs/store/listing.md) |
+| Permission justifications and the data-usage declaration | [`docs/store/permissions.md`](docs/store/permissions.md) |
+
+The affiliate disclosure appears in the popup footer, the options page and the privacy
+policy. Chrome Web Store policy permits affiliate links only when they are disclosed, so
+none of those three may be removed.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
