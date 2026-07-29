@@ -46,8 +46,8 @@ flips to light and the **spines carry the colour**.
 --board   #E2DEF0   the shelf edge each book rests on
 --ink     #171526   near-black with a blue cast; ~14:1 on paper
 --muted   #6B6785   secondary text; clears 4.5:1
---gilt    #C8871F   cords and accents — graphic only, never body text
-cloth     #FF6B5A coral · #FFB020 marigold · #2FB88A jade · #6C7BFF periwinkle · #B265D9 plum
+--gilt    #fae636   cords and accents — graphic only, never body text
+cloth     #ff6352 coral · #FFB020 marigold · #2FB88A jade · #6C7BFF periwinkle · #B265D9 plum
 ```
 
 Cloth stays hashed from the book itself, so a shelf looks varied the way a real one does.
