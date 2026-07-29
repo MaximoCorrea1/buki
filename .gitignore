@@ -9,3 +9,5 @@ dist/
 *.traineddata
 *.traineddata.gz
 .gstack/
+
+.vercel

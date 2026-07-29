@@ -108,6 +108,13 @@ of the Internet Archive.
 
 ## Shipping
 
+**Live:** [getshelfy — shelfy-pearl.vercel.app](https://shelfy-pearl.vercel.app) ·
+[privacy policy](https://shelfy-pearl.vercel.app/privacy)
+
+Vercel serves `docs/` as the site root (see `vercel.json`). Deploy with
+`vercel deploy --prod`. Note that raw deployment URLs are SSO-protected on this account
+— only the project's production domain is public, so always link the production domain.
+
 | What | Where |
 | --- | --- |
 | Landing page + privacy policy, served by GitHub Pages from `/docs` | [`docs/index.html`](docs/index.html), [`docs/privacy.html`](docs/privacy.html) |
