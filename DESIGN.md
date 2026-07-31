@@ -1,4 +1,4 @@
-# Design: Book Catcher (working name)
+# Design: Buki
 
 Catch books from Twitter before they get lost.
 
@@ -255,7 +255,7 @@ building infra first.
   OpenLibrary as primary metadata source (no hard quota).
 - **Cold start:** your list is empty on day one; the resurface feature only bites
   once you have saved a handful.
-- **Naming:** "Book Catcher" is a placeholder.
+- **Naming:** resolved — see "Naming (2026-07-31)" below. Book Catcher → Shelfy → Buki.
 
 ## Distribution Plan
 
@@ -373,3 +373,52 @@ Two things worth noting for later. The vision call alone is 2-3s, and the spec's
 is thin. And `gemini-2.0-flash` answering 429 in 238ms is a reminder that free-tier quota
 is per-model and real — the number that decides whether a keyless Cloudflare proxy is
 viable is that quota, not Cloudflare's.
+
+## Naming (2026-07-31)
+
+**Book Catcher → Shelfy → Buki.** Roughly thirty-five candidates were checked against the
+App Store, Google Play and the open web across several sessions. The finding that matters
+is not which name won but why so many lost: *every* name that describes the noun — book,
+shelf, archive, keep — was already taken, and so was every phonetic respelling of a taken
+name. Reading apps are one of the most-built categories in consumer software, and the
+noun is the first place every builder looks. A name you can derive is a name someone
+already derived.
+
+Two kills are worth keeping, because they are the same mistake twice:
+
+- **Shelfy** was abandoned because *Shelfy: Book Tracker & TBR* ships on the App Store —
+  same spelling, same function. The tempting fix, "Shelfi", is not a fix: trademark
+  confusion is judged on sound and meaning, not spelling.
+- **Kipit** ("keep it") looked like the best idea in the field, because it names the
+  user's *action* rather than the object — the instinct that got Pocket its name. It is
+  also a shipping app whose Android package id is literally `com.keepit`, described as
+  "save, categorize, keep, and share all the content you find." Same category. Behind it
+  sits Keepit A/S. Dead for exactly the reason Shelfy was.
+
+**Buki** was chosen knowing the trade. It does *not* repeat the Shelfy collision: the
+identically-spelled BUKI on Google Play is multilingual picture books for children — a
+different product for a different audience — and the same-function competitor, Bukku, is a
+genuinely different word (boo-**koo**, not boo-**kee**). What it costs is discoverability:
+BUKU, Bukku, Booki and BUUK all live in the same phonetic cell, so "Buki" will not be a
+search term that reliably lands on us. That is a marketing cost, not a survival risk, and
+it was accepted deliberately.
+
+The filter that made this decidable, worth reusing for any future name: (1) search the
+exact name plus "app" on both stores — any reading, bookmarking or saving app means dead,
+because *category* is what the stores compare; (2) say it aloud to someone who does not
+read Spanish, and have them spell it back; (3) search the bare word — if page one is
+medical, a band, or a foreign common noun, it is not yours; (4) if it is a respelling of
+something taken, it is dead, because confusion is judged on sound.
+
+Mechanically the rename cost nothing, and that was by design. **No `chrome.storage.local`
+key contains the product name** — `savedBooks`, `recognitionLog` and `visionSettings` were
+frozen early precisely so a rename could never become a data migration. The icon draws
+three book spines rather than a letterform, so the mark survived untouched. The injected
+stylesheet's `bc-` prefix (left over from Book Catcher) became `buki-` in the same pass.
+The dated specs and plans under `docs/superpowers/`, and the `.context/` review artifacts,
+were deliberately **not** rewritten: they are records of what was true on their date.
+
+Still carrying the old name: the Vercel host `shelfy-pearl.vercel.app`. Renaming the
+project retires the old domain at once, so the docs keep pointing at the working host
+until that switch, and then every reference moves together — a privacy-policy URL that
+404s fails Chrome Web Store review.

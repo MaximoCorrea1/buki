@@ -5,7 +5,7 @@ Everything here is copy-paste ready. Fields match the Web Store developer dashbo
 ## Name
 
 ```
-Shelfy — catch books from X
+Buki — catch books from X
 ```
 
 ## Short description (132 characters max)
@@ -20,11 +20,11 @@ Catch books you see on X into your own shelf, before they get lost in your bookm
 You see a book in a post, save it, and never see it again. It sinks under memes and
 threads, and there's no way to tell the ones you meant it about from the impulse saves.
 
-Shelfy gives those books a place.
+Buki gives those books a place.
 
 TWO WAYS TO CATCH A BOOK
 
-• Right-click a cover image and choose "Save book to shelf". Shelfy reads the cover and
+• Right-click a cover image and choose "Save book to shelf". Buki reads the cover and
   the post's words together, checks the result against OpenLibrary, and files it. This is
   the one that works on a photo with no link and no title in the text.
 
@@ -38,7 +38,7 @@ same pile as something you saved on a whim. Mark it finished when you're done.
 IT TELLS YOU WHEN IT'S UNSURE
 
 A strong match saves outright. A weak one asks first, rather than quietly putting the
-wrong book on your shelf. Shelfy also keeps a private count of how often it got it right,
+wrong book on your shelf. Buki also keeps a private count of how often it got it right,
 so you can decide how much to trust it — that count never leaves your computer.
 
 YOUR SHELF IS YOURS
@@ -48,18 +48,18 @@ Uninstalling takes it all with it.
 
 ONE-TIME SETUP
 
-Reading a cover from a photo is the one thing Shelfy can't do on your machine, so it
+Reading a cover from a photo is the one thing Buki can't do on your machine, so it
 needs a vision model. Paste a free key from Google AI Studio — about two minutes, no
 billing details. Any OpenAI-compatible endpoint works instead.
 
-Without a key, Shelfy still catches books from retailer links and from a post's own
+Without a key, Buki still catches books from retailer links and from a post's own
 words. Only reading a cover from a photo needs one.
 
 AFFILIATE DISCLOSURE
 
-Saved books carry a Buy link. If you buy through it, Shelfy may earn a small commission
+Saved books carry a Buy link. If you buy through it, Buki may earn a small commission
 at no extra cost to you. It appears only on books you already saved, and it never changes
-what Shelfy shows you. You can choose Amazon or Bookshop.org, which supports independent
+what Buki shows you. You can choose Amazon or Bookshop.org, which supports independent
 bookshops.
 ```
 
@@ -74,7 +74,7 @@ bookshops.
 ## Single purpose (required)
 
 ```
-Shelfy identifies books shown in posts on x.com and saves them to a reading list stored
+Buki identifies books shown in posts on x.com and saves them to a reading list stored
 in the user's own browser.
 ```
 

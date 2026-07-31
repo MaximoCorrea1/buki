@@ -1,9 +1,9 @@
-# Shelfy
+# Buki
 
 Catch books you see on X into your own shelf, before they get lost in your bookmarks.
 
 You spot a book in a post, save it, and never see it again — it sinks under memes and
-threads with no way to tell the ones you meant it about from the impulse saves. Shelfy
+threads with no way to tell the ones you meant it about from the impulse saves. Buki
 gives those books a place: it recognizes the book, keeps the post that sold you
 on it, and files it under **Now / Next / Someday**. Mark a book finished when you're
 done, and every saved book carries a quiet Buy link.
@@ -30,7 +30,7 @@ node build.mjs
 Then in Chrome: `chrome://extensions` → enable **Developer mode** → **Load unpacked** →
 select this folder. Requires Chrome 110+.
 
-**One-time setup.** Reading a cover from a photo is the only thing Shelfy can't do
+**One-time setup.** Reading a cover from a photo is the only thing Buki can't do
 on your machine, so it needs a vision model. The options page opens on install: paste a
 free key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (about two
 minutes, no billing details). Google's free tier covers normal use, and the key is
@@ -40,7 +40,7 @@ Any OpenAI-compatible endpoint works instead — Gemini, Cloudflare Workers AI, 
 or your own proxy. A proxy that holds its own credential lets you leave the key blank,
 which is how a hosted build keeps users keyless.
 
-Without a key, Shelfy still catches books from retailer links and from a post's own
+Without a key, Buki still catches books from retailer links and from a post's own
 words. Only reading a cover from a photo needs one.
 
 ## Scripts
@@ -107,7 +107,7 @@ Everything is local except book lookups: recognized cover text and post text are
 to **openlibrary.org** as search queries to identify the book. No account, no telemetry,
 no analytics. Your shelf never leaves `chrome.storage.local`.
 
-Shelfy also keeps the last 200 recognition attempts on your computer — what it
+Buki also keeps the last 200 recognition attempts on your computer — what it
 guessed, how confident it was, and whether you kept the book — so the shelf can show how
 often it gets it right. That log is never transmitted, and you can clear it from the
 options page.
@@ -119,8 +119,14 @@ of the Internet Archive.
 
 ## Shipping
 
-**Live:** [getshelfy — shelfy-pearl.vercel.app](https://shelfy-pearl.vercel.app) ·
+**Live:** [shelfy-pearl.vercel.app](https://shelfy-pearl.vercel.app) ·
 [privacy policy](https://shelfy-pearl.vercel.app/privacy)
+
+The host still carries the old name. Renaming the Vercel project changes the domain and
+retires the old one immediately, so the links above stay correct until that switch is
+made — and every one of them (README, `docs/store/listing.md`, the store listing itself)
+has to move in the same pass, because a privacy-policy URL that 404s fails Chrome Web
+Store review.
 
 Vercel serves `docs/` as the site root (see `vercel.json`). Deploy with
 `vercel deploy --prod`. Note that raw deployment URLs are SSO-protected on this account

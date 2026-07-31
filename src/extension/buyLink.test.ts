@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buyLink, type Affiliate } from './buyLink';
 
-const TAGGED: Affiliate = { amazonTag: 'shelfy-20', bookshopId: '98765' };
+const TAGGED: Affiliate = { amazonTag: 'buki-20', bookshopId: '98765' };
 const UNTAGGED: Affiliate = { amazonTag: '', bookshopId: '' };
 
 const DUNE = { title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593' };
@@ -16,7 +16,7 @@ describe('buyLink', () => {
     expect(url.hostname).toBe('www.amazon.com');
     expect(url.pathname).toBe('/s');
     expect(url.searchParams.get('k')).toBe('9780441013593');
-    expect(url.searchParams.get('tag')).toBe('shelfy-20');
+    expect(url.searchParams.get('tag')).toBe('buki-20');
   });
 
   it('falls back to title and author when there is no ISBN', () => {

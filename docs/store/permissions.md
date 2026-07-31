@@ -24,7 +24,7 @@ way a user saves a book they have seen as a photo rather than as a link.
 **https://twitter.com/\*, https://x.com/\***
 
 ```
-Shelfy only operates on these sites. The content script injects the save button into a
+Buki only operates on these sites. The content script injects the save button into a
 post's action bar, reads the text and links of the post the user acted on, and displays
 the result. It is deliberately scoped to these hosts: elsewhere there is no content
 script, so a save would silently change the user's shelf with no visible feedback.
@@ -80,7 +80,7 @@ Tick **only** "Website content", and declare:
 Website content explanation:
 
 ```
-Limited to the image and post text the user explicitly asks Shelfy to identify, sent to
+Limited to the image and post text the user explicitly asks Buki to identify, sent to
 the user's configured recognition provider and to OpenLibrary solely to identify the
 book. Not stored on any server, not sold, not used for advertising, and not used to
 determine creditworthiness or for lending.
@@ -95,7 +95,7 @@ Then confirm all three certification checkboxes:
 ## Note on the affiliate link
 
 Chrome Web Store policy allows affiliate links, but requires them to be disclosed and to
-provide genuine user benefit. Shelfy's Buy link is disclosed in three places: the popup
+provide genuine user benefit. Buki's Buy link is disclosed in three places: the popup
 footer, the options page, and the privacy policy. It appears only on books the user has
 already saved and never alters what the extension shows. Do not remove any of those three
 disclosures.

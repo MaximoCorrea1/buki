@@ -55,7 +55,7 @@ async function main(): Promise<void> {
     try {
       const wanted = endpoint.value.trim() || DEFAULT_SETTINGS.endpoint;
       if (!(await allowEndpoint(wanted))) {
-        say('Not saved — Shelfy needs permission to reach that endpoint.');
+        say('Not saved — Buki needs permission to reach that endpoint.');
         return;
       }
       await writeSettings({
@@ -68,7 +68,7 @@ async function main(): Promise<void> {
       });
       say(key.value.trim() ? 'Saved. Recognition is on.' : 'Saved. Add a key to read covers.');
     } catch (err) {
-      console.error('[Shelfy] could not save settings', err);
+      console.error('[Buki] could not save settings', err);
       say("Couldn't save. Try again.");
     }
   });
@@ -90,7 +90,7 @@ async function main(): Promise<void> {
       const events = await log.list();
       logStatus.textContent = events.length ? `${events.length} recorded` : 'Nothing recorded yet';
     } catch (err) {
-      console.error('[Shelfy] could not read the log', err);
+      console.error('[Buki] could not read the log', err);
     }
   };
   void showCount();
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
       } satisfies BackgroundRequest)) as { ok?: boolean } | undefined;
       logStatus.textContent = resp?.ok ? 'Cleared' : "Couldn't clear it";
     } catch (err) {
-      console.error('[Shelfy] could not clear the log', err);
+      console.error('[Buki] could not clear the log', err);
       logStatus.textContent = "Couldn't clear it";
     } finally {
       clearLog.disabled = false;

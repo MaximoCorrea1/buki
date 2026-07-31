@@ -88,7 +88,7 @@ export async function groundText(text: string, books: BooksDb): Promise<Grounded
         return rank(q, await books.search({ title: q }));
       } catch (err) {
         // One query failing must not cancel the others - each is an independent guess.
-        console.error('[Shelfy] a grounding query failed', err);
+        console.error('[Buki] a grounding query failed', err);
         return [];
       }
     }),

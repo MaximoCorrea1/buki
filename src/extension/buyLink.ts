@@ -8,7 +8,7 @@ export interface Affiliate {
 }
 
 /**
- * Shelfy's own affiliate identifiers. Public by nature - they ship in the bundle, as
+ * Buki's own affiliate identifiers. Public by nature - they ship in the bundle, as
  * every affiliate link on the web does.
  *
  * Both may be empty, and the links still work without them. That matters: a buy link

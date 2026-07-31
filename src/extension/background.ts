@@ -21,7 +21,7 @@ import type {
   TweetContext,
 } from './messages';
 
-const MENU_ID = 'shelfy-save-image';
+const MENU_ID = 'buki-save-image';
 
 /** The only surfaces we can give feedback on - the content script lives here. */
 const SUPPORTED_PAGES = ['https://twitter.com/*', 'https://x.com/*'];
@@ -50,7 +50,7 @@ const needsSetup = (err: unknown): boolean =>
 
 function setupMessage(err: unknown): string {
   if (err instanceof NoKeyError) {
-    return 'Add a recognition key in Shelfy settings to read covers.';
+    return 'Add a recognition key in Buki settings to read covers.';
   }
   // The provider's own words: it names the retired model, the revoked key, the bad
   // endpoint. Far more use than "something went wrong".
@@ -59,7 +59,7 @@ function setupMessage(err: unknown): string {
 
 /** The shelf is the product; the log is diagnostics. A log failure never breaks a save. */
 function note(event: PendingEvent): void {
-  void log.record(event).catch((err) => console.error('[Shelfy] log write failed', err));
+  void log.record(event).catch((err) => console.error('[Buki] log write failed', err));
 }
 
 /**
@@ -210,12 +210,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     });
   } catch (err) {
     if (needsSetup(err)) {
-      if (!(err instanceof NoKeyError)) console.error('[Shelfy] recognition failed', err);
+      if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
       await toast(tabId, setupMessage(err));
       void chrome.runtime.openOptionsPage();
       return;
     }
-    console.error('[Shelfy] recognition failed', err);
+    console.error('[Buki] recognition failed', err);
     noteFailure(Date.now() - startedAt, 'contextmenu');
     await toast(tabId, "Couldn't read that cover — try again in a moment.");
     return;
@@ -262,7 +262,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     note({ ...draft, outcome: 'auto-saved', savedId: saved.id });
     await toast(tabId, `Saved: ${book.title} → someday`);
   } catch (err) {
-    console.error('[Shelfy] save failed', err);
+    console.error('[Buki] save failed', err);
     await toast(tabId, "Couldn't save to your shelf.");
   }
 });
@@ -282,7 +282,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
       .add(msg.book, msg.intent, msg.source)
       .then((saved) => sendResponse({ ok: true, saved } satisfies ShelfResponse))
       .catch((err: unknown) => {
-        console.error('[Shelfy] save failed', err);
+        console.error('[Buki] save failed', err);
         sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
       });
     return true; // async response
@@ -297,11 +297,11 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
       .then(() =>
         log
           .markWrong(savedId)
-          .catch((err: unknown) => console.error('[Shelfy] could not flag the match', err)),
+          .catch((err: unknown) => console.error('[Buki] could not flag the match', err)),
       )
       .then(() => sendResponse({ ok: true } satisfies ShelfResponse))
       .catch((err: unknown) => {
-        console.error('[Shelfy] remove failed', err);
+        console.error('[Buki] remove failed', err);
         sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
       });
     return true; // async response
@@ -312,7 +312,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
       .clear()
       .then(() => sendResponse({ ok: true }))
       .catch((err: unknown) => {
-        console.error('[Shelfy] could not clear the log', err);
+        console.error('[Buki] could not clear the log', err);
         sendResponse({ ok: false });
       });
     return true; // async response
@@ -332,7 +332,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     .catch((err: unknown) => {
       // Unfinished setup is not a miss - logging it would make the recognizer look bad
       // for something it was never given a chance to do.
-      if (!(err instanceof NoKeyError)) console.error('[Shelfy] recognition failed', err);
+      if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
       if (!needsSetup(err)) noteFailure(Date.now() - startedAt, 'button');
 
       sendResponse({

@@ -1,4 +1,4 @@
-// Generate the Shelfy icons as PNGs, with no image dependencies.
+// Generate the Buki icons as PNGs, with no image dependencies.
 // Three spines of unequal height, crossed by one cord.
 // Run: node tools/make-icons.mjs
 import { writeFile, mkdir } from 'node:fs/promises';

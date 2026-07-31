@@ -144,7 +144,7 @@ function renderBook(
         await writeShelf({ type: 'saveBook', book: saved.book, intent: 'read', ...(saved.source ? { source: saved.source } : {}) });
         onChange();
       } catch (err) {
-        console.error('[Shelfy] could not mark it finished', err);
+        console.error('[Buki] could not mark it finished', err);
         done.disabled = false;
       }
     });
@@ -167,7 +167,7 @@ function renderBook(
       await writeShelf({ type: 'removeBook', savedId: saved.id });
       onChange();
     } catch (err) {
-      console.error('[Shelfy] remove failed', err);
+      console.error('[Buki] remove failed', err);
       row.classList.remove('leaving');
       remove.disabled = false;
     }
@@ -205,7 +205,7 @@ async function renderStats(shelfCount: number): Promise<void> {
   try {
     events = await log.list();
   } catch (err) {
-    console.error('[Shelfy] could not read the log', err);
+    console.error('[Buki] could not read the log', err);
   }
 
   const { caught, keptPct } = summarize(events);
@@ -233,7 +233,7 @@ async function load(): Promise<void> {
     [shelf, store] = await Promise.all([library.list(), readSettings().then((s) => s.store)]);
     loadFailed = false;
   } catch (err) {
-    console.error('[Shelfy] could not read the shelf', err);
+    console.error('[Buki] could not read the shelf', err);
     loadFailed = true;
   }
 }

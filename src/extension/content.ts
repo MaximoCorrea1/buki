@@ -1,4 +1,4 @@
-// Shelfy content script: inject a Save button on tweets, scrape + recognize,
+// Buki content script: inject a Save button on tweets, scrape + recognize,
 // and save the pick to your own reading list. Also renders feedback for the
 // background worker's right-click OCR flow.
 import type { Tweet, Book } from '../recognizer/types';
@@ -13,21 +13,21 @@ import type {
   TweetContext,
 } from './messages';
 
-const BTN_CLASS = 'shelfy-save-btn';
+const BTN_CLASS = 'buki-save-btn';
 
 /**
  * Boundary tracing. This extension coordinates three isolated contexts, so a failure
  * anywhere in the chain looks identical from the page: nothing happens. Logging each
  * hand-off is what makes "it does nothing" diagnosable.
- * Silence it with: localStorage.shelfyQuiet = '1'
+ * Silence it with: localStorage.bukiQuiet = '1'
  */
 const trace = (...args: unknown[]): void => {
   try {
-    if (localStorage.getItem('shelfyQuiet') === '1') return;
+    if (localStorage.getItem('bukiQuiet') === '1') return;
   } catch {
     /* storage can be blocked; log anyway */
   }
-  console.info('[Shelfy]', ...args);
+  console.info('[Buki]', ...args);
 };
 /**
  * One stylesheet rather than inline cssText: :active press feedback, hover gating and
@@ -39,23 +39,23 @@ const trace = (...args: unknown[]): void => {
  * per catch, so they can afford one.
  */
 const STYLE = `
-.bc-btn {
+.buki-btn {
   cursor: pointer; background: transparent; border: 0; padding: 4px 6px;
   margin-left: 4px; border-radius: 999px; font-size: 15px; line-height: 1;
   opacity: .72; transition: opacity 140ms cubic-bezier(.23,1,.32,1),
     transform 140ms cubic-bezier(.23,1,.32,1), background-color 140ms ease;
 }
-.bc-btn:disabled { cursor: default; }
-.bc-btn:active { transform: scale(.9); }
-.bc-btn:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; opacity: 1; }
+.buki-btn:disabled { cursor: default; }
+.buki-btn:active { transform: scale(.9); }
+.buki-btn:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
-  .bc-btn:hover { opacity: 1; background: rgba(108,123,255,.18); }
+  .buki-btn:hover { opacity: 1; background: rgba(108,123,255,.18); }
 }
 
 /* Toasts stack rather than replace: saving three books in a row should show three
    confirmations, not one that keeps being overwritten before it can be read. Oldest at
    the top, newest nearest the corner, which is the direction they leave in. */
-.bc-stack {
+.buki-stack {
   position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
   pointer-events: none;
@@ -63,7 +63,7 @@ const STYLE = `
 
 /* An in-progress stage still updates in place. Blurring on swap makes two different
    strings read as one object changing its mind rather than a crossfade of two. */
-.bc-pill {
+.buki-pill {
   max-width: 330px; padding: 10px 14px; border-radius: 10px;
   background: #17151f; color: #f2f0fa; border: 1px solid #2a2637;
   font: 13.5px/1.4 system-ui, sans-serif; box-shadow: 0 6px 22px rgba(0,0,0,.45);
@@ -73,11 +73,11 @@ const STYLE = `
   transition: opacity 180ms cubic-bezier(.23,1,.32,1),
     transform 180ms cubic-bezier(.23,1,.32,1), filter 130ms ease;
 }
-.bc-pill.bc-in { opacity: 1; transform: none; }
-.bc-pill.bc-out { opacity: 0; transform: translateY(4px) scale(.97); }
-.bc-pill.bc-swap { filter: blur(2.5px); opacity: .55; }
+.buki-pill.buki-in { opacity: 1; transform: none; }
+.buki-pill.buki-out { opacity: 0; transform: translateY(4px) scale(.97); }
+.buki-pill.buki-swap { filter: blur(2.5px); opacity: .55; }
 
-.bc-panel {
+.buki-panel {
   position: absolute; z-index: 2147483000; width: 288px; padding: 6px;
   background: #17151f; color: #f2f0fa; border: 1px solid #2a2637;
   border-radius: 11px; box-shadow: 0 12px 34px rgba(0,0,0,.55);
@@ -87,51 +87,51 @@ const STYLE = `
   transition: opacity 180ms cubic-bezier(.23,1,.32,1),
     transform 180ms cubic-bezier(.23,1,.32,1);
 }
-.bc-panel.bc-in { opacity: 1; transform: none; }
+.buki-panel.buki-in { opacity: 1; transform: none; }
 
 /* No anchor: the feed recycled the image away mid-recognition. Park the panel in the
    corner rather than dropping the result - losing a recognized book is the exact
    failure this extension exists to prevent. Clear of the status pill at bottom: 20px. */
-.bc-panel.bc-corner {
+.buki-panel.buki-corner {
   position: fixed; left: auto; top: auto; right: 20px; bottom: 72px;
   transform-origin: bottom right;
 }
 
-.bc-cand { position: relative; padding: 7px 8px 8px 16px; border-radius: 6px; }
-.bc-cand + .bc-cand { margin-top: 1px; }
-.bc-cand::before {
+.buki-cand { position: relative; padding: 7px 8px 8px 16px; border-radius: 6px; }
+.buki-cand + .buki-cand { margin-top: 1px; }
+.buki-cand::before {
   content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 4px;
   border-radius: 1px; background: var(--cloth, #6c7bff);
 }
-.bc-cand::after {
+.buki-cand::after {
   /* Cords as a highlight over a shadow, never flat gilt - a gold line vanishes on
      marigold cloth, which is how the shelf's signature detail once shipped invisible. */
   content: ''; position: absolute; left: 5px; top: 11px; width: 4px; height: 1px;
   background: rgba(255,255,255,.55);
   box-shadow: 0 1px 0 rgba(0,0,0,.3), 0 15px 0 rgba(255,255,255,.55), 0 16px 0 rgba(0,0,0,.3);
 }
-.bc-t { font-weight: 600; letter-spacing: -.006em; }
-.bc-a { font-size: 12px; opacity: .55; }
+.buki-t { font-weight: 600; letter-spacing: -.006em; }
+.buki-a { font-size: 12px; opacity: .55; }
 
-.bc-row { display: flex; gap: 4px; margin-top: 6px; }
-.bc-intent {
+.buki-row { display: flex; gap: 4px; margin-top: 6px; }
+.buki-intent {
   flex: 1; cursor: pointer; border: 0; border-radius: 6px; padding: 5px 0;
   background: #241f33; color: #f2f0fa; font: 600 11.5px/1 ui-monospace, Menlo, monospace;
   letter-spacing: .06em; text-transform: uppercase;
   transition: background-color 140ms ease, transform 140ms cubic-bezier(.23,1,.32,1);
 }
-.bc-intent:active { transform: scale(.96); }
-.bc-intent:disabled { opacity: .45; cursor: default; }
-.bc-intent:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; }
+.buki-intent:active { transform: scale(.96); }
+.buki-intent:disabled { opacity: .45; cursor: default; }
+.buki-intent:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; }
 @media (hover: hover) and (pointer: fine) {
-  .bc-intent:not(:disabled):hover { background: #6c7bff; color: #fff; }
+  .buki-intent:not(:disabled):hover { background: #6c7bff; color: #fff; }
 }
 
-.bc-none { padding: 10px 10px 11px; opacity: .7; line-height: 1.5; }
+.buki-none { padding: 10px 10px 11px; opacity: .7; line-height: 1.5; }
 
 @media (prefers-reduced-motion: reduce) {
-  .bc-panel, .bc-pill { transition-duration: 1ms; transform: none; }
-  .bc-btn, .bc-intent { transition-duration: 1ms; }
+  .buki-panel, .buki-pill { transition-duration: 1ms; transform: none; }
+  .buki-btn, .buki-intent { transition-duration: 1ms; }
 }
 `;
 
@@ -193,7 +193,7 @@ const orphaned = (err?: unknown): boolean =>
   !chrome.runtime?.id ||
   (err instanceof Error && /context invalidated|receiving end does not exist/i.test(err.message));
 
-const REFRESH = 'Shelfy just updated — refresh this page to keep catching books.';
+const REFRESH = 'Buki just updated — refresh this page to keep catching books.';
 
 async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: AttemptDraft } | null> {
   if (orphaned()) {
@@ -245,7 +245,7 @@ async function saveBook(book: Book, intent: Intent, source?: SavedSource): Promi
 function report(event: PendingEvent): void {
   void chrome.runtime
     .sendMessage({ type: 'logEvent', event } satisfies BackgroundRequest)
-    .catch((err: unknown) => console.error('[Shelfy] log write failed', err));
+    .catch((err: unknown) => console.error('[Buki] log write failed', err));
 }
 
 // ---------------------------------------------------------------- toasts
@@ -266,24 +266,24 @@ const MAX_TOASTS = 3;
 function toastHost(): HTMLElement {
   if (!stack) {
     stack = document.createElement('div');
-    stack.className = 'bc-stack';
+    stack.className = 'buki-stack';
     document.body.appendChild(stack);
   }
   return stack;
 }
 
 function dismiss(el: HTMLElement): void {
-  if (el.classList.contains('bc-out')) return;
+  if (el.classList.contains('buki-out')) return;
   if (stage === el) stage = null;
-  el.classList.add('bc-out');
-  el.classList.remove('bc-in');
+  el.classList.add('buki-out');
+  el.classList.remove('buki-in');
   setTimeout(() => el.remove(), 220);
 }
 
 /** Only pills still on their way in or sitting there - not the ones already leaving. */
 const living = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.children).filter(
-    (c): c is HTMLElement => !c.classList.contains('bc-out'),
+    (c): c is HTMLElement => !c.classList.contains('buki-out'),
   );
 
 /**
@@ -302,10 +302,10 @@ function toast(msg: string, opts: { sticky?: boolean } = {}): void {
     // two strings crossfading through each other.
     const el = stage;
     clearTimeout(swapTimer);
-    el.classList.add('bc-swap');
+    el.classList.add('buki-swap');
     swapTimer = window.setTimeout(() => {
       el.textContent = msg;
-      el.classList.remove('bc-swap');
+      el.classList.remove('buki-swap');
     }, 110);
     return;
   }
@@ -314,12 +314,12 @@ function toast(msg: string, opts: { sticky?: boolean } = {}): void {
   if (!opts.sticky && stage) dismiss(stage);
 
   const el = document.createElement('div');
-  el.className = 'bc-pill';
+  el.className = 'buki-pill';
   el.setAttribute('role', 'status');
   el.textContent = msg;
   host.appendChild(el);
   // Next frame, so the transition has a starting value to animate from.
-  requestAnimationFrame(() => el.classList.add('bc-in'));
+  requestAnimationFrame(() => el.classList.add('buki-in'));
 
   // Oldest first in the DOM, so trimming from the front drops the stalest.
   for (const old of living(host).slice(0, -MAX_TOASTS)) dismiss(old);
@@ -366,7 +366,7 @@ function openPicker(
   closePanel(); // only ever one picker; a second would strand the first
 
   const panel = document.createElement('div');
-  panel.className = anchor ? 'bc-panel' : 'bc-panel bc-corner';
+  panel.className = anchor ? 'buki-panel' : 'buki-panel buki-corner';
 
   // Every close path runs cleanup, and cleanup reports a dismissal - so the guard is
   // what stops a successful save being logged twice, once as confirmed and once as not.
@@ -385,28 +385,28 @@ function openPicker(
 
   if (!candidates.length) {
     const empty = document.createElement('div');
-    empty.className = 'bc-none';
+    empty.className = 'buki-none';
     empty.textContent = 'No book named here. Right-click the cover image to read it instead.';
     panel.appendChild(empty);
   } else {
     candidates.forEach((book) => {
       const row = document.createElement('div');
-      row.className = 'bc-cand';
+      row.className = 'buki-cand';
       row.style.setProperty('--cloth', clothFor(book));
 
       const title = document.createElement('div');
-      title.className = 'bc-t';
+      title.className = 'buki-t';
       title.textContent = book.title;
       const author = document.createElement('div');
-      author.className = 'bc-a';
+      author.className = 'buki-a';
       author.textContent = book.author;
       row.append(title, author);
 
       const btns = document.createElement('div');
-      btns.className = 'bc-row';
+      btns.className = 'buki-row';
       (['now', 'next', 'someday'] as Intent[]).forEach((intent) => {
         const b = document.createElement('button');
-        b.className = 'bc-intent';
+        b.className = 'buki-intent';
         b.textContent = intent;
         b.addEventListener('click', async () => {
           // Disable the whole row: a second click would re-enter the save and race
@@ -419,7 +419,7 @@ function openPicker(
             closePanel();
             toast(`Saved: ${book.title} → ${intent}`);
           } catch (err) {
-            console.error('[Shelfy] save failed', err);
+            console.error('[Buki] save failed', err);
             saving = false;
             btns.querySelectorAll('button').forEach((el) => (el.disabled = false));
             toast(orphaned(err) ? REFRESH : "Couldn't save to your shelf.");
@@ -454,7 +454,7 @@ function openPicker(
   document.body.appendChild(panel);
   place(); // again now it has a measurable height, so the flip-above check is real
   // Next frame, so it scales out of the trigger rather than appearing at full size.
-  requestAnimationFrame(() => panel.classList.add('bc-in'));
+  requestAnimationFrame(() => panel.classList.add('buki-in'));
 
   const onClickAway = (e: MouseEvent): void => {
     if (!panel.contains(e.target as Node) && e.target !== anchor) closePanel();
@@ -484,7 +484,7 @@ function addButton(article: HTMLElement): void {
   if (!actions) return;
 
   const btn = document.createElement('button');
-  btn.className = `${BTN_CLASS} bc-btn`;
+  btn.className = `${BTN_CLASS} buki-btn`;
   btn.textContent = '📚';
   btn.title = 'Save this book to your shelf';
   btn.setAttribute('aria-label', 'Save this book to your shelf');
@@ -536,7 +536,7 @@ function addButton(article: HTMLElement): void {
       toast(candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet');
       trace('picker opened');
     } catch (err) {
-      console.error('[Shelfy] lookup failed', err);
+      console.error('[Buki] lookup failed', err);
       toast(orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.');
     } finally {
       btn.textContent = '📚';
