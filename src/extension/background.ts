@@ -8,12 +8,13 @@
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
 import { createLlmVision, VisionHttpError } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
-import type { RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
+import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
 import { readSettings, toVisionConfig, type Settings } from './settings';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality } from './twitterImage';
 import { rememberCover, liveCoverDeps } from './coverCache';
+import { withSignal } from './cancellable';
 import type {
   BackgroundRequest,
   BackgroundResponse,
@@ -37,7 +38,14 @@ const library = createLibrary({
   newId: () => crypto.randomUUID(),
 });
 const log = createRecognitionLog({ storage, now: () => Date.now() });
-const books = createOpenLibraryClient({ fetch: (url, init) => fetch(url, init) });
+
+/**
+ * One controller per in-flight recognition, so the page can call one off by name. Entries
+ * are cleared in a `finally`, which aborts the controller - that is also what stops a
+ * finished catch's still-running sibling requests, since `groundText` fires several
+ * OpenLibrary queries at once and only the first to ground is used.
+ */
+const running = new Map<string, AbortController>();
 
 class NoKeyError extends Error {}
 
@@ -71,17 +79,14 @@ function noteFailure(ms: number, flow: AttemptDraft['flow']): void {
   note({ ms, flow, source: 'none', confidence: 'low', outcome: 'no-match' });
 }
 
-function visionFor(settings: Settings) {
+function visionFor(settings: Settings, net: FetchLike) {
   // A blank key is legitimate against a proxy holding its own credential, but against a
   // public provider it just means setup is unfinished - worth saying so rather than
   // firing a request that can only 401.
   const providerNeedsKey = /googleapis\.com|openai\.com|openrouter\.ai/.test(settings.endpoint);
   if (!settings.apiKey && providerNeedsKey) throw new NoKeyError('no key');
 
-  return createLlmVision({
-    fetch: (url, init) => fetch(url, init),
-    config: toVisionConfig(settings),
-  });
+  return createLlmVision({ fetch: net, config: toVisionConfig(settings) });
 }
 
 /**
@@ -97,14 +102,24 @@ function visionFor(settings: Settings) {
  * So: no key means no cover reading, exactly as advertised. The prompt to set one up
  * appears only if nothing cheaper found the book.
  */
-async function recognize(tweet: Tweet): Promise<{ result: RecognitionResult; model: string }> {
+async function recognize(
+  tweet: Tweet,
+  job: string,
+): Promise<{ result: RecognitionResult; model: string }> {
   const settings = await readSettings(); // read per call, so a new key needs no reload
   let keyWasMissing = false;
+
+  // Every request this catch makes goes through one signal, so calling it off reaches the
+  // vision model AND the OpenLibrary queries. Wrapping fetch rather than threading a
+  // signal through BooksDb and VisionClient is why neither interface had to change.
+  const control = new AbortController();
+  running.set(job, control);
+  const net = withSignal((url, init) => fetch(url, init), control.signal);
 
   const vision: VisionClient = {
     async guessBook(input) {
       try {
-        return await visionFor(settings).guessBook(input);
+        return await visionFor(settings, net).guessBook(input);
       } catch (err) {
         if (!(err instanceof NoKeyError)) throw err;
         keyWasMissing = true;
@@ -113,13 +128,22 @@ async function recognize(tweet: Tweet): Promise<{ result: RecognitionResult; mod
     },
   };
 
-  // Upgraded here rather than at either call site, so the button and the right-click menu
-  // cannot drift apart on image quality - the whole reason recognition moved in here.
-  const full: Tweet = { ...tweet, imageUrls: tweet.imageUrls.map(bestQuality) };
-  const result = await recognizeBook(full, { vision, books });
+  try {
+    // Upgraded here rather than at either call site, so the button and the right-click
+    // menu cannot drift apart on image quality - the whole reason recognition moved here.
+    const full: Tweet = { ...tweet, imageUrls: tweet.imageUrls.map(bestQuality) };
+    const result = await recognizeBook(full, {
+      vision,
+      books: createOpenLibraryClient({ fetch: net }),
+    });
 
-  if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');
-  return { result, model: settings.model };
+    if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');
+    return { result, model: settings.model };
+  } finally {
+    // Resolved, failed or cancelled: nothing for this catch should still be on the wire.
+    control.abort();
+    running.delete(job);
+  }
 }
 
 /** The evidence half of an event, ready to be finished by whoever learns the outcome. */
@@ -213,11 +237,14 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const startedAt = Date.now();
   let recognized: { result: RecognitionResult; model: string };
   try {
-    recognized = await recognize({
-      text: ctx?.text ?? '',
-      imageUrls: [info.srcUrl],
-      links: ctx?.links ?? [],
-    });
+    recognized = await recognize(
+      {
+        text: ctx?.text ?? '',
+        imageUrls: [info.srcUrl],
+        links: ctx?.links ?? [],
+      },
+      job,
+    );
   } catch (err) {
     if (needsSetup(err)) {
       if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
@@ -338,10 +365,19 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     return true; // async response
   }
 
+  if (msg?.type === 'cancelRecognize') {
+    // A cancel for a catch that already finished is normal, not an error - the page
+    // cannot know the worker got there first.
+    running.get(msg.job)?.abort();
+    running.delete(msg.job);
+    sendResponse({ ok: true });
+    return false;
+  }
+
   if (msg?.type !== 'recognize') return false;
 
   const startedAt = Date.now();
-  recognize(msg.tweet)
+  recognize(msg.tweet, msg.job)
     .then((recognized) =>
       sendResponse({
         ok: true,

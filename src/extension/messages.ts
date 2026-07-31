@@ -48,7 +48,14 @@ export type ContentRequest =
 
 /** content script / popup / options -> background */
 export type BackgroundRequest =
-  | { type: 'recognize'; tweet: Tweet }
+  /** `job` names this catch, so the page can call it off while it is still running. */
+  | { type: 'recognize'; tweet: Tweet; job: string }
+  /**
+   * Stop a lookup the user no longer wants. The fetches live in the worker, so this is a
+   * message rather than a local abort. An unknown or already-finished job is ignored - a
+   * cancel arriving late is normal, not an error.
+   */
+  | { type: 'cancelRecognize'; job: string }
   /**
    * The background is the ONLY writer of both `savedBooks` and `recognitionLog`.
    *

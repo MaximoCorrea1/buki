@@ -80,6 +80,19 @@ const STYLE = `
   transition: opacity 180ms cubic-bezier(.23,1,.32,1),
     transform 180ms cubic-bezier(.23,1,.32,1), filter 130ms ease;
 }
+/* The stop control has to be clickable, so this pill opts back in to pointer events -
+   the stack itself stays transparent to them so it never swallows a click on the feed. */
+.buki-pill { pointer-events: auto; display: flex; align-items: center; gap: 10px; }
+.buki-msg { flex: 1; }
+.buki-x {
+  flex: none; cursor: pointer; border: 0; border-radius: 6px; padding: 2px 6px;
+  background: transparent; color: inherit; opacity: .5;
+  font: 15px/1 system-ui, sans-serif;
+  transition: opacity 140ms ease, background-color 140ms ease;
+}
+.buki-x:hover { opacity: 1; background: rgba(255,255,255,.09); }
+.buki-x:active { transform: scale(.92); }
+.buki-x:focus-visible { outline: 2px solid #ffcf8a; outline-offset: 1px; opacity: 1; }
 .buki-pill.buki-in { opacity: 1; transform: none; }
 .buki-pill.buki-out { opacity: 0; transform: translateY(4px) scale(.97); }
 .buki-pill.buki-swap { filter: blur(2.5px); opacity: .55; }
@@ -214,6 +227,7 @@ async function recognize(
   const resp = (await chrome.runtime.sendMessage({
     type: 'recognize',
     tweet,
+    job,
   } satisfies BackgroundRequest)) as BackgroundResponse | undefined;
 
   if (!resp) throw new Error('No response from the recognizer');
@@ -292,16 +306,32 @@ function toastHost(): HTMLElement {
  * Blur out, swap the words, blur back: one object changing its mind rather than two
  * strings crossfading through each other.
  */
+/** The words inside a pill. The pill itself also holds the stop control. */
+const labelOf = (el: HTMLElement): HTMLElement => el.querySelector('.buki-msg') as HTMLElement;
+
 function swapText(el: HTMLElement, text: string): void {
+  const label = labelOf(el);
   clearTimeout(swapTimers.get(el));
   el.classList.add('buki-swap');
   swapTimers.set(
     el,
     window.setTimeout(() => {
-      el.textContent = text;
+      // The label, not the pill: writing textContent on the pill would delete the button.
+      label.textContent = text;
       el.classList.remove('buki-swap');
     }, 110),
   );
+}
+
+/** Calls off a lookup that is still running. */
+function stopButton(job: string): HTMLButtonElement {
+  const stop = document.createElement('button');
+  stop.className = 'buki-x';
+  stop.textContent = '×';
+  stop.title = 'Stop looking';
+  stop.setAttribute('aria-label', 'Stop looking for this book');
+  stop.addEventListener('click', () => cancelJob(job));
+  return stop;
 }
 
 /** Reconcile the corner to whatever the stack now says, keyed by pill id. */
@@ -322,18 +352,45 @@ function paintToasts(): void {
   for (const pill of pills) {
     const existing = drawn.get(pill.id);
     if (existing) {
-      if (existing.textContent !== pill.text) swapText(existing, pill.text);
+      if (labelOf(existing).textContent !== pill.text) swapText(existing, pill.text);
+      // The catch is over, so the stop control has nothing left to stop.
+      if (!pill.job) existing.querySelector('.buki-x')?.remove();
       continue;
     }
     const el = document.createElement('div');
     el.className = 'buki-pill';
     el.setAttribute('role', 'status');
-    el.textContent = pill.text;
+    const label = document.createElement('span');
+    label.className = 'buki-msg';
+    label.textContent = pill.text;
+    el.append(label);
+    if (pill.job) el.append(stopButton(pill.job));
     host.appendChild(el);
     drawn.set(pill.id, el);
     // Next frame, so the transition has a starting value to animate from.
     requestAnimationFrame(() => el.classList.add('buki-in'));
   }
+}
+
+/**
+ * Catches the user called off. The worker still answers the outstanding `recognize` with
+ * a failure, and without this the click handler's catch would replace "Stopped looking."
+ * with "Book lookup failed" a moment later.
+ */
+const cancelled = new Set<string>();
+
+/** Stop a lookup the user no longer wants, and let the same post be tried again. */
+function cancelJob(job: string): void {
+  cancelled.add(job);
+  void chrome.runtime
+    .sendMessage({ type: 'cancelRecognize', job } satisfies BackgroundRequest)
+    .catch(() => undefined); // an orphaned page cannot cancel; the toast still clears
+  // Otherwise the memo keeps holding a lookup that was abandoned, and pressing the button
+  // again on the same post would join a promise nobody is going to settle.
+  const key = jobPosts.get(job);
+  if (key) lookups.forget(key);
+  jobPosts.delete(job);
+  toast('Stopped looking.', job);
 }
 
 /** A stage of work still running for `job`. Updates that book's own pill in place. */
@@ -630,9 +687,14 @@ function addButton(article: HTMLElement): void {
       toast(queued ? `${found} · ${queued} waiting` : found, job);
       trace('picker queued;', queued, 'waiting');
     } catch (err) {
-      console.error('[Buki] lookup failed', err);
-      toast(orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.', job);
+      // A cancelled catch fails by design; saying so would overwrite "Stopped looking."
+      if (!cancelled.has(job)) {
+        console.error('[Buki] lookup failed', err);
+        toast(orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.', job);
+      }
     } finally {
+      cancelled.delete(job);
+      jobPosts.delete(job);
       btn.textContent = '📚';
       btn.disabled = false;
     }
