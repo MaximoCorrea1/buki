@@ -173,12 +173,20 @@ async function tellTab<T>(tabId: number | undefined, msg: ContentRequest): Promi
   }
 }
 
-const toast = (tabId: number | undefined, text: string): Promise<unknown> =>
-  tellTab(tabId, { type: 'toast', text });
+/** Ends `job`, clearing its progress pill. Omit `job` for a standalone message. */
+const toast = (tabId: number | undefined, text: string, job?: string): Promise<unknown> =>
+  tellTab(tabId, { type: 'toast', text, ...(job ? { job } : {}) });
 
-/** An in-progress stage - stays on screen until the next update replaces it. */
-const progress = (tabId: number | undefined, text: string): Promise<unknown> =>
-  tellTab(tabId, { type: 'toast', text, sticky: true });
+/** An in-progress stage of `job` - stays on screen until that job reports again. */
+const progress = (tabId: number | undefined, text: string, job: string): Promise<unknown> =>
+  tellTab(tabId, { type: 'toast', text, sticky: true, job });
+
+/**
+ * One id per right-click, so two covers read at once do not share a progress pill. The
+ * worker can be torn down between clicks and restart the count; ids only need to be
+ * distinct among the catches alive in one tab at one moment.
+ */
+let menuSeq = 0;
 
 function sourceFrom(ctx: TweetContext | undefined, pageUrl: string | undefined): SavedSource | undefined {
   // `pageUrl` is the tab's URL (x.com/home), not the tweet - saving that would break
@@ -190,8 +198,9 @@ function sourceFrom(ctx: TweetContext | undefined, pageUrl: string | undefined):
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
   const tabId = tab?.id;
+  const job = `menu${++menuSeq}`;
 
-  await progress(tabId, 'Reading the cover…');
+  await progress(tabId, 'Reading the cover…', job);
 
   // The post's words are the best hint for a hard-to-read cover, so pull the whole
   // tweet around the clicked image rather than sending the picture on its own.
@@ -211,13 +220,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   } catch (err) {
     if (needsSetup(err)) {
       if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
-      await toast(tabId, setupMessage(err));
+      await toast(tabId, setupMessage(err), job);
       void chrome.runtime.openOptionsPage();
       return;
     }
     console.error('[Buki] recognition failed', err);
     noteFailure(Date.now() - startedAt, 'contextmenu');
-    await toast(tabId, "Couldn't read that cover — try again in a moment.");
+    await toast(tabId, "Couldn't read that cover — try again in a moment.", job);
     return;
   }
 
@@ -227,13 +236,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   if (!book) {
     note({ ...draft, outcome: 'no-match' });
-    await toast(tabId, "Couldn't match that cover to a book.");
+    await toast(tabId, "Couldn't match that cover to a book.", job);
     return;
   }
 
   // Weak evidence asks instead of deciding. A confident wrong answer costs more than ten
   // misses, because it makes the whole shelf suspect.
   if (result.confidence !== 'high') {
+    // Ends this catch's progress pill - from here the panel itself is the feedback, and
+    // leaving "Reading the cover..." up beside an open picker reads as still working.
+    await toast(tabId, 'Not sure — pick the right one', job);
     const shown = await tellTab<{ shown: boolean }>(tabId, {
       type: 'pick',
       candidates: result.candidates,
@@ -260,10 +272,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
     const saved = await library.add(book, 'someday', sourceFrom(ctx, info.pageUrl));
     note({ ...draft, outcome: 'auto-saved', savedId: saved.id });
-    await toast(tabId, `Saved: ${book.title} → someday`);
+    await toast(tabId, `Saved: ${book.title} → someday`, job);
   } catch (err) {
     console.error('[Buki] save failed', err);
-    await toast(tabId, "Couldn't save to your shelf.");
+    await toast(tabId, "Couldn't save to your shelf.", job);
   }
 });
 

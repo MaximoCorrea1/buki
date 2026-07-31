@@ -4,6 +4,8 @@
 import type { Tweet, Book } from '../recognizer/types';
 import type { Intent, SavedBook, SavedSource } from './storage';
 import { clothFor } from './cloth';
+import { createToastStack } from './toastStack';
+import { createPickerQueue } from './pickerQueue';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
@@ -195,9 +197,12 @@ const orphaned = (err?: unknown): boolean =>
 
 const REFRESH = 'Buki just updated — refresh this page to keep catching books.';
 
-async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: AttemptDraft } | null> {
+async function recognize(
+  tweet: Tweet,
+  job: string,
+): Promise<{ candidates: Book[]; draft: AttemptDraft } | null> {
   if (orphaned()) {
-    toast(REFRESH);
+    toast(REFRESH, job);
     return null;
   }
 
@@ -211,7 +216,7 @@ async function recognize(tweet: Tweet): Promise<{ candidates: Book[]; draft: Att
     // Already phrased for the user, and retrying cannot help - say what is wrong rather
     // than throwing it onto the generic "try again in a moment" path.
     if (resp.needsSetup) {
-      toast(resp.error);
+      toast(resp.error, job);
       return null;
     }
     throw new Error(resp.error);
@@ -251,94 +256,151 @@ function report(event: PendingEvent): void {
 // ---------------------------------------------------------------- toasts
 
 /**
- * One status pill, reused. The OCR flow reports several stages in a row; separate
- * toasts either stacked up or replaced each other invisibly, so a multi-second
- * operation looked like nothing was happening.
+ * What the corner shows is decided in `toastStack.ts` and merely drawn here.
+ *
+ * The rules used to live in this file as one module-level `stage` element, which meant
+ * two books caught at once shared a single progress pill: the second overwrote the
+ * first's text, and the first to finish dismissed the pill the second was still using.
+ * Progress belongs to a book, not to the page.
  */
-let stack: HTMLElement | null = null;
-/** The one in-progress pill, if any. Stages update it instead of piling up. */
-let stage: HTMLElement | null = null;
-let swapTimer: number | undefined;
+const toasts = createToastStack();
+let stackEl: HTMLElement | null = null;
+/** Pill id -> the node drawing it, so a repaint updates rather than rebuilds. */
+const drawn = new Map<number, HTMLElement>();
+/** Per pill, not per page: one shared timer let a second swap cancel the first's text. */
+const swapTimers = new WeakMap<HTMLElement, number>();
 
-/** Beyond this the corner becomes a wall of text nobody reads. */
-const MAX_TOASTS = 3;
+/** How long a finished message sits before it leaves, and how long leaving takes. */
+const LINGER_MS = 2800;
+const LEAVE_MS = 220;
 
 function toastHost(): HTMLElement {
-  if (!stack) {
-    stack = document.createElement('div');
-    stack.className = 'buki-stack';
-    document.body.appendChild(stack);
+  if (!stackEl) {
+    stackEl = document.createElement('div');
+    stackEl.className = 'buki-stack';
+    document.body.appendChild(stackEl);
   }
-  return stack;
+  return stackEl;
 }
-
-function dismiss(el: HTMLElement): void {
-  if (el.classList.contains('buki-out')) return;
-  if (stage === el) stage = null;
-  el.classList.add('buki-out');
-  el.classList.remove('buki-in');
-  setTimeout(() => el.remove(), 220);
-}
-
-/** Only pills still on their way in or sitting there - not the ones already leaving. */
-const living = (host: HTMLElement): HTMLElement[] =>
-  Array.from(host.children).filter(
-    (c): c is HTMLElement => !c.classList.contains('buki-out'),
-  );
 
 /**
- * Show a message. Saving three books in a row shows three confirmations rather than one
- * that keeps being overwritten before it can be read.
- *
- * A `sticky` message is a stage of work still running, and there is only ever one of
- * those: it updates in place instead of stacking, and the next finished message clears
- * it, because the work it described is over.
+ * Blur out, swap the words, blur back: one object changing its mind rather than two
+ * strings crossfading through each other.
  */
-function toast(msg: string, opts: { sticky?: boolean } = {}): void {
-  const host = toastHost();
-
-  if (opts.sticky && stage) {
-    // Blur out, swap the words, blur back: one object changing its mind rather than
-    // two strings crossfading through each other.
-    const el = stage;
-    clearTimeout(swapTimer);
-    el.classList.add('buki-swap');
-    swapTimer = window.setTimeout(() => {
-      el.textContent = msg;
+function swapText(el: HTMLElement, text: string): void {
+  clearTimeout(swapTimers.get(el));
+  el.classList.add('buki-swap');
+  swapTimers.set(
+    el,
+    window.setTimeout(() => {
+      el.textContent = text;
       el.classList.remove('buki-swap');
-    }, 110);
-    return;
+    }, 110),
+  );
+}
+
+/** Reconcile the corner to whatever the stack now says, keyed by pill id. */
+function paintToasts(): void {
+  const host = toastHost();
+  const pills = toasts.list();
+  const live = new Set(pills.map((p) => p.id));
+
+  for (const [id, el] of drawn) {
+    if (live.has(id)) continue;
+    drawn.delete(id);
+    el.classList.add('buki-out');
+    el.classList.remove('buki-in');
+    setTimeout(() => el.remove(), LEAVE_MS);
   }
 
-  // A finished message means whatever was in progress is finished.
-  if (!opts.sticky && stage) dismiss(stage);
-
-  const el = document.createElement('div');
-  el.className = 'buki-pill';
-  el.setAttribute('role', 'status');
-  el.textContent = msg;
-  host.appendChild(el);
-  // Next frame, so the transition has a starting value to animate from.
-  requestAnimationFrame(() => el.classList.add('buki-in'));
-
-  // Oldest first in the DOM, so trimming from the front drops the stalest.
-  for (const old of living(host).slice(0, -MAX_TOASTS)) dismiss(old);
-
-  if (opts.sticky) {
-    stage = el;
-    return;
+  // Pills are only ever appended, so drawing in list order keeps the DOM in step.
+  for (const pill of pills) {
+    const existing = drawn.get(pill.id);
+    if (existing) {
+      if (existing.textContent !== pill.text) swapText(existing, pill.text);
+      continue;
+    }
+    const el = document.createElement('div');
+    el.className = 'buki-pill';
+    el.setAttribute('role', 'status');
+    el.textContent = pill.text;
+    host.appendChild(el);
+    drawn.set(pill.id, el);
+    // Next frame, so the transition has a starting value to animate from.
+    requestAnimationFrame(() => el.classList.add('buki-in'));
   }
-  setTimeout(() => dismiss(el), 2800);
+}
+
+/** A stage of work still running for `job`. Updates that book's own pill in place. */
+function progress(job: string, msg: string): void {
+  toasts.stage(job, msg);
+  paintToasts();
+}
+
+/**
+ * Say something and, if `job` is given, end that catch - clearing its progress pill and
+ * only its own. A sibling still working keeps hers.
+ */
+function toast(msg: string, job: string | null = null): void {
+  toasts.done(job, msg);
+  paintToasts();
+  const settled = toasts.list().at(-1);
+  if (!settled) return;
+  setTimeout(() => {
+    toasts.dismiss(settled.id);
+    paintToasts();
+  }, LINGER_MS);
 }
 
 // ---------------------------------------------------------------- picker
 
-let openPanel: { el: HTMLElement; cleanup: () => void } | null = null;
+/**
+ * Books recognized and waiting for a decision. See `pickerQueue.ts`: this used to be a
+ * single slot that every new recognition overwrote, so catching a second book before
+ * choosing an intent for the first destroyed the first panel - and since the 📚 flow can
+ * only save through a panel, that book was never saved, and its cleanup logged a
+ * dismissal the user was never offered the chance to make.
+ */
+const pickers = createPickerQueue<PendingPick>();
+let mounted: { el: HTMLElement; cleanup: () => void } | null = null;
 
+interface PendingPick {
+  anchor: HTMLElement | null;
+  candidates: Book[];
+  opts: PickerOptions;
+}
+
+/** Take the panel down and bring up the next book that has been waiting its turn. */
 function closePanel(): void {
-  openPanel?.cleanup();
-  openPanel?.el.remove();
-  openPanel = null;
+  if (!mounted) return;
+  mounted.cleanup();
+  mounted.el.remove();
+  mounted = null;
+  pickers.settle();
+  mountPicker();
+}
+
+/** Recognized a book: show it now if the screen is free, otherwise hold its place. */
+function queuePick(
+  anchor: HTMLElement | null,
+  candidates: Book[],
+  opts: PickerOptions = {},
+): void {
+  pickers.push({ anchor, candidates, opts });
+  mountPicker();
+}
+
+/** How many books are recognized and still waiting behind the open panel. */
+const waitingToPick = (): number => pickers.waiting();
+
+function mountPicker(): void {
+  if (mounted) return;
+  const next = pickers.current();
+  if (!next) return;
+  // The feed is virtualized, so a tweet can be recycled away while its book waits in the
+  // queue. Fall back to the corner rather than dropping a book we already recognized.
+  const anchor = next.anchor?.isConnected ? next.anchor : null;
+  mounted = buildPanel(anchor, next.candidates, next.opts);
 }
 
 /** What the user did with a panel. Exactly one of these fires per panel, ever. */
@@ -358,13 +420,11 @@ function sourceFor(permalink: string | null): SavedSource {
   return permalink ? { url: permalink, kind: 'tweet' } : { url: location.href, kind: 'page' };
 }
 
-function openPicker(
+function buildPanel(
   anchor: HTMLElement | null,
   candidates: Book[],
   opts: PickerOptions = {},
-): void {
-  closePanel(); // only ever one picker; a second would strand the first
-
+): { el: HTMLElement; cleanup: () => void } {
   const panel = document.createElement('div');
   panel.className = anchor ? 'buki-panel' : 'buki-panel buki-corner';
 
@@ -436,7 +496,13 @@ function openPicker(
     if (!anchor) return; // corner-anchored; the stylesheet holds it in place
     // The feed is virtualized; if the tweet was recycled away, close rather than
     // leave the panel pinned to a zeroed rect in the corner.
-    if (!anchor.isConnected) return closePanel();
+    // Only once this panel is the one on screen: during construction `mounted` is still
+    // the previous panel (or nothing), and closing then would advance the queue past a
+    // book that was never shown.
+    if (!anchor.isConnected) {
+      if (mounted?.el === panel) closePanel();
+      return;
+    }
 
     const rect = anchor.getBoundingClientRect();
     // Below the anchor if it fits, above it if not. A tweet image is tall enough that
@@ -471,12 +537,15 @@ function openPicker(
   window.addEventListener('scroll', place, true);
   window.addEventListener('resize', place);
 
-  openPanel = { el: panel, cleanup };
+  return { el: panel, cleanup };
 }
 
 // ---------------------------------------------------------------- injection
 
 let injected = 0;
+
+/** One id per press, so two books caught at once never share a progress pill. */
+let jobSeq = 0;
 
 function addButton(article: HTMLElement): void {
   if (article.querySelector(`.${BTN_CLASS}`)) return;
@@ -502,6 +571,7 @@ function addButton(article: HTMLElement): void {
     // in-flight glyph as "original" and could leave the button stuck on it forever.
     btn.disabled = true;
     btn.textContent = '…';
+    const job = `tweet${++jobSeq}`;
     try {
       const tweet = scrapeTweet(article);
       // Captured now, not after the await: the feed can recycle this node in place while
@@ -513,8 +583,8 @@ function addButton(article: HTMLElement): void {
         links: tweet.links.length,
       });
 
-      toast('Looking up the book…', { sticky: true });
-      const recognized = await recognize(tweet);
+      progress(job, 'Looking up the book…');
+      const recognized = await recognize(tweet, job);
       if (!recognized) return; // no key; recognize() already said so
       const { candidates, draft } = recognized;
       trace('lookup returned', candidates.length, 'candidate(s)', candidates);
@@ -529,15 +599,19 @@ function addButton(article: HTMLElement): void {
       // A no-match panel has nothing to pick, so its outcome is already known.
       if (!candidates.length) report({ ...draft, outcome: 'no-match' });
 
-      openPicker(anchor, candidates, {
+      queuePick(anchor, candidates, {
         source: sourceFor(permalink),
         ...(candidates.length ? { onOutcome: (o) => report({ ...draft, ...o }) } : {}),
       });
-      toast(candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet');
-      trace('picker opened');
+      // Say what is waiting, or a book recognized behind an open panel looks like nothing
+      // happened - which is what made rapid catching feel like it dropped things.
+      const queued = waitingToPick();
+      const found = candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet';
+      toast(queued ? `${found} · ${queued} waiting` : found, job);
+      trace('picker queued;', queued, 'waiting');
     } catch (err) {
       console.error('[Buki] lookup failed', err);
-      toast(orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.');
+      toast(orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.', job);
     } finally {
       btn.textContent = '📚';
       btn.disabled = false;
@@ -590,7 +664,11 @@ function sameImage(a: string, b: string): boolean {
 
 chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse) => {
   if (msg?.type === 'toast') {
-    toast(msg.text, { sticky: msg.sticky });
+    // A sticky message needs a job to belong to; without one there is no way to tell
+    // whose progress it is, so it degrades to a plain message rather than hijacking
+    // somebody else's pill - which is exactly the bug this rewrite removed.
+    if (msg.sticky && msg.job) progress(msg.job, msg.text);
+    else toast(msg.text, msg.job ?? null);
     return;
   }
   if (msg?.type === 'ping') {
@@ -599,16 +677,15 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
   }
   if (msg?.type === 'pick') {
     const { candidates, draft, permalink } = msg;
-    // Every other outcome ends in a non-sticky toast, which clears the in-progress pill.
-    // This path ends in a panel, so it has to clear it explicitly - otherwise "Reading
-    // the cover..." stays on screen for the rest of the session.
-    if (stage) dismiss(stage);
+    // The progress pill is ended by the worker's own toast just before it sends this, so
+    // there is nothing to clear here - and clearing "the" pill from this path is what
+    // used to wipe a sibling catch's progress.
     // The same URL-path lookup that resolves the permalink also positions the panel, so
     // it opens at the image being pointed at.
     const img = Array.from(document.querySelectorAll('img')).find((i) =>
       sameImage(i.src, msg.srcUrl),
     );
-    openPicker(img ?? null, candidates, {
+    queuePick(img ?? null, candidates, {
       source: sourceFor(permalink),
       onOutcome: (o) => report({ ...draft, ...o }),
     });

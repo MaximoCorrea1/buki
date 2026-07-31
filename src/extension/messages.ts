@@ -20,8 +20,14 @@ export interface TweetContext {
 
 /** background -> content script */
 export type ContentRequest =
-  /** `sticky` marks an in-progress stage: it stays until the next update replaces it. */
-  | { type: 'toast'; text: string; sticky?: boolean }
+  /**
+   * `sticky` marks an in-progress stage: it stays until the next update replaces it.
+   *
+   * `job` is which catch this is about. Progress belongs to a book, not to the page - two
+   * covers read at once each keep their own pill, and one finishing must not dismiss the
+   * pill the other is still using. Omitted means a standalone message owned by nobody.
+   */
+  | { type: 'toast'; text: string; sticky?: boolean; job?: string }
   /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
   | { type: 'tweetContextFor'; srcUrl: string }
   /** "Are you there?" - asked before a silent auto-save, which needs somewhere to report. */
