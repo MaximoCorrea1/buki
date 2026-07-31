@@ -8,6 +8,7 @@ import {
 import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
 import { buyLink, type Store } from './buyLink';
 import { clothFor } from './cloth';
+import { cachedCover, rememberCover, pruneCovers, liveCoverDeps } from './coverCache';
 import { readSettings } from './settings';
 import type { BackgroundRequest, ShelfResponse } from './messages';
 
@@ -25,6 +26,9 @@ const library = createLibrary({
   now: () => Date.now(),
   newId: () => crypto.randomUUID(),
 });
+
+/** One handle for the whole popup: each call to `liveCoverDeps` opens the cache again. */
+const covers = liveCoverDeps();
 
 async function writeShelf(request: BackgroundRequest): Promise<void> {
   const resp = (await chrome.runtime.sendMessage(request)) as ShelfResponse | undefined;
@@ -62,17 +66,46 @@ function blankCover(initial: string): HTMLElement {
  * The cover does real work beyond decoration: a wrong match becomes obvious at a glance,
  * which is the feedback the kept-rate measurement depends on.
  */
+/**
+ * Object URLs minted this session, reused across repaints. The filter box repaints on
+ * every keystroke, so making a fresh one per draw would leak one per character typed.
+ * The popup is torn down when it closes, which is what finally releases them.
+ */
+const localSrc = new Map<string, string>();
+
+/**
+ * Draw from the local copy if we have it, otherwise the network - and keep what comes
+ * back, so a shelf saved before covers were cached becomes instant on the next open.
+ * See coverCache.ts: the network path is a 3-hop redirect that measured 1-4 seconds.
+ */
+async function applyCover(img: HTMLImageElement, url: string): Promise<void> {
+  const already = localSrc.get(url);
+  if (already) {
+    img.src = already;
+    return;
+  }
+  const blob = await cachedCover(url, covers);
+  if (!blob) {
+    img.src = url;
+    void rememberCover(url, covers);
+    return;
+  }
+  const objectUrl = URL.createObjectURL(blob);
+  localSrc.set(url, objectUrl);
+  img.src = objectUrl;
+}
+
 function coverFor(saved: SavedBook): HTMLElement {
   const initial = saved.book.title.trim()[0]?.toUpperCase() ?? '?';
   if (!saved.book.coverUrl) return blankCover(initial);
 
   const img = document.createElement('img');
   img.className = 'cover';
-  img.src = saved.book.coverUrl;
   img.alt = '';
   img.loading = 'lazy'; // a hundred rows must not fire a hundred requests at once
   // A cover that 404s should become the cloth block, not a broken-image glyph.
   img.addEventListener('error', () => img.replaceWith(blankCover(initial)));
+  void applyCover(img, saved.book.coverUrl);
   return img;
 }
 
@@ -232,6 +265,13 @@ async function load(): Promise<void> {
   try {
     [shelf, store] = await Promise.all([library.list(), readSettings().then((s) => s.store)]);
     loadFailed = false;
+    // Bound the cache by the shelf rather than by everything ever recognized. Safe to run
+    // here because a book still on the shelf is always in `keep`, including one the worker
+    // is fetching a cover for right now.
+    void pruneCovers(
+      shelf.map((s) => s.book.coverUrl),
+      covers,
+    );
   } catch (err) {
     console.error('[Buki] could not read the shelf', err);
     loadFailed = true;

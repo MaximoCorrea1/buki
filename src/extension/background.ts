@@ -13,6 +13,7 @@ import { readSettings, toVisionConfig, type Settings } from './settings';
 import { createLibrary, type SavedSource, type StorageArea } from './storage';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality } from './twitterImage';
+import { rememberCover, liveCoverDeps } from './coverCache';
 import type {
   BackgroundRequest,
   BackgroundResponse,
@@ -271,6 +272,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   try {
     const saved = await library.add(book, 'someday', sourceFrom(ctx, info.pageUrl));
+    // Fetch the cover now, while the worker is already awake, so the shelf draws from
+    // disk instead of paying archive.org's multi-second redirect chain on every open.
+    // Fire and forget: a picture must never be able to fail a save.
+    void rememberCover(book.coverUrl, liveCoverDeps());
     note({ ...draft, outcome: 'auto-saved', savedId: saved.id });
     await toast(tabId, `Saved: ${book.title} → someday`, job);
   } catch (err) {
@@ -292,7 +297,10 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
   if (msg?.type === 'saveBook') {
     library
       .add(msg.book, msg.intent, msg.source)
-      .then((saved) => sendResponse({ ok: true, saved } satisfies ShelfResponse))
+      .then((saved) => {
+        void rememberCover(msg.book.coverUrl, liveCoverDeps());
+        sendResponse({ ok: true, saved } satisfies ShelfResponse);
+      })
       .catch((err: unknown) => {
         console.error('[Buki] save failed', err);
         sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
