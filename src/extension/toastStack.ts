@@ -22,15 +22,21 @@ export interface ToastStack {
   list(): Pill[];
   /** A stage of work still running for `job`. Updates that job's pill in place. */
   stage(job: string, text: string): void;
-  /** `job` is over. Its progress pill goes; this message stays. */
-  done(job: string | null, text: string): void;
+  /**
+   * `job` is over. Its progress pill BECOMES this message, keeping its id and its place
+   * in the column, and is handed back so the caller can time its dismissal.
+   */
+  done(job: string | null, text: string): Pill;
   dismiss(id: number): void;
 }
 
-/** Beyond this the corner becomes a wall of text nobody reads. */
-export const MAX_TOASTS = 3;
-
-export function createToastStack(max: number = MAX_TOASTS): ToastStack {
+/**
+ * No cap by default. Three books caught should read as three confirmations; capping the
+ * count meant a burst of catches silently dropped its own evidence. The column is bounded
+ * by the screen instead - see `.buki-stack` in content.ts, which clips at the top so the
+ * newest is always the one you can see.
+ */
+export function createToastStack(max: number = Infinity): ToastStack {
   let seq = 0;
   let pills: Pill[] = [];
 
@@ -62,10 +68,21 @@ export function createToastStack(max: number = MAX_TOASTS): ToastStack {
     },
 
     done(job, text) {
-      // Only this job's progress. A sibling still working keeps its own pill.
-      if (job !== null) pills = pills.filter((p) => p.job !== job);
-      pills.push({ id: ++seq, job: null, text });
+      const mine = job === null ? -1 : pills.findIndex((p) => p.job === job);
+      if (mine !== -1) {
+        // In place, keeping the id, so the renderer sees only a text change. Removing the
+        // pill and appending the result instead made a node leave the middle of the column
+        // while a taller one arrived at the end - and since flex reflow is instant and
+        // cannot be transitioned, that read as the result overlapping the books still
+        // working. A sibling still working keeps its own pill either way.
+        const settled: Pill = { id: (pills[mine] as Pill).id, job: null, text };
+        pills[mine] = settled;
+        return settled;
+      }
+      const settled: Pill = { id: ++seq, job: null, text };
+      pills.push(settled);
       trim();
+      return settled;
     },
 
     dismiss(id) {

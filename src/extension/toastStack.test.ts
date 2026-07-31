@@ -109,4 +109,48 @@ describe('toastStack', () => {
     const ids = stack.list().map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("turns a book's own progress pill into its result, in place", () => {
+    // Not remove-and-append. That made the renderer drop a node from the middle of the
+    // column (held 220ms so it could fade) while appending a taller one at the end, and
+    // flex reflow is instant and cannot be transitioned - so the result appeared to
+    // overlap the books still working.
+    const stack = createToastStack();
+    stack.stage('a', 'Looking up A…');
+    stack.stage('b', 'Looking up B…');
+    stack.stage('c', 'Looking up C…');
+
+    stack.done('a', 'Found 2 — Dune');
+
+    expect(texts(stack)).toEqual(['Found 2 — Dune', 'Looking up B…', 'Looking up C…']);
+  });
+
+  it('keeps the same pill id when a book resolves, so nothing is redrawn', () => {
+    const stack = createToastStack();
+    stack.stage('a', 'Looking up A…');
+    const before = stack.list()[0]!.id;
+
+    const after = stack.done('a', 'Found 2');
+
+    expect(after.id).toBe(before);
+  });
+
+  it('hands back the pill it settled so the caller can time its dismissal', () => {
+    // The caller used to reach for list().at(-1), which is only the right pill while
+    // completion appends. In place, that would dismiss somebody else's toast.
+    const stack = createToastStack();
+
+    const pill = stack.done(null, 'Saved: Dune');
+
+    expect(pill.text).toBe('Saved: Dune');
+    expect(stack.list().map((p) => p.id)).toContain(pill.id);
+  });
+
+  it('stacks as many books as were caught when no cap is set', () => {
+    const stack = createToastStack();
+
+    for (let i = 0; i < 9; i++) stack.stage(`job${i}`, `Looking up ${i}…`);
+
+    expect(stack.list()).toHaveLength(9);
+  });
 });

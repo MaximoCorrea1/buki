@@ -59,7 +59,11 @@ const STYLE = `
    the top, newest nearest the corner, which is the direction they leave in. */
 .buki-stack {
   position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  display: flex; flex-direction: column; align-items: flex-end;
+  justify-content: flex-end; gap: 8px;
+  /* Unlimited by count, bounded by the screen. Growing upward with the overflow hidden
+     means the oldest scrolls off the top and the newest is always the one you can see. */
+  max-height: calc(100vh - 40px); overflow: hidden;
   pointer-events: none;
 }
 
@@ -342,10 +346,10 @@ function progress(job: string, msg: string): void {
  * only its own. A sibling still working keeps hers.
  */
 function toast(msg: string, job: string | null = null): void {
-  toasts.done(job, msg);
+  // The pill it settled, not `list().at(-1)`: completion now happens in place, so the
+  // resulting pill keeps its old position and the last one may belong to another catch.
+  const settled = toasts.done(job, msg);
   paintToasts();
-  const settled = toasts.list().at(-1);
-  if (!settled) return;
   setTimeout(() => {
     toasts.dismiss(settled.id);
     paintToasts();
