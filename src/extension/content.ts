@@ -50,7 +50,7 @@ const STYLE = `
 }
 .buki-btn:disabled { cursor: default; }
 .buki-btn:active { transform: scale(.9); }
-.buki-btn:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; opacity: 1; }
+.buki-btn:focus-visible { outline: 2px solid #ffcf8a; outline-offset: 1px; opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
   .buki-btn:hover { opacity: 1; background: rgba(108,123,255,.18); }
 }
@@ -72,17 +72,17 @@ const STYLE = `
    strings read as one object changing its mind rather than a crossfade of two. */
 .buki-pill {
   max-width: 330px; padding: 10px 14px; border-radius: 10px;
-  background: #17151f; color: #f2f0fa; border: 1px solid #2a2637;
+  background: #14101c; color: #f0eaf6; border: 1px solid #332a45;
   font: 13.5px/1.4 system-ui, sans-serif; box-shadow: 0 6px 22px rgba(0,0,0,.45);
   opacity: 0; transform: translateY(8px) scale(.97);
+  /* The stop control has to be clickable, so the pill opts back in to pointer events -
+     the stack stays transparent to them so it never swallows a click on the feed. */
+  pointer-events: auto; display: flex; align-items: center; gap: 10px;
   /* Transitions, not keyframes: toasts arrive in bursts, and a keyframe restarts from
      zero when interrupted where a transition retargets from where it is. */
   transition: opacity 180ms cubic-bezier(.23,1,.32,1),
     transform 180ms cubic-bezier(.23,1,.32,1), filter 130ms ease;
 }
-/* The stop control has to be clickable, so this pill opts back in to pointer events -
-   the stack itself stays transparent to them so it never swallows a click on the feed. */
-.buki-pill { pointer-events: auto; display: flex; align-items: center; gap: 10px; }
 .buki-msg { flex: 1; }
 .buki-x {
   flex: none; cursor: pointer; border: 0; border-radius: 6px; padding: 2px 6px;
@@ -99,7 +99,7 @@ const STYLE = `
 
 .buki-panel {
   position: absolute; z-index: 2147483000; width: 288px; padding: 6px;
-  background: #17151f; color: #f2f0fa; border: 1px solid #2a2637;
+  background: #14101c; color: #f0eaf6; border: 1px solid #332a45;
   border-radius: 11px; box-shadow: 0 12px 34px rgba(0,0,0,.55);
   font: 13.5px/1.45 system-ui, sans-serif;
   /* Origin at the trigger: the panel should look like it came out of the button. */
@@ -141,13 +141,13 @@ const STYLE = `
 .buki-row { display: flex; gap: 4px; margin-top: 6px; }
 .buki-intent {
   flex: 1; cursor: pointer; border: 0; border-radius: 6px; padding: 5px 0;
-  background: #241f33; color: #f2f0fa; font: 600 11.5px/1 ui-monospace, Menlo, monospace;
+  background: #221a30; color: #f0eaf6; font: 600 11.5px/1 ui-monospace, Menlo, monospace;
   letter-spacing: .06em; text-transform: uppercase;
   transition: background-color 140ms ease, transform 140ms cubic-bezier(.23,1,.32,1);
 }
 .buki-intent:active { transform: scale(.96); }
 .buki-intent:disabled { opacity: .45; cursor: default; }
-.buki-intent:focus-visible { outline: 2px solid #6c7bff; outline-offset: 1px; }
+.buki-intent:focus-visible { outline: 2px solid #ffcf8a; outline-offset: 1px; }
 @media (hover: hover) and (pointer: fine) {
   .buki-intent:not(:disabled):hover { background: #6c7bff; color: #fff; }
 }

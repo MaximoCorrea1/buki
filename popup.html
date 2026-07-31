@@ -14,35 +14,26 @@
          design shipped, with its signature detail invisible.
          ------------------------------------------------------------------ */
       :root {
-        color-scheme: light dark;
+        /* The same room as the landing page: one warm lamp, everything else in shadow.
+           Committed to dark rather than offering a pale twin, because the shelf is the
+           same object in both places and should not change temperature between them.
+           The five cloth colours and the gilt are untouched - they are the identity. */
+        color-scheme: dark;
 
-        --paper: #f4f2fb;
-        --board: #e2def0;
-        --ink: #171526;
-        --muted: #6b6785;
-        --accent: #6c7bff;
-        --sunk: #ffffff;
+        --paper: #14101c;
+        --board: #332a45;
+        --ink: #f0eaf6;
+        --muted: #a396b8;
+        --accent: #ffcf8a;
+        --sunk: #221a30;
 
         /* The buy pill. Jade rather than the accent, so it reads as its own kind of
-           action and never competes with a focus ring. 4.75:1 — legible at 11px. */
-        --buy-bg: #dff5ec;
-        --buy-bg-hi: #cdeee0;
-        --buy-ink: #14795a;
+           action and never competes with a focus ring. */
+        --buy-bg: #1e332c;
+        --buy-bg-hi: #264038;
+        --buy-ink: #6ee7b7;
 
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --paper: #17151f;
-          --board: #2a2637;
-          --ink: #f2f0fa;
-          --muted: #9d98b8;
-          --sunk: #1f1c2b;
-          --buy-bg: #1e332c;
-          --buy-bg-hi: #264038;
-          --buy-ink: #6ee7b7;
-        }
       }
 
       * { box-sizing: border-box; }

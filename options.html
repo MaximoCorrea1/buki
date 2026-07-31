@@ -7,26 +7,18 @@
       /* Tokens match popup.html exactly: --paper is the ground, --ink is the type.
          (This page used to have them the other way round.) */
       :root {
-        color-scheme: light dark;
+        /* The same room as the landing page and the popup. See popup.html for why this
+           commits to one look instead of tracking the system theme. */
+        color-scheme: dark;
 
-        --paper: #f4f2fb;
-        --board: #e2def0;
-        --ink: #171526;
-        --muted: #6b6785;
-        --accent: #6c7bff;
-        --sunk: #ffffff;
+        --paper: #14101c;
+        --board: #332a45;
+        --ink: #f0eaf6;
+        --muted: #a396b8;
+        --accent: #ffcf8a;
+        --sunk: #221a30;
 
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --paper: #17151f;
-          --board: #2a2637;
-          --ink: #f2f0fa;
-          --muted: #9d98b8;
-          --sunk: #1f1c2b;
-        }
       }
 
       * { box-sizing: border-box; }
@@ -138,8 +130,11 @@
       }
       button:active { transform: scale(0.97); }
       button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-      .save { background: var(--accent); color: #fff; }
-      .save:hover { background: #5a6bf5; }
+      /* Dark ink on the lamp, not white: the accent is a light warm amber now, and white
+         on it was barely legible. Hover glows rather than changing colour, because a
+         second accent would be a second idea. */
+      .save { background: var(--accent); color: #241705; }
+      .save:hover { box-shadow: 0 0 26px -8px var(--accent); }
       .ghost { background: transparent; color: var(--muted); }
       .ghost:hover { color: var(--ink); background: var(--board); }
 
