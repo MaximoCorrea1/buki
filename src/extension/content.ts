@@ -6,6 +6,7 @@ import type { Intent, SavedBook, SavedSource } from './storage';
 import { clothFor } from './cloth';
 import { createToastStack } from './toastStack';
 import { createPickerQueue } from './pickerQueue';
+import { createLookupMemo, postKey } from './lookupMemo';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
@@ -551,6 +552,14 @@ let injected = 0;
 /** One id per press, so two books caught at once never share a progress pill. */
 let jobSeq = 0;
 
+/** One recognition per post, however many times the button is pressed. */
+const lookups = createLookupMemo<{ candidates: Book[]; draft: AttemptDraft } | null>({
+  now: () => Date.now(),
+});
+
+/** job -> the post it is looking at, so a cancelled lookup can also be forgotten. */
+const jobPosts = new Map<string, string>();
+
 function addButton(article: HTMLElement): void {
   if (article.querySelector(`.${BTN_CLASS}`)) return;
   const actions = article.querySelector('[role="group"]');
@@ -588,8 +597,15 @@ function addButton(article: HTMLElement): void {
       });
 
       progress(job, 'Looking up the book…');
-      const recognized = await recognize(tweet, job);
-      if (!recognized) return; // no key; recognize() already said so
+      const key = postKey(tweet);
+      jobPosts.set(job, key);
+      const recognized = await lookups.run(key, () => recognize(tweet, job));
+      if (!recognized) {
+        // A null means "no key yet" or an orphaned page - both things the user may fix
+        // in the next few seconds, so it must not be remembered as this post's answer.
+        lookups.forget(key);
+        return; // recognize() already said what was wrong
+      }
       const { candidates, draft } = recognized;
       trace('lookup returned', candidates.length, 'candidate(s)', candidates);
 
