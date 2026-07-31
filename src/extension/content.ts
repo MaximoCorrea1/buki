@@ -2,7 +2,7 @@
 // and save the pick to your own reading list. Also renders feedback for the
 // background worker's right-click OCR flow.
 import type { Tweet, Book } from '../recognizer/types';
-import type { Intent, SavedBook, SavedSource } from './storage';
+import { identityOf, type Intent, type SavedBook, type SavedSource } from './storage';
 import { clothFor } from './cloth';
 import { createToastStack } from './toastStack';
 import { createPickerQueue } from './pickerQueue';
@@ -131,6 +131,11 @@ const STYLE = `
   box-shadow: 0 1px 0 rgba(0,0,0,.3), 0 15px 0 rgba(255,255,255,.55), 0 16px 0 rgba(0,0,0,.3);
 }
 .buki-t { font-weight: 600; letter-spacing: -.006em; }
+.buki-have {
+  margin-left: 6px; padding: 1px 6px; border-radius: 999px; vertical-align: 1px;
+  background: rgba(47,184,138,.18); color: #6fe0b6;
+  font: 600 10px/1.6 ui-monospace, Menlo, monospace; letter-spacing: .04em;
+}
 .buki-a { font-size: 12px; opacity: .55; }
 
 .buki-row { display: flex; gap: 4px; margin-top: 6px; }
@@ -215,10 +220,13 @@ const orphaned = (err?: unknown): boolean =>
 
 const REFRESH = 'Buki just updated — refresh this page to keep catching books.';
 
-async function recognize(
-  tweet: Tweet,
-  job: string,
-): Promise<{ candidates: Book[]; draft: AttemptDraft } | null> {
+interface Recognized {
+  candidates: Book[];
+  draft: AttemptDraft;
+  alreadySaved: Set<string>;
+}
+
+async function recognize(tweet: Tweet, job: string): Promise<Recognized | null> {
   if (orphaned()) {
     toast(REFRESH, job);
     return null;
@@ -240,7 +248,11 @@ async function recognize(
     }
     throw new Error(resp.error);
   }
-  return { candidates: resp.result.candidates, draft: resp.draft };
+  return {
+    candidates: resp.result.candidates,
+    draft: resp.draft,
+    alreadySaved: new Set(resp.alreadySaved),
+  };
 }
 
 /**
@@ -471,6 +483,8 @@ type PickOutcome = { outcome: 'confirmed'; savedId: string } | { outcome: 'dismi
 interface PickerOptions {
   source?: SavedSource;
   onOutcome?: (result: PickOutcome) => void;
+  /** Identities (see `identityOf`) the shelf already holds, so the picker can say so. */
+  alreadySaved?: Set<string>;
 }
 
 /**
@@ -519,6 +533,15 @@ function buildPanel(
       const title = document.createElement('div');
       title.className = 'buki-t';
       title.textContent = book.title;
+      // The shelf has always deduped, so choosing this again could never make a
+      // duplicate - but nothing said so, and being offered a book you own as though it
+      // were new is what made re-saving feel like a mistake.
+      if (opts.alreadySaved?.has(identityOf(book))) {
+        const have = document.createElement('span');
+        have.className = 'buki-have';
+        have.textContent = 'on your shelf';
+        title.appendChild(have);
+      }
       const author = document.createElement('div');
       author.className = 'buki-a';
       author.textContent = book.author;
@@ -539,7 +562,8 @@ function buildPanel(
             const saved = await saveBook(book, intent, opts.source);
             settle({ outcome: 'confirmed', savedId: saved.id });
             closePanel();
-            toast(`Saved: ${book.title} → ${intent}`);
+            // The word the write actually earned: this book may already have been here.
+            toast(`${saved.moved ? 'Moved' : 'Saved'}: ${book.title} → ${intent}`);
           } catch (err) {
             console.error('[Buki] save failed', err);
             saving = false;
@@ -610,9 +634,7 @@ let injected = 0;
 let jobSeq = 0;
 
 /** One recognition per post, however many times the button is pressed. */
-const lookups = createLookupMemo<{ candidates: Book[]; draft: AttemptDraft } | null>({
-  now: () => Date.now(),
-});
+const lookups = createLookupMemo<Recognized | null>({ now: () => Date.now() });
 
 /** job -> the post it is looking at, so a cancelled lookup can also be forgotten. */
 const jobPosts = new Map<string, string>();
@@ -663,7 +685,7 @@ function addButton(article: HTMLElement): void {
         lookups.forget(key);
         return; // recognize() already said what was wrong
       }
-      const { candidates, draft } = recognized;
+      const { candidates, draft, alreadySaved } = recognized;
       trace('lookup returned', candidates.length, 'candidate(s)', candidates);
 
       // The feed recycles tweets while a lookup is in flight. This used to drop the
@@ -678,6 +700,7 @@ function addButton(article: HTMLElement): void {
 
       queuePick(anchor, candidates, {
         source: sourceFor(permalink),
+        alreadySaved,
         ...(candidates.length ? { onOutcome: (o) => report({ ...draft, ...o }) } : {}),
       });
       // Say what is waiting, or a book recognized behind an open panel looks like nothing
@@ -769,6 +792,7 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
     );
     queuePick(img ?? null, candidates, {
       source: sourceFor(permalink),
+      alreadySaved: new Set(msg.alreadySaved),
       onOutcome: (o) => report({ ...draft, ...o }),
     });
     sendResponse({ shown: true });

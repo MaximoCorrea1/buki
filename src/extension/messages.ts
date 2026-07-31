@@ -44,6 +44,8 @@ export type ContentRequest =
       srcUrl: string;
       permalink: string | null;
       draft: AttemptDraft;
+      /** Identities the shelf already holds, so this picker marks them like the other. */
+      alreadySaved: string[];
     };
 
 /** content script / popup / options -> background */
@@ -71,7 +73,12 @@ export type BackgroundRequest =
   | { type: 'clearLog' };
 
 export type BackgroundResponse =
-  | { ok: true; result: RecognitionResult; draft: AttemptDraft }
+  /**
+   * `alreadySaved` holds the identities (see `identityOf`) of those candidates the shelf
+   * already has. The worker owns the shelf, so it answers this in the same round trip
+   * rather than making the page read storage for itself.
+   */
+  | { ok: true; result: RecognitionResult; draft: AttemptDraft; alreadySaved: string[] }
   /**
    * `needsSetup` means opening settings is the fix and retrying never will be - a
    * missing key, a retired model, a revoked credential. `error` is then already phrased

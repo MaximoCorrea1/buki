@@ -19,6 +19,12 @@ export interface SavedBook {
   intent: Intent;
   source?: SavedSource;
   savedAt: number;
+  /**
+   * True when this replaced a book already on the shelf rather than adding one. Not
+   * persisted state so much as a receipt for the write, so the toast can say "Moved"
+   * where it used to say "Saved" about a book you already had.
+   */
+  moved?: boolean;
 }
 
 /** Minimal shape of chrome.storage.local we depend on, so this tests without Chrome. */
@@ -29,8 +35,14 @@ export interface StorageArea {
 
 const KEY = 'savedBooks';
 
-/** Identity for dedup: ISBN when we have one, else normalized title+author. */
-function identityOf(book: Book): string {
+/**
+ * Identity for dedup: ISBN when we have one, else normalized title+author.
+ *
+ * Exported because "is this already mine?" is asked outside this module too - the picker
+ * marks a candidate the shelf already holds, so you are not offered a book you own as
+ * though it were new.
+ */
+export function identityOf(book: Book): string {
   if (book.isbn) return `isbn:${book.isbn}`;
   return `ta:${book.title.trim().toLowerCase()}|${book.author.trim().toLowerCase()}`;
 }
@@ -71,6 +83,7 @@ export function createLibrary(deps: {
           intent,
           source: source ?? previous?.source,
           savedAt: deps.now(),
+          moved: Boolean(previous),
         };
         const rest = existing.filter((s) => s.id !== saved.id);
         await deps.storage.set({ [KEY]: [saved, ...rest] });

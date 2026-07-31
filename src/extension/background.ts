@@ -10,7 +10,7 @@ import { createLlmVision, VisionHttpError } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
 import { readSettings, toVisionConfig, type Settings } from './settings';
-import { createLibrary, type SavedSource, type StorageArea } from './storage';
+import { createLibrary, identityOf, type SavedSource, type StorageArea } from './storage';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality } from './twitterImage';
 import { rememberCover, liveCoverDeps } from './coverCache';
@@ -143,6 +143,20 @@ async function recognize(
     // Resolved, failed or cancelled: nothing for this catch should still be on the wire.
     control.abort();
     running.delete(job);
+  }
+}
+
+/**
+ * Which of these the shelf already holds, by identity. Never throws: an unreadable shelf
+ * should cost a marker on the picker, not the whole recognition.
+ */
+async function shelvedAmong(candidates: { title: string; author: string; isbn?: string }[]) {
+  try {
+    const shelved = new Set((await library.list()).map((s) => identityOf(s.book)));
+    return candidates.map(identityOf).filter((id) => shelved.has(id));
+  } catch (err) {
+    console.error('[Buki] could not check the shelf', err);
+    return [];
   }
 }
 
@@ -280,6 +294,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       srcUrl: info.srcUrl,
       permalink: ctx?.permalink ?? null,
       draft,
+      alreadySaved: await shelvedAmong(result.candidates),
     });
     // The content script owns the outcome from here. If it never answered there is no
     // content script on this tab, so saving would mutate the shelf with zero feedback -
@@ -378,13 +393,14 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
 
   const startedAt = Date.now();
   recognize(msg.tweet, msg.job)
-    .then((recognized) =>
+    .then(async (recognized) => {
       sendResponse({
         ok: true,
         result: recognized.result,
         draft: draftFrom(recognized, Date.now() - startedAt, 'button'),
-      } satisfies BackgroundResponse),
-    )
+        alreadySaved: await shelvedAmong(recognized.result.candidates),
+      } satisfies BackgroundResponse);
+    })
     .catch((err: unknown) => {
       // Unfinished setup is not a miss - logging it would make the recognizer look bad
       // for something it was never given a chance to do.
