@@ -3,7 +3,7 @@
   "name": "Buki",
   "version": "1.0.0",
   "description": "Catch books you see on X into your own shelf, before they get lost in your bookmarks.",
-  "minimum_chrome_version": "110",
+  "minimum_chrome_version": "116",
   "permissions": ["storage", "contextMenus"],
   "host_permissions": [
     "https://twitter.com/*",

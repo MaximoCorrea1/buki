@@ -639,6 +639,15 @@ const lookups = createLookupMemo<Recognized | null>({ now: () => Date.now() });
 /** job -> the post it is looking at, so a cancelled lookup can also be forgotten. */
 const jobPosts = new Map<string, string>();
 
+/**
+ * Posts with a picker already queued or on screen.
+ *
+ * Sharing the lookup is not enough on its own: two presses on the same post both receive
+ * the same recognition and would each queue a panel, so the memo would have turned one
+ * duplicated lookup into two duplicated pickers for one book.
+ */
+const picking = new Set<string>();
+
 function addButton(article: HTMLElement): void {
   if (article.querySelector(`.${BTN_CLASS}`)) return;
   const actions = article.querySelector('[role="group"]');
@@ -698,10 +707,20 @@ function addButton(article: HTMLElement): void {
       // A no-match panel has nothing to pick, so its outcome is already known.
       if (!candidates.length) report({ ...draft, outcome: 'no-match' });
 
+      if (picking.has(key)) {
+        toast('Already asking about this one.', job);
+        return;
+      }
+      picking.add(key);
       queuePick(anchor, candidates, {
         source: sourceFor(permalink),
         alreadySaved,
-        ...(candidates.length ? { onOutcome: (o) => report({ ...draft, ...o }) } : {}),
+        // Always given, so the post is released however the panel closes. A no-match
+        // panel still has nothing to report - its outcome was recorded above.
+        onOutcome: (o) => {
+          picking.delete(key);
+          if (candidates.length) report({ ...draft, ...o });
+        },
       });
       // Say what is waiting, or a book recognized behind an open panel looks like nothing
       // happened - which is what made rapid catching feel like it dropped things.

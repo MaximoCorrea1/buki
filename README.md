@@ -28,7 +28,8 @@ node build.mjs
 ```
 
 Then in Chrome: `chrome://extensions` → enable **Developer mode** → **Load unpacked** →
-select this folder. Requires Chrome 110+.
+select this folder. Requires Chrome 116+ — cancelling a lookup combines the job's abort
+signal with each client's own timeout via `AbortSignal.any`, which landed in 116.
 
 **One-time setup.** Reading a cover from a photo is the only thing Buki can't do
 on your machine, so it needs a vision model. The options page opens on install: paste a
