@@ -6,167 +6,281 @@
     <title>Buki — catch books you see on X</title>
     <meta
       name="description"
-      content="A Chrome extension that recognises books in posts on X and files them on your own shelf, under Now, Next or Someday. Your list stays on your computer."
+      content="A Chrome extension that recognises books in posts on X — from the cover photo, not just the text — and files them on your own shelf under Now, Next or Someday. No account, no sync, nothing leaves your computer."
     />
+    <link rel="canonical" href="https://shelfy-pearl.vercel.app/" />
+
+    <!-- The card is the first thing anyone sees when this is posted on X, so it says the
+         whole proposition on its own rather than relying on the tweet around it. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://shelfy-pearl.vercel.app/" />
+    <meta property="og:title" content="Buki — catch books you see on X" />
+    <meta
+      property="og:description"
+      content="Recognises the book from the cover photo and files it on a shelf that's yours. Nothing leaves your computer."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Buki — catch books you see on X" />
+    <meta
+      name="twitter:description"
+      content="Recognises the book from the cover photo and files it on a shelf that's yours. Nothing leaves your computer."
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Buki",
+        "applicationCategory": "BrowserApplication",
+        "operatingSystem": "Chrome",
+        "description": "Recognises books in posts on X from the cover photo and files them on a local shelf under Now, Next or Someday.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Maximo Correa" }
+      }
+    </script>
+
     <style>
+      /* A library at night: one warm lamp, most spines lost to the dark, a few caught in
+         the light. The page commits to that single look rather than offering a pale twin,
+         because the whole idea only reads with a light source in a dark room.
+
+         No webfonts on purpose. Google Fonts logs the visitor's IP, and this page's entire
+         claim is that nothing about you is collected -- a tracking request in the <head>
+         would make that a lie before the reader reached the sentence. */
       :root {
-        color-scheme: light dark;
-        --paper: #f4f2fb;
-        --board: #e2def0;
-        --ink: #171526;
-        --muted: #6b6785;
-        --accent: #6c7bff;
-        --sunk: #ffffff;
+        color-scheme: dark;
+        --night: #14101c;
+        --room: #1d1729;
+        --sunk: #221a30;
+        --glow: #ffcf8a;
+        --chalk: #f0eaf6;
+        --dim: #a396b8;
+        --line: #332a45;
+        --gilt: #fae636;
         --coral: #ff6352;
         --marigold: #ffb020;
         --jade: #2fb88a;
+        --peri: #6c7bff;
         --plum: #b265d9;
-        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+        /* Serif appears only where a real book does -- spine titles and shelf rows.
+           Everywhere else is the interface, and the interface is sans. */
+        --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+        --tag: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --paper: #17151f;
-          --board: #2a2637;
-          --ink: #f2f0fa;
-          --muted: #9d98b8;
-          --sunk: #1f1c2b;
-        }
-      }
+
       * { box-sizing: border-box; }
+
       body {
         margin: 0;
-        padding: 0 22px 80px;
-        background: var(--paper);
-        color: var(--ink);
-        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+        padding: 0 0 72px;
+        background: var(--night);
+        color: var(--chalk);
+        font: 16px/1.65 var(--ui);
         -webkit-font-smoothing: antialiased;
       }
-      main { max-width: 660px; margin: 0 auto; }
 
-      header { display: flex; align-items: center; gap: 11px; padding: 34px 0 0; }
+      .wrap { max-width: 680px; margin: 0 auto; padding: 0 22px; }
+
+      a { color: var(--glow); }
+      a:focus-visible,
+      .btn:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; border-radius: 4px; }
+
+      /* ---------------------------------------------------------------- masthead */
+      header { display: flex; align-items: center; gap: 11px; padding: 26px 0 22px; }
       header svg { display: block; flex: none; }
-      .word { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
-
-      h1 {
-        margin: 46px 0 0;
-        font-size: clamp(32px, 6.4vw, 46px);
-        font-weight: 800;
-        line-height: 1.06;
-        letter-spacing: -0.035em;
+      .word { font-size: 19px; font-weight: 800; letter-spacing: -0.03em; }
+      .top-get {
+        margin-left: auto; font-size: 14px; color: var(--dim);
+        text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 2px;
+        transition: color 160ms var(--ease), border-color 160ms var(--ease);
       }
-      .lede { margin: 18px 0 0; font-size: 18px; color: var(--muted); max-width: 34em; }
+      .top-get:hover { color: var(--chalk); border-color: var(--glow); }
 
-      .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 30px 0 0; }
-      .btn {
-        display: inline-block;
-        padding: 12px 20px;
-        border-radius: 9px;
-        background: var(--accent);
-        color: #fff;
-        font-weight: 700;
-        text-decoration: none;
-        transition: transform 140ms var(--ease-out), background-color 140ms ease;
-      }
-      .btn:active { transform: scale(0.97); }
-      .btn:hover { background: #5a6bf5; }
-      .btn.ghost { background: transparent; color: var(--muted); }
-      .btn.ghost:hover { background: var(--board); color: var(--ink); }
-
-      /* The shelf itself is the hero — it is the thing the product makes. */
-      .shelf {
-        margin: 48px 0 0;
-        border: 1px solid var(--board);
-        border-radius: 14px;
-        background: var(--sunk);
+      /* ---------------------------------------------------------------- the wall */
+      /* The signature. Twenty-six spines; three of them lit. The lit ones are the books
+         you caught, the rest are the ones the timeline swallowed -- the product's whole
+         argument, as an object rather than a sentence. */
+      .wall {
+        position: relative;
+        height: 300px;
         overflow: hidden;
+        background:
+          radial-gradient(120% 90% at 22% -10%, rgba(255, 207, 138, 0.17), transparent 62%),
+          linear-gradient(180deg, var(--room), var(--night));
+        border-block: 1px solid var(--line);
+      }
+      /* Books touch. An even row of separated bars of equal width is a bar chart, which
+         is what the first pass looked like - the same misread that once made the icon
+         look like one. Widths vary, the gap is a shadow between covers rather than empty
+         space, and they rest on a board instead of floating. */
+      .spines {
+        position: absolute; inset: auto 0 9px; height: 80%;
+        display: flex; align-items: flex-end; justify-content: center;
+        padding: 0 10px;
+      }
+      .spine {
+        flex: 1 1 var(--w, 18px);
+        min-width: 0;
+        height: var(--h, 80%);
+        border-radius: 2px 2px 0 0;
+        /* The dark edges are the curve of the cover catching the light - it is what makes
+           a rectangle read as a physical object rather than a filled div. */
+        background:
+          linear-gradient(90deg, rgba(0, 0, 0, 0.5), transparent 24%, transparent 76%, rgba(0, 0, 0, 0.55)),
+          var(--c);
+        /* Unlit: still coloured, but sunk into the dark rather than greyed out - a room
+           at night keeps its hues, it just loses its light. */
+        filter: brightness(0.28) saturate(0.5);
+      }
+      /* Two thin rules, the way a real spine is banded above and below its title. A
+         filled block here read as a sticker slapped on the cover. The second rule is a
+         hard box-shadow rather than another element, so a spine stays one node. */
+      .spine::before {
+        content: ""; display: block; margin: 34% 20% 0;
+        height: 2px; border-radius: 1px;
+        background: rgba(255, 255, 255, 0.17);
+        box-shadow: 0 7px 0 rgba(255, 255, 255, 0.11);
+      }
+      .spine.lit {
+        filter: none;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+          0 0 30px -4px var(--c),
+          0 0 70px -12px var(--glow);
+      }
+      /* Where the light falls, the banding is gilt - the same detail the mark draws. */
+      .spine.lit::before {
+        background: var(--gilt);
+        box-shadow: 0 7px 0 rgba(250, 230, 54, 0.55);
+      }
+
+      /* The board they stand on. Without it they read as bars rising off the page edge. */
+      .board {
+        position: absolute; left: 0; right: 0; bottom: 0; height: 9px;
+        background: linear-gradient(180deg, #453757, #150f1f);
+        box-shadow: 0 -1px 0 rgba(255, 207, 138, 0.18);
+      }
+
+      /* Haze: the far ends of the shelf recede rather than stopping at a hard edge. */
+      .wall::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(90deg, var(--night), transparent 18%, transparent 82%, var(--night));
+      }
+      /* Film grain, so the flat CSS gradients read as a photographed room. */
+      .wall::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        opacity: 0.07; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      .caption {
+        margin: 14px auto 0; max-width: 680px; padding: 0 22px;
+        font-size: 13.5px; color: var(--dim);
+      }
+      .caption b { color: var(--chalk); font-weight: 600; }
+
+      /* One orchestrated moment: the lamp comes up and the three caught books resolve
+         out of the dark. Once, on load - not a loop, and not on every element. */
+      @media (prefers-reduced-motion: no-preference) {
+        .spine.lit { animation: found 900ms var(--ease) backwards; }
+        .spine.lit:nth-of-type(16) { animation-delay: 110ms; }
+        .spine.lit:nth-of-type(20) { animation-delay: 220ms; }
+        @keyframes found {
+          from { filter: brightness(0.28) saturate(0.5); box-shadow: none; }
+        }
+      }
+
+      /* ---------------------------------------------------------------- hero copy */
+      h1 {
+        margin: 40px 0 0;
+        font-size: clamp(31px, 6.2vw, 45px);
+        font-weight: 800;
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+      }
+      h1 em { font-family: var(--book); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
+      .lede { margin: 17px 0 0; font-size: 17.5px; color: var(--dim); max-width: 33em; }
+
+      .cta { display: flex; flex-wrap: wrap; gap: 11px; align-items: center; margin: 28px 0 0; }
+      .btn {
+        display: inline-block; padding: 11px 19px; border-radius: 999px;
+        font-size: 15px; font-weight: 650; text-decoration: none;
+        background: var(--glow); color: #241705; border: 1px solid transparent;
+        transition: transform 140ms var(--ease), box-shadow 140ms var(--ease);
+      }
+      .btn:hover { box-shadow: 0 0 34px -8px var(--glow); }
+      .btn:active { transform: scale(0.97); }
+      .btn.ghost { background: transparent; color: var(--chalk); border-color: var(--line); }
+      .btn.ghost:hover { border-color: var(--dim); box-shadow: none; }
+      .free { font-size: 13.5px; color: var(--dim); }
+
+      /* ---------------------------------------------------------------- shelf demo */
+      .shelf {
+        margin: 44px 0 0; border: 1px solid var(--line); border-radius: 14px;
+        background: var(--sunk); overflow: hidden;
+        box-shadow: 0 30px 70px -40px #000;
       }
       .shelf-top {
-        display: flex; align-items: center; gap: 9px;
-        padding: 13px 16px;
-        border-bottom: 1px solid var(--board);
-        font: 700 13px/1 system-ui, sans-serif;
+        display: flex; align-items: center; gap: 8px;
+        padding: 11px 14px; border-bottom: 1px solid var(--line);
+        font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
       }
-      .stat {
-        margin-left: auto;
-        font: 600 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
-        color: var(--muted);
-      }
+      .shelf-top .stat { margin-left: auto; font: 11.5px var(--tag); color: var(--dim); letter-spacing: 0; }
       .grp {
-        padding: 13px 16px 6px;
-        font: 700 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--muted);
+        padding: 13px 14px 5px; font: 11px var(--tag); text-transform: uppercase;
+        letter-spacing: 0.09em; color: var(--dim);
       }
       .row {
-        display: grid;
-        grid-template-columns: 8px 34px 1fr;
-        align-items: center;
-        gap: 11px;
-        padding: 9px 16px 10px;
-        border-bottom: 1px solid var(--board);
+        display: flex; align-items: flex-start; gap: 10px; padding: 9px 14px 12px;
+        border-bottom: 1px solid rgba(51, 42, 69, 0.55);
       }
       .row:last-child { border-bottom: 0; }
-      .edge {
-        align-self: stretch; min-height: 50px; border-radius: 2px;
-        background:
-          linear-gradient(rgba(255,255,255,.55) 1px, transparent 1px) 0 14px / 100% 2px no-repeat,
-          linear-gradient(rgba(0,0,0,.25) 1px, transparent 1px) 0 15px / 100% 2px no-repeat,
-          linear-gradient(rgba(255,255,255,.55) 1px, transparent 1px) 0 34px / 100% 2px no-repeat,
-          linear-gradient(rgba(0,0,0,.25) 1px, transparent 1px) 0 35px / 100% 2px no-repeat,
-          var(--c);
-      }
+      .edge { width: 4px; align-self: stretch; border-radius: 2px; background: var(--c); flex: none; }
       .thumb {
-        width: 34px; height: 50px; border-radius: 2px;
-        background-image: linear-gradient(150deg, rgba(255,255,255,.25), rgba(0,0,0,.45));
-        background-color: var(--c);
-        box-shadow: 0 1px 3px rgba(23,21,38,.22);
+        width: 30px; height: 44px; border-radius: 2px; flex: none;
+        background: linear-gradient(150deg, var(--c), rgba(0, 0, 0, 0.55));
+        box-shadow: 0 1px 6px -1px #000;
       }
-      .t { font-weight: 700; font-size: 14px; letter-spacing: -0.011em; }
-      .a { font-size: 12px; color: var(--muted); }
-      .links { display: flex; align-items: center; gap: 8px; margin-top: 3px; font-size: 11px; font-weight: 600; }
-      .links .src { color: var(--muted); }
-      .buy { padding: 3px 9px; border-radius: 999px; background: #dff5ec; color: #14795a; }
-      @media (prefers-color-scheme: dark) {
-        .buy { background: #1e332c; color: #6ee7b7; }
+      .t { font-family: var(--book); font-size: 15px; line-height: 1.25; }
+      .a { font-size: 12.5px; color: var(--dim); margin-top: 2px; }
+      .links { display: flex; gap: 9px; align-items: center; margin-top: 7px; }
+      .src { font-size: 11.5px; color: var(--dim); }
+      .buy {
+        font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+        background: rgba(47, 184, 138, 0.16); color: #6fe0b6;
       }
 
+      /* ---------------------------------------------------------------- sections */
       h2 {
-        margin: 56px 0 0;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--muted);
+        margin: 58px 0 0; font-size: 13px; font-weight: 700; color: var(--dim);
+        text-transform: uppercase; letter-spacing: 0.12em;
       }
-      h3 { margin: 26px 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
-      p { margin: 8px 0 0; }
-      .grid { display: grid; gap: 26px; margin-top: 6px; }
-      @media (min-width: 620px) { .grid { grid-template-columns: 1fr 1fr; gap: 30px 34px; } }
+      .steps { margin: 20px 0 0; display: grid; gap: 26px; }
+      @media (min-width: 620px) { .steps { grid-template-columns: 1fr 1fr; gap: 30px 34px; } }
+      .steps h3 { margin: 0 0 5px; font-size: 16.5px; font-weight: 700; letter-spacing: -0.02em; }
+      .steps p { margin: 0; color: var(--dim); font-size: 15px; }
+      .body-copy { margin: 18px 0 0; color: var(--dim); }
 
       .note {
-        margin: 44px 0 0;
-        padding: 16px 18px;
-        background: var(--sunk);
-        border: 1px solid var(--board);
-        border-radius: 10px;
-        font-size: 14px;
-        color: var(--muted);
+        margin: 24px 0 0; padding: 15px 17px; border-radius: 11px;
+        border: 1px solid var(--line); background: var(--sunk);
+        font-size: 13.5px; color: var(--dim);
       }
-      .note b { color: var(--ink); }
-      a { color: var(--accent); }
+      .note b { color: var(--chalk); }
+
       footer {
-        margin: 54px 0 0;
-        padding-top: 20px;
-        border-top: 1px solid var(--board);
-        font-size: 13px;
-        color: var(--muted);
+        margin: 62px 0 0; padding-top: 22px; border-top: 1px solid var(--line);
+        display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+        font-size: 14px;
       }
-      footer a { margin-right: 16px; }
+      footer p { width: 100%; margin: 0; color: var(--dim); font-size: 13px; }
     </style>
   </head>
   <body>
-    <main>
+    <div class="wrap">
       <header>
         <svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true">
           <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff6352" />
@@ -176,123 +290,163 @@
           <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
         </svg>
         <span class="word">Buki</span>
+        <a class="top-get" href="https://github.com/MaximoCorrea1/buki">Get it</a>
       </header>
+    </div>
 
-      <h1>You saw a book. Then you forgot it.</h1>
-      <p class="lede">
-        Buki recognises books in posts on X — from the cover photo, not just the text —
-        and files them on a shelf that's yours. It lives in your browser. No account, no
-        sync, nothing to sign up for.
-      </p>
-
-      <div class="cta">
-        <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get it on GitHub</a>
-        <a class="btn ghost" href="privacy.html">Privacy</a>
+    <div class="wall" role="img"
+         aria-label="A shelf of book spines in a dark room. Three are lit; the rest are lost in shadow.">
+      <div class="spines">
+        <div class="spine" style="--c: #6c7bff; --h: 74%; --w: 16px"></div>
+        <div class="spine" style="--c: #ff6352; --h: 88%; --w: 26px"></div>
+        <div class="spine" style="--c: #b265d9; --h: 69%; --w: 11px"></div>
+        <div class="spine" style="--c: #2fb88a; --h: 93%; --w: 21px"></div>
+        <div class="spine" style="--c: #ffb020; --h: 61%; --w: 33px"></div>
+        <div class="spine" style="--c: #6c7bff; --h: 84%; --w: 14px"></div>
+        <div class="spine" style="--c: #ff6352; --h: 71%; --w: 19px"></div>
+        <div class="spine" style="--c: #2fb88a; --h: 96%; --w: 28px"></div>
+        <div class="spine lit" style="--c: #ff6352; --h: 90%; --w: 22px"></div>
+        <div class="spine" style="--c: #b265d9; --h: 66%; --w: 12px"></div>
+        <div class="spine" style="--c: #ffb020; --h: 79%; --w: 30px"></div>
+        <div class="spine" style="--c: #6c7bff; --h: 87%; --w: 17px"></div>
+        <div class="spine" style="--c: #2fb88a; --h: 63%; --w: 24px"></div>
+        <div class="spine" style="--c: #ff6352; --h: 92%; --w: 10px"></div>
+        <div class="spine" style="--c: #b265d9; --h: 76%; --w: 27px"></div>
+        <div class="spine lit" style="--c: #ffb020; --h: 99%; --w: 20px"></div>
+        <div class="spine" style="--c: #6c7bff; --h: 68%; --w: 15px"></div>
+        <div class="spine" style="--c: #2fb88a; --h: 85%; --w: 31px"></div>
+        <div class="spine" style="--c: #ffb020; --h: 72%; --w: 13px"></div>
+        <div class="spine lit" style="--c: #6c7bff; --h: 82%; --w: 25px"></div>
+        <div class="spine" style="--c: #ff6352; --h: 64%; --w: 18px"></div>
+        <div class="spine" style="--c: #b265d9; --h: 90%; --w: 23px"></div>
+        <div class="spine" style="--c: #2fb88a; --h: 70%; --w: 11px"></div>
+        <div class="spine" style="--c: #ffb020; --h: 86%; --w: 29px"></div>
+        <div class="spine" style="--c: #6c7bff; --h: 75%; --w: 16px"></div>
+        <div class="spine" style="--c: #ff6352; --h: 94%; --w: 21px"></div>
       </div>
+      <div class="board"></div>
+    </div>
+    <p class="caption"><b>Three of these you caught.</b> The rest went past in the timeline.</p>
 
-      <div class="shelf">
-        <div class="shelf-top">
-          <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true">
-            <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff6352" />
-            <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#2fb88a" />
-            <rect x="10.6" y="4" width="3.2" height="10.5" rx="1" fill="#6c7bff"
-                  transform="rotate(11 12.2 9.25)" />
-            <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
-          </svg>
-          Buki
-          <span class="stat">23 caught · 87% kept</span>
+    <div class="wrap">
+      <main>
+        <h1>You saw a book. Then you <em>forgot</em> it.</h1>
+        <p class="lede">
+          Buki recognises books in posts on X — from the cover photo, not just the text —
+          and files them on a shelf that's yours. It lives in your browser. No account, no
+          sync, nothing to sign up for.
+        </p>
+
+        <div class="cta">
+          <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get it on GitHub</a>
+          <a class="btn ghost" href="privacy.html">Privacy</a>
+          <span class="free">Free · works with your own key</span>
         </div>
 
-        <div class="grp">Reading now</div>
-        <div class="row" style="--c: #6c7bff">
-          <div class="edge"></div>
-          <div class="thumb"></div>
-          <div>
-            <div class="t">Signals and Systems</div>
-            <div class="a">Alan V. Oppenheim</div>
-            <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+        <div class="shelf">
+          <div class="shelf-top">
+            <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff6352" />
+              <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#2fb88a" />
+              <rect x="10.6" y="4" width="3.2" height="10.5" rx="1" fill="#6c7bff"
+                    transform="rotate(11 12.2 9.25)" />
+              <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
+            </svg>
+            Buki
+            <span class="stat">23 caught · 87% kept</span>
+          </div>
+
+          <div class="grp">Reading now</div>
+          <div class="row" style="--c: #6c7bff">
+            <div class="edge"></div>
+            <div class="thumb"></div>
+            <div>
+              <div class="t">Signals and Systems</div>
+              <div class="a">Alan V. Oppenheim</div>
+              <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+            </div>
+          </div>
+
+          <div class="grp">Up next</div>
+          <div class="row" style="--c: #ffb020">
+            <div class="edge"></div>
+            <div class="thumb"></div>
+            <div>
+              <div class="t">Structure and Interpretation of Computer Programs</div>
+              <div class="a">Abelson, Sussman</div>
+              <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+            </div>
+          </div>
+          <div class="row" style="--c: #2fb88a">
+            <div class="edge"></div>
+            <div class="thumb"></div>
+            <div>
+              <div class="t">Dune</div>
+              <div class="a">Frank Herbert</div>
+              <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+            </div>
           </div>
         </div>
 
-        <div class="grp">Up next</div>
-        <div class="row" style="--c: #ffb020">
-          <div class="edge"></div>
-          <div class="thumb"></div>
+        <h2>How it works</h2>
+        <div class="steps">
           <div>
-            <div class="t">Structure and Interpretation of Computer Programs</div>
-            <div class="a">Abelson, Sussman</div>
-            <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+            <h3>Right-click the cover</h3>
+            <p>
+              Choose <b>Save book to shelf</b>. Buki sends the cover and the post's words
+              to a vision model together — the caption is often what makes an unreadable
+              cover legible — then checks the answer against OpenLibrary before saving it.
+            </p>
+          </div>
+          <div>
+            <h3>Or hit the book icon</h3>
+            <p>
+              It sits in the post's action bar, beside reply and repost. Same recognition,
+              and you choose where the book goes.
+            </p>
+          </div>
+          <div>
+            <h3>Now, Next, or Someday</h3>
+            <p>
+              Every book gets an intention, so something you mean to read next month doesn't
+              sit in the same pile as something you saved on a whim. Mark it finished when
+              you're done.
+            </p>
+          </div>
+          <div>
+            <h3>It admits when it's unsure</h3>
+            <p>
+              A strong match saves outright. A weak one asks first, rather than quietly
+              putting the wrong book on your shelf. Buki keeps a private count of how
+              often it got it right, so you can decide how much to trust it.
+            </p>
           </div>
         </div>
-        <div class="row" style="--c: #2fb88a">
-          <div class="edge"></div>
-          <div class="thumb"></div>
-          <div>
-            <div class="t">Dune</div>
-            <div class="a">Frank Herbert</div>
-            <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
-          </div>
-        </div>
-      </div>
 
-      <h2>How it works</h2>
-      <div class="grid">
-        <div>
-          <h3>Right-click the cover</h3>
-          <p>
-            Choose <b>Save book to shelf</b>. Buki sends the cover and the post's words
-            to a vision model together — the caption is often what makes an unreadable
-            cover legible — then checks the answer against OpenLibrary before saving it.
-          </p>
-        </div>
-        <div>
-          <h3>Or hit the book icon</h3>
-          <p>
-            It sits in the post's action bar, beside reply and repost. Same recognition,
-            and you choose where the book goes.
-          </p>
-        </div>
-        <div>
-          <h3>Now, Next, or Someday</h3>
-          <p>
-            Every book gets an intention, so something you mean to read next month doesn't
-            sit in the same pile as something you saved on a whim. Mark it finished when
-            you're done.
-          </p>
-        </div>
-        <div>
-          <h3>It admits when it's unsure</h3>
-          <p>
-            A strong match saves outright. A weak one asks first, rather than quietly
-            putting the wrong book on your shelf. Buki keeps a private count of how
-            often it got it right, so you can decide how much to trust it.
-          </p>
-        </div>
-      </div>
+        <h2>What it does with your data</h2>
+        <p class="body-copy">
+          Your shelf never leaves your computer. The only things sent anywhere are the image
+          you asked Buki to identify, which goes to the vision provider you configured, and
+          the recognised title, which goes to OpenLibrary to confirm the book exists. There
+          is no Buki server, no account, and no analytics.
+          <a href="privacy.html">Read the privacy policy</a>.
+        </p>
 
-      <h2>What it does with your data</h2>
-      <p>
-        Your shelf never leaves your computer. The only things sent anywhere are the image
-        you asked Buki to identify, which goes to the vision provider you configured, and
-        the recognised title, which goes to OpenLibrary to confirm the book exists. There
-        is no Buki server, no account, and no analytics.
-        <a href="privacy.html">Read the privacy policy</a>.
-      </p>
+        <p class="note">
+          <b>Affiliate disclosure.</b> Saved books carry a <b>Buy</b> link. As an Amazon
+          Associate, Buki earns from qualifying purchases, at no extra cost to you. The
+          link appears only on books you have already chosen to save, and it never changes
+          which books Buki shows you or in what order. You can point it at Bookshop.org
+          instead, which supports independent bookshops.
+        </p>
 
-      <p class="note">
-        <b>Affiliate disclosure.</b> Saved books carry a <b>Buy</b> link. As an Amazon
-        Associate, Buki earns from qualifying purchases, at no extra cost to you. The
-        link appears only on books you have already chosen to save, and it never changes
-        which books Buki shows you or in what order. You can point it at Bookshop.org
-        instead, which supports independent bookshops.
-      </p>
-
-      <footer>
-        <a href="https://github.com/MaximoCorrea1/buki">Source</a>
-        <a href="privacy.html">Privacy</a>
-        <a href="https://github.com/MaximoCorrea1/buki/issues">Report a problem</a>
-        <p>Made by Maximo Correa. MIT licensed.</p>
-      </footer>
-    </main>
+        <footer>
+          <a href="https://github.com/MaximoCorrea1/buki">Source</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="https://github.com/MaximoCorrea1/buki/issues">Report a problem</a>
+          <p>Made by Maximo Correa. MIT licensed.</p>
+        </footer>
+      </main>
+    </div>
   </body>
 </html>

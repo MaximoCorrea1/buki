@@ -6,11 +6,12 @@
     <title>Buki — Privacy Policy</title>
     <style>
       :root {
-        color-scheme: light dark;
-        --paper: #f4f2fb; --board: #e2def0; --ink: #171526; --muted: #6b6785; --accent: #6c7bff;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root { --paper: #17151f; --board: #2a2637; --ink: #f2f0fa; --muted: #9d98b8; }
+        color-scheme: dark;
+        /* Same room as the landing page. This is one click from the CTA, so a page that
+           flipped to light here would read as a different site - exactly the wrong
+           impression on the page whose whole job is to be believed. */
+        --paper: #14101c; --board: #221a30; --ink: #f0eaf6; --muted: #a396b8;
+        --accent: #ffcf8a; --line: #332a45;
       }
       * { box-sizing: border-box; }
       body {
