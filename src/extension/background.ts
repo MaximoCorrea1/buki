@@ -96,16 +96,17 @@ function visionFor(settings: Settings, net: FetchLike) {
  *
  * The client is built LAZILY, and a missing key is swallowed until the end. Building it
  * up front made the key mandatory for every recognition, including the ones that never
- * need it: a post carrying a retailer link resolves for free in step 1, and post text
- * grounds for free in step 4. Three separate documents promised those still worked
- * without a key, and none of them did.
+ * need it: a post carrying a retailer link still resolves for free, and so does grounding
+ * the post's own words when the card asks for it. Three separate documents promised those
+ * worked without a key, and none of them did.
  *
  * So: no key means no cover reading, exactly as advertised. The prompt to set one up
- * appears only if nothing cheaper found the book.
+ * appears only when nothing else found the book.
  */
 async function recognize(
   tweet: Tweet,
   job: string,
+  opts: { fromText?: boolean } = {},
 ): Promise<{ result: RecognitionResult; model: string }> {
   const settings = await readSettings(); // read per call, so a new key needs no reload
   let keyWasMissing = false;
@@ -124,7 +125,7 @@ async function recognize(
       } catch (err) {
         if (!(err instanceof NoKeyError)) throw err;
         keyWasMissing = true;
-        return null; // fall through to grounding the post's own words
+        return null; // fall through to the retailer link, which needs no key
       }
     },
   };
@@ -133,10 +134,11 @@ async function recognize(
     // Upgraded here rather than at either call site, so the button and the right-click
     // menu cannot drift apart on image quality - the whole reason recognition moved here.
     const full: Tweet = { ...tweet, imageUrls: tweet.imageUrls.map(bestQuality) };
-    const result = await recognizeBook(full, {
-      vision,
-      books: createOpenLibraryClient({ fetch: net }),
-    });
+    const result = await recognizeBook(
+      full,
+      { vision, books: createOpenLibraryClient({ fetch: net }) },
+      opts,
+    );
 
     if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');
     return { result, model: settings.model };
@@ -396,7 +398,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
   if (msg?.type !== 'recognize') return false;
 
   const startedAt = Date.now();
-  recognize(msg.tweet, msg.job)
+  recognize(msg.tweet, msg.job, { ...(msg.fromText ? { fromText: true } : {}) })
     .then(async (recognized) => {
       sendResponse({
         ok: true,

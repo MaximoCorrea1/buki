@@ -50,8 +50,15 @@ export type ContentRequest =
 
 /** content script / popup / options -> background */
 export type BackgroundRequest =
-  /** `job` names this catch, so the page can call it off while it is still running. */
-  | { type: 'recognize'; tweet: Tweet; job: string }
+  /**
+   * `job` names this catch, so the page can call it off while it is still running.
+   *
+   * `fromText` asks for the post's own words to be grounded. It is off by default because
+   * as a silent fallback it produced shelf entries that were never in the picture, with
+   * nothing on screen to say so - it is now something the card offers after the cover
+   * came back with nothing.
+   */
+  | { type: 'recognize'; tweet: Tweet; job: string; fromText?: boolean }
   /**
    * Stop a lookup the user no longer wants. The fetches live in the worker, so this is a
    * message rather than a local abort. An unknown or already-finished job is ignored - a

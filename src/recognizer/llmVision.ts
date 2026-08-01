@@ -62,13 +62,25 @@ export class VisionHttpError extends Error {
   }
 }
 
+/**
+ * X allows four attachments. Beyond that we would be paying to look at someone else's
+ * gallery, and the book is not going to be the ninth picture.
+ */
+export const MAX_IMAGES = 4;
+
+/**
+ * The images are the evidence; the caption is context.
+ *
+ * The previous wording ("use the post text as a hint") invited the model to answer from
+ * the caption, so a post that showed one book and talked about another returned the one
+ * it was talking about. That is not a hint, it is a different source.
+ */
 const INSTRUCTION = [
   'You identify books from photographs.',
-  'The image usually shows a book cover; the text is the social media post it appeared in.',
+  'Identify the book shown IN THE IMAGES. There may be several; use whichever actually shows a book.',
+  'The post text is context only: use it to disambiguate a cover you can partly read, never to name a book you cannot see.',
+  'If the images show no book, reply with null for both fields even if the text names one.',
   'Reply with ONLY a JSON object: {"title": string|null, "author": string|null}.',
-  'Use the post text as a hint when the cover is hard to read.',
-  'If the image is not a book, or you cannot identify it, use null for both fields.',
-  'Never guess a plausible-sounding book you are not actually reading in the image.',
 ].join(' ');
 
 interface ChatReply {
@@ -115,8 +127,10 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
 
   return {
     async guessBook({ imageUrls, text, altText }) {
-      const image = imageUrls[0];
-      if (!image) return null; // nothing to look at - don't spend a request
+      // Every attachment, not just the first: a post can put the book second, and three
+      // of four pictures used to be discarded before the model ever saw them.
+      const images = imageUrls.slice(0, MAX_IMAGES);
+      if (!images.length) return null; // nothing to look at - don't spend a request
 
       const caption = [text, altText].filter(Boolean).join('\n').slice(0, 600);
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -129,7 +143,7 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
             role: 'user',
             content: [
               { type: 'text', text: `${INSTRUCTION}\n\nPost text:\n${caption || '(none)'}` },
-              { type: 'image_url', image_url: { url: image } },
+              ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
             ],
           },
         ],

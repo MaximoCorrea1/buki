@@ -1,6 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { createLlmVision, type VisionConfig } from './llmVision';
+import { createLlmVision, MAX_IMAGES, type VisionConfig } from './llmVision';
 import type { FetchLike } from './types';
+
+interface ImagePart {
+  type: 'image_url';
+  image_url: { url: string };
+}
+
+/** The content parts of the one user message, so a test can assert what was actually sent. */
+function contentOf(body: unknown): { type: string; text?: string; image_url?: { url: string } }[] {
+  const messages = (body as { messages?: { content?: unknown }[] })?.messages ?? [];
+  return (messages.at(-1)?.content ?? []) as { type: string; text?: string }[];
+}
+
+const imageParts = (body: unknown): ImagePart[] =>
+  contentOf(body).filter((p): p is ImagePart => p.type === 'image_url');
+
+const textPart = (body: unknown): string => contentOf(body).find((p) => p.type === 'text')?.text ?? '';
 
 const CFG: VisionConfig = {
   endpoint: 'https://provider.test/v1/chat/completions',
@@ -197,5 +213,50 @@ describe('createLlmVision', () => {
       await createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: [], text: 'no picture' }),
     ).toBeNull();
     expect(called).toBe(false);
+  });
+
+  it('shows the model every image in the post, not just the first', async () => {
+    // A post with four photos had three of them ignored, so a book that was not the
+    // first attachment could not be read at all - the whole complaint about the button
+    // "not reading the image".
+    const { fetch, sent } = fakeModel(null);
+
+    await createLlmVision({ fetch, config: CFG }).guessBook({
+      imageUrls: ['https://a.test/1.jpg', 'https://a.test/2.jpg', 'https://a.test/3.jpg'],
+      text: '',
+    });
+
+    const parts = imageParts(sent.body);
+    expect(parts.map((p) => p.image_url.url)).toEqual([
+      'https://a.test/1.jpg',
+      'https://a.test/2.jpg',
+      'https://a.test/3.jpg',
+    ]);
+  });
+
+  it('does not send more images than a post can carry', async () => {
+    const { fetch, sent } = fakeModel(null);
+
+    await createLlmVision({ fetch, config: CFG }).guessBook({
+      imageUrls: Array.from({ length: 9 }, (_, i) => `https://a.test/${i}.jpg`),
+      text: '',
+    });
+
+    expect(imageParts(sent.body)).toHaveLength(MAX_IMAGES);
+  });
+
+  it('tells the model the images decide and the text is only context', async () => {
+    // The prompt used to invite the caption to name the book. A post that shows one book
+    // and talks about another then answered with the one it was talking about.
+    const { fetch, sent } = fakeModel(null);
+
+    await createLlmVision({ fetch, config: CFG }).guessBook({
+      imageUrls: ['https://a.test/1.jpg'],
+      text: 'I am currently reading Some Other Book',
+    });
+
+    const prompt = textPart(sent.body);
+    expect(prompt).toMatch(/IN THE IMAGES/);
+    expect(prompt).toMatch(/never to name a book you cannot see/i);
   });
 });

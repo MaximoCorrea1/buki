@@ -3,7 +3,89 @@ import { recognizeBook } from './recognizer';
 import type { Tweet, VisionClient, BooksDb } from './types';
 
 describe('recognizeBook', () => {
-  it('short-circuits to the linked book and never calls the vision model', async () => {
+  it('reads the cover rather than trusting a link to a different book', async () => {
+    // A post that SHOWS one book and LINKS to another is common - a quote from the book
+    // beside an affiliate link to something else. The link used to short-circuit before
+    // the model ever saw the photo, so the picture on screen was ignored entirely.
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return { title: 'Linked Book', author: 'Someone Else', isbn: '0141439602' };
+      },
+      async search() {
+        return [{ title: 'Dune', author: 'Frank Herbert' }];
+      },
+    };
+    const vision: VisionClient = {
+      async guessBook() {
+        return { title: 'Dune', author: 'Frank Herbert', confidence: 0.9 };
+      },
+    };
+
+    const result = await recognizeBook(
+      {
+        text: '',
+        imageUrls: ['https://pbs.twimg.com/media/cover.jpg'],
+        links: ['https://www.amazon.com/dp/0141439602'],
+      },
+      { vision, books },
+    );
+
+    expect(result.candidates[0]?.title).toBe('Dune');
+    expect(result.source).toBe('vision');
+  });
+
+  it('does not reach for the post text unless it was asked to', async () => {
+    // Text grounding as a silent fallback produced books that were never in the image,
+    // and nothing on screen distinguished them. It is now an explicit action.
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search() {
+        return [{ title: 'Some Book From The Words', author: 'Anyone' }];
+      },
+    };
+    const vision: VisionClient = {
+      async guessBook() {
+        return null;
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: 'Some Book From The Words', imageUrls: ['https://a.test/x.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(result.candidates).toEqual([]);
+    expect(result.source).toBe('none');
+  });
+
+  it('grounds the post text when it is asked to', async () => {
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search() {
+        return [{ title: 'Some Book From The Words', author: 'Anyone' }];
+      },
+    };
+    const vision: VisionClient = {
+      async guessBook() {
+        return null;
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: 'Some Book From The Words', imageUrls: [], links: [] },
+      { vision, books },
+      { fromText: true },
+    );
+
+    expect(result.source).toBe('text');
+    expect(result.confidence).toBe('medium');
+  });
+
+  it('uses the link when the cover gave nothing, having looked at it first', async () => {
     let visionCalled = false;
     const vision: VisionClient = {
       async guessBook() {
@@ -33,7 +115,11 @@ describe('recognizeBook', () => {
     expect(result.source).toBe('link');
     expect(result.confidence).toBe('high');
     expect(result.candidates[0]?.title).toBe('Pride and Prejudice');
-    expect(visionCalled).toBe(false);
+    // Reversed on purpose. This used to assert the model was NEVER called when a link was
+    // present - which is precisely how a post showing one book and linking to another
+    // returned the wrong one. The cover is now always read first; the link is what
+    // answers when the cover gives nothing.
+    expect(visionCalled).toBe(true);
   });
 
   it('falls back to vision and grounds the guess against the books DB', async () => {
@@ -171,9 +257,13 @@ describe('recognizeBook', () => {
       },
     };
 
+    // `fromText` is now required: grounding the caption is something the card asks for,
+    // not something that happens when the picture came back empty. The guarantee this
+    // test protects - a word-overlap match must never reach `high` - is unchanged.
     const result = await recognizeBook(
       { text: 'HOME', imageUrls: [], links: [] },
       { vision, books },
+      { fromText: true },
     );
 
     expect(result.candidates[0]?.title).toBe('Fun Home');
@@ -197,9 +287,12 @@ describe('recognizeBook', () => {
       },
     };
 
+    // Asked for explicitly now - see the sibling test that proves it does NOT happen on
+    // its own. The line-by-line grounding this covers is unchanged.
     const result = await recognizeBook(
       { text: '10 books:\n\n1) Economics in One Lesson', imageUrls: [], links: [] },
       { vision, books },
+      { fromText: true },
     );
 
     expect(result.source).toBe('text');
@@ -225,9 +318,11 @@ describe('recognizeBook', () => {
       },
     };
 
+    // Asked for explicitly now; the ceiling it protects is unchanged.
     const result = await recognizeBook(
       { text: 'Structure and Interpretation of Computer Programs', imageUrls: [], links: [] },
       { vision, books },
+      { fromText: true },
     );
 
     // Four shared words - as strong as text evidence ever gets, and still medium.
