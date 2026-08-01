@@ -11,6 +11,7 @@ import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
 import { readSettings, toVisionConfig, type Settings } from './settings';
 import { createLibrary, identityOf, type SavedSource, type StorageArea } from './storage';
+import { sameBook } from './bookIdentity';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality } from './twitterImage';
 import { rememberCover, liveCoverDeps } from './coverCache';
@@ -152,8 +153,11 @@ async function recognize(
  */
 async function shelvedAmong(candidates: { title: string; author: string; isbn?: string }[]) {
   try {
-    const shelved = new Set((await library.list()).map((s) => identityOf(s.book)));
-    return candidates.map(identityOf).filter((id) => shelved.has(id));
+    // sameBook against the shelf, not a key lookup: a matching ISBN counts even when the
+    // two records spell the title differently. The identity is then returned in the work
+    // key's form, which is what the page compares against.
+    const shelf = await library.list();
+    return candidates.filter((c) => shelf.some((s) => sameBook(s.book, c))).map(identityOf);
   } catch (err) {
     console.error('[Buki] could not check the shelf', err);
     return [];

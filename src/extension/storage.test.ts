@@ -25,9 +25,13 @@ function makeLibrary() {
 }
 
 describe('identityOf', () => {
-  it('treats the same ISBN as the same book whatever it is called', () => {
+  it('identifies the WORK, so two editions of it share one identity', () => {
+    // Reversed on purpose. This used to assert that the same ISBN produced the same key,
+    // because identity WAS the ISBN when one existed - which is exactly what filed two
+    // editions of a book as two books. Identity is now the work; ISBN equality is a
+    // separate, additional way to match, and lives in sameBook (see bookIdentity.test.ts).
     const a = identityOf({ title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593' });
-    const b = identityOf({ title: 'DUNE (1965)', author: 'F. Herbert', isbn: '9780441013593' });
+    const b = identityOf({ title: 'Dune', author: 'Frank Herbert', isbn: '9780340960196' });
 
     expect(a).toBe(b);
   });

@@ -1,5 +1,6 @@
 import type { Book } from '../recognizer/types';
 import { createWriteQueue } from './writeQueue';
+import { bookKey, sameBook } from './bookIdentity';
 
 /**
  * What you mean to do about a book. `read` is an end state rather than an intention, but
@@ -36,16 +37,16 @@ export interface StorageArea {
 const KEY = 'savedBooks';
 
 /**
- * Identity for dedup: ISBN when we have one, else normalized title+author.
+ * Identity for dedup, and for the picker's "already on your shelf" marker.
  *
- * Exported because "is this already mine?" is asked outside this module too - the picker
- * marks a candidate the shelf already holds, so you are not offered a book you own as
- * though it were new.
+ * This used to be "the ISBN if there is one, else title+author", which filed two editions
+ * of one book - and an ISBN-carrying result next to an ISBN-less one - as two separate
+ * books. See `bookIdentity.ts`: identity is now the WORK, and a matching ISBN is an extra
+ * way to be the same rather than the only one.
+ *
+ * Kept under this name because other modules already import it.
  */
-export function identityOf(book: Book): string {
-  if (book.isbn) return `isbn:${book.isbn}`;
-  return `ta:${book.title.trim().toLowerCase()}|${book.author.trim().toLowerCase()}`;
-}
+export const identityOf = bookKey;
 
 /**
  * The user's own reading list. Owns the data; export/sync is layered on later.
@@ -72,8 +73,9 @@ export function createLibrary(deps: {
     async add(book: Book, intent: Intent, source?: SavedSource): Promise<SavedBook> {
       return serialize(async () => {
         const existing = await read();
-        const identity = identityOf(book);
-        const previous = existing.find((s) => identityOf(s.book) === identity);
+        // sameBook, not a key comparison: a matching ISBN counts even when the titles are
+        // written differently, and a matching work counts even when the ISBNs differ.
+        const previous = existing.find((s) => sameBook(s.book, book));
 
         // Re-saving a book you already have updates it in place rather than
         // stacking duplicates (easy to do when a save gives no visible feedback).
