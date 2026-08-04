@@ -15,6 +15,7 @@ import { sameBook } from './bookIdentity';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality, distinctMedia } from './twitterImage';
 import { inlineAll, livePrep } from './inlineImage';
+import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { withSignal } from './cancellable';
 import { createLookupMemo, postKey } from './lookupMemo';
@@ -62,6 +63,16 @@ const running = new Map<string, AbortController>();
 const lookups = createLookupMemo<{ result: RecognitionResult; model: string }>({
   now: () => Date.now(),
 });
+
+/**
+ * One breaker for the books catalogue, shared by every catch this worker handles.
+ *
+ * Deliberately not persisted: Chrome tears the worker down after ~30s idle, so it resets
+ * itself constantly. That is the right lifetime - it saves the six seconds within a burst
+ * of catches, which is where the waiting was actually felt, and a fresh worker always
+ * re-probes rather than inheriting a verdict about a service that may have recovered.
+ */
+const catalogue = createBreaker({ now: () => Date.now() });
 
 class NoKeyError extends Error {}
 
@@ -169,7 +180,7 @@ async function recognize(
   try {
     const result = await recognizeBook(
       full,
-      { vision, books: createOpenLibraryClient({ fetch: net }) },
+      { vision, books: withBreaker(createOpenLibraryClient({ fetch: net }), catalogue) },
       opts,
     );
     outcome = result.source;

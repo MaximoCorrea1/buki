@@ -105,6 +105,14 @@ export const livePrep = (signal?: AbortSignal): ImagePrep => ({
       if (!ctx) throw new Error('no 2d context in this worker');
       ctx.drawImage(bitmap, 0, 0, width, height);
       const shrunk = await canvas.convertToBlob({ type: 'image/jpeg', quality: QUALITY });
+      // The dimensions actually sent, so the provider's prompt-token count can be checked
+      // against them: Gemini bills 258 tokens per 768px tile, so anything at or under
+      // 768x768 must come back as one tile. A token count that says four means this line
+      // and that one disagree, and one of them is lying.
+      console.info(
+        `[Buki] shrank ${bitmap.width}x${bitmap.height} → ${width}x${height} · ` +
+          `${Math.round(shrunk.size / 1024)}KB`,
+      );
       return `data:image/jpeg;base64,${await base64(shrunk)}`;
     } finally {
       bitmap.close(); // decoded bitmaps are not small, and the worker may live a while
