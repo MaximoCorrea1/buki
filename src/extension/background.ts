@@ -10,17 +10,19 @@ import { createLlmVision, VisionHttpError } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
 import { readSettings, toVisionConfig, type Settings } from './settings';
-import { createLibrary, identityOf, type SavedSource, type StorageArea } from './storage';
+import { createLibrary, identityOf, type StorageArea } from './storage';
 import { sameBook } from './bookIdentity';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality } from './twitterImage';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { withSignal } from './cancellable';
+import { createLookupMemo, postKey } from './lookupMemo';
 import type {
   BackgroundRequest,
   BackgroundResponse,
   ContentRequest,
   ShelfResponse,
+  Shelved,
   TweetContext,
 } from './messages';
 
@@ -47,6 +49,18 @@ const log = createRecognitionLog({ storage, now: () => Date.now() });
  * OpenLibrary queries at once and only the first to ground is used.
  */
 const running = new Map<string, AbortController>();
+
+/**
+ * One recognition per post, shared by BOTH flows.
+ *
+ * The memo used to live in the content script, so the right-click menu never saw it:
+ * reading the same cover ten times paid for ten vision calls and ten sets of OpenLibrary
+ * queries. Recognition is the worker's job, so the memory of it belongs here too - and a
+ * cover one flow has already read is now free to the other.
+ */
+const lookups = createLookupMemo<{ result: RecognitionResult; model: string }>({
+  now: () => Date.now(),
+});
 
 class NoKeyError extends Error {}
 
@@ -150,8 +164,25 @@ async function recognize(
 }
 
 /**
- * Which of these the shelf already holds, by identity. Never throws: an unreadable shelf
- * should cost a marker on the picker, not the whole recognition.
+ * Recognition, but never twice for the same post.
+ *
+ * `job` is the post key, so cancelling a catch and forgetting its memo are the same
+ * lookup by the same name - which is why `cancelRecognize` below can drop the memory
+ * without being told anything except which catch was called off.
+ */
+function lookUp(
+  tweet: Tweet,
+  job: string,
+  opts: { fromText?: boolean } = {},
+): Promise<{ result: RecognitionResult; model: string }> {
+  // Asking for the post's WORDS is a different question about the same post, so it must
+  // not be answered out of the memo with the cover-only result that came back first.
+  return lookups.run(opts.fromText ? `words:${job}` : job, () => recognize(tweet, job, opts));
+}
+
+/**
+ * Which of these the shelf already holds, and in which pile. Never throws: an unreadable
+ * shelf should cost a marker on the card, not the whole recognition.
  */
 async function shelvedAmong(candidates: { title: string; author: string; isbn?: string }[]) {
   try {
@@ -159,7 +190,10 @@ async function shelvedAmong(candidates: { title: string; author: string; isbn?: 
     // two records spell the title differently. The identity is then returned in the work
     // key's form, which is what the page compares against.
     const shelf = await library.list();
-    return candidates.filter((c) => shelf.some((s) => sameBook(s.book, c))).map(identityOf);
+    return candidates.flatMap((c) => {
+      const held = shelf.find((s) => sameBook(s.book, c));
+      return held ? [{ identity: identityOf(c), intent: held.intent } satisfies Shelved] : [];
+    });
   } catch (err) {
     console.error('[Buki] could not check the shelf', err);
     return [];
@@ -218,117 +252,82 @@ async function tellTab<T>(tabId: number | undefined, msg: ContentRequest): Promi
   }
 }
 
-/** Ends `job`, clearing its progress pill. Omit `job` for a standalone message. */
-const toast = (tabId: number | undefined, text: string, job?: string): Promise<unknown> =>
-  tellTab(tabId, { type: 'toast', text, ...(job ? { job } : {}) });
+/** Put a card up for this catch on the tab that started it. */
+const openCard = (
+  tabId: number | undefined,
+  job: string,
+  text: string,
+  image?: string,
+): Promise<unknown> => tellTab(tabId, { type: 'catchOpen', job, text, ...(image ? { image } : {}) });
 
-/** An in-progress stage of `job` - stays on screen until that job reports again. */
-const progress = (tabId: number | undefined, text: string, job: string): Promise<unknown> =>
-  tellTab(tabId, { type: 'toast', text, sticky: true, job });
-
-/**
- * One id per right-click, so two covers read at once do not share a progress pill. The
- * worker can be torn down between clicks and restart the count; ids only need to be
- * distinct among the catches alive in one tab at one moment.
- */
-let menuSeq = 0;
-
-function sourceFrom(ctx: TweetContext | undefined, pageUrl: string | undefined): SavedSource | undefined {
-  // `pageUrl` is the tab's URL (x.com/home), not the tweet - saving that would break
-  // "the tweet that sold you", which is the point of keeping a source at all.
-  if (ctx?.permalink) return { url: ctx.permalink, kind: 'tweet' };
-  return pageUrl ? { url: pageUrl, kind: 'page' } : undefined;
-}
+/** End a catch that never reached a book. Its card says why, then leaves on its own. */
+const failCard = (tabId: number | undefined, job: string, text: string): Promise<unknown> =>
+  tellTab(tabId, { type: 'catchFail', job, text });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
   const tabId = tab?.id;
-  const job = `menu${++menuSeq}`;
 
-  await progress(tabId, 'Reading the cover…', job);
-
-  // The post's words are the best hint for a hard-to-read cover, so pull the whole
-  // tweet around the clicked image rather than sending the picture on its own.
+  // The post's words are the best hint for a hard-to-read cover, so pull the whole tweet
+  // around the clicked image rather than sending the picture on its own.
+  //
+  // Fetched BEFORE the card opens because the post is what NAMES the catch: two
+  // right-clicks on one cover have to arrive at the same job, or they are two lookups
+  // and two cards for one book. The round trip is to the same tab and costs nothing.
   const ctx = await tellTab<TweetContext>(tabId, {
     type: 'tweetContextFor',
     srcUrl: info.srcUrl,
   });
+  const tweet: Tweet = {
+    text: ctx?.text ?? '',
+    imageUrls: [info.srcUrl],
+    links: ctx?.links ?? [],
+  };
+  const job = postKey(tweet);
+
+  await openCard(tabId, job, 'Reading the cover…', info.srcUrl);
 
   const startedAt = Date.now();
   let recognized: { result: RecognitionResult; model: string };
   try {
-    recognized = await recognize(
-      {
-        text: ctx?.text ?? '',
-        imageUrls: [info.srcUrl],
-        links: ctx?.links ?? [],
-      },
-      job,
-    );
+    recognized = await lookUp(tweet, job);
   } catch (err) {
     if (needsSetup(err)) {
       if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
-      await toast(tabId, setupMessage(err), job);
+      await failCard(tabId, job, setupMessage(err));
       void chrome.runtime.openOptionsPage();
       return;
     }
     console.error('[Buki] recognition failed', err);
     noteFailure(Date.now() - startedAt, 'contextmenu');
-    await toast(tabId, "Couldn't read that cover — try again in a moment.", job);
+    await failCard(tabId, job, "Couldn't read that cover — try again in a moment.");
     return;
   }
 
   const { result } = recognized;
   const draft = draftFrom(recognized, Date.now() - startedAt, 'contextmenu');
-  const book = result.candidates[0];
 
-  if (!book) {
-    note({ ...draft, outcome: 'no-match' });
-    await toast(tabId, "Couldn't match that cover to a book.", job);
-    return;
-  }
-
-  // Weak evidence asks instead of deciding. A confident wrong answer costs more than ten
-  // misses, because it makes the whole shelf suspect.
-  if (result.confidence !== 'high') {
-    // Ends this catch's progress pill - from here the panel itself is the feedback, and
-    // leaving "Reading the cover..." up beside an open picker reads as still working.
-    await toast(tabId, 'Not sure — pick the right one', job);
-    const shown = await tellTab<{ shown: boolean }>(tabId, {
-      type: 'pick',
-      candidates: result.candidates,
-      srcUrl: info.srcUrl,
-      permalink: ctx?.permalink ?? null,
-      draft,
-      alreadySaved: await shelvedAmong(result.candidates),
-    });
-    // The content script owns the outcome from here. If it never answered there is no
-    // content script on this tab, so saving would mutate the shelf with zero feedback -
-    // the exact thing the menu is scoped to x.com to avoid.
-    if (!shown?.shown) note({ ...draft, outcome: 'dismissed' });
-    return;
-  }
-
-  // Saving needs somewhere to say so. If the tab never answered, there is no content
-  // script on it, and a silent shelf mutation is the exact thing this menu is scoped to
-  // x.com to avoid - so drop the result rather than change the shelf invisibly.
-  const alive = await tellTab<{ ok: true }>(tabId, { type: 'ping' });
-  if (!alive) {
-    note({ ...draft, outcome: 'dismissed' });
-    return;
-  }
-
-  try {
-    const saved = await library.add(book, 'someday', sourceFrom(ctx, info.pageUrl));
-    // Fetch the cover now, while the worker is already awake, so the shelf draws from
-    // disk instead of paying archive.org's multi-second redirect chain on every open.
-    // Fire and forget: a picture must never be able to fail a save.
-    void rememberCover(book.coverUrl, liveCoverDeps());
-    note({ ...draft, outcome: 'auto-saved', savedId: saved.id });
-    await toast(tabId, `Saved: ${book.title} → someday`, job);
-  } catch (err) {
-    console.error('[Buki] save failed', err);
-    await toast(tabId, "Couldn't save to your shelf.", job);
+  // NOTHING IS SAVED WITHOUT A CLICK, however sure the model was.
+  //
+  // This used to auto-save on high confidence and report the fact for 2.8 seconds. A
+  // confident wrong answer costs more than ten misses: it makes the whole shelf suspect,
+  // and a shelf you have to double-check is worth less than no shelf. So every catch -
+  // even a certain one - waits on its card until you say what it is.
+  const shown = await tellTab<{ shown: boolean }>(tabId, {
+    type: 'catchResolve',
+    job,
+    candidates: result.candidates,
+    source: result.source,
+    alreadySaved: await shelvedAmong(result.candidates),
+    draft,
+    permalink: ctx?.permalink ?? null,
+    tweet,
+  });
+  // The content script owns the outcome from here. If it never answered there is no tray
+  // on this tab, so the book has nowhere to go - record it as dropped rather than
+  // pretend it was offered.
+  if (!shown?.shown) {
+    note({ ...draft, outcome: result.candidates.length ? 'dismissed' : 'no-match' });
   }
 });
 
@@ -391,6 +390,11 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     // cannot know the worker got there first.
     running.get(msg.job)?.abort();
     running.delete(msg.job);
+    // And forget it, or pressing the same post again would join a promise nobody is
+    // going to settle. The job IS the post key, which is why calling a catch off and
+    // forgetting what it found are the same name.
+    lookups.forget(msg.job);
+    lookups.forget(`words:${msg.job}`);
     sendResponse({ ok: true });
     return false;
   }
@@ -398,7 +402,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
   if (msg?.type !== 'recognize') return false;
 
   const startedAt = Date.now();
-  recognize(msg.tweet, msg.job, { ...(msg.fromText ? { fromText: true } : {}) })
+  lookUp(msg.tweet, msg.job, { ...(msg.fromText ? { fromText: true } : {}) })
     .then(async (recognized) => {
       sendResponse({
         ok: true,

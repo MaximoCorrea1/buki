@@ -1,4 +1,5 @@
-import type { Book } from '../recognizer/types';
+import type { Book, RecognitionSource } from '../recognizer/types';
+import type { Intent } from './storage';
 
 /**
  * What the corner is showing, as data.
@@ -12,13 +13,23 @@ import type { Book } from '../recognizer/types';
  * rate at all, and the shelf is a list you curate. So: one card per catch, from the moment
  * it starts until you say what it is. Nothing saves without a click, and only a message
  * that carries no decision - an error, a confirmation - is allowed to leave on its own.
+ *
+ * A catch is named by the POST it is about, not by a click counter. That is what makes
+ * "one card however many times you press" a property of the data rather than a rule three
+ * collaborating maps have to remember to enforce.
  */
 export type CardState = 'looking' | 'found' | 'empty' | 'error' | 'done';
 
 export interface Candidate {
   book: Book;
-  /** Already on the shelf. The card says so rather than offering it as though it were new. */
-  shelved: boolean;
+  /**
+   * Which pile the shelf already has this book in, if it has it at all.
+   *
+   * A boolean would only say "you own this". Naming the pile is what turns the marker
+   * into a decision you can act on: the buttons become MOVE rather than SAVE, and the
+   * one that would change nothing is the one you can see is pointless.
+   */
+  shelvedIn?: Intent;
 }
 
 export interface Card {
@@ -29,25 +40,64 @@ export interface Card {
   /** The message, for every state except `found` - there, the candidates are the content. */
   readonly text: string;
   readonly candidates: Candidate[];
+  /**
+   * Which candidate the card is currently offering. Lives here rather than in the
+   * renderer because it has to survive a repaint, and has to reset when a fresh answer
+   * arrives - index 1 of the old answer is a different book from index 1 of the new one.
+   */
+  readonly showing: number;
+  /**
+   * What the answer was built from. The card says it out loud: a shelf you cannot audit
+   * is a shelf you stop trusting, and "read from the cover" is the whole claim.
+   */
+  readonly source?: RecognitionSource;
+  /** The picture this catch is about. Three identical "Reading…" cards are indistinguishable. */
+  readonly image?: string;
   /** May the renderer put this on a timer? Only true where no decision is pending. */
   readonly transient: boolean;
 }
 
 export interface CatchTray {
   list(): Card[];
-  /** A catch has started. */
-  open(job: string, text: string): void;
+  /**
+   * A catch has started. Answers whether it actually opened a card: `false` means this
+   * post is already on screen, and the caller should draw attention to that card rather
+   * than stacking a second one behind it.
+   */
+  open(job: string, text: string, image?: string): boolean;
   /** It came back. Candidates make it a choice; none makes it a dead end worth saying. */
-  resolve(job: string, candidates: Candidate[]): void;
+  resolve(job: string, candidates: Candidate[], source?: RecognitionSource): void;
+  /**
+   * The same catch, asked a different way. "No book on that cover" is a wall unless the
+   * card offers a door, and trying the post's words is that door - on the card that came
+   * back empty, not on a second one stacked underneath it.
+   */
+  retry(job: string, text: string): void;
   fail(job: string, text: string): void;
   /** The choice was made. */
   done(job: string, text: string): void;
+  /** Something worth saying that belongs to no catch - an update notice, a missing key. */
+  say(text: string): void;
+  /** Offer a different candidate. "Not this book" is the cheapest correction there is. */
+  show(id: number, index: number): void;
   dismiss(id: number): void;
 }
+
+/** Everything an update decides. `id`, `job` and `image` outlive it. */
+type Update = Omit<Card, 'id' | 'job' | 'image'>;
 
 export function createCatchTray(): CatchTray {
   let seq = 0;
   let cards: Card[] = [];
+
+  /**
+   * This catch's card, or -1.
+   *
+   * '' is deliberately never found: standalone messages all carry it, and an answer
+   * arriving for the empty job would otherwise rewrite the oldest message on screen as
+   * though it were a catch.
+   */
+  const find = (job: string): number => (job ? cards.findIndex((c) => c.job === job) : -1);
 
   /**
    * Update a catch's card in place, keeping its id and its position in the column.
@@ -56,41 +106,86 @@ export function createCatchTray(): CatchTray {
    * running, and its answer arrives afterwards. Putting the card back would hand a
    * decision to somebody who already said they were finished with it.
    */
-  const replace = (job: string, next: Omit<Card, 'id' | 'job'>): void => {
-    const at = cards.findIndex((c) => c.job === job);
+  const replace = (job: string, next: Update): void => {
+    const at = find(job);
     if (at === -1) return;
-    cards[at] = { id: (cards[at] as Card).id, job, ...next };
+    const held = cards[at] as Card;
+    // `image` survives every update: it is what this catch is LOOKING at, not part of
+    // any particular answer about it.
+    cards[at] = { ...next, id: held.id, job, ...(held.image ? { image: held.image } : {}) };
   };
 
   return {
     list: () => cards.map((c) => ({ ...c })),
 
-    open(job, text) {
-      cards.push({ id: ++seq, job, state: 'looking', text, candidates: [], transient: false });
+    open(job, text, image) {
+      // Pressing one post ten times is one catch asked about ten times. Returning early
+      // also protects an answer that already landed: a late repeat press must not drag a
+      // found card back to "Reading the cover…".
+      if (find(job) !== -1) return false;
+      cards.push({
+        id: ++seq,
+        job,
+        state: 'looking',
+        text,
+        candidates: [],
+        showing: 0,
+        transient: false,
+        ...(image ? { image } : {}),
+      });
+      return true;
     },
 
-    resolve(job, candidates) {
+    resolve(job, candidates, source) {
+      const common = {
+        showing: 0, // a fresh answer is offered from the top, whatever was showing before
+        transient: false,
+        ...(source ? { source } : {}),
+      };
       replace(
         job,
         candidates.length
           ? // No text: on a found card the books ARE the content, and the renderer builds
             // whatever heading the layout needs from them.
-            { state: 'found', text: '', candidates, transient: false }
-          : {
-              state: 'empty',
-              text: 'No book on that cover.',
-              candidates: [],
-              transient: false,
-            },
+            { state: 'found', text: '', candidates, ...common }
+          : { state: 'empty', text: 'No book on that cover.', candidates: [], ...common },
       );
     },
 
+    retry(job, text) {
+      // Candidates cleared: leaving them would offer books from the very answer being
+      // replaced, on a card that says it is still looking.
+      replace(job, { state: 'looking', text, candidates: [], showing: 0, transient: false });
+    },
+
     fail(job, text) {
-      replace(job, { state: 'error', text, candidates: [], transient: true });
+      replace(job, { state: 'error', text, candidates: [], showing: 0, transient: true });
     },
 
     done(job, text) {
-      replace(job, { state: 'done', text, candidates: [], transient: true });
+      replace(job, { state: 'done', text, candidates: [], showing: 0, transient: true });
+    },
+
+    say(text) {
+      cards.push({
+        id: ++seq,
+        job: '', // belongs to no catch, and `find` refuses to match it as one
+        state: 'error',
+        text,
+        candidates: [],
+        showing: 0,
+        transient: true,
+      });
+    },
+
+    show(id, index) {
+      const at = cards.findIndex((c) => c.id === id);
+      if (at === -1) return;
+      const held = cards[at] as Card;
+      // A stale click - the card was re-resolved with fewer candidates between the render
+      // and the press - must not point the card at a book that is no longer there.
+      if (index < 0 || index >= held.candidates.length) return;
+      cards[at] = { ...held, showing: index };
     },
 
     dismiss(id) {

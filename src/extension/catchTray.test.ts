@@ -34,7 +34,7 @@ describe('catchTray', () => {
     tray.open('c', 'Reading…');
     const idBefore = tray.list()[0]!.id;
 
-    tray.resolve('a', [{ book: DUNE, shelved: false }]);
+    tray.resolve('a', [{ book: DUNE }]);
 
     expect(states(tray)).toEqual(['found', 'looking', 'looking']);
     expect(tray.list()[0]!.id).toBe(idBefore);
@@ -44,21 +44,20 @@ describe('catchTray', () => {
     const tray = createCatchTray();
     tray.open('a', 'Reading…');
 
-    tray.resolve('a', [
-      { book: DUNE, shelved: false },
-      { book: UBIK, shelved: false },
-    ]);
+    tray.resolve('a', [{ book: DUNE }, { book: UBIK }]);
 
     expect(tray.list()[0]!.candidates.map((c) => c.book.title)).toEqual(['Dune', 'Ubik']);
   });
 
-  it('marks a candidate that is already on the shelf', () => {
+  it('says which pile a book is already in', () => {
+    // "IT SAVED A BOOK I ALREADY SAVED." Knowing it is on the shelf is half the answer;
+    // knowing it is under Next is what lets you decide whether to move it.
     const tray = createCatchTray();
     tray.open('a', 'Reading…');
 
-    tray.resolve('a', [{ book: DUNE, shelved: true }]);
+    tray.resolve('a', [{ book: DUNE, shelvedIn: 'next' }]);
 
-    expect(tray.list()[0]!.candidates[0]!.shelved).toBe(true);
+    expect(tray.list()[0]!.candidates[0]!.shelvedIn).toBe('next');
   });
 
   it('says so rather than vanishing when the cover held no book', () => {
@@ -76,7 +75,7 @@ describe('catchTray', () => {
     const tray = createCatchTray();
     tray.open('a', 'Reading…');
 
-    tray.resolve('a', [{ book: DUNE, shelved: false }]);
+    tray.resolve('a', [{ book: DUNE }]);
 
     expect(tray.list()[0]!.transient).toBe(false);
   });
@@ -94,7 +93,7 @@ describe('catchTray', () => {
   it('lets a confirmation leave on its own once the choice is made', () => {
     const tray = createCatchTray();
     tray.open('a', 'Reading…');
-    tray.resolve('a', [{ book: DUNE, shelved: false }]);
+    tray.resolve('a', [{ book: DUNE }]);
 
     tray.done('a', 'Saved: Dune → Now');
 
@@ -122,7 +121,7 @@ describe('catchTray', () => {
     const [card] = tray.list();
     tray.dismiss(card!.id);
 
-    tray.resolve('a', [{ book: DUNE, shelved: false }]);
+    tray.resolve('a', [{ book: DUNE }]);
 
     expect(tray.list()).toEqual([]);
   });
@@ -133,5 +132,171 @@ describe('catchTray', () => {
     tray.open('job7', 'Reading…');
 
     expect(tray.list()[0]!.job).toBe('job7');
+  });
+
+  // ------------------------------------------------------------ one catch per post
+
+  it('gives one card to a post pressed ten times, not ten cards', () => {
+    // The reported behaviour: clicking the same image repeatedly stacked a lookup and a
+    // toast per click. A catch is identified by the post it is about, so a second press
+    // on a post already being read is the same catch, not a new one.
+    const tray = createCatchTray();
+
+    for (let i = 0; i < 10; i++) tray.open('post:dune', 'Reading the cover…');
+
+    expect(tray.list()).toHaveLength(1);
+  });
+
+  it('says whether it actually opened a card, so a repeat press can nudge the first', () => {
+    const tray = createCatchTray();
+
+    expect(tray.open('post:dune', 'Reading…')).toBe(true);
+    expect(tray.open('post:dune', 'Reading…')).toBe(false);
+  });
+
+  it('does not let a repeat press wipe a result that already arrived', () => {
+    const tray = createCatchTray();
+    tray.open('post:dune', 'Reading…');
+    tray.resolve('post:dune', [{ book: DUNE }]);
+
+    tray.open('post:dune', 'Reading…');
+
+    expect(states(tray)).toEqual(['found']);
+  });
+
+  it('lets a dismissed post be caught again', () => {
+    // Dismissing is "I am done with this one", not "never again". The next press starts
+    // a fresh card - the memo upstream is what stops it paying for the lookup twice.
+    const tray = createCatchTray();
+    tray.open('post:dune', 'Reading…');
+    tray.dismiss(tray.list()[0]!.id);
+
+    expect(tray.open('post:dune', 'Reading…')).toBe(true);
+    expect(states(tray)).toEqual(['looking']);
+  });
+
+  // ------------------------------------------------------------ what the card can say
+
+  it('remembers the picture it is reading', () => {
+    // A column of three identical "Reading the cover..." cards tells you nothing about
+    // which catch is which. The photo does.
+    const tray = createCatchTray();
+
+    tray.open('a', 'Reading…', 'https://pbs.twimg.com/media/abc.jpg');
+
+    expect(tray.list()[0]!.image).toBe('https://pbs.twimg.com/media/abc.jpg');
+  });
+
+  it('records what the answer was built from', () => {
+    // "THE IMAGE! NOT THE TEXT." The card has to be able to prove which one it used,
+    // or the fix is invisible and has to be taken on trust.
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+
+    tray.resolve('a', [{ book: DUNE }], 'vision');
+
+    expect(tray.list()[0]!.source).toBe('vision');
+  });
+
+  // ------------------------------------------------------------ not this book
+
+  it('offers the first candidate until told otherwise', () => {
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+
+    tray.resolve('a', [{ book: DUNE }, { book: UBIK }]);
+
+    expect(tray.list()[0]!.showing).toBe(0);
+  });
+
+  it('promotes an alternate when the top guess is wrong', () => {
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+    tray.resolve('a', [{ book: DUNE }, { book: UBIK }]);
+
+    tray.show(tray.list()[0]!.id, 1);
+
+    expect(tray.list()[0]!.showing).toBe(1);
+  });
+
+  it('refuses a candidate that is not there', () => {
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+    tray.resolve('a', [{ book: DUNE }]);
+
+    tray.show(tray.list()[0]!.id, 4);
+
+    expect(tray.list()[0]!.showing).toBe(0);
+  });
+
+  it('starts a re-lookup back at the top candidate', () => {
+    // "Try the post's words" resolves the same card a second time. Leaving `showing` at 1
+    // would point at a book from the previous answer, which is a different book entirely.
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+    tray.resolve('a', [{ book: DUNE }, { book: UBIK }]);
+    tray.show(tray.list()[0]!.id, 1);
+
+    tray.resolve('a', [{ book: UBIK }]);
+
+    expect(tray.list()[0]!.showing).toBe(0);
+  });
+
+  // ------------------------------------------------------------ asking a second way
+
+  it('puts a card back to work when it is asked a different question', () => {
+    // "No book on that cover" is a dead end unless the card offers a way on. Trying the
+    // post's WORDS is the same catch being asked differently, so it belongs on the card
+    // that came back empty - not on a second card stacked underneath it.
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+    tray.resolve('a', []);
+
+    tray.retry('a', "Reading the post's words…");
+
+    expect(states(tray)).toEqual(['looking']);
+    expect(tray.list()[0]!.text).toBe("Reading the post's words…");
+  });
+
+  it('clears the old answer when it starts asking again', () => {
+    // Leaving the previous candidates on a looking card would offer books from an answer
+    // that is being replaced.
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+    tray.resolve('a', [{ book: DUNE }], 'vision');
+
+    tray.retry('a', 'Reading…');
+
+    expect(tray.list()[0]!.candidates).toEqual([]);
+    expect(tray.list()[0]!.transient).toBe(false);
+  });
+
+  // ------------------------------------------------------------ messages with no catch
+
+  it('carries a message that belongs to no catch', () => {
+    // "Buki just updated - refresh this page." Nothing to decide, nobody to belong to,
+    // but it still has to appear somewhere, and the tray is the only somewhere left.
+    const tray = createCatchTray();
+    tray.open('a', 'Reading…');
+
+    tray.say('Buki just updated — refresh this page.');
+
+    expect(tray.list()).toHaveLength(2);
+    expect(tray.list()[1]!.job).toBe('');
+    expect(tray.list()[1]!.transient).toBe(true);
+  });
+
+  it('does not let a message be mistaken for a catch', () => {
+    // Standalone messages all carry job '', and every update finds its card BY job - so
+    // an answer arriving for the empty job would rewrite the oldest message on screen
+    // instead of a catch. There is no catch called '', so nothing should match one.
+    const tray = createCatchTray();
+    tray.say('One.');
+    tray.say('Two.');
+
+    tray.resolve('', [{ book: DUNE }]);
+
+    expect(tray.list().map((c) => c.text)).toEqual(['One.', 'Two.']);
+    expect(states(tray)).toEqual(['error', 'error']);
   });
 });

@@ -1,4 +1,4 @@
-import type { Book, RecognitionResult, Tweet } from '../recognizer/types';
+import type { Book, RecognitionResult, RecognitionSource, Tweet } from '../recognizer/types';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type { Intent, SavedBook, SavedSource } from './storage';
 
@@ -18,40 +18,63 @@ export interface TweetContext {
   links: string[];
 }
 
-/** background -> content script */
+/**
+ * A candidate the shelf already holds, and WHICH pile it is in.
+ *
+ * This used to be a bare identity string, so the picker could only say "on your shelf".
+ * Naming the pile is what makes the marker actionable: the card offers a move rather
+ * than a save, and the button that would change nothing is visibly the one to skip.
+ */
+export interface Shelved {
+  /** See `identityOf` - the work, not the edition. */
+  identity: string;
+  intent: Intent;
+}
+
+/**
+ * background -> content script.
+ *
+ * Every one of these drives the catch tray, which is the extension's only in-page
+ * surface. There used to be three - a toast, a progress pill and a picker panel - and a
+ * catch moved between them as it progressed, which is why a found book arrived somewhere
+ * other than where it had been loading.
+ */
 export type ContentRequest =
   /**
-   * `sticky` marks an in-progress stage: it stays until the next update replaces it.
-   *
-   * `job` is which catch this is about. Progress belongs to a book, not to the page - two
-   * covers read at once each keep their own pill, and one finishing must not dismiss the
-   * pill the other is still using. Omitted means a standalone message owned by nobody.
+   * A catch has started. `job` names the POST, so pressing one post repeatedly is one
+   * card and one lookup rather than a stack of duplicates. `image` is the picture being
+   * read - a column of identical "Reading the cover…" cards says nothing about which
+   * catch is which.
    */
-  | { type: 'toast'; text: string; sticky?: boolean; job?: string }
-  /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
-  | { type: 'tweetContextFor'; srcUrl: string }
-  /** "Are you there?" - asked before a silent auto-save, which needs somewhere to report. */
-  | { type: 'ping' }
+  | { type: 'catchOpen'; job: string; text: string; image?: string }
   /**
-   * "I recognized something, but not confidently enough to decide for you." The panel
-   * anchors to the image that was right-clicked, so it appears at the thing being
-   * pointed at. Answered with `{ shown }` - the background must know whether anyone
-   * took ownership of the outcome.
+   * It came back. Answered with `{ shown }`: the worker must know whether anyone took
+   * ownership of the outcome, because a book resolving into a tab with no content script
+   * is a book that is silently lost.
+   *
+   * `tweet` rides along so the card's "Try the post's words" can re-ask without the
+   * worker having to remember anything - an MV3 worker is torn down between clicks, so
+   * state held there is state that disappears mid-catch.
    */
   | {
-      type: 'pick';
+      type: 'catchResolve';
+      job: string;
       candidates: Book[];
-      srcUrl: string;
-      permalink: string | null;
+      source: RecognitionSource;
+      alreadySaved: Shelved[];
       draft: AttemptDraft;
-      /** Identities the shelf already holds, so this picker marks them like the other. */
-      alreadySaved: string[];
-    };
+      permalink: string | null;
+      tweet: Tweet;
+    }
+  | { type: 'catchFail'; job: string; text: string }
+  /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
+  | { type: 'tweetContextFor'; srcUrl: string };
 
 /** content script / popup / options -> background */
 export type BackgroundRequest =
   /**
-   * `job` names this catch, so the page can call it off while it is still running.
+   * `job` names this catch - the post it is about - so the page can call it off while it
+   * is still running, and so two presses on one post are one catch.
    *
    * `fromText` asks for the post's own words to be grounded. It is off by default because
    * as a silent fallback it produced shelf entries that were never in the picture, with
@@ -81,11 +104,11 @@ export type BackgroundRequest =
 
 export type BackgroundResponse =
   /**
-   * `alreadySaved` holds the identities (see `identityOf`) of those candidates the shelf
-   * already has. The worker owns the shelf, so it answers this in the same round trip
-   * rather than making the page read storage for itself.
+   * `alreadySaved` says which candidates the shelf has and where. The worker owns the
+   * shelf, so it answers this in the same round trip rather than making the page read
+   * storage for itself.
    */
-  | { ok: true; result: RecognitionResult; draft: AttemptDraft; alreadySaved: string[] }
+  | { ok: true; result: RecognitionResult; draft: AttemptDraft; alreadySaved: Shelved[] }
   /**
    * `needsSetup` means opening settings is the fix and retrying never will be - a
    * missing key, a retired model, a revoked credential. `error` is then already phrased

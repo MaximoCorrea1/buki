@@ -528,32 +528,76 @@ Replaces `toastStack` **and** `pickerQueue` with one model. Fixes #2 and #3.
 - [ ] **Step 4: Run, watch pass. Plant `resolve()` appending instead of replacing and
   confirm the in-place test fails.**
 
-- [ ] **Step 5: Render it in `content.ts`** — one `paintTray()` reconciling by card id;
-  delete `paintToasts`, `toast`, `progress`, `buildPanel`, `queuePick`, `mountPicker`,
-  `closePanel`. The intent buttons live on the card.
+- [x] **Step 5: Render it in `content.ts`** — one `paintTray()` reconciling by card id;
+  deleted `paintToasts`, `toast`, `progress`, `swapText`, `stopButton`, `buildPanel`,
+  `queuePick`, `mountPicker`, `closePanel`, and the `pickers`/`toasts`/`picking`/
+  `jobPosts`/`cancelled` bookkeeping. The intent buttons live on the card.
 
-- [ ] **Step 6: Remove the auto-save** in `background.ts` — the `confidence === 'high'`
-  branch that calls `library.add` goes; every catch is sent to the tray instead.
+- [x] **Step 6: Remove the auto-save** in `background.ts` — the `confidence === 'high'`
+  branch that called `library.add` is gone; every catch is sent to the tray instead.
 
-- [ ] **Step 7: Delete `pickerQueue.ts`, `toastStack.ts` and their tests.**
+- [x] **Step 7: Delete `pickerQueue.ts`, `toastStack.ts` and their tests.**
 
-- [ ] **Step 8: Full suite, typecheck, build, commit.**
+- [x] **Step 8: Full suite, typecheck, build, commit.** 150 tests, tsc clean, build clean.
 
 ---
 
 ## Task 4: The tray looks like the rest of it
 
-- [ ] **Step 1: Style the card** in the room palette (`#14101c`, `#221a30`, `#332a45`,
+- [x] **Step 1: Style the card** in the room palette (`#14101c`, `#221a30`, `#332a45`,
   `#f0eaf6`, `#a396b8`, lamp `#ffcf8a`), cloth spine down the left edge as the popup rows
   already do, cover thumb 30×44, intent buttons in the mono utility face.
-- [ ] **Step 2: Motion, rationed.** The card fades and lifts in once (180ms,
+- [x] **Step 2: Motion, rationed.** The card fades and lifts in once (180ms,
   `cubic-bezier(.23,1,.32,1)`). The `looking → found` change is a blur-swap, not a
-  re-entry. No animation on dismissal beyond the existing fade. Respect
-  `prefers-reduced-motion`.
-- [ ] **Step 3: Verify by screenshot.** Build a harness with three cards — one `looking`,
-  one `found`, one `have` — render at 500×700 in headless Chrome, and LOOK at it.
-  Headless clamps `--window-size` to 500px minimum.
-- [ ] **Step 4: Commit.**
+  re-entry. Siblings travel to their new positions with a FLIP on the slot
+  (280ms, `cubic-bezier(.32,.72,0,1)`) rather than jumping. `prefers-reduced-motion`
+  drops every duration to 1ms and skips the FLIP entirely.
+- [x] **Step 3: Verify by screenshot.** The harness loads the REAL `dist/content.js`
+  behind a `chrome.*` stub and feeds it the worker's own messages, so what is
+  photographed is the shipped renderer rather than a mockup that agrees with whatever
+  the author believed. It immediately caught a wrong assumption about `bookKey`'s output.
+- [x] **Step 4: Commit.**
+
+---
+
+## What shipped, where it diverges from the plan above
+
+The plan is kept as written; these are the decisions taken during Tasks 3 and 4 that it
+did not anticipate. Prefer this section over the text above where they disagree.
+
+**A catch is named by its POST, not by a click counter.** `job` is `postKey(tweet)`. That
+one choice collapses four separate mechanisms into a property: `open()` is idempotent per
+job, so one post gives one card however many times it is pressed; the lookup memo keys on
+the same string, so it gives one recognition; and `cancelRecognize` can forget the memo
+knowing only which catch was called off. `jobSeq`, `jobPosts`, `picking` and `cancelled`
+all disappeared.
+
+**The memo moved into `background.ts`.** It used to live in the content script, so the
+right-click flow never saw it — reading one cover ten times cost ten vision calls. This is
+the "right-click flow does not share the lookup memo" item that Task 3 had deferred; it is
+now done. `fromText` is memoized under a `words:` prefix, because asking for the post's
+words is a different question about the same post.
+
+**`Candidate.shelved: boolean` became `shelvedIn?: Intent`,** and `alreadySaved: string[]`
+became `Shelved[]` carrying the pile. A boolean could only say "you own this"; naming the
+pile is what turns the marker into a decision — the buttons become a move, and the one
+that would change nothing is visibly disabled.
+
+**The card carries `source` and shows it.** The eyebrow reads "read from the cover" /
+"from the link in the post" / "from the post's words". Problem #1's fix is otherwise
+invisible and has to be taken on trust; this is the audit line that makes it checkable
+from the feed. The eyebrow appears ONLY on `found` cards — on every other state it was a
+label above a label.
+
+**Two methods the plan did not have:** `say(text)` for a message belonging to no catch
+(the update notice, the missing key), and `retry(job, text)` so the `empty` card's "Try
+the post's words" re-enters `looking` on the same card instead of stacking a second one.
+`show(id, i)` backs "Not this book?", which offers one book at a time rather than the old
+panel's three rows of three buttons.
+
+**Still not done:** none of this has been exercised against a real post in a real browser.
+Every claim above rests on unit tests, a typecheck, and a screenshot of the renderer fed
+synthetic messages.
 
 ---
 

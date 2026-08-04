@@ -1,18 +1,18 @@
-// Buki content script: inject a Save button on tweets, scrape + recognize,
-// and save the pick to your own reading list. Also renders feedback for the
-// background worker's right-click OCR flow.
-import type { Tweet, Book } from '../recognizer/types';
-import { identityOf, type Intent, type SavedBook, type SavedSource } from './storage';
+// Buki content script: inject a Save button on tweets, scrape + recognize, and render the
+// catch tray - the extension's only in-page surface. Both flows (the 📚 button and the
+// worker's right-click menu) put their catches in the same tray.
+import type { Book, RecognitionSource, Tweet } from '../recognizer/types';
+import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
-import { createToastStack } from './toastStack';
-import { createPickerQueue } from './pickerQueue';
-import { createLookupMemo, postKey } from './lookupMemo';
+import { createCatchTray, type Candidate, type Card } from './catchTray';
+import { postKey } from './lookupMemo';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
   BackgroundResponse,
   ContentRequest,
   ShelfResponse,
+  Shelved,
   TweetContext,
 } from './messages';
 
@@ -32,14 +32,19 @@ const trace = (...args: unknown[]): void => {
   }
   console.info('[Buki]', ...args);
 };
+
 /**
  * One stylesheet rather than inline cssText: :active press feedback, hover gating and
  * prefers-reduced-motion cannot be expressed inline, and those are the parts that decide
  * whether this reads as part of X or bolted onto it.
  *
+ * The palette is the landing page's, variable for variable - a library at night, one warm
+ * lamp. The extension is the same room seen from inside X, so a catch should look like a
+ * shelf row that drifted into the feed rather than a notification from another product.
+ *
  * Motion is rationed by how often a surface is seen. The button is hit dozens of times a
- * day, so it only ever presses - no entrance animation. The panel and pill appear once
- * per catch, so they can afford one.
+ * day, so it only ever presses - no entrance animation. A card appears once per catch, so
+ * it can afford one.
  */
 const STYLE = `
 .buki-btn {
@@ -48,115 +53,190 @@ const STYLE = `
   opacity: .72; transition: opacity 140ms cubic-bezier(.23,1,.32,1),
     transform 140ms cubic-bezier(.23,1,.32,1), background-color 140ms ease;
 }
-.buki-btn:disabled { cursor: default; }
 .buki-btn:active { transform: scale(.9); }
 .buki-btn:focus-visible { outline: 2px solid #ffcf8a; outline-offset: 1px; opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-btn:hover { opacity: 1; background: rgba(108,123,255,.18); }
+  .buki-btn:hover { opacity: 1; background: rgba(255,207,138,.16); }
 }
 
-/* Toasts stack rather than replace: saving three books in a row should show three
-   confirmations, not one that keeps being overwritten before it can be read. Oldest at
-   the top, newest nearest the corner, which is the direction they leave in. */
-.buki-stack {
-  position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
-  display: flex; flex-direction: column; align-items: flex-end;
-  justify-content: flex-end; gap: 8px;
-  /* Unlimited by count, bounded by the screen. Growing upward with the overflow hidden
-     means the oldest scrolls off the top and the newest is always the one you can see. */
-  max-height: calc(100vh - 40px); overflow: hidden;
+/* ------------------------------------------------------------------ the tray
+
+   One column, bottom-right, newest nearest the corner. Unlimited by count and bounded
+   only by the screen: catching six books in a row should show six cards, and the stack
+   that used to cap at three quietly dropped the rest of your afternoon. */
+.buki-tray {
+  --night: #14101c; --sunk: #221a30; --line: #332a45;
+  --chalk: #f0eaf6; --dim: #a396b8; --glow: #ffcf8a; --jade: #6fe0b6;
+  --ease: cubic-bezier(.23,1,.32,1);
+  --drawer: cubic-bezier(.32,.72,0,1);
+  --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tag: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  position: fixed; right: 18px; bottom: 18px; z-index: 2147483000;
+  display: flex; flex-direction: column; gap: 9px;
+  width: 332px; max-width: calc(100vw - 36px); max-height: calc(100vh - 36px);
+  overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: #332a45 transparent;
+  /* The column is transparent to clicks so it never swallows one meant for the feed.
+     Each card opts back in. */
   pointer-events: none;
 }
+.buki-tray, .buki-tray * { box-sizing: border-box; }
+/* Bottom-aligned by margin, not justify-content: a flex-end column clips its own
+   overflow at the TOP, which hides the oldest card instead of letting you scroll to it. */
+.buki-slot:first-child { margin-top: auto; }
+.buki-slot { width: 100%; pointer-events: auto; }
 
-/* An in-progress stage still updates in place. Blurring on swap makes two different
-   strings read as one object changing its mind rather than a crossfade of two. */
-.buki-pill {
-  max-width: 330px; padding: 10px 14px; border-radius: 10px;
-  background: #14101c; color: #f0eaf6; border: 1px solid #332a45;
-  font: 13.5px/1.4 system-ui, sans-serif; box-shadow: 0 6px 22px rgba(0,0,0,.45);
-  opacity: 0; transform: translateY(8px) scale(.97);
-  /* The stop control has to be clickable, so the pill opts back in to pointer events -
-     the stack stays transparent to them so it never swallows a click on the feed. */
-  pointer-events: auto; display: flex; align-items: center; gap: 10px;
-  /* Transitions, not keyframes: toasts arrive in bursts, and a keyframe restarts from
-     zero when interrupted where a transition retargets from where it is. */
-  transition: opacity 180ms cubic-bezier(.23,1,.32,1),
-    transform 180ms cubic-bezier(.23,1,.32,1), filter 130ms ease;
+.buki-card {
+  position: relative; width: 100%;
+  padding: 11px 11px 12px 19px; /* left inset leaves the spine its own column */
+  background: var(--night); color: var(--chalk);
+  border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 16px 38px -14px rgba(0,0,0,.8);
+  font: 13.5px/1.45 var(--ui);
+  opacity: 0; transform: translateY(10px) scale(.985);
+  /* Transitions, not keyframes: catches arrive in bursts, and a keyframe restarts from
+     zero when interrupted where a transition retargets from wherever it got to. */
+  transition: opacity 180ms var(--ease), transform 180ms var(--ease), filter 120ms ease;
 }
-.buki-msg { flex: 1; }
-.buki-x {
-  flex: none; cursor: pointer; border: 0; border-radius: 6px; padding: 2px 6px;
-  background: transparent; color: inherit; opacity: .5;
-  font: 15px/1 system-ui, sans-serif;
-  transition: opacity 140ms ease, background-color 140ms ease;
-}
-.buki-x:hover { opacity: 1; background: rgba(255,255,255,.09); }
-.buki-x:active { transform: scale(.92); }
-.buki-x:focus-visible { outline: 2px solid #ffcf8a; outline-offset: 1px; opacity: 1; }
-.buki-pill.buki-in { opacity: 1; transform: none; }
-.buki-pill.buki-out { opacity: 0; transform: translateY(4px) scale(.97); }
-.buki-pill.buki-swap { filter: blur(2.5px); opacity: .55; }
+.buki-card.buki-in { opacity: 1; transform: none; }
+/* Exit is faster than entrance: the system responding should never be slower than the
+   system arriving. */
+.buki-card.buki-out { opacity: 0; transform: translateY(4px) scale(.99);
+  transition-duration: 190ms; }
+/* Blur bridges the two states so "reading" BECOMING "a book" reads as one object
+   changing rather than two cards crossfading through each other. */
+.buki-card.buki-swap { filter: blur(3px); opacity: .45; }
 
-.buki-panel {
-  position: absolute; z-index: 2147483000; width: 288px; padding: 6px;
-  background: #14101c; color: #f0eaf6; border: 1px solid #332a45;
-  border-radius: 11px; box-shadow: 0 12px 34px rgba(0,0,0,.55);
-  font: 13.5px/1.45 system-ui, sans-serif;
-  /* Origin at the trigger: the panel should look like it came out of the button. */
-  transform-origin: top left; opacity: 0; transform: scale(.96) translateY(-2px);
-  transition: opacity 180ms cubic-bezier(.23,1,.32,1),
-    transform 180ms cubic-bezier(.23,1,.32,1);
+/* The signature: a cloth spine down the edge, as on the shelf and in the popup. */
+.buki-card::before {
+  content: ''; position: absolute; left: 7px; top: 12px; bottom: 12px; width: 4px;
+  border-radius: 2px; background: var(--cloth, var(--line));
 }
-.buki-panel.buki-in { opacity: 1; transform: none; }
-
-/* No anchor: the feed recycled the image away mid-recognition. Park the panel in the
-   corner rather than dropping the result - losing a recognized book is the exact
-   failure this extension exists to prevent. Clear of the status pill at bottom: 20px. */
-.buki-panel.buki-corner {
-  position: fixed; left: auto; top: auto; right: 20px; bottom: 72px;
-  transform-origin: bottom right;
-}
-
-.buki-cand { position: relative; padding: 7px 8px 8px 16px; border-radius: 6px; }
-.buki-cand + .buki-cand { margin-top: 1px; }
-.buki-cand::before {
-  content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 4px;
-  border-radius: 1px; background: var(--cloth, #6c7bff);
-}
-.buki-cand::after {
+.buki-card[data-book]::after {
   /* Cords as a highlight over a shadow, never flat gilt - a gold line vanishes on
-     marigold cloth, which is how the shelf's signature detail once shipped invisible. */
-  content: ''; position: absolute; left: 5px; top: 11px; width: 4px; height: 1px;
+     marigold cloth, which is how this detail once shipped invisible. */
+  content: ''; position: absolute; left: 7px; top: 20px; width: 4px; height: 1px;
   background: rgba(255,255,255,.55);
-  box-shadow: 0 1px 0 rgba(0,0,0,.3), 0 15px 0 rgba(255,255,255,.55), 0 16px 0 rgba(0,0,0,.3);
+  box-shadow: 0 1px 0 rgba(0,0,0,.35), 0 13px 0 rgba(255,255,255,.55),
+    0 14px 0 rgba(0,0,0,.35);
 }
-.buki-t { font-weight: 600; letter-spacing: -.006em; }
-.buki-have {
-  margin-left: 6px; padding: 1px 6px; border-radius: 999px; vertical-align: 1px;
-  background: rgba(47,184,138,.18); color: #6fe0b6;
-  font: 600 10px/1.6 ui-monospace, Menlo, monospace; letter-spacing: .04em;
-}
-.buki-a { font-size: 12px; opacity: .55; }
 
-.buki-row { display: flex; gap: 4px; margin-top: 6px; }
+.buki-head { display: flex; gap: 11px; align-items: flex-start; }
+.buki-thumb {
+  position: relative; width: 30px; height: 44px; flex: none; border-radius: 2px;
+  overflow: hidden; box-shadow: 0 1px 6px -1px #000;
+  /* The cloth gradient is the floor, not a placeholder: X's own CSP can refuse an
+     OpenLibrary cover, and a broken-image glyph would read as the extension being
+     broken rather than as a picture that didn't load. */
+  background: linear-gradient(150deg, var(--cloth, #332a45), rgba(0,0,0,.6));
+}
+.buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.buki-who { flex: 1; min-width: 0; }
+
+/* The eyebrow carries WHERE the answer came from. It is the audit trail: a shelf you
+   cannot question is a shelf you stop trusting. */
+.buki-eyebrow {
+  font: 10px/1.5 var(--tag); text-transform: uppercase; letter-spacing: .1em;
+  color: var(--dim);
+}
+.buki-eyebrow[data-shelf] { color: var(--jade); }
+.buki-t {
+  margin-top: 1px; font: 15.5px/1.25 var(--book); overflow-wrap: anywhere;
+}
+/* A message is the interface talking, not a book title - so it stays in the UI face. */
+.buki-t.buki-plain { font: 13.5px/1.45 var(--ui); margin-top: 0; }
+.buki-a { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
+
+.buki-x {
+  flex: none; cursor: pointer; border: 0; border-radius: 7px; padding: 1px 6px 3px;
+  background: transparent; color: var(--chalk); opacity: .45; font: 16px/1 var(--ui);
+  transition: opacity 140ms ease, background-color 140ms ease,
+    transform 140ms var(--ease);
+}
+.buki-x:active { transform: scale(.9); }
+.buki-x:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .buki-x:hover { opacity: 1; background: rgba(255,255,255,.08); }
+}
+
+/* Still working. Constant motion, so linear - an eased sweep looks like it is being
+   pushed rather than running. */
+.buki-wait {
+  margin: 9px 0 1px; height: 2px; border-radius: 1px; overflow: hidden;
+  background: var(--line);
+}
+.buki-wait::after {
+  content: ''; display: block; height: 100%; width: 38%; border-radius: 1px;
+  background: linear-gradient(90deg, transparent, var(--glow), transparent);
+  animation: buki-sweep 1.15s linear infinite;
+}
+@keyframes buki-sweep { from { transform: translateX(-105%); } to { transform: translateX(370%); } }
+
+.buki-row { display: flex; gap: 5px; margin: 11px 0 0; }
 .buki-intent {
-  flex: 1; cursor: pointer; border: 0; border-radius: 6px; padding: 5px 0;
-  background: #221a30; color: #f0eaf6; font: 600 11.5px/1 ui-monospace, Menlo, monospace;
-  letter-spacing: .06em; text-transform: uppercase;
-  transition: background-color 140ms ease, transform 140ms cubic-bezier(.23,1,.32,1);
+  flex: 1; cursor: pointer; border: 1px solid transparent; border-radius: 7px;
+  padding: 6px 0 7px; background: var(--sunk); color: var(--chalk);
+  font: 600 10.5px/1 var(--tag); letter-spacing: .1em; text-transform: uppercase;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease,
+    transform 140ms var(--ease);
 }
 .buki-intent:active { transform: scale(.96); }
-.buki-intent:disabled { opacity: .45; cursor: default; }
-.buki-intent:focus-visible { outline: 2px solid #ffcf8a; outline-offset: 1px; }
+.buki-intent:disabled { cursor: default; }
+.buki-intent:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-intent:not(:disabled):hover { background: #6c7bff; color: #fff; }
+  .buki-intent:not(:disabled):hover { background: var(--glow); color: #241705; }
+}
+/* The pile it is already in. Stated rather than greyed out: the point is that clicking
+   it would change nothing, which is information, not a disabled control. */
+.buki-intent[data-here] {
+  background: transparent; border-color: var(--line); color: var(--dim);
 }
 
-.buki-none { padding: 10px 10px 11px; opacity: .7; line-height: 1.5; }
+.buki-act {
+  margin: 11px 0 0; cursor: pointer; border: 1px solid var(--line); border-radius: 7px;
+  padding: 6px 11px 7px; background: transparent; color: var(--chalk);
+  font: 600 10.5px/1 var(--tag); letter-spacing: .1em; text-transform: uppercase;
+  transition: border-color 140ms ease, background-color 140ms ease,
+    transform 140ms var(--ease);
+}
+.buki-act:active { transform: scale(.97); }
+.buki-act:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
+@media (hover: hover) and (pointer: fine) {
+  .buki-act:hover { border-color: var(--glow); background: rgba(255,207,138,.09); }
+}
+
+.buki-alts {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 8px; margin: 9px 0 0;
+  font-size: 11.5px; color: var(--dim);
+}
+.buki-alt {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer; border: 0; padding: 0; background: transparent; color: var(--dim);
+  font: inherit; text-decoration: underline; text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+  transition: color 140ms ease, text-decoration-color 140ms ease;
+}
+.buki-alt:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; border-radius: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .buki-alt:hover { color: var(--chalk); text-decoration-color: var(--glow); }
+}
+
+/* Pressing a post that is already on screen. Nothing new happens by design, so the card
+   that already exists has to be the thing that answers. */
+@keyframes buki-nudge {
+  35% { border-color: var(--glow); box-shadow: 0 0 0 3px rgba(255,207,138,.15),
+    0 16px 38px -14px rgba(0,0,0,.8); }
+}
+.buki-card.buki-nudge { animation: buki-nudge 620ms var(--ease); }
 
 @media (prefers-reduced-motion: reduce) {
-  .buki-panel, .buki-pill { transition-duration: 1ms; transform: none; }
-  .buki-btn, .buki-intent { transition-duration: 1ms; }
+  .buki-card, .buki-slot, .buki-intent, .buki-act, .buki-alt, .buki-x, .buki-btn {
+    transition-duration: 1ms !important; animation: none !important;
+  }
+  .buki-card { transform: none !important; }
+  .buki-wait::after { animation: none; width: 100%; opacity: .45; }
 }
 `;
 
@@ -200,12 +280,8 @@ function scrapeTweet(article: HTMLElement): Tweet {
   };
 }
 
-/**
- * Recognition happens in the background worker, not here: it owns the vision key, and
- * cross-origin calls belong where host_permissions apply. It also means this button and
- * the right-click menu resolve books through exactly the same pipeline - including
- * reading the cover image, which this flow previously ignored.
- */
+// ---------------------------------------------------------------- the worker
+
 /**
  * Was this content script left behind by an extension reload or update?
  *
@@ -222,13 +298,21 @@ const REFRESH = 'Buki just updated — refresh this page to keep catching books.
 
 interface Recognized {
   candidates: Book[];
+  source: RecognitionSource;
   draft: AttemptDraft;
-  alreadySaved: Set<string>;
+  alreadySaved: Shelved[];
 }
 
-async function recognize(tweet: Tweet, job: string): Promise<Recognized | null> {
+/**
+ * Recognition happens in the background worker, not here: it owns the vision key, and
+ * cross-origin calls belong where host_permissions apply. It also means this button and
+ * the right-click menu resolve books through exactly the same pipeline - including
+ * reading the cover image, which this flow previously ignored.
+ */
+async function recognize(tweet: Tweet, job: string, fromText = false): Promise<Recognized | null> {
   if (orphaned()) {
-    toast(REFRESH, job);
+    tray.fail(job, REFRESH);
+    paintTray();
     return null;
   }
 
@@ -236,6 +320,7 @@ async function recognize(tweet: Tweet, job: string): Promise<Recognized | null> 
     type: 'recognize',
     tweet,
     job,
+    ...(fromText ? { fromText: true } : {}),
   } satisfies BackgroundRequest)) as BackgroundResponse | undefined;
 
   if (!resp) throw new Error('No response from the recognizer');
@@ -243,15 +328,17 @@ async function recognize(tweet: Tweet, job: string): Promise<Recognized | null> 
     // Already phrased for the user, and retrying cannot help - say what is wrong rather
     // than throwing it onto the generic "try again in a moment" path.
     if (resp.needsSetup) {
-      toast(resp.error, job);
+      tray.fail(job, resp.error);
+      paintTray();
       return null;
     }
     throw new Error(resp.error);
   }
   return {
     candidates: resp.result.candidates,
+    source: resp.result.source,
     draft: resp.draft,
-    alreadySaved: new Set(resp.alreadySaved),
+    alreadySaved: resp.alreadySaved,
   };
 }
 
@@ -260,7 +347,7 @@ async function recognize(tweet: Tweet, job: string): Promise<Recognized | null> 
  * write queue cannot see a sibling context's write, and two of them interleaving is how
  * a book gets silently dropped.
  */
-async function saveBook(book: Book, intent: Intent, source?: SavedSource): Promise<SavedBook> {
+async function saveBook(book: Book, intent: Intent, source?: SavedSource) {
   const resp = (await chrome.runtime.sendMessage({
     type: 'saveBook',
     book,
@@ -284,369 +371,484 @@ function report(event: PendingEvent): void {
     .catch((err: unknown) => console.error('[Buki] log write failed', err));
 }
 
-// ---------------------------------------------------------------- toasts
+// ---------------------------------------------------------------- what a catch knows
 
-/**
- * What the corner shows is decided in `toastStack.ts` and merely drawn here.
- *
- * The rules used to live in this file as one module-level `stage` element, which meant
- * two books caught at once shared a single progress pill: the second overwrote the
- * first's text, and the first to finish dismissed the pill the second was still using.
- * Progress belongs to a book, not to the page.
- */
-const toasts = createToastStack();
-let stackEl: HTMLElement | null = null;
-/** Pill id -> the node drawing it, so a repaint updates rather than rebuilds. */
-const drawn = new Map<number, HTMLElement>();
-/** Per pill, not per page: one shared timer let a second swap cancel the first's text. */
-const swapTimers = new WeakMap<HTMLElement, number>();
+const tray = createCatchTray();
 
-/** How long a finished message sits before it leaves, and how long leaving takes. */
-const LINGER_MS = 2800;
-const LEAVE_MS = 220;
+/** What the user did with a catch. Exactly one of these is ever recorded per attempt. */
+type Outcome =
+  | { outcome: 'confirmed'; savedId: string }
+  | { outcome: 'dismissed' }
+  | { outcome: 'no-match' };
 
-function toastHost(): HTMLElement {
-  if (!stackEl) {
-    stackEl = document.createElement('div');
-    stackEl.className = 'buki-stack';
-    document.body.appendChild(stackEl);
-  }
-  return stackEl;
+interface CatchContext {
+  /** Kept so "try the post's words" can re-ask without the worker remembering anything. */
+  tweet: Tweet;
+  source: SavedSource;
+  draft: AttemptDraft;
+  settled: boolean;
 }
 
-/**
- * Blur out, swap the words, blur back: one object changing its mind rather than two
- * strings crossfading through each other.
- */
-/** The words inside a pill. The pill itself also holds the stop control. */
-const labelOf = (el: HTMLElement): HTMLElement => el.querySelector('.buki-msg') as HTMLElement;
-
-function swapText(el: HTMLElement, text: string): void {
-  const label = labelOf(el);
-  clearTimeout(swapTimers.get(el));
-  el.classList.add('buki-swap');
-  swapTimers.set(
-    el,
-    window.setTimeout(() => {
-      // The label, not the pill: writing textContent on the pill would delete the button.
-      label.textContent = text;
-      el.classList.remove('buki-swap');
-    }, 110),
-  );
-}
-
-/** Calls off a lookup that is still running. */
-function stopButton(job: string): HTMLButtonElement {
-  const stop = document.createElement('button');
-  stop.className = 'buki-x';
-  stop.textContent = '×';
-  stop.title = 'Stop looking';
-  stop.setAttribute('aria-label', 'Stop looking for this book');
-  stop.addEventListener('click', () => cancelJob(job));
-  return stop;
-}
-
-/** Reconcile the corner to whatever the stack now says, keyed by pill id. */
-function paintToasts(): void {
-  const host = toastHost();
-  const pills = toasts.list();
-  const live = new Set(pills.map((p) => p.id));
-
-  for (const [id, el] of drawn) {
-    if (live.has(id)) continue;
-    drawn.delete(id);
-    el.classList.add('buki-out');
-    el.classList.remove('buki-in');
-    setTimeout(() => el.remove(), LEAVE_MS);
-  }
-
-  // Pills are only ever appended, so drawing in list order keeps the DOM in step.
-  for (const pill of pills) {
-    const existing = drawn.get(pill.id);
-    if (existing) {
-      if (labelOf(existing).textContent !== pill.text) swapText(existing, pill.text);
-      // The catch is over, so the stop control has nothing left to stop.
-      if (!pill.job) existing.querySelector('.buki-x')?.remove();
-      continue;
-    }
-    const el = document.createElement('div');
-    el.className = 'buki-pill';
-    el.setAttribute('role', 'status');
-    const label = document.createElement('span');
-    label.className = 'buki-msg';
-    label.textContent = pill.text;
-    el.append(label);
-    if (pill.job) el.append(stopButton(pill.job));
-    host.appendChild(el);
-    drawn.set(pill.id, el);
-    // Next frame, so the transition has a starting value to animate from.
-    requestAnimationFrame(() => el.classList.add('buki-in'));
-  }
-}
-
-/**
- * Catches the user called off. The worker still answers the outstanding `recognize` with
- * a failure, and without this the click handler's catch would replace "Stopped looking."
- * with "Book lookup failed" a moment later.
- */
-const cancelled = new Set<string>();
-
-/** Stop a lookup the user no longer wants, and let the same post be tried again. */
-function cancelJob(job: string): void {
-  cancelled.add(job);
-  void chrome.runtime
-    .sendMessage({ type: 'cancelRecognize', job } satisfies BackgroundRequest)
-    .catch(() => undefined); // an orphaned page cannot cancel; the toast still clears
-  // Otherwise the memo keeps holding a lookup that was abandoned, and pressing the button
-  // again on the same post would join a promise nobody is going to settle.
-  const key = jobPosts.get(job);
-  if (key) lookups.forget(key);
-  jobPosts.delete(job);
-  toast('Stopped looking.', job);
-}
-
-/** A stage of work still running for `job`. Updates that book's own pill in place. */
-function progress(job: string, msg: string): void {
-  toasts.stage(job, msg);
-  paintToasts();
-}
-
-/**
- * Say something and, if `job` is given, end that catch - clearing its progress pill and
- * only its own. A sibling still working keeps hers.
- */
-function toast(msg: string, job: string | null = null): void {
-  // The pill it settled, not `list().at(-1)`: completion now happens in place, so the
-  // resulting pill keeps its old position and the last one may belong to another catch.
-  const settled = toasts.done(job, msg);
-  paintToasts();
-  setTimeout(() => {
-    toasts.dismiss(settled.id);
-    paintToasts();
-  }, LINGER_MS);
-}
-
-// ---------------------------------------------------------------- picker
-
-/**
- * Books recognized and waiting for a decision. See `pickerQueue.ts`: this used to be a
- * single slot that every new recognition overwrote, so catching a second book before
- * choosing an intent for the first destroyed the first panel - and since the 📚 flow can
- * only save through a panel, that book was never saved, and its cleanup logged a
- * dismissal the user was never offered the chance to make.
- */
-const pickers = createPickerQueue<PendingPick>();
-let mounted: { el: HTMLElement; cleanup: () => void } | null = null;
-
-interface PendingPick {
-  anchor: HTMLElement | null;
-  candidates: Book[];
-  opts: PickerOptions;
-}
-
-/** Take the panel down and bring up the next book that has been waiting its turn. */
-function closePanel(): void {
-  if (!mounted) return;
-  mounted.cleanup();
-  mounted.el.remove();
-  mounted = null;
-  pickers.settle();
-  mountPicker();
-}
-
-/** Recognized a book: show it now if the screen is free, otherwise hold its place. */
-function queuePick(
-  anchor: HTMLElement | null,
-  candidates: Book[],
-  opts: PickerOptions = {},
-): void {
-  pickers.push({ anchor, candidates, opts });
-  mountPicker();
-}
-
-/** How many books are recognized and still waiting behind the open panel. */
-const waitingToPick = (): number => pickers.waiting();
-
-function mountPicker(): void {
-  if (mounted) return;
-  const next = pickers.current();
-  if (!next) return;
-  // The feed is virtualized, so a tweet can be recycled away while its book waits in the
-  // queue. Fall back to the corner rather than dropping a book we already recognized.
-  const anchor = next.anchor?.isConnected ? next.anchor : null;
-  mounted = buildPanel(anchor, next.candidates, next.opts);
-}
-
-/** What the user did with a panel. Exactly one of these fires per panel, ever. */
-type PickOutcome = { outcome: 'confirmed'; savedId: string } | { outcome: 'dismissed' };
-
-interface PickerOptions {
-  source?: SavedSource;
-  onOutcome?: (result: PickOutcome) => void;
-  /** Identities (see `identityOf`) the shelf already holds, so the picker can say so. */
-  alreadySaved?: Set<string>;
-}
+const contexts = new Map<string, CatchContext>();
 
 /**
  * Only a permalink is "the tweet that sold you". Falling back to the feed URL but still
  * labelling it a tweet would put `x.com/home` behind that link, which is the failure the
  * whole source field exists to prevent.
  */
-function sourceFor(permalink: string | null): SavedSource {
-  return permalink ? { url: permalink, kind: 'tweet' } : { url: location.href, kind: 'page' };
+const sourceFor = (permalink: string | null): SavedSource =>
+  permalink ? { url: permalink, kind: 'tweet' } : { url: location.href, kind: 'page' };
+
+function remember(job: string, tweet: Tweet, permalink: string | null, draft: AttemptDraft): void {
+  contexts.set(job, { tweet, source: sourceFor(permalink), draft, settled: false });
 }
 
-function buildPanel(
-  anchor: HTMLElement | null,
-  candidates: Book[],
-  opts: PickerOptions = {},
-): { el: HTMLElement; cleanup: () => void } {
-  const panel = document.createElement('div');
-  panel.className = anchor ? 'buki-panel' : 'buki-panel buki-corner';
+/**
+ * Record what became of an attempt, once.
+ *
+ * Every close path used to report a dismissal, so a successful save could be logged twice
+ * - once as confirmed and once as not - quietly corrupting the one number the log exists
+ * to produce.
+ */
+function settle(job: string, result: Outcome): void {
+  const ctx = contexts.get(job);
+  if (!ctx || ctx.settled) return;
+  ctx.settled = true;
+  report({ ...ctx.draft, ...result });
+}
 
-  // Every close path runs cleanup, and cleanup reports a dismissal - so the guard is
-  // what stops a successful save being logged twice, once as confirmed and once as not.
-  let settled = false;
-  const settle = (result: PickOutcome): void => {
-    if (settled) return;
-    settled = true;
-    opts.onOutcome?.(result);
-  };
+/**
+ * Turn the worker's answer into the card's candidates, marking what the shelf already
+ * has and where. Both sides key on `identityOf`, so a book the shelf holds under a
+ * different edition still matches - that was complaint #4's real cause.
+ */
+function candidatesOf(books: Book[], shelved: Shelved[]): Candidate[] {
+  const where = new Map(shelved.map((s) => [s.identity, s.intent]));
+  return books.map((book) => {
+    const intent = where.get(identityOf(book));
+    return intent ? { book, shelvedIn: intent } : { book };
+  });
+}
 
-  // A click is an unambiguous confirmation, but the write is a round trip to the worker.
-  // Without this flag an eviction during that trip (a scroll, a click away, a second
-  // recognition) reached cleanup first and logged a save the user DID make as
-  // "dismissed" - quietly corrupting the one number the log exists to produce.
-  let saving = false;
+// ---------------------------------------------------------------- rendering the tray
 
-  if (!candidates.length) {
-    const empty = document.createElement('div');
-    empty.className = 'buki-none';
-    empty.textContent = 'No book named here. Right-click the cover image to read it instead.';
-    panel.appendChild(empty);
-  } else {
-    candidates.forEach((book) => {
-      const row = document.createElement('div');
-      row.className = 'buki-cand';
-      row.style.setProperty('--cloth', clothFor(book));
+/** How long a message with nothing to decide sits before it leaves. */
+const DONE_MS = 2600;
+const ERROR_MS = 6000;
+/** Leaving, swapping one state for another, and travelling to a new position. */
+const LEAVE_MS = 200;
+const SWAP_MS = 115;
+const TRAVEL_MS = 280;
 
-      const title = document.createElement('div');
-      title.className = 'buki-t';
-      title.textContent = book.title;
-      // The shelf has always deduped, so choosing this again could never make a
-      // duplicate - but nothing said so, and being offered a book you own as though it
-      // were new is what made re-saving feel like a mistake.
-      if (opts.alreadySaved?.has(identityOf(book))) {
-        const have = document.createElement('span');
-        have.className = 'buki-have';
-        have.textContent = 'on your shelf';
-        title.appendChild(have);
-      }
-      const author = document.createElement('div');
-      author.className = 'buki-a';
-      author.textContent = book.author;
-      row.append(title, author);
+let trayEl: HTMLElement | null = null;
+/** Card id -> the nodes drawing it. The slot travels; the card fades, blurs and holds. */
+const drawn = new Map<number, { slot: HTMLElement; card: HTMLElement }>();
+/** Per card, not per page: one shared timer let a second swap cancel the first's text. */
+const swaps = new Map<number, number>();
+/** Transient cards that are already on their way out. */
+const leaving = new Map<number, number>();
 
-      const btns = document.createElement('div');
-      btns.className = 'buki-row';
-      (['now', 'next', 'someday'] as Intent[]).forEach((intent) => {
-        const b = document.createElement('button');
-        b.className = 'buki-intent';
-        b.textContent = intent;
-        b.addEventListener('click', async () => {
-          // Disable the whole row: a second click would re-enter the save and race
-          // the storage write.
-          btns.querySelectorAll('button').forEach((el) => (el.disabled = true));
-          saving = true;
-          try {
-            const saved = await saveBook(book, intent, opts.source);
-            settle({ outcome: 'confirmed', savedId: saved.id });
-            closePanel();
-            // The word the write actually earned: this book may already have been here.
-            toast(`${saved.moved ? 'Moved' : 'Saved'}: ${book.title} → ${intent}`);
-          } catch (err) {
-            console.error('[Buki] save failed', err);
-            saving = false;
-            btns.querySelectorAll('button').forEach((el) => (el.disabled = false));
-            toast(orphaned(err) ? REFRESH : "Couldn't save to your shelf.");
-          }
-        });
-        btns.appendChild(b);
-      });
-      row.appendChild(btns);
-      panel.appendChild(row);
-    });
+const motion = (): boolean => !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function trayHost(): HTMLElement {
+  if (!trayEl) {
+    trayEl = document.createElement('div');
+    trayEl.className = 'buki-tray';
+    trayEl.setAttribute('aria-live', 'polite');
+    document.body.appendChild(trayEl);
+  }
+  return trayEl;
+}
+
+/**
+ * Move things without teleporting them.
+ *
+ * A card that becomes a book is twice the height it was, and its neighbours have to go
+ * somewhere. Flex reflow is not transitionable, so: measure, mutate, put everything back
+ * where it was, and let it travel from there. This is the whole fix for a found card
+ * appearing to shove the column rather than push it.
+ */
+function reflow(mutate: () => void): void {
+  if (!motion()) {
+    mutate();
+    return;
+  }
+  const before = new Map<HTMLElement, number>();
+  for (const { slot } of drawn.values()) before.set(slot, slot.getBoundingClientRect().top);
+
+  mutate();
+
+  const moved: HTMLElement[] = [];
+  for (const { slot } of drawn.values()) {
+    const was = before.get(slot);
+    if (was === undefined) continue; // brand new: it fades in, it does not travel
+    const delta = was - slot.getBoundingClientRect().top;
+    if (!delta) continue;
+    slot.style.transition = 'none';
+    slot.style.transform = `translateY(${delta}px)`;
+    moved.push(slot);
+  }
+  if (!moved.length) return;
+
+  requestAnimationFrame(() => {
+    for (const slot of moved) {
+      slot.style.transition = `transform ${TRAVEL_MS}ms var(--drawer)`;
+      slot.style.transform = '';
+    }
+  });
+}
+
+/** Everything the DOM depends on, so a repaint only rebuilds what actually changed. */
+const signature = (c: Card): string =>
+  [
+    c.state,
+    c.text,
+    c.showing,
+    c.source ?? '',
+    c.image ?? '',
+    c.candidates.map((x) => `${x.book.title}/${x.book.coverUrl ?? ''}/${x.shelvedIn ?? ''}`).join(),
+  ].join('|');
+
+/** Reconcile the corner to whatever the tray now says, keyed by card id. */
+function paintTray(): void {
+  const host = trayHost();
+  const cards = tray.list();
+  const live = new Set(cards.map((c) => c.id));
+
+  for (const [id, held] of drawn) {
+    if (live.has(id)) continue;
+    drawn.delete(id);
+    window.clearTimeout(swaps.get(id));
+    swaps.delete(id);
+    held.card.classList.remove('buki-in');
+    held.card.classList.add('buki-out');
+    // Fade first, then close the gap - so the neighbours travel instead of jumping when
+    // the node finally leaves the flow.
+    window.setTimeout(() => reflow(() => held.slot.remove()), LEAVE_MS);
   }
 
-  const place = (): void => {
-    if (!anchor) return; // corner-anchored; the stylesheet holds it in place
-    // The feed is virtualized; if the tweet was recycled away, close rather than
-    // leave the panel pinned to a zeroed rect in the corner.
-    // Only once this panel is the one on screen: during construction `mounted` is still
-    // the previous panel (or nothing), and closing then would advance the queue past a
-    // book that was never shown.
-    if (!anchor.isConnected) {
-      if (mounted?.el === panel) closePanel();
-      return;
+  const fresh: HTMLElement[] = [];
+  reflow(() => {
+    for (const card of cards) {
+      if (drawn.has(card.id)) continue;
+      const slot = document.createElement('div');
+      slot.className = 'buki-slot';
+      const el = document.createElement('div');
+      el.className = 'buki-card';
+      paintCard(el, card);
+      slot.appendChild(el);
+      host.appendChild(slot);
+      drawn.set(card.id, { slot, card: el });
+      fresh.push(el);
     }
+  });
+  // Next frame, so the transition has a starting value to animate from.
+  for (const el of fresh) requestAnimationFrame(() => el.classList.add('buki-in'));
 
-    const rect = anchor.getBoundingClientRect();
-    // Below the anchor if it fits, above it if not. A tweet image is tall enough that
-    // its bottom edge is often below the fold, and a panel rendered off-screen loses
-    // the book just as surely as never showing one.
-    const height = panel.offsetHeight || 120;
-    const below = rect.bottom + 4;
-    const top = below + height <= window.innerHeight ? below : Math.max(8, rect.top - height - 4);
-    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 296));
+  for (const card of cards) {
+    const held = drawn.get(card.id);
+    if (held && held.card.dataset['sig'] !== signature(card)) swapCard(card);
+  }
 
-    panel.style.left = `${left + window.scrollX}px`;
-    panel.style.top = `${top + window.scrollY}px`;
-  };
-  place();
-  document.body.appendChild(panel);
-  place(); // again now it has a measurable height, so the flip-above check is real
-  // Next frame, so it scales out of the trigger rather than appearing at full size.
-  requestAnimationFrame(() => panel.classList.add('buki-in'));
+  tick(cards);
+  host.scrollTop = host.scrollHeight;
+}
 
-  const onClickAway = (e: MouseEvent): void => {
-    if (!panel.contains(e.target as Node) && e.target !== anchor) closePanel();
-  };
-  // One cleanup used by every close path, so listeners can't outlive the panel.
-  const cleanup = (): void => {
-    document.removeEventListener('click', onClickAway);
-    window.removeEventListener('scroll', place, true);
-    window.removeEventListener('resize', place);
-    // Not while a confirmed save is still in flight - that click already decided this.
-    if (!saving) settle({ outcome: 'dismissed' });
-  };
-  setTimeout(() => document.addEventListener('click', onClickAway), 0);
-  window.addEventListener('scroll', place, true);
-  window.addEventListener('resize', place);
+/** Blur out, change what the card is, blur back. One object changing its mind. */
+function swapCard(card: Card): void {
+  const held = drawn.get(card.id);
+  if (!held) return;
+  window.clearTimeout(swaps.get(card.id));
+  held.card.classList.add('buki-swap');
+  swaps.set(
+    card.id,
+    window.setTimeout(
+      () => {
+        swaps.delete(card.id);
+        reflow(() => paintCard(held.card, card));
+        held.card.classList.remove('buki-swap');
+      },
+      motion() ? SWAP_MS : 0,
+    ),
+  );
+}
 
-  return { el: panel, cleanup };
+/** Only a message with nothing left to decide is allowed to leave on its own. */
+function tick(cards: Card[]): void {
+  for (const card of cards) {
+    if (!card.transient || leaving.has(card.id)) continue;
+    leaving.set(
+      card.id,
+      window.setTimeout(
+        () => {
+          leaving.delete(card.id);
+          contexts.delete(card.job);
+          tray.dismiss(card.id);
+          paintTray();
+        },
+        card.state === 'error' ? ERROR_MS : DONE_MS,
+      ),
+    );
+  }
+  for (const [id, timer] of leaving) {
+    if (cards.some((c) => c.id === id)) continue;
+    window.clearTimeout(timer);
+    leaving.delete(id);
+  }
+}
+
+// ---------------------------------------------------------------- what a card looks like
+
+/** Where the answer came from, in the card's own words. */
+const PROVENANCE: Record<string, string> = {
+  vision: 'read from the cover',
+  link: 'from the link in the post',
+  text: "from the post's words",
+  none: 'no source',
+};
+
+function paintCard(el: HTMLElement, card: Card): void {
+  const book = card.candidates[card.showing]?.book;
+  el.style.setProperty('--cloth', book ? clothFor(book) : '#332a45');
+  // Cords belong to a binding. On a card with no book they made the edge look like a
+  // dashed line somebody forgot to finish.
+  if (book) el.dataset['book'] = '';
+  else delete el.dataset['book'];
+  el.replaceChildren(...cardBody(card));
+  el.dataset['sig'] = signature(card);
+}
+
+function cardBody(card: Card): Node[] {
+  const cand = card.candidates[card.showing];
+  const book = cand?.book;
+
+  const head = document.createElement('div');
+  head.className = 'buki-head';
+
+  const thumb = thumbFor(card, book);
+  if (thumb) head.append(thumb);
+
+  const who = document.createElement('div');
+  who.className = 'buki-who';
+  const eyebrow = eyebrowFor(card, cand);
+  if (eyebrow) who.append(eyebrow);
+
+  if (book) {
+    const title = document.createElement('div');
+    title.className = 'buki-t';
+    title.textContent = book.title;
+    const author = document.createElement('div');
+    author.className = 'buki-a';
+    author.textContent = book.author;
+    who.append(title, author);
+  } else {
+    const msg = document.createElement('div');
+    msg.className = 'buki-t buki-plain';
+    msg.textContent = card.text;
+    who.append(msg);
+  }
+
+  head.append(who, closeButton(card));
+
+  const body: Node[] = [head];
+  if (card.state === 'looking') body.push(waitBar());
+  if (cand) {
+    body.push(intentRow(card, cand));
+    const alts = alternates(card);
+    if (alts) body.push(alts);
+  }
+  if (card.state === 'empty' && contexts.has(card.job)) body.push(wordsButton(card));
+  return body;
+}
+
+function thumbFor(card: Card, book?: Book): HTMLElement | null {
+  const src = book?.coverUrl ?? card.image;
+  if (!book && !src) return null;
+  const thumb = document.createElement('div');
+  thumb.className = 'buki-thumb';
+  if (src) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    // The cloth gradient underneath is already the fallback, so a refused cover just
+    // leaves a spine rather than a broken-image glyph.
+    img.addEventListener('error', () => img.remove());
+    thumb.append(img);
+  }
+  return thumb;
+}
+
+/**
+ * Only a card holding an ANSWER has anything to declare.
+ *
+ * An eyebrow on every state made it decoration wearing the costume of structure -
+ * "CATCHING" above "Reading the cover…", "NOTHING ON THE COVER" above "No book on that
+ * cover." Both say the sentence underneath them twice. Here it earns its line: where this
+ * book came from, or that you already own it.
+ */
+function eyebrowFor(card: Card, cand?: Candidate): HTMLElement | null {
+  if (card.state !== 'found') return null;
+  const eye = document.createElement('div');
+  eye.className = 'buki-eyebrow';
+  if (cand?.shelvedIn) {
+    // "IT SAVED A BOOK I ALREADY SAVED." Now it says so before you touch anything - and
+    // which pile matters more here than which signal found it.
+    eye.dataset['shelf'] = '';
+    eye.textContent = `already on your shelf · in ${cand.shelvedIn}`;
+  } else {
+    eye.textContent = PROVENANCE[card.source ?? 'none'] ?? 'found';
+  }
+  return eye;
+}
+
+function waitBar(): HTMLElement {
+  const bar = document.createElement('div');
+  bar.className = 'buki-wait';
+  return bar;
+}
+
+function closeButton(card: Card): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'buki-x';
+  b.textContent = '×';
+  const stopping = card.state === 'looking';
+  b.title = stopping ? 'Stop looking' : 'Dismiss';
+  b.setAttribute('aria-label', stopping ? 'Stop looking for this book' : 'Dismiss this catch');
+  b.addEventListener('click', () => dismiss(card));
+  return b;
+}
+
+function intentRow(card: Card, cand: Candidate): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'buki-row';
+  (['now', 'next', 'someday'] as Intent[]).forEach((intent) => {
+    const b = document.createElement('button');
+    b.className = 'buki-intent';
+    b.textContent = intent;
+    if (cand.shelvedIn === intent) {
+      // Saving it here again would rewrite the same row with the same value.
+      b.disabled = true;
+      b.dataset['here'] = '';
+      b.title = `Already in ${intent}`;
+    }
+    b.addEventListener('click', () => void choose(card, cand, intent, row));
+    row.append(b);
+  });
+  return row;
+}
+
+/** Re-enable everything the click disabled, except the pile the book is already in. */
+const releaseRow = (row: HTMLElement): void =>
+  row.querySelectorAll('button').forEach((b) => (b.disabled = b.hasAttribute('data-here')));
+
+async function choose(card: Card, cand: Candidate, intent: Intent, row: HTMLElement): Promise<void> {
+  // Disable the whole row: a second click would re-enter the save and race the write.
+  row.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  try {
+    const saved = await saveBook(cand.book, intent, contexts.get(card.job)?.source);
+    settle(card.job, { outcome: 'confirmed', savedId: saved.id });
+    // The word the write actually earned: this book may already have been on the shelf.
+    tray.done(card.job, `${saved.moved ? 'Moved' : 'Saved'} · ${cand.book.title} → ${intent}`);
+    paintTray();
+  } catch (err) {
+    console.error('[Buki] save failed', err);
+    releaseRow(row);
+    // On its own card: the decision is still pending, so the card holding it must stay.
+    tray.say(orphaned(err) ? REFRESH : "Couldn't save to your shelf.");
+    paintTray();
+  }
+}
+
+function alternates(card: Card): HTMLElement | null {
+  if (card.candidates.length < 2) return null;
+  const row = document.createElement('div');
+  row.className = 'buki-alts';
+  const label = document.createElement('span');
+  label.textContent = 'Not this book?';
+  row.append(label);
+  card.candidates.forEach((c, i) => {
+    if (i === card.showing) return;
+    const b = document.createElement('button');
+    b.className = 'buki-alt';
+    b.textContent = c.book.title;
+    b.title = `${c.book.title} — ${c.book.author}`;
+    b.addEventListener('click', () => {
+      tray.show(card.id, i);
+      paintTray();
+    });
+    row.append(b);
+  });
+  return row;
+}
+
+function wordsButton(card: Card): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'buki-act';
+  b.textContent = "Try the post's words";
+  b.addEventListener('click', () => void tryWords(card));
+  return b;
+}
+
+/**
+ * The cover held nothing, so ask the other question.
+ *
+ * Grounding the post's text used to happen silently whenever the image failed, which put
+ * books on the shelf that were never in the picture with nothing on screen saying so. As
+ * a button it is the same capability with the authorship the other way round.
+ */
+async function tryWords(card: Card): Promise<void> {
+  const ctx = contexts.get(card.job);
+  if (!ctx) return;
+  tray.retry(card.job, 'Reading the post…');
+  paintTray();
+  try {
+    const found = await recognize(ctx.tweet, card.job, true);
+    if (!found) return; // recognize() already put the reason on the card
+    remember(card.job, ctx.tweet, ctx.source.kind === 'tweet' ? ctx.source.url : null, found.draft);
+    tray.resolve(card.job, candidatesOf(found.candidates, found.alreadySaved), found.source);
+    if (!found.candidates.length) settle(card.job, { outcome: 'no-match' });
+    paintTray();
+  } catch (err) {
+    console.error('[Buki] lookup failed', err);
+    tray.fail(card.job, orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.');
+    paintTray();
+  }
+}
+
+/**
+ * Take a card away. A catch still looking is a lookup still running, so dismissing it
+ * calls it off - which is the same button, because "stop" and "I'm done with this" are
+ * the same intention at two moments.
+ */
+function dismiss(card: Card): void {
+  if (card.state === 'looking') {
+    void chrome.runtime
+      .sendMessage({ type: 'cancelRecognize', job: card.job } satisfies BackgroundRequest)
+      .catch(() => undefined); // an orphaned page cannot cancel; the card still goes
+  } else {
+    settle(card.job, { outcome: 'dismissed' });
+  }
+  contexts.delete(card.job);
+  window.clearTimeout(leaving.get(card.id));
+  leaving.delete(card.id);
+  tray.dismiss(card.id);
+  paintTray();
+}
+
+/** This post is already on screen. Say so with the card that exists, not a second one. */
+function nudge(job: string): void {
+  const card = tray.list().find((c) => c.job === job);
+  const held = card && drawn.get(card.id);
+  if (!held) return;
+  held.slot.scrollIntoView({ block: 'nearest', behavior: motion() ? 'smooth' : 'auto' });
+  held.card.classList.remove('buki-nudge');
+  void held.card.offsetWidth; // restart the animation rather than ignore a repeat press
+  held.card.classList.add('buki-nudge');
 }
 
 // ---------------------------------------------------------------- injection
 
 let injected = 0;
-
-/** One id per press, so two books caught at once never share a progress pill. */
-let jobSeq = 0;
-
-/** One recognition per post, however many times the button is pressed. */
-const lookups = createLookupMemo<Recognized | null>({ now: () => Date.now() });
-
-/** job -> the post it is looking at, so a cancelled lookup can also be forgotten. */
-const jobPosts = new Map<string, string>();
-
-/**
- * Posts with a picker already queued or on screen.
- *
- * Sharing the lookup is not enough on its own: two presses on the same post both receive
- * the same recognition and would each queue a panel, so the memo would have turned one
- * duplicated lookup into two duplicated pickers for one book.
- */
-const picking = new Set<string>();
 
 function addButton(article: HTMLElement): void {
   if (article.querySelector(`.${BTN_CLASS}`)) return;
@@ -664,82 +866,48 @@ function addButton(article: HTMLElement): void {
   btn.addEventListener(
     'click',
     async (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (btn.disabled) return;
+      e.stopPropagation();
+      e.preventDefault();
 
-    // `disabled` rather than a textContent flag: a second click used to capture the
-    // in-flight glyph as "original" and could leave the button stuck on it forever.
-    btn.disabled = true;
-    btn.textContent = '…';
-    const job = `tweet${++jobSeq}`;
-    try {
       const tweet = scrapeTweet(article);
       // Captured now, not after the await: the feed can recycle this node in place while
       // recognition runs, and re-reading it then attributes the book to another post.
       const permalink = tweetPermalink(article);
+      // The catch is named by the POST. That single choice is what makes one card, one
+      // lookup and one cancel-handle the same thing however many times this is pressed -
+      // it used to take three collaborating maps to approximate.
+      const job = postKey(tweet);
+
       trace('clicked. scraped:', {
         text: tweet.text.slice(0, 60),
         images: tweet.imageUrls.length,
         links: tweet.links.length,
       });
 
-      progress(job, 'Looking up the book…');
-      const key = postKey(tweet);
-      jobPosts.set(job, key);
-      const recognized = await lookups.run(key, () => recognize(tweet, job));
-      if (!recognized) {
-        // A null means "no key yet" or an orphaned page - both things the user may fix
-        // in the next few seconds, so it must not be remembered as this post's answer.
-        lookups.forget(key);
-        return; // recognize() already said what was wrong
-      }
-      const { candidates, draft, alreadySaved } = recognized;
-      trace('lookup returned', candidates.length, 'candidate(s)', candidates);
-
-      // The feed recycles tweets while a lookup is in flight. This used to drop the
-      // result, which loses a book that was successfully recognized - the exact failure
-      // the extension exists to prevent. Fall back to the corner, as the right-click
-      // flow already does.
-      const anchor = btn.isConnected ? btn : null;
-      if (!anchor) trace('tweet scrolled away; anchoring the picker to the corner');
-
-      // A no-match panel has nothing to pick, so its outcome is already known.
-      if (!candidates.length) report({ ...draft, outcome: 'no-match' });
-
-      if (picking.has(key)) {
-        toast('Already asking about this one.', job);
+      if (!tray.open(job, 'Reading the cover…', tweet.imageUrls[0])) {
+        nudge(job);
         return;
       }
-      picking.add(key);
-      queuePick(anchor, candidates, {
-        source: sourceFor(permalink),
-        alreadySaved,
-        // Always given, so the post is released however the panel closes. A no-match
-        // panel still has nothing to report - its outcome was recorded above.
-        onOutcome: (o) => {
-          picking.delete(key);
-          if (candidates.length) report({ ...draft, ...o });
-        },
-      });
-      // Say what is waiting, or a book recognized behind an open panel looks like nothing
-      // happened - which is what made rapid catching feel like it dropped things.
-      const queued = waitingToPick();
-      const found = candidates.length ? `Found ${candidates.length}` : 'No book found in this tweet';
-      toast(queued ? `${found} · ${queued} waiting` : found, job);
-      trace('picker queued;', queued, 'waiting');
-    } catch (err) {
-      // A cancelled catch fails by design; saying so would overwrite "Stopped looking."
-      if (!cancelled.has(job)) {
+      paintTray();
+
+      try {
+        const found = await recognize(tweet, job);
+        if (!found) return; // recognize() already put the reason on the card
+        trace('lookup returned', found.candidates.length, 'candidate(s)', found.candidates);
+
+        remember(job, tweet, permalink, found.draft);
+        tray.resolve(job, candidatesOf(found.candidates, found.alreadySaved), found.source);
+        // A card with nothing to choose has its outcome already; the button it offers
+        // starts a fresh attempt with a draft of its own.
+        if (!found.candidates.length) settle(job, { outcome: 'no-match' });
+        paintTray();
+      } catch (err) {
         console.error('[Buki] lookup failed', err);
-        toast(orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.', job);
+        // A dismissed catch has no card left, so this quietly does nothing - which is
+        // exactly right for a lookup the user called off.
+        tray.fail(job, orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.');
+        paintTray();
       }
-    } finally {
-      cancelled.delete(job);
-      jobPosts.delete(job);
-      btn.textContent = '📚';
-      btn.disabled = false;
-    }
     },
     true, // capture
   );
@@ -752,9 +920,9 @@ function scan(root: ParentNode = document): void {
   root.querySelectorAll('article[data-testid="tweet"]').forEach((a) => addButton(a as HTMLElement));
 }
 
-// One coalesced pass per frame. X mutates constantly (and our own button/toast/panel
-// writes re-trigger the observer), so running a full-document query per mutation put
-// real work on the same thread as the page's scrolling.
+// One coalesced pass per frame. X mutates constantly (and our own button/card writes
+// re-trigger the observer), so running a full-document query per mutation put real work
+// on the same thread as the page's scrolling.
 let scheduled = false;
 function requestScan(): void {
   if (scheduled) return;
@@ -773,6 +941,8 @@ setInterval(scan, 2000);
 scan();
 trace(`content script ready on ${location.host}; ${injected} button(s) injected so far`);
 
+// ---------------------------------------------------------------- from the worker
+
 /**
  * Twitter serves the same media under several query strings (?format=jpg&name=small),
  * so the URL the context menu reports rarely equals the `src` in the DOM byte for byte.
@@ -787,36 +957,34 @@ function sameImage(a: string, b: string): boolean {
 }
 
 chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse) => {
-  if (msg?.type === 'toast') {
-    // A sticky message needs a job to belong to; without one there is no way to tell
-    // whose progress it is, so it degrades to a plain message rather than hijacking
-    // somebody else's pill - which is exactly the bug this rewrite removed.
-    if (msg.sticky && msg.job) progress(msg.job, msg.text);
-    else toast(msg.text, msg.job ?? null);
-    return;
-  }
-  if (msg?.type === 'ping') {
-    sendResponse({ ok: true });
-    return true;
-  }
-  if (msg?.type === 'pick') {
-    const { candidates, draft, permalink } = msg;
-    // The progress pill is ended by the worker's own toast just before it sends this, so
-    // there is nothing to clear here - and clearing "the" pill from this path is what
-    // used to wipe a sibling catch's progress.
-    // The same URL-path lookup that resolves the permalink also positions the panel, so
-    // it opens at the image being pointed at.
-    const img = Array.from(document.querySelectorAll('img')).find((i) =>
-      sameImage(i.src, msg.srcUrl),
-    );
-    queuePick(img ?? null, candidates, {
-      source: sourceFor(permalink),
-      alreadySaved: new Set(msg.alreadySaved),
-      onOutcome: (o) => report({ ...draft, ...o }),
-    });
+  if (msg?.type === 'catchOpen') {
+    if (tray.open(msg.job, msg.text, msg.image)) paintTray();
+    else nudge(msg.job);
     sendResponse({ shown: true });
     return true;
   }
+
+  if (msg?.type === 'catchResolve') {
+    // Only if the card is still here. Dismissing a catch is "I'm done with this one", and
+    // the worker needs to know nobody took the answer so it can record that.
+    const shown = tray.list().some((c) => c.job === msg.job);
+    if (shown) {
+      remember(msg.job, msg.tweet, msg.permalink, msg.draft);
+      tray.resolve(msg.job, candidatesOf(msg.candidates, msg.alreadySaved), msg.source);
+      if (!msg.candidates.length) settle(msg.job, { outcome: 'no-match' });
+      paintTray();
+    }
+    sendResponse({ shown });
+    return true;
+  }
+
+  if (msg?.type === 'catchFail') {
+    tray.fail(msg.job, msg.text);
+    paintTray();
+    sendResponse({ shown: true });
+    return true;
+  }
+
   if (msg?.type === 'tweetContextFor') {
     const img = Array.from(document.querySelectorAll('img')).find((i) =>
       sameImage(i.src, msg.srcUrl),
@@ -830,4 +998,5 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
     sendResponse({ permalink: context.permalink, text: context.text, links: context.links });
     return true;
   }
+  return undefined;
 });
