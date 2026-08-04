@@ -6,7 +6,7 @@
 // event. One writer means no cross-context race, and it means the right-click flow still
 // records an attempt on a tab whose content script never loaded.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
-import { createLlmVision, VisionHttpError } from '../recognizer/llmVision';
+import { createLlmVision, MAX_IMAGES, VisionHttpError } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
 import { readSettings, toVisionConfig, type Settings } from './settings';
@@ -14,6 +14,7 @@ import { createLibrary, identityOf, type StorageArea } from './storage';
 import { sameBook } from './bookIdentity';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality, distinctMedia } from './twitterImage';
+import { inlineAll, livePrep } from './inlineImage';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { withSignal } from './cancellable';
 import { createLookupMemo, postKey } from './lookupMemo';
@@ -153,10 +154,16 @@ async function recognize(
     },
   };
 
-  // Deduped, then upgraded, here rather than at either call site, so the button and the
-  // right-click menu cannot drift apart on what the model is shown - the whole reason
-  // recognition moved into the worker.
-  const full: Tweet = { ...tweet, imageUrls: distinctMedia(tweet.imageUrls).map(bestQuality) };
+  // Deduped, capped, upgraded, then INLINED - here rather than at either call site, so
+  // the button and the right-click menu cannot drift apart on what the model is shown,
+  // which is the whole reason recognition moved into the worker.
+  //
+  // Capped BEFORE fetching: there is no point paying to download a fifth picture that
+  // llmVision would slice off before sending anyway.
+  const picked = distinctMedia(tweet.imageUrls).slice(0, MAX_IMAGES).map(bestQuality);
+  const pickedAt = Date.now();
+  const full: Tweet = { ...tweet, imageUrls: await inlineAll(picked, livePrep(control.signal)) };
+  const imagesMs = Date.now() - pickedAt;
 
   try {
     const result = await recognizeBook(
@@ -165,9 +172,16 @@ async function recognize(
       opts,
     );
 
+    // `inlined` is how many pictures we handed over as bytes rather than as a link the
+    // provider has to go and fetch. It is reported because it CANNOT be checked offline:
+    // OffscreenCanvas encoding only exists in a real worker, so the runtime is the only
+    // place this claim can be tested. 0/1 here means the fallback took over and the
+    // error above says why.
+    const inlined = full.imageUrls.filter((url) => url.startsWith('data:')).length;
     console.info(
-      `[Buki] ${full.imageUrls.length} image(s) · vision ${visionMs}ms · ` +
-        `grounding ${Date.now() - startedAt - visionMs}ms · source ${result.source}`,
+      `[Buki] ${full.imageUrls.length} image(s) · inlined ${inlined}/${full.imageUrls.length} · ` +
+        `ours ${imagesMs}ms · vision ${visionMs}ms · ` +
+        `grounding ${Date.now() - startedAt - visionMs - imagesMs}ms · source ${result.source}`,
     );
 
     if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');
