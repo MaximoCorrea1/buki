@@ -2,23 +2,31 @@ import { describe, it, expect } from 'vitest';
 import { bestQuality, distinctMedia } from './twitterImage';
 
 describe('bestQuality', () => {
-  it('asks for the large variant of a feed thumbnail', () => {
-    // The feed renders covers at name=small (~680px). Cover typography is exactly what
-    // downscaling destroys, and the model is being asked to read it.
+  // This asked for `large` (~2048px) while the picture was being sent to the model as a
+  // URL, so the size cost us nothing - the provider did the downloading. It downloads
+  // here now, and is then shrunk to 768 before it is sent, so fetching 2048px is paying
+  // for four times the pixels in order to throw three of them away. `medium` (~1200px)
+  // is the smallest variant still comfortably above what the shrink needs.
+
+  it('asks for a variant big enough to read, not the feed thumbnail', () => {
+    // The feed renders covers at name=small (~680px). Downscaling to THAT is what
+    // destroys cover typography, and the typography is what is being read.
     expect(bestQuality('https://pbs.twimg.com/media/ABC123?format=jpg&name=small')).toBe(
-      'https://pbs.twimg.com/media/ABC123?format=jpg&name=large',
+      'https://pbs.twimg.com/media/ABC123?format=jpg&name=medium',
     );
   });
 
   it('adds the size when the URL carries none', () => {
     expect(bestQuality('https://pbs.twimg.com/media/ABC123')).toBe(
-      'https://pbs.twimg.com/media/ABC123?name=large',
+      'https://pbs.twimg.com/media/ABC123?name=medium',
     );
   });
 
-  it('keeps an already-large URL as it is', () => {
-    const url = 'https://pbs.twimg.com/media/ABC123?format=png&name=large';
-    expect(bestQuality(url)).toBe(url);
+  it('brings an oversized variant down too', () => {
+    // Not just an upgrade any more: `large` is now more than the shrink can use.
+    expect(bestQuality('https://pbs.twimg.com/media/ABC123?format=png&name=large')).toBe(
+      'https://pbs.twimg.com/media/ABC123?format=png&name=medium',
+    );
   });
 
   it('leaves other hosts alone', () => {

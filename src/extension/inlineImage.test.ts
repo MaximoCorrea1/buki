@@ -80,9 +80,11 @@ describe('inlineAll', () => {
     expect(peak).toBe(3);
   });
 
-  it('asks for a size the model can read without paying for four tiles', () => {
-    // Gemini charges an image in 768px tiles. 2048px arrives as four of them - which is
-    // the ~1030 image tokens measured on a single cover.
-    expect(MAX_EDGE).toBeLessThanOrEqual(1024);
+  it('sends one tile, not four', () => {
+    // Gemini bills an image in 768px tiles, so 768 is a cliff edge rather than a
+    // preference: one pixel over and the same cover costs four tiles instead of one -
+    // ~1030 image tokens, which is what was measured before this, and four times the
+    // bytes to get onto a home connection's uplink.
+    expect(MAX_EDGE).toBeLessThanOrEqual(768);
   });
 });

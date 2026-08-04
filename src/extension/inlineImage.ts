@@ -19,11 +19,12 @@
 /**
  * Longest edge, in pixels, of what the model is shown.
  *
- * Above the feed's own 680px render - downscaling to THAT is what destroys cover
- * typography, which is the thing being read - and well under the 2048px that was being
- * sent to be thrown away by the resize on the other end.
+ * 768 is a cliff edge, not a preference: Gemini bills an image in 768px tiles, so one
+ * pixel over and the same cover costs FOUR tiles - about 1,030 image tokens, and four
+ * times the bytes to push up a home connection's uplink. Still above the feed's own 680px
+ * render, which is the downscale that actually costs cover legibility.
  */
-export const MAX_EDGE = 1024;
+export const MAX_EDGE = 768;
 
 /** JPEG quality. Cover lettering survives this; the artefacts land in the background. */
 export const QUALITY = 0.82;

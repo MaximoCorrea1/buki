@@ -165,28 +165,33 @@ async function recognize(
   const full: Tweet = { ...tweet, imageUrls: await inlineAll(picked, livePrep(control.signal)) };
   const imagesMs = Date.now() - pickedAt;
 
+  let outcome = 'failed';
   try {
     const result = await recognizeBook(
       full,
       { vision, books: createOpenLibraryClient({ fetch: net }) },
       opts,
     );
-
-    // `inlined` is how many pictures we handed over as bytes rather than as a link the
-    // provider has to go and fetch. It is reported because it CANNOT be checked offline:
-    // OffscreenCanvas encoding only exists in a real worker, so the runtime is the only
-    // place this claim can be tested. 0/1 here means the fallback took over and the
-    // error above says why.
-    const inlined = full.imageUrls.filter((url) => url.startsWith('data:')).length;
-    console.info(
-      `[Buki] ${full.imageUrls.length} image(s) · inlined ${inlined}/${full.imageUrls.length} · ` +
-        `ours ${imagesMs}ms · vision ${visionMs}ms · ` +
-        `grounding ${Date.now() - startedAt - visionMs - imagesMs}ms · source ${result.source}`,
-    );
+    outcome = result.source;
 
     if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');
     return { result, model: settings.model };
   } finally {
+    // In `finally`, because the run that most needs explaining is the one that FAILED.
+    // This lived after a successful recognizeBook, so six timed-out catches in a row
+    // reported nothing whatsoever about where their time had gone.
+    //
+    // `inlined` cannot be checked offline - OffscreenCanvas encoding exists only in a
+    // real worker - so it is the claim testing itself. `KB up` is what this machine now
+    // pushes up its own uplink: the cost that MOVED here when we stopped handing the
+    // provider a link and started handing it the bytes.
+    const inlined = full.imageUrls.filter((url) => url.startsWith('data:')).length;
+    const kb = Math.round(full.imageUrls.reduce((n, url) => n + url.length, 0) / 1024);
+    console.info(
+      `[Buki] ${full.imageUrls.length} image(s) · inlined ${inlined}/${full.imageUrls.length}` +
+        ` · ${kb}KB up · ours ${imagesMs}ms · vision ${visionMs}ms` +
+        ` · grounding ${Date.now() - startedAt - visionMs - imagesMs}ms · ${outcome}`,
+    );
     // Resolved, failed or cancelled: nothing for this catch should still be on the wire.
     control.abort();
     running.delete(job);

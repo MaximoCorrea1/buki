@@ -1,12 +1,10 @@
 /**
- * Twitter serves the same photo at several sizes, and the feed renders `name=small`
- * (~680px wide). That is the URL both flows pick up: the scraper reads `img.src`, and the
- * context menu reports the same string.
+ * Twitter's media URLs: which picture, and how big.
  *
- * Downscaling is exactly what destroys cover typography, which is the thing the model is
- * being asked to read. Asking for the large variant costs nothing - same request, same
- * quota - and hands the model the picture it needed in the first place.
+ * The same photo is served at several sizes under one path, so the path is the identity
+ * and the query string is only the rendition. Both facts below follow from that.
  */
+
 /**
  * The same photo, once.
  *
@@ -35,11 +33,23 @@ export function distinctMedia(urls: string[]): string[] {
   });
 }
 
+/**
+ * The rendition to actually read.
+ *
+ * The feed renders `name=small` (~680px), which is the URL both flows pick up, and
+ * downscaling to 680 is what destroys cover typography - the thing being read.
+ *
+ * This asked for `large` (~2048px) while the picture was sent to the model as a URL, so
+ * the size cost us nothing: the provider did the downloading. It is downloaded HERE now
+ * and shrunk to one 768px tile before being sent, so `large` means paying for four times
+ * the pixels in order to throw three of them away, on a home connection, once per catch.
+ * `medium` (~1200px) is the smallest variant comfortably above what the shrink needs.
+ */
 export function bestQuality(url: string): string {
   try {
     const parsed = new URL(url);
     if (parsed.hostname !== 'pbs.twimg.com') return url;
-    parsed.searchParams.set('name', 'large');
+    parsed.searchParams.set('name', 'medium');
     return parsed.toString();
   } catch {
     return url; // not a URL we can reason about; send it as-is
