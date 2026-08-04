@@ -602,6 +602,9 @@ function tick(cards: Card[]): void {
 /** Where the answer came from, in the card's own words. */
 const PROVENANCE: Record<string, string> = {
   vision: 'read from the cover',
+  // Read off the cover, but the catalogue was unreachable, so nothing corroborated it.
+  // Saying so is the difference between a shelf you trust and one you have to re-check.
+  unverified: 'read from the cover · unverified',
   link: 'from the link in the post',
   text: "from the post's words",
   none: 'no source',
@@ -878,10 +881,12 @@ function addButton(article: HTMLElement): void {
       // it used to take three collaborating maps to approximate.
       const job = postKey(tweet);
 
-      trace('clicked. scraped:', {
+      // Flat, not an object: a collapsed console group hides the image count, and the
+      // image count is the first number worth knowing when a catch is slow - every extra
+      // picture is one the provider has to download before it can start reading.
+      trace(`clicked · ${tweet.imageUrls.length} image(s) · ${tweet.links.length} link(s)`, {
         text: tweet.text.slice(0, 60),
-        images: tweet.imageUrls.length,
-        links: tweet.links.length,
+        images: tweet.imageUrls,
       });
 
       if (!tray.open(job, 'Reading the cover…', tweet.imageUrls[0])) {

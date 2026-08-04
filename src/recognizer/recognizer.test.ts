@@ -328,4 +328,90 @@ describe('recognizeBook', () => {
     // Four shared words - as strong as text evidence ever gets, and still medium.
     expect(result.confidence).toBe('medium');
   });
+
+  // ------------------------------------------------------- when the catalogue is down
+
+  it('offers what the cover said when the catalogue never answers', async () => {
+    // Measured 2026-08-04: OpenLibrary's search index returned nothing within 20s, for
+    // every query, uncontended. Grounding was mandatory, so a cover the model read
+    // perfectly failed the whole catch - reported to the user as "signal timed out".
+    // A reading nobody could check is still worth offering; it just has to say so.
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        throw new Error('OpenLibrary did not answer within 6s.');
+      },
+      async search() {
+        throw new Error('OpenLibrary did not answer within 6s.');
+      },
+    };
+    const vision: VisionClient = {
+      async guessBook() {
+        return { title: 'Dune', author: 'Frank Herbert', confidence: 0.9 };
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: '', imageUrls: ['https://pbs.twimg.com/media/cover.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(result.candidates).toEqual([{ title: 'Dune', author: 'Frank Herbert' }]);
+    expect(result.source).toBe('unverified');
+    // Nothing corroborated it, and the card has to be able to say that.
+    expect(result.confidence).toBe('low');
+  });
+
+  it('keeps looking when the catalogue answers and simply has nothing', async () => {
+    // The distinction that matters: "I could not ask" is not "the answer is no". A
+    // catalogue that replies with an empty list has done its job, so the link still
+    // deserves its turn.
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return { title: 'Linked Book', author: 'Someone', isbn: '0141439602' };
+      },
+      async search() {
+        return [];
+      },
+    };
+    const vision: VisionClient = {
+      async guessBook() {
+        return { title: 'Unfindable', author: 'Nobody', confidence: 0.9 };
+      },
+    };
+
+    const result = await recognizeBook(
+      {
+        text: '',
+        imageUrls: ['https://pbs.twimg.com/media/cover.jpg'],
+        links: ['https://www.amazon.com/dp/0141439602'],
+      },
+      { vision, books },
+    );
+
+    expect(result.source).toBe('link');
+  });
+
+  it('does not let a failing ISBN lookup take the catch down with it', async () => {
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        throw new Error('OpenLibrary did not answer within 6s.');
+      },
+      async search() {
+        return [];
+      },
+    };
+    const vision: VisionClient = {
+      async guessBook() {
+        return null;
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: '', imageUrls: [], links: ['https://www.amazon.com/dp/0141439602'] },
+      { vision, books },
+    );
+
+    expect(result.source).toBe('none');
+    expect(result.candidates).toEqual([]);
+  });
 });

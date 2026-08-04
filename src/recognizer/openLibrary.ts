@@ -2,7 +2,13 @@ import type { Book, BooksDb, FetchLike } from './types';
 
 const SEARCH = 'https://openlibrary.org/search.json';
 const FIELDS = 'title,author_name,cover_i,isbn';
-const TIMEOUT_MS = 10_000;
+/**
+ * Short on purpose. A healthy search answers in well under a second; when the index is
+ * degraded it answers in tens of seconds or not at all (measured at over 20s, uncontended,
+ * on 2026-08-04). Waiting 10s to learn that buys nothing - the recognizer now treats a
+ * silent catalogue as "unverified" rather than as failure, so failing fast IS the feature.
+ */
+const TIMEOUT_MS = 6_000;
 
 interface OlDoc {
   title?: string;
@@ -28,7 +34,17 @@ function toBook(doc: OlDoc): Book {
  */
 export function createOpenLibraryClient(deps: { fetch: FetchLike }): BooksDb {
   async function fetchDocs(url: string): Promise<OlDoc[]> {
-    const res = await deps.fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    let res;
+    try {
+      res = await deps.fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    } catch (err) {
+      // A bare "TimeoutError: signal timed out" reached the user's screen once, which
+      // reads as a broken extension rather than a slow catalogue. Name the service.
+      if (err instanceof Error && /timeout|abort/i.test(`${err.name} ${err.message}`)) {
+        throw new Error(`OpenLibrary did not answer within ${TIMEOUT_MS / 1000}s.`);
+      }
+      throw err;
+    }
 
     // Without this, an error body just yields no docs, and the user is told their
     // photo was unclear when OpenLibrary was actually rate-limiting or down.

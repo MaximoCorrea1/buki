@@ -13,7 +13,7 @@ import { readSettings, toVisionConfig, type Settings } from './settings';
 import { createLibrary, identityOf, type StorageArea } from './storage';
 import { sameBook } from './bookIdentity';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
-import { bestQuality } from './twitterImage';
+import { bestQuality, distinctMedia } from './twitterImage';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { withSignal } from './cancellable';
 import { createLookupMemo, postKey } from './lookupMemo';
@@ -132,26 +132,42 @@ async function recognize(
   running.set(job, control);
   const net = withSignal((url, init) => fetch(url, init), control.signal);
 
+  // Which stage a slow catch is actually spending its time in. Without this, "it takes
+  // too long" is one number for a pipeline with two external services in it, and the
+  // wrong one gets tuned.
+  const startedAt = Date.now();
+  let visionMs = 0;
+
   const vision: VisionClient = {
     async guessBook(input) {
+      const at = Date.now();
       try {
         return await visionFor(settings, net).guessBook(input);
       } catch (err) {
         if (!(err instanceof NoKeyError)) throw err;
         keyWasMissing = true;
         return null; // fall through to the retailer link, which needs no key
+      } finally {
+        visionMs = Date.now() - at;
       }
     },
   };
 
+  // Deduped, then upgraded, here rather than at either call site, so the button and the
+  // right-click menu cannot drift apart on what the model is shown - the whole reason
+  // recognition moved into the worker.
+  const full: Tweet = { ...tweet, imageUrls: distinctMedia(tweet.imageUrls).map(bestQuality) };
+
   try {
-    // Upgraded here rather than at either call site, so the button and the right-click
-    // menu cannot drift apart on image quality - the whole reason recognition moved here.
-    const full: Tweet = { ...tweet, imageUrls: tweet.imageUrls.map(bestQuality) };
     const result = await recognizeBook(
       full,
       { vision, books: createOpenLibraryClient({ fetch: net }) },
       opts,
+    );
+
+    console.info(
+      `[Buki] ${full.imageUrls.length} image(s) · vision ${visionMs}ms · ` +
+        `grounding ${Date.now() - startedAt - visionMs}ms · source ${result.source}`,
     );
 
     if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');

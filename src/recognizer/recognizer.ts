@@ -13,6 +13,23 @@ import type { Tweet, RecognitionResult, VisionClient, BooksDb } from './types';
  * client the worker passes is lazy: a post carrying a retailer link resolves in step 1
  * without ever needing a key.
  */
+/**
+ * Run a catalogue lookup that must not be able to fail the whole catch.
+ *
+ * `null` means the catalogue never answered, which is a different fact from answering
+ * with nothing - and the difference decides what happens next. Grounding used to be
+ * mandatory, so an outage at OpenLibrary turned every well-read cover into "signal timed
+ * out" on screen.
+ */
+async function attempt<T>(work: Promise<T>): Promise<T | null> {
+  try {
+    return await work;
+  } catch (err) {
+    console.error('[Buki] the books catalogue did not answer', err);
+    return null;
+  }
+}
+
 export async function recognizeBook(
   tweet: Tweet,
   deps: { vision: VisionClient; books: BooksDb },
@@ -31,18 +48,29 @@ export async function recognizeBook(
       altText: tweet.altText,
     });
     if (guess) {
-      const matches = await deps.books.search({ title: guess.title, author: guess.author });
+      const matches = await attempt(deps.books.search({ title: guess.title, author: guess.author }));
 
       // Score against the model's own words. Two shared words means the DB and the model
       // independently agree on a book; one means they overlap on a single token, which a
       // common surname or series word produces by accident.
-      const ranked = rank(`${guess.title} ${guess.author}`, matches);
+      const ranked = rank(`${guess.title} ${guess.author}`, matches ?? []);
       const top = ranked[0];
       if (top) {
         return {
           candidates: ranked.slice(0, 3).map((scored) => scored.book),
           confidence: top.score >= 2 ? 'high' : 'medium',
           source: 'vision',
+        };
+      }
+
+      // The catalogue never answered - which is not the same as it saying there is no
+      // such book. Keep the reading rather than lose it, at the lowest confidence and
+      // under its own source, so the card can say nothing checked this.
+      if (matches === null) {
+        return {
+          candidates: [{ title: guess.title, author: guess.author }],
+          confidence: 'low',
+          source: 'unverified',
         };
       }
     }
@@ -53,7 +81,7 @@ export async function recognizeBook(
   // its turn and come back with nothing.
   const isbn = extractIsbnFromLinks(tweet.links);
   if (isbn) {
-    const book = await deps.books.lookupByIsbn(isbn);
+    const book = await attempt(deps.books.lookupByIsbn(isbn));
     if (book) return { candidates: [book], confidence: 'high', source: 'link' };
     // ISBN found but the DB doesn't know it: fall through rather than dropping a
     // possibly-real book.

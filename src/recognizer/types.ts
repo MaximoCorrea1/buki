@@ -27,8 +27,17 @@ export interface Book {
 
 export type Confidence = 'high' | 'medium' | 'low';
 
-/** Where a result came from. `none` means nothing resolved at all. */
-export type RecognitionSource = 'link' | 'vision' | 'text' | 'none';
+/**
+ * Where a result came from.
+ *
+ * `unverified` is a reading the model took off the cover that no catalogue confirmed.
+ * OpenLibrary's search index can degrade to answering nothing inside any usable budget
+ * (measured at over 20s, uncontended, on 2026-08-04), and a cover that was read correctly
+ * should not be thrown away because the corroborating service was down. It is a separate
+ * value rather than a flag so the card, the log and the kept rate all learn about it for
+ * free. `none` means nothing resolved at all.
+ */
+export type RecognitionSource = 'link' | 'vision' | 'unverified' | 'text' | 'none';
 
 /**
  * A book plus the evidence behind it: how many words of four or more characters it
