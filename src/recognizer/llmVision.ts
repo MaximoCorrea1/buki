@@ -85,6 +85,12 @@ const INSTRUCTION = [
 
 interface ChatReply {
   choices?: { message?: { content?: string } }[];
+  /** Where the wait went. See the note where this is logged. */
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    completion_tokens_details?: { reasoning_tokens?: number };
+  };
 }
 
 /**
@@ -178,6 +184,22 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
       }
 
       const data = (await res.json()) as ChatReply | null;
+
+      // Whether the model spent the wait THINKING.
+      //
+      // Google's docs say 2.5 Flash Lite does not think by default - but the configured
+      // model is the `-latest` ALIAS, deliberately, and an alias can be repointed at a
+      // model that does. Reasoning tokens are the only way to tell from outside, and a
+      // 12s cover read is worth being able to attribute rather than guess at.
+      const usage = data?.usage;
+      if (usage) {
+        console.info(
+          `[Buki] vision tokens · prompt ${usage.prompt_tokens ?? '?'}` +
+            ` · completion ${usage.completion_tokens ?? '?'}` +
+            ` · reasoning ${usage.completion_tokens_details?.reasoning_tokens ?? 0}`,
+        );
+      }
+
       const raw = data?.choices?.[0]?.message?.content;
       if (typeof raw !== 'string') return null;
 

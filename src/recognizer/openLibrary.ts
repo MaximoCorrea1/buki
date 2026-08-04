@@ -1,6 +1,7 @@
 import type { Book, BooksDb, FetchLike } from './types';
 
-const SEARCH = 'https://openlibrary.org/search.json';
+const SITE = 'https://openlibrary.org';
+const SEARCH = `${SITE}/search.json`;
 const FIELDS = 'title,author_name,cover_i,isbn';
 /**
  * Short on purpose. A healthy search answers in well under a second; when the index is
@@ -16,6 +17,24 @@ interface OlDoc {
   cover_i?: number;
   isbn?: string[];
 }
+
+/**
+ * An edition record - the exact-key form of a book, reached at `/isbn/<isbn>.json`.
+ *
+ * It names its authors by key rather than by name, and its covers by id, so a full Book
+ * costs two requests instead of one. That is the price of not resolving an exact
+ * identifier through a full-text relevance index.
+ */
+interface OlEdition {
+  title?: string;
+  authors?: { key?: string }[];
+  covers?: number[];
+  isbn_13?: string[];
+  isbn_10?: string[];
+}
+
+const coverFor = (id: number | undefined): string | undefined =>
+  id ? `https://covers.openlibrary.org/b/id/${id}-M.jpg` : undefined;
 
 /** Map one OpenLibrary search doc into our canonical Book. */
 function toBook(doc: OlDoc): Book {
@@ -33,7 +52,7 @@ function toBook(doc: OlDoc): Book {
  * source. `fetch` is injected so the mapping logic tests offline.
  */
 export function createOpenLibraryClient(deps: { fetch: FetchLike }): BooksDb {
-  async function fetchDocs(url: string): Promise<OlDoc[]> {
+  async function getJson<T>(url: string): Promise<T | null> {
     let res;
     try {
       res = await deps.fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
@@ -46,14 +65,41 @@ export function createOpenLibraryClient(deps: { fetch: FetchLike }): BooksDb {
       throw err;
     }
 
+    // 404 is an answer, not a failure: OpenLibrary simply does not hold this record.
+    if (res.status === 404) return null;
     // Without this, an error body just yields no docs, and the user is told their
     // photo was unclear when OpenLibrary was actually rate-limiting or down.
     if (res.ok === false) throw new Error(`OpenLibrary request failed (HTTP ${res.status})`);
 
-    const data = (await res.json()) as { docs?: OlDoc[] } | null;
-    // `data?.docs ?? []` and not `data.docs ?? []`: valid JSON can be `null`, and the
-    // property read would throw before the fallback could apply.
+    return (await res.json()) as T | null;
+  }
+
+  async function fetchDocs(url: string): Promise<OlDoc[]> {
+    const data = await getJson<{ docs?: OlDoc[] }>(url);
+    // `data?.docs` and not `data.docs`: valid JSON can be `null`, and the property read
+    // would throw before the fallback could apply.
     return Array.isArray(data?.docs) ? data.docs : [];
+  }
+
+  /**
+   * The author's name, best-effort.
+   *
+   * An edition names its authors by key, so this is a second request. It is allowed to
+   * fail: a book with nobody named is still a book worth offering, and losing the whole
+   * lookup because the follow-up did not land would be the mandatory-grounding mistake
+   * again, one layer down. The cost is dedup accuracy - identity is title plus surname -
+   * and never the catch itself.
+   */
+  async function authorName(edition: OlEdition): Promise<string> {
+    const key = edition.authors?.[0]?.key;
+    if (!key) return '';
+    try {
+      const author = await getJson<{ name?: string }>(`${SITE}${key}.json`);
+      return author?.name ?? '';
+    } catch (err) {
+      console.error('[Buki] could not name the author', err);
+      return '';
+    }
   }
 
   return {
@@ -62,12 +108,23 @@ export function createOpenLibraryClient(deps: { fetch: FetchLike }): BooksDb {
       const docs = await fetchDocs(`${SEARCH}?q=${q}&fields=${FIELDS}&limit=3`);
       return docs.map(toBook);
     },
+
+    /**
+     * An ISBN is an exact key, so it is resolved against the edition record rather than
+     * the relevance index. That was always the more precise choice; on 2026-08-04 it also
+     * became the only working one - `search.json` timed out on every query for over 20s
+     * while `/isbn/<isbn>.json` answered in about two seconds.
+     */
     async lookupByIsbn(isbn) {
-      // Keep `isbn:` literal; only the value is encoded (digits, so it's a no-op).
-      const docs = await fetchDocs(
-        `${SEARCH}?q=isbn:${encodeURIComponent(isbn)}&fields=${FIELDS}&limit=1`,
-      );
-      return docs[0] ? toBook(docs[0]) : null;
+      const edition = await getJson<OlEdition>(`${SITE}/isbn/${encodeURIComponent(isbn)}.json`);
+      if (!edition?.title) return null;
+      return {
+        title: edition.title,
+        author: await authorName(edition),
+        // The record's own canonical form, falling back to what we were asked about.
+        isbn: edition.isbn_13?.[0] ?? edition.isbn_10?.[0] ?? isbn,
+        coverUrl: coverFor(edition.covers?.[0]),
+      };
     },
   };
 }
