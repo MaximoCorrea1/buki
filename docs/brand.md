@@ -97,6 +97,29 @@ pile a book is in, and a second signal for the same fact is noise.
 Jade doubles as the "already on your shelf" marker. That is the one exception, and it
 earns it by never appearing anywhere else in that role.
 
+### Bindings
+
+| | | pairs with |
+| --- | --- | --- |
+| oxblood | `#4A1414` | coral |
+| tobacco | `#4A3208` | marigold |
+| forest | `#0C4033` | jade |
+| indigo | `#1B2570` | peri |
+| aubergine | `#3A1550` | plum |
+
+The same five dyes at binding strength, for anything that is a whole board rather than an
+edge: the generated cover is the only user today. Same hash, so a book's board and its
+spine are the same book.
+
+They exist because cream on bright cloth cannot be read. `#FAF7F2` on marigold is 1.9:1;
+on tobacco it is 11.2:1, and every binding clears 10.9:1. So a face-out cover gets one
+ink on five grounds instead of five exceptions. This is not a tint of the cloth laid over
+it, which the flat rule forbids. It is a second solid value of the same dye.
+
+**Two inks on a binding, and no more.** `#FAF7F2` for the title, `#D6CEC2` for the rules
+(7.4:1 on the worst ground). Not `--lamp`: gilt on every cover would spend the one-accent
+rule a dozen times per shelf.
+
 ---
 
 ## Type

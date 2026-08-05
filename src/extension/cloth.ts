@@ -17,9 +17,13 @@ export const CLOTH = ['#ff5a47', '#ffae12', '#22b584', '#6274ff', '#b45ce0'];
  * different hash in each file, so a book was one colour in the in-page picker and
  * another on the shelf. One definition is the requirement; which hash is arbitrary.
  */
-export function clothFor(book: Book): string {
+export function hashOf(book: Book): number {
   const key = book.isbn ?? `${book.title}|${book.author}`;
   let hash = 5381;
   for (let i = 0; i < key.length; i++) hash = ((hash << 5) + hash + key.charCodeAt(i)) >>> 0;
-  return CLOTH[hash % CLOTH.length] ?? CLOTH[0]!;
+  return hash;
+}
+
+export function clothFor(book: Book): string {
+  return CLOTH[hashOf(book) % CLOTH.length] ?? CLOTH[0]!;
 }

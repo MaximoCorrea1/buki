@@ -146,27 +146,40 @@ nothing at all. A face-out shelf where a third of the covers are missing looks b
 So a book without cover art gets a cover that Buki draws, from the book itself, and it has
 to look deliberate enough that you do not read it as a failure.
 
-Derived from `clothFor`'s existing hash, so a book's generated cover never changes:
-
-- The cloth as the ground, flat.
-- The title in the serif, set large, left-aligned, wrapping. The author beneath in mono.
-- Two gilt cords across the top, the signature already used everywhere else.
-- A character-grid pattern filling the space under the text, drawn from the hash: the
-  ASCII idea, used as a texture rather than as a picture.
+**Built, rendered at 118px, and looked at (2026-08-05).** The section below is what
+survived; `src/extension/generatedCover.ts` is the module and the picture is in the
+session scratchpad as `cover-lab.png`. Three things the drawing got wrong are recorded at
+the end, because each of them looked reasonable in prose.
 
 ```
 ┌──────────────┐
-│ ══════════   │  the cords
+│ ══════════   │  two stamped rules, the cords seen face-on
+│ ░ ▒░  ▒ ░▒ ░ │
+│ ▒░ ░▒▓ ░  ░▒ │  the cloth: the book's own character tile, repeated,
+│ ░▒ ▒ ░  ▒░ ░ │  in ONE lighter solid value of the board
+│  ░ ░▒ ░▒  ▒  │
 │              │
-│  Dune        │  serif, large
-│              │
-│  F. HERBERT  │  mono, small
-│              │
-│ ░▒▓█▓▒░▒▓█   │  hashed character grid
-│ ▓█▓▒░▒▓█▓▒   │  in a lighter tint of the cloth
-│ ▒░▒▓█▓▒░▒▓   │
+│  Dune        │  serif, cream, bottom-anchored, three sizes
 └──────────────┘
 ```
+
+- **The board is a deep dyed binding, not the bright cloth.** Five values, one per cloth,
+  same hash: oxblood `#4A1414`, tobacco `#4A3208`, forest `#0C4033`, indigo `#1B2570`,
+  aubergine `#3A1550`. The bright cloth keeps its existing job on spine edges and rows.
+- **Two stamped rules across the top**, in `#D6CEC2`. Cream rather than gilt, because a
+  gold line on every cover would spend the one-accent rule twelve times per shelf.
+- **The title in the serif, cream, anchored to the bottom.** Three sizes chosen from the
+  title's length AND its longest word, never a continuous fit.
+- **No author on the board.** The caption underneath already carries it.
+- **The character grid is the cloth.** The book's 7x7 tile, repeated across the whole
+  board at a 5px cell in one lighter solid value, half-dropped so alternate tile rows
+  shift sideways.
+
+**Why cream type on a deep board and not on the cloth.** White on bright marigold is
+1.9:1 and cannot be read; on tobacco it is 11.2:1. Every one of the five deep bindings
+clears 10.9:1, so the type is legible on all of them with one ink rather than five
+exceptions. Rendering the bright-cloth version confirmed the arithmetic: it reads as a set
+of highlighters, not as a shelf.
 
 **Why a character grid rather than a generated image or a gradient.** It is the one
 texture that is genuinely Buki's: mono is already the utility face, the shelf already
@@ -174,11 +187,22 @@ reports in it, and a character grid costs nothing to render, needs no network, a
 half-load. A gradient would be the generic answer and is also banned by the flat rule in
 `brand.md`.
 
-**Open question for review:** whether the character grid is a texture (a wash of blocks,
-as drawn above) or a *portrait* built from characters. The texture is safer and reads at
-118px. A portrait is more memorable and is likely mud at that size. Recommendation:
-texture in the popup, and keep the portrait idea for the landing page, where there is room
-for it.
+### What the drawing got wrong
+
+- **Texture, not a portrait, and not an emblem either.** The open question in the first
+  draft was texture versus portrait. Rendered, there is a third answer and it is the one
+  that works: the tile is neither a wash nor a picture, it is *the cloth*, so the
+  characters are the material rather than an ornament sitting on it. A single stamped
+  device was also tried, at two sizes. It reads as an audio equalizer, because mirroring
+  left to right leaves only four independent columns and the eye finds them instantly. It
+  is cut.
+- **A hashed grid has to be blurred or it is a broken image.** Rolling each cell
+  independently gives a middle that is denser on average and still renders as static, and
+  static is the exact thing a drawn cover must never look like. Each cell now takes the
+  average of its neighbourhood, so ink arrives in areas.
+- **A straight repeat is corduroy.** Tiling the square lines the seams up into vertical
+  ribbing. The half-drop is what a real textile repeat does and is what makes it read as
+  woven.
 
 ---
 
@@ -207,8 +231,10 @@ for it.
 
 ## Build order
 
-1. The generated cover, on its own, rendered at 118px and looked at. If it is not good,
-   stop and reconsider the whole face-out direction.
+1. ~~The generated cover, on its own, rendered at 118px and looked at.~~ **Done. It
+   holds.** A deep binding with a stamped title and a woven character ground reads as a
+   book that lost its jacket, which is a real object, rather than as art that failed to
+   load. The face-out direction survives its own riskiest piece.
 2. The shelf: width, four-up grid, boards, captions.
 3. The segmented control and per-pile views.
 4. The detail sheet, including move-between-piles.

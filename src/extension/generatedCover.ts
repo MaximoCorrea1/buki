@@ -1,0 +1,136 @@
+import type { Book } from '../recognizer/types';
+import { CLOTH, hashOf } from './cloth';
+
+/**
+ * A cover for a book that has none.
+ *
+ * OpenLibrary has no art for a large share of books, and on 2026-08-04 it answered
+ * nothing at all for hours. A face-out shelf where a third of the covers are missing
+ * looks broken, so Buki draws the rest. The bar is that it reads as an artifact rather
+ * than as a placeholder: if it reads as a placeholder, face-out is worse than the list
+ * it replaced, because a list never pretended there was cover art.
+ *
+ * The answer is not to fake art. It is to draw what a book with no dust jacket actually
+ * looks like: cloth boards, a stamped rule, and a blind-stamped device. Nothing here is
+ * pretending to be a photograph, so nothing here can look like a photograph that failed.
+ */
+
+/**
+ * The boards. One per cloth, same index, deliberately deep.
+ *
+ * Real bookcloth is dyed, not printed: oxblood, tobacco, forest, indigo, aubergine. The
+ * bright CLOTH values are a highlighter by comparison, and the arithmetic agrees - cream
+ * type on bright marigold is 1.9:1 and unreadable, while the same cream on tobacco is
+ * 11.2:1. So the bright cloth keeps its job on spine edges and rows, and the board gets
+ * the deep value of the same dye. Two solid values of one colour, which is not a blend.
+ */
+export const BINDING = ['#4a1414', '#4a3208', '#0c4033', '#1b2570', '#3a1550'];
+
+/** Blank first: the ramp is read as an amount of ink, and index 0 has to be none. */
+export const RAMP = [' ', '░', '▒', '▓', '█'];
+
+/** Odd, so the device has a middle cell to be dense at. */
+export const DEVICE_SIZE = 7;
+
+export function bindingFor(book: Book): string {
+  return BINDING[hashOf(book) % CLOTH.length] ?? BINDING[0]!;
+}
+
+/** xorshift32. Deterministic and seedable, which `Math.random` is not. */
+function rolls(seed: number, count: number): number[] {
+  let x = seed || 1; // 0 is xorshift's fixed point and would draw one glyph forever
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    x >>>= 0;
+    out.push(x);
+  }
+  return out;
+}
+
+/**
+ * How the rolled field becomes ink. Tuned by looking at it at 118px, not derived.
+ * SPREAD sets how much of the ramp a device uses, LIFT how inky it is overall, and
+ * FALLOFF how fast it dissolves past the middle ring.
+ */
+const SPREAD = 1;
+const LIFT = 1.6;
+const FALLOFF = 1.3;
+
+/**
+ * The device: a small stamped emblem, hashed from the book and never changing.
+ *
+ * Three rules turn a hashed grid into something that looks drawn rather than corrupted,
+ * and all three had to be there. The first version had only the last two and, rendered,
+ * it read as a dead channel.
+ *
+ * It is BLURRED. A cell's ink is the average of its neighbourhood, not its own roll, so
+ * ink arrives in contiguous areas. Rolling every cell independently is white noise, and
+ * white noise is what a broken image looks like - the one thing this must never be.
+ *
+ * It MIRRORS left to right, which is why GitHub's identicons read as creatures rather
+ * than as static. Symmetry is the cheapest signal of intent there is.
+ *
+ * And it is DENSER IN THE MIDDLE, so every device is a solid core that dissolves at its
+ * edge. That gives the set a family resemblance, one species with a specimen per book,
+ * while the rolls keep any two books apart.
+ */
+export function deviceFor(book: Book): string[] {
+  const half = Math.ceil(DEVICE_SIZE / 2);
+  const mid = (DEVICE_SIZE - 1) / 2;
+  const draw = rolls(hashOf(book), DEVICE_SIZE * half);
+
+  // The mirror happens here, in the field, so the blur below inherits it: the right half
+  // is the left half read backwards.
+  const field = Array.from({ length: DEVICE_SIZE }, (_, row) =>
+    Array.from({ length: DEVICE_SIZE }, (_, col) => {
+      const source = Math.min(col, DEVICE_SIZE - 1 - col);
+      return (draw[row * half + source] ?? 0) % RAMP.length;
+    }),
+  );
+
+  // Clamped at the border rather than wrapped, so an edge cell is pulled outward by its
+  // own value. Wrapping would tie the top of the mark to the bottom of it.
+  const clamp = (n: number, hi: number) => Math.max(0, Math.min(hi, n));
+  const at = (row: number, col: number) =>
+    field[clamp(row, DEVICE_SIZE - 1)]![clamp(col, DEVICE_SIZE - 1)]!;
+
+  return field.map((line, row) =>
+    line
+      .map((_, col) => {
+        let sum = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) sum += at(row + dr, col + dc);
+        }
+        const ring = Math.max(Math.abs(row - mid), Math.abs(col - mid));
+        // The innermost ring pays no falloff, so the core is an area and not a peak.
+        const level = (sum / 9) * SPREAD + LIFT - Math.max(0, ring - 1) * FALLOFF;
+        return RAMP[clamp(Math.round(level), RAMP.length - 1)];
+      })
+      .join(''),
+  );
+}
+
+/**
+ * How big the title is set. Three sizes rather than a fit.
+ *
+ * Scaling type continuously to fill the space is what makes a generated cover read as
+ * output: every book gets a different size, so no two covers share a system. Three steps
+ * a person chose read as three templates a publisher owns.
+ */
+export type TitleStep = 'large' | 'medium' | 'small';
+
+export function titleStep(title: string): TitleStep {
+  const words = title.trim().split(/\s+/);
+  const total = title.trim().length;
+  // A line breaks between words, so the widest word is a constraint of its own. Counting
+  // only the title set "Neuromancer" at the largest step and rendered it clipped at the
+  // edge of its own cover.
+  const widest = words.reduce((n, word) => Math.max(n, word.length), 0);
+
+  if (total <= 12 && widest <= 9) return 'large';
+  if (total <= 28 && widest <= 12) return 'medium';
+  return 'small';
+}
