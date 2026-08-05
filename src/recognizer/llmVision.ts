@@ -37,7 +37,24 @@ export const GEMINI: Omit<VisionConfig, 'apiKey'> = {
   model: 'gemini-flash-lite-latest',
 };
 
-const TIMEOUT_MS = 25_000;
+/**
+ * Per ATTEMPT, not per catch.
+ *
+ * Measured 2026-08-05 across five real catches: 1.7s, 4.6s, 5.3s, 6.0s - and one that sat
+ * until the old 25s ceiling and died. A request still running at twelve seconds is stuck
+ * rather than slow, and waiting another thirteen only delays the retry that fixes it.
+ * With two attempts the ceiling is unchanged; what changes is that a hung request no
+ * longer takes the whole catch down with it.
+ */
+const TIMEOUT_MS = 12_000;
+
+/** One retry. A second failure is a pattern rather than a blip, and someone is waiting. */
+const ATTEMPTS = 2;
+
+/** Long enough for a rate-limit window to move, short enough not to be felt. */
+const BACKOFF_MS = 400;
+
+const sleep = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 /** Request Timeout. Not a status any provider sends here - we raise it ourselves. */
 const TIMEOUT_STATUS = 408;
@@ -155,6 +172,7 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
         ],
       });
 
+      const once = async (): Promise<{ title: string; author: string; confidence: number } | null> => {
       let res;
       try {
         res = await deps.fetch(endpoint, {
@@ -207,6 +225,21 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
       // Confidence is nominal: grounding decides what is real, so a guess here is a
       // query, never an answer.
       return guess ? { ...guess, confidence: 0.7 } : null;
+      };
+
+      // Ask again only when the answer could genuinely differ next time. A retired model
+      // or a revoked key answers the same forever, and repeating it wastes the wait twice
+      // before delivering the one message that helps: go and fix your settings.
+      for (let attempt = 1; ; attempt++) {
+        try {
+          return await once();
+        } catch (err) {
+          const worthRepeating = err instanceof VisionHttpError && !err.permanent;
+          if (!worthRepeating || attempt >= ATTEMPTS) throw err;
+          console.info(`[Buki] cover read failed (${err.message}); asking once more`);
+          await sleep(BACKOFF_MS);
+        }
+      }
     },
   };
 }

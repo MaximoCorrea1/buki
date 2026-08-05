@@ -260,3 +260,74 @@ describe('createLlmVision', () => {
     expect(prompt).toMatch(/never to name a book you cannot see/i);
   });
 });
+
+describe('createLlmVision retries', () => {
+  const reply = {
+    ok: true,
+    status: 200,
+    async json() {
+      return { choices: [{ message: { content: '{"title":"Dune","author":"Frank Herbert"}' } }] };
+    },
+  };
+  const timeout = (): never => {
+    const err = new Error('signal timed out');
+    err.name = 'TimeoutError';
+    throw err;
+  };
+  const ask = (vision: ReturnType<typeof createLlmVision>) =>
+    vision.guessBook({ imageUrls: ['data:image/jpeg;base64,AAAA'], text: '' });
+
+  it('tries again when a request hangs instead of losing the catch', async () => {
+    // Measured 2026-08-05: five catches ran 1.7s, 4.6s, 5.3s, 6.0s - and one sat until
+    // the 25s ceiling and died. That is a stuck request, not a slow one, and the whole
+    // catch was thrown away rather than simply asked again.
+    let calls = 0;
+    const fetch: FetchLike = async () => {
+      calls += 1;
+      return calls === 1 ? timeout() : reply;
+    };
+
+    const book = await ask(createLlmVision({ fetch, config: CFG }));
+
+    expect(calls).toBe(2);
+    expect(book?.title).toBe('Dune');
+  });
+
+  it('gives up once, not forever', async () => {
+    let calls = 0;
+    const fetch: FetchLike = async () => {
+      calls += 1;
+      return timeout();
+    };
+
+    await expect(ask(createLlmVision({ fetch, config: CFG }))).rejects.toThrow(/took too long/);
+    expect(calls).toBe(2);
+  });
+
+  it('tries again when the provider is merely busy', async () => {
+    // 429 clears on its own; that is exactly what `permanent: false` already means.
+    let calls = 0;
+    const fetch: FetchLike = async () => {
+      calls += 1;
+      return calls === 1 ? { ok: false, status: 429, async json() { return {}; } } : reply;
+    };
+
+    const book = await ask(createLlmVision({ fetch, config: CFG }));
+
+    expect(calls).toBe(2);
+    expect(book?.title).toBe('Dune');
+  });
+
+  it('does not repeat a request that can only fail again', async () => {
+    // A retired model answers 404 forever. Retrying it wastes the user's time twice and
+    // delays the one message that helps: go and fix your settings.
+    let calls = 0;
+    const fetch: FetchLike = async () => {
+      calls += 1;
+      return { ok: false, status: 404, async json() { return {}; } };
+    };
+
+    await expect(ask(createLlmVision({ fetch, config: CFG }))).rejects.toThrow(/HTTP 404/);
+    expect(calls).toBe(1);
+  });
+});
