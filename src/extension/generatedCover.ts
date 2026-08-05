@@ -11,8 +11,12 @@ import { CLOTH, hashOf } from './cloth';
  * it replaced, because a list never pretended there was cover art.
  *
  * The answer is not to fake art. It is to draw what a book with no dust jacket actually
- * looks like: cloth boards, a stamped rule, and a blind-stamped device. Nothing here is
+ * looks like: dyed cloth boards, two stamped rules, and the title. Nothing here is
  * pretending to be a photograph, so nothing here can look like a photograph that failed.
+ *
+ * `deviceFor` draws the book its mark and `weaveOf` repeats that mark into the cloth.
+ * They are one hash at two scales rather than two ideas: the mark on its own, tried at
+ * two sizes on the board, read as an audio equaliser and was cut.
  */
 
 /**
@@ -133,4 +137,32 @@ export function titleStep(title: string): TitleStep {
   if (total <= 12 && widest <= 9) return 'large';
   if (total <= 28 && widest <= 12) return 'medium';
   return 'small';
+}
+
+/**
+ * How far alternate tile rows shift. Coprime with DEVICE_SIZE, so the offset never lands
+ * back on the seam it exists to hide.
+ */
+const HALF_DROP = 3;
+
+/**
+ * The board's cloth: the book's own tile, repeated to fill it.
+ *
+ * Lines of text rather than cells, for two reasons. This is texture, so a mono font's
+ * advance width does not matter the way it does for the mark. And a board covered in
+ * cells is six hundred DOM nodes per book, which on a shelf of twenty is twelve thousand.
+ *
+ * Alternate tile rows shift sideways. Stacked square, the seams line up into vertical
+ * corduroy, which is plainly visible at 118px; a half-drop is how a real textile repeat
+ * hides that same seam.
+ */
+export function weaveOf(book: Book, cols: number, rows: number): string[] {
+  const tile = deviceFor(book);
+  return Array.from({ length: rows }, (_, row) => {
+    const shift = Math.floor(row / DEVICE_SIZE) % 2 ? HALF_DROP : 0;
+    const source = tile[row % DEVICE_SIZE]!;
+    let line = '';
+    for (let col = 0; col < cols; col++) line += source[(col + shift) % DEVICE_SIZE];
+    return line;
+  });
 }

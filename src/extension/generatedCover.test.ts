@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { BINDING, RAMP, DEVICE_SIZE, bindingFor, deviceFor, titleStep } from './generatedCover';
+import {
+  BINDING,
+  RAMP,
+  DEVICE_SIZE,
+  bindingFor,
+  deviceFor,
+  titleStep,
+  weaveOf,
+} from './generatedCover';
 import { CLOTH, clothFor } from './cloth';
 
 const SHELF = [
@@ -155,5 +163,38 @@ describe('titleStep', () => {
     // what makes a generated cover read as output rather than as a cover.
     const steps = new Set(SHELF.map((book) => titleStep(book.title)));
     expect(steps.size).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('weaveOf', () => {
+  const book = { title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593' };
+
+  it('fills exactly the rows and columns asked for', () => {
+    const cloth = weaveOf(book, 11, 4);
+    expect(cloth).toHaveLength(4);
+    for (const line of cloth) expect([...line]).toHaveLength(11);
+  });
+
+  it('repeats the book its own tile', () => {
+    // The first tile-width of the first row IS the device's first row: the cloth and
+    // the mark are the same hash seen at two scales, not two ideas.
+    const tile = deviceFor(book);
+    expect(weaveOf(book, DEVICE_SIZE, 1)[0]).toBe(tile[0]);
+  });
+
+  it('half-drops alternate tile rows, so the repeat is not corduroy', () => {
+    // Stacked square, the seams line up into vertical ribbing - visible at 118px and
+    // the reason this takes an offset at all.
+    const tile = deviceFor(book);
+    const cloth = weaveOf(book, DEVICE_SIZE, DEVICE_SIZE * 2);
+    expect(cloth[DEVICE_SIZE]).not.toBe(tile[0]);
+    // ...and it is the same row rotated, rather than a different row.
+    expect([...cloth[DEVICE_SIZE]!].sort().join('')).toBe([...tile[0]!].sort().join(''));
+  });
+
+  it('draws only glyphs from the ramp', () => {
+    for (const line of weaveOf(book, 24, 30)) {
+      for (const glyph of line) expect(RAMP).toContain(glyph);
+    }
   });
 });
