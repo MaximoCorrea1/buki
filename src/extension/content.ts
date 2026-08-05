@@ -94,7 +94,7 @@ const STYLE = `
 
 .buki-card {
   position: relative; width: 100%;
-  padding: 11px 11px 12px 19px; /* left inset leaves the spine its own column */
+  padding: 11px 30px 12px 19px; /* left inset for the spine, right for the dismiss */
   background: var(--night); color: var(--chalk);
   border: 1px solid var(--line); border-radius: 12px;
   box-shadow: 0 16px 38px -14px rgba(0,0,0,.8);
@@ -122,19 +122,22 @@ const STYLE = `
   /* Cords as a highlight over a shadow, never flat gilt - a gold line vanishes on
      marigold cloth, which is how this detail once shipped invisible. */
   content: ''; position: absolute; left: 7px; top: 20px; width: 4px; height: 1px;
-  background: rgba(255,255,255,.55);
-  box-shadow: 0 1px 0 rgba(0,0,0,.35), 0 13px 0 rgba(255,255,255,.55),
-    0 14px 0 rgba(0,0,0,.35);
+  background: #ffffff; box-shadow: 0 13px 0 #ffffff;
 }
 
 .buki-head { display: flex; gap: 11px; align-items: flex-start; }
+/* A found card's head is the card's own masthead: where the answer came from, and how
+   many books are in it. Both sit on the axis. The rows below stay left-aligned, because
+   a title is read from its first letter. */
+.buki-card[data-book] .buki-head { display: block; text-align: center; }
+.buki-count { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
 .buki-thumb {
   position: relative; width: 30px; height: 44px; flex: none; border-radius: 2px;
   overflow: hidden; box-shadow: 0 1px 6px -1px #000;
-  /* The cloth gradient is the floor, not a placeholder: X's own CSP can refuse an
-     OpenLibrary cover, and a broken-image glyph would read as the extension being
-     broken rather than as a picture that didn't load. */
-  background: linear-gradient(150deg, var(--cloth, #3a2e4d), rgba(0,0,0,.6));
+  /* Flat cloth, not a gradient. It is also the floor rather than a placeholder: X's own
+     CSP can refuse an OpenLibrary cover, and a broken-image glyph would read as the
+     extension being broken rather than as a picture that did not load. */
+  background: var(--cloth, #3a2e4d);
 }
 .buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .buki-who { flex: 1; min-width: 0; }
@@ -155,7 +158,10 @@ const STYLE = `
 .buki-a { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
 
 .buki-x {
-  flex: none; cursor: pointer; border: 0; border-radius: 7px; padding: 1px 6px 3px;
+  /* Out of the flow, so a centred head is actually centred on the card rather than on
+     whatever space is left over beside a button. */
+  position: absolute; top: 9px; right: 8px; z-index: 1;
+  cursor: pointer; border: 0; border-radius: 7px; padding: 1px 6px 3px;
   background: transparent; color: var(--chalk); opacity: .45; font: 16px/1 var(--ui);
   transition: opacity 140ms ease, background-color 140ms ease,
     transform 140ms var(--ease);
@@ -163,7 +169,7 @@ const STYLE = `
 .buki-x:active { transform: scale(.9); }
 .buki-x:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-x:hover { opacity: 1; background: rgba(255,255,255,.08); }
+  .buki-x:hover { opacity: 1; background: #2a2135; }
 }
 
 /* Still working. Constant motion, so linear - an eased sweep looks like it is being
@@ -174,7 +180,7 @@ const STYLE = `
 }
 .buki-wait::after {
   content: ''; display: block; height: 100%; width: 38%; border-radius: 1px;
-  background: linear-gradient(90deg, transparent, var(--glow), transparent);
+  background: var(--glow);
   animation: buki-sweep 1.15s linear infinite;
 }
 @keyframes buki-sweep { from { transform: translateX(-105%); } to { transform: translateX(370%); } }
@@ -209,7 +215,7 @@ const STYLE = `
 .buki-act:active { transform: scale(.97); }
 .buki-act:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-act:hover { border-color: var(--glow); background: rgba(255,207,138,.09); }
+  .buki-act:hover { border-color: var(--glow); background: #2a2135; }
 }
 
 
@@ -220,11 +226,10 @@ const STYLE = `
    paragraph. */
 .buki-find { display: flex; gap: 11px; align-items: flex-start; margin-top: 12px; }
 .buki-find + .buki-find { padding-top: 12px; border-top: 1px solid var(--line); }
-.buki-count { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
 /* Per book, not per card: a photographed stack can be half yours already. */
 .buki-shelf {
   display: inline-block; margin-left: 3px; padding: 1px 6px 2px; border-radius: 999px;
-  vertical-align: 1px; background: rgba(111,224,182,.14); color: var(--jade);
+  vertical-align: 1px; background: #10352a; color: var(--jade);
   font: 600 9.5px/1.6 var(--tag); letter-spacing: .06em; text-transform: uppercase;
 }
 .buki-act.buki-wide { width: 100%; margin-top: 12px; }

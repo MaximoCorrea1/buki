@@ -7,16 +7,28 @@
       /* Tokens match popup.html exactly: --paper is the ground, --ink is the type.
          (This page used to have them the other way round.) */
       :root {
-        /* The same room as the landing page and the popup. See popup.html for why this
-           commits to one look instead of tracking the system theme. */
-        color-scheme: dark;
+        /* PAPER. The room (docs/index.html, and the card in the feed) is the moment of
+           CATCHING: a lit shelf in the dark. This is the moment of READING your list, and
+           a list is read on paper. The two are different jobs, so they are different
+           materials, and the cloth spines carry the identity across both.
 
-        --paper: #14101c;
-        --board: #332a45;
-        --ink: #f0eaf6;
-        --muted: #a396b8;
-        --accent: #ffcf8a;
-        --sunk: #221a30;
+           Every value is flat. No gradient, no translucent layer over another colour:
+           a spine is one solid ink, a rule is one solid hairline. */
+        color-scheme: light;
+
+        --paper: #faf7f2;
+        --card: #ffffff;
+        --board: #e3dcd2;
+        --ink: #14100e;
+        --muted: #5c5349;
+        --accent: #8a5a00;
+        --sunk: #f2ede4;
+
+        /* The buy pill. Green rather than the accent, so it reads as its own kind of
+           action and never competes with a focus ring. */
+        --buy-bg: #e7f5ee;
+        --buy-bg-hi: #d8efe3;
+        --buy-ink: #0f6b4a;
 
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
       }
@@ -71,9 +83,8 @@
         position: absolute;
         left: 0; top: 17px;
         width: 11px; height: 1px;
-        background: rgba(255, 255, 255, 0.6);
-        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28), 0 26px 0 rgba(255, 255, 255, 0.6),
-          0 27px 0 rgba(0, 0, 0, 0.28);
+        background: #ffffff;
+        box-shadow: 0 26px 0 #ffffff;
       }
       .why b { font-weight: 700; }
       .why a { color: var(--accent); }
@@ -153,21 +164,29 @@
       @media (prefers-reduced-motion: reduce) {
         button, #status { transition-duration: 1ms; }
       }
+    
+      /* --- centred ------------------------------------------------------
+         The masthead, the lede and the closing note line up on the page's centre, so the
+         page reads as one symmetrical column. Labels and fields stay left-aligned: a
+         value is read from its first character, and centred form text is how a form
+         stops looking like a form. */
+      .brand { display: flex; align-items: center; justify-content: center; gap: 10px; }
+      .lede { text-align: center; }
     </style>
   </head>
   <body>
     <main>
       <div class="brand">
         <svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff6352" />
-          <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#2fb88a" />
+          <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff5a47" />
+          <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#22b584" />
           <rect
             x="10.6"
             y="4"
             width="3.2"
             height="10.5"
             rx="1"
-            fill="#6c7bff"
+            fill="#6274ff"
             transform="rotate(11 12.2 9.25)"
           />
           <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
@@ -186,7 +205,7 @@
         <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
           >aistudio.google.com/apikey</a
         >
-        — it takes about two minutes and needs no billing details.
+        it takes about two minutes and needs no billing details.
       </p>
 
       <form id="form">
@@ -216,7 +235,7 @@
             <label for="model">Model</label>
             <input id="model" type="text" spellcheck="false" />
             <p class="hint">
-              Any OpenAI-compatible chat endpoint works — Gemini, Cloudflare Workers AI,
+              Any OpenAI-compatible chat endpoint works Gemini, Cloudflare Workers AI,
               OpenRouter, or your own proxy. A proxy that holds its own credential lets you
               leave the key field blank.
             </p>

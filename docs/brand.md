@@ -1,11 +1,12 @@
 # Buki: the design system
 
-One file, two surfaces. The landing page (`docs/index.html`) and the in-page catch tray
-(`src/extension/content.ts`) hold their own copies of these values because they cannot
-share a stylesheet across a browser extension boundary. **That duplication is the risk
+One file, four surfaces, two materials. The landing page (`docs/index.html`), the in-page
+catch tray (`src/extension/content.ts`), the shelf popup (`popup.html`) and the setup page
+(`options.html`) each hold their own copy of these values, because a content script and an
+extension page cannot share a stylesheet with a website. **That duplication is the risk
 this file exists to manage.** `clothFor` was once defined in two files with two different
 hashes, so one book was one colour on the shelf and another in the picker. Change a token
-here first, then in both places, in the same commit.
+here first, then in every surface that uses it, in the same commit.
 
 ---
 
@@ -32,12 +33,51 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 | `--faded` | `#B4A6C8` | Secondary text, labels, captions. |
 | `--lamp` | `#FFC24D` | The one light. Primary button, focus ring, the lit spine. |
 
+Those seven are the **room**. The four surfaces do not all use them; see Paper, below.
+
 Contrast on `--ink`: paper 19:1, chalk 16:1, faded 8.9:1, lamp 11:1. All well past AA, and
 `--faded` was raised from a previous `#A396B8` (6:1) specifically so secondary text is not
 the thing people squint at.
 
 **One accent, and it is a light source.** `--lamp` marks the thing that is lit: the primary
 action, the focused control, the caught book. If everything glows, nothing is caught.
+
+### Paper
+
+Two materials, because there are two jobs. The **room** is the moment of *catching*: the
+landing page and the card that appears in the feed, a lit shelf in the dark. **Paper** is
+the moment of *reading your list*: the shelf popup and the setup page. A list is read on
+paper, and the shelf is the one surface you open on purpose.
+
+The cloth spines carry the identity across both, which is what stops this being two
+products. Nothing else crosses.
+
+| Token | Value | What it is |
+| --- | --- | --- |
+| `--paper` | `#FAF7F2` | The page. |
+| `--card` | `#FFFFFF` | A raised surface. |
+| `--board` | `#E3DCD2` | Hairlines and the shelf board. |
+| `--ink` | `#14100E` | Headings and book titles. 17:1. |
+| `--muted` | `#5C5349` | Secondary text. 7.2:1. |
+| `--accent` | `#8A5A00` | The lamp, darkened until it reads on paper. 6.5:1. |
+| `--sunk` | `#F2EDE4` | Inset wells. |
+
+The accent is the same hue as `--lamp` and a different value, because `#FFC24D` on white is
+1.6:1 and unreadable. An accent that cannot be read is decoration.
+
+**No blended colour.** No gradient, and no colour laid over another colour with alpha. A
+spine is one solid ink; a rule is one solid hairline; the gilt cords are one solid white
+line each rather than a highlight stacked over a shadow. Shadows are allowed, because a
+shadow is depth rather than colour.
+
+**Symmetry.** Everything that is not a book row sits on the page's axis: the mark, the
+name, the count, the pile labels, and a catch card's provenance line. Book rows stay
+left-aligned, and so do form fields. A title is read from its first letter, and centring a
+list of names is how a list stops being scannable.
+
+On the catch card the dismiss control is taken out of the flow and pinned to the corner,
+so a centred head is centred on the card rather than on whatever space is left beside a
+button.
 
 ### Bookcloth
 
@@ -133,9 +173,10 @@ times a day and the card appears once per catch.
 ## Signature
 
 **The cloth edge.** A 4px spine down the left of anything that represents a book, in that
-book's cloth, with two gilt cords across it. The cords are a highlight over a shadow, never
-flat gilt, because a gold line vanishes on marigold cloth. That detail shipped invisible
-once for exactly that reason.
+book's cloth, with two gilt cords across it. One solid white line each: a gold line
+vanishes on marigold cloth, which is how this detail shipped invisible once, and a
+highlight stacked over a shadow is a blend, which the flat rule above rules out. White on
+saturated cloth reads on all five bindings and on either material.
 
 It appears on the shelf rows, the popup rows, and the catch card. It is the one thing that
 should be recognisably Buki at a glance, so nothing else in the interface gets to be that
@@ -170,4 +211,7 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] `prefers-reduced-motion` honoured
 - [ ] No em-dashes in any copy
 - [ ] Grid, not stack, for anything that is a list of peers
-- [ ] Tokens changed in `docs/index.html` and `src/extension/content.ts` together
+- [ ] Room tokens changed in `docs/index.html` and `src/extension/content.ts` together
+- [ ] Paper tokens changed in `popup.html` and `options.html` together
+- [ ] No gradient, and no colour laid over another colour with alpha
+- [ ] Anything that is not a book row or a form field sits on the axis
