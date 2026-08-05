@@ -56,16 +56,29 @@ export interface RecognitionResult {
   source: RecognitionSource;
 }
 
+/** One book the model says it can see. Unverified until the catalogue agrees. */
+export interface VisionGuess {
+  title: string;
+  author: string;
+}
+
 /**
  * The vision model, behind an interface so the recognizer never imports a
  * specific provider. Swap Gemini for anything else without touching the logic.
  */
 export interface VisionClient {
-  guessBook(input: {
+  /**
+   * EVERY book the pictures show, best first; empty when there is none.
+   *
+   * This returned one book, so a stack on a desk or a shelf behind someone's head
+   * silently became whichever the model happened to name first. What was in the picture
+   * and what reached the shelf were different things, with nothing on screen saying so.
+   */
+  guessBooks(input: {
     imageUrls: string[];
     text: string;
     altText?: string;
-  }): Promise<{ title: string; author: string; confidence: number } | null>;
+  }): Promise<VisionGuess[]>;
 }
 
 /** A books database (Google Books / OpenLibrary), also behind an interface. */

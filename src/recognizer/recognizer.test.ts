@@ -16,8 +16,8 @@ describe('recognizeBook', () => {
       },
     };
     const vision: VisionClient = {
-      async guessBook() {
-        return { title: 'Dune', author: 'Frank Herbert', confidence: 0.9 };
+      async guessBooks() {
+        return [{ title: 'Dune', author: 'Frank Herbert' }];
       },
     };
 
@@ -46,8 +46,8 @@ describe('recognizeBook', () => {
       },
     };
     const vision: VisionClient = {
-      async guessBook() {
-        return null;
+      async guessBooks() {
+        return [];
       },
     };
 
@@ -70,8 +70,8 @@ describe('recognizeBook', () => {
       },
     };
     const vision: VisionClient = {
-      async guessBook() {
-        return null;
+      async guessBooks() {
+        return [];
       },
     };
 
@@ -88,9 +88,9 @@ describe('recognizeBook', () => {
   it('uses the link when the cover gave nothing, having looked at it first', async () => {
     let visionCalled = false;
     const vision: VisionClient = {
-      async guessBook() {
+      async guessBooks() {
         visionCalled = true;
-        return null;
+        return [];
       },
     };
     const books: BooksDb = {
@@ -125,9 +125,9 @@ describe('recognizeBook', () => {
   it('falls back to vision and grounds the guess against the books DB', async () => {
     let visionCalled = false;
     const vision: VisionClient = {
-      async guessBook() {
+      async guessBooks() {
         visionCalled = true;
-        return { title: 'Dune', author: 'Frank Herbert', confidence: 0.9 };
+        return [{ title: 'Dune', author: 'Frank Herbert' }];
       },
     };
     const books: BooksDb = {
@@ -161,8 +161,8 @@ describe('recognizeBook', () => {
     // One shared word is a real match but a weak one - the model could have read the
     // author and invented the title. Weak evidence asks instead of deciding.
     const vision: VisionClient = {
-      async guessBook() {
-        return { title: 'Ficciones', author: 'Borges', confidence: 0.6 };
+      async guessBooks() {
+        return [{ title: 'Ficciones', author: 'Borges' }];
       },
     };
     const books: BooksDb = {
@@ -185,8 +185,8 @@ describe('recognizeBook', () => {
 
   it('reports nothing rather than a fuzzy match that shares no word with the guess', async () => {
     const vision: VisionClient = {
-      async guessBook() {
-        return { title: 'Ficciones', author: 'Borges', confidence: 0.6 };
+      async guessBooks() {
+        return [{ title: 'Ficciones', author: 'Borges' }];
       },
     };
     const books: BooksDb = {
@@ -210,8 +210,8 @@ describe('recognizeBook', () => {
 
   it('ranks the closest match first rather than trusting the API order', async () => {
     const vision: VisionClient = {
-      async guessBook() {
-        return { title: 'Dune', author: 'Frank Herbert', confidence: 0.9 };
+      async guessBooks() {
+        return [{ title: 'Dune', author: 'Frank Herbert' }];
       },
     };
     const books: BooksDb = {
@@ -244,8 +244,8 @@ describe('recognizeBook', () => {
     // the tier: one incidental word scores 1, and 1 never auto-saves. If this ever
     // reports 'high', a meme can put a book on the shelf without being asked.
     const vision: VisionClient = {
-      async guessBook() {
-        return null;
+      async guessBooks() {
+        return [];
       },
     };
     const books: BooksDb = {
@@ -272,8 +272,8 @@ describe('recognizeBook', () => {
 
   it('falls back to the post text when the image gives nothing', async () => {
     const vision: VisionClient = {
-      async guessBook() {
-        return null;
+      async guessBooks() {
+        return [];
       },
     };
     const books: BooksDb = {
@@ -303,8 +303,8 @@ describe('recognizeBook', () => {
     // A post listing ten books can ground the wrong line to a real book, and that
     // failure is invisible - so text-only evidence always asks, however well it scores.
     const vision: VisionClient = {
-      async guessBook() {
-        return null;
+      async guessBooks() {
+        return [];
       },
     };
     const books: BooksDb = {
@@ -345,8 +345,8 @@ describe('recognizeBook', () => {
       },
     };
     const vision: VisionClient = {
-      async guessBook() {
-        return { title: 'Dune', author: 'Frank Herbert', confidence: 0.9 };
+      async guessBooks() {
+        return [{ title: 'Dune', author: 'Frank Herbert' }];
       },
     };
 
@@ -374,8 +374,8 @@ describe('recognizeBook', () => {
       },
     };
     const vision: VisionClient = {
-      async guessBook() {
-        return { title: 'Unfindable', author: 'Nobody', confidence: 0.9 };
+      async guessBooks() {
+        return [{ title: 'Unfindable', author: 'Nobody' }];
       },
     };
 
@@ -401,8 +401,8 @@ describe('recognizeBook', () => {
       },
     };
     const vision: VisionClient = {
-      async guessBook() {
-        return null;
+      async guessBooks() {
+        return [];
       },
     };
 
@@ -413,5 +413,124 @@ describe('recognizeBook', () => {
 
     expect(result.source).toBe('none');
     expect(result.candidates).toEqual([]);
+  });
+  // ------------------------------------------------- more than one book in one picture
+
+  it('returns every book in the picture, not just the first', async () => {
+    // A stack on a desk, a shelf behind someone's head. The model was asked for one book
+    // and answered with one, so whichever it happened to name first became the catch and
+    // the rest of the photo was silently discarded.
+    const vision: VisionClient = {
+      async guessBooks() {
+        return [
+          { title: 'Dune', author: 'Frank Herbert' },
+          { title: 'Ubik', author: 'Philip K. Dick' },
+        ];
+      },
+    };
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search({ title }) {
+        return title === 'Dune'
+          ? [{ title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593' }]
+          : [{ title: 'Ubik', author: 'Philip K. Dick', isbn: '9780575079229' }];
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: '', imageUrls: ['https://pbs.twimg.com/media/stack.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(result.candidates.map((b) => b.title)).toEqual(['Dune', 'Ubik']);
+    expect(result.source).toBe('vision');
+  });
+
+  it('files two readings of one book as one book', async () => {
+    // The model reads a cover twice - once off the spine, once off the front - and both
+    // ground to the same work. Offering it twice would put two identical rows on the card
+    // and two identical entries a click away from the shelf.
+    const vision: VisionClient = {
+      async guessBooks() {
+        return [
+          { title: 'Dune', author: 'Frank Herbert' },
+          { title: 'Dune', author: 'Herbert' },
+        ];
+      },
+    };
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search() {
+        return [{ title: 'Dune', author: 'Frank Herbert' }];
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: '', imageUrls: ['https://pbs.twimg.com/media/two.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(result.candidates).toHaveLength(1);
+  });
+
+  it('keeps the books the catalogue knew and drops the one it did not', async () => {
+    // One unreadable spine in a stack must not cost the books either side of it.
+    const vision: VisionClient = {
+      async guessBooks() {
+        return [
+          { title: 'Dune', author: 'Frank Herbert' },
+          { title: 'Blurry Nonsense', author: '' },
+          { title: 'Ubik', author: 'Philip K. Dick' },
+        ];
+      },
+    };
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search({ title }) {
+        if (title === 'Dune') return [{ title: 'Dune', author: 'Frank Herbert' }];
+        if (title === 'Ubik') return [{ title: 'Ubik', author: 'Philip K. Dick' }];
+        return [];
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: '', imageUrls: ['https://pbs.twimg.com/media/three.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(result.candidates.map((b) => b.title)).toEqual(['Dune', 'Ubik']);
+  });
+
+  it('offers every unchecked reading when the catalogue is unreachable', async () => {
+    const vision: VisionClient = {
+      async guessBooks() {
+        return [
+          { title: 'Dune', author: 'Frank Herbert' },
+          { title: 'Ubik', author: 'Philip K. Dick' },
+        ];
+      },
+    };
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        throw new Error('OpenLibrary did not answer within 6s.');
+      },
+      async search() {
+        throw new Error('OpenLibrary did not answer within 6s.');
+      },
+    };
+
+    const result = await recognizeBook(
+      { text: '', imageUrls: ['https://pbs.twimg.com/media/stack.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(result.candidates.map((b) => b.title)).toEqual(['Dune', 'Ubik']);
+    expect(result.source).toBe('unverified');
   });
 });

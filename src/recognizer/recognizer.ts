@@ -1,6 +1,9 @@
 import { extractIsbnFromLinks } from './isbn';
 import { groundText, rank } from './groundText';
-import type { Tweet, RecognitionResult, VisionClient, BooksDb } from './types';
+// Across the folder boundary on purpose: what makes two books the same book is defined
+// exactly once, and duplicating it here is how `clothFor` once gave one book two colours.
+import { sameBook } from '../extension/bookIdentity';
+import type { Book, Tweet, RecognitionResult, VisionClient, BooksDb } from './types';
 
 /**
  * Turn a tweet into a recognized book (or a few candidates), using the cheapest,
@@ -42,37 +45,52 @@ export async function recognizeBook(
   // at. Reading the caption instead of the photo is the same mistake in a different
   // place, so the prompt now says the images decide (see llmVision's INSTRUCTION).
   if (tweet.imageUrls.length) {
-    const guess = await deps.vision.guessBook({
+    const guesses = await deps.vision.guessBooks({
       imageUrls: tweet.imageUrls,
       text: tweet.text,
       altText: tweet.altText,
     });
-    if (guess) {
-      const matches = await attempt(deps.books.search({ title: guess.title, author: guess.author }));
 
+    // Grounded together, not one after another. A stack of four books used to mean four
+    // sequential OpenLibrary round trips stapled onto the end of a catch.
+    const grounded = await Promise.all(
+      guesses.map(async (guess) => ({
+        guess,
+        matches: await attempt(deps.books.search({ title: guess.title, author: guess.author })),
+      })),
+    );
+
+    const found: Book[] = [];
+    let best = 0;
+    let answered = false;
+
+    for (const { guess, matches } of grounded) {
+      if (matches !== null) answered = true;
       // Score against the model's own words. Two shared words means the DB and the model
       // independently agree on a book; one means they overlap on a single token, which a
       // common surname or series word produces by accident.
-      const ranked = rank(`${guess.title} ${guess.author}`, matches ?? []);
-      const top = ranked[0];
-      if (top) {
-        return {
-          candidates: ranked.slice(0, 3).map((scored) => scored.book),
-          confidence: top.score >= 2 ? 'high' : 'medium',
-          source: 'vision',
-        };
-      }
+      const top = rank(`${guess.title} ${guess.author}`, matches ?? [])[0];
 
-      // The catalogue never answered - which is not the same as it saying there is no
-      // such book. Keep the reading rather than lose it, at the lowest confidence and
-      // under its own source, so the card can say nothing checked this.
-      if (matches === null) {
-        return {
-          candidates: [{ title: guess.title, author: guess.author }],
-          confidence: 'low',
-          source: 'unverified',
-        };
-      }
+      // A reading nothing could check is still a reading. It is only dropped when the
+      // catalogue ANSWERED and did not know the book - "I could not ask" is not "no".
+      const book = top?.book ?? (matches === null ? { title: guess.title, author: guess.author } : null);
+      if (!book) continue;
+
+      // Two readings of one book - "Dune" and "Dune, Frank Herbert" - are one book. The
+      // identity rule lives in one place on purpose; see bookIdentity's header.
+      if (found.some((held) => sameBook(held, book))) continue;
+
+      found.push(book);
+      best = Math.max(best, top?.score ?? 0);
+    }
+
+    if (found.length) {
+      return {
+        candidates: found,
+        // Confidence describes the evidence as a whole, so the best-read book carries it.
+        confidence: answered ? (best >= 2 ? 'high' : 'medium') : 'low',
+        source: answered ? 'vision' : 'unverified',
+      };
     }
   }
 

@@ -1,4 +1,4 @@
-import type { FetchLike, VisionClient } from './types';
+import type { FetchLike, VisionClient, VisionGuess } from './types';
 
 /**
  * Recognition by a vision model, over the OpenAI chat-completions shape.
@@ -94,11 +94,22 @@ export const MAX_IMAGES = 4;
  */
 const INSTRUCTION = [
   'You identify books from photographs.',
-  'Identify the book shown IN THE IMAGES. There may be several; use whichever actually shows a book.',
+  'List EVERY distinct book you can see in the images: a stack on a desk, a shelf behind someone, several covers side by side.',
+  'Only books you can actually see. Do not add a book because the text mentions it.',
   'The post text is context only: use it to disambiguate a cover you can partly read, never to name a book you cannot see.',
-  'If the images show no book, reply with null for both fields even if the text names one.',
-  'Reply with ONLY a JSON object: {"title": string|null, "author": string|null}.',
+  'Order them by how clearly you can read them, clearest first.',
+  'If the images show no book at all, reply with an empty array.',
+  'Reply with ONLY a JSON array: [{"title": string, "author": string}].',
 ].join(' ');
+
+/**
+ * Most books to take from one picture.
+ *
+ * A photographed bookshelf can hold fifty spines, and a card offering fifty decisions is
+ * not a card. Ordered clearest-first by the prompt, so the cut falls on the ones least
+ * likely to be read correctly anyway.
+ */
+export const MAX_BOOKS = 8;
 
 interface ChatReply {
   choices?: { message?: { content?: string } }[];
@@ -131,17 +142,28 @@ async function explain(res: { json(): Promise<unknown> }): Promise<string> {
   }
 }
 
-/** Models fence their JSON no matter how firmly the prompt says not to. */
-function parseGuess(raw: string): { title: string; author: string } | null {
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) return null;
+/** One entry, if it names a book. A titleless entry is the model padding the array. */
+function toGuess(entry: unknown): VisionGuess | null {
+  const { title, author } = (entry ?? {}) as { title?: unknown; author?: unknown };
+  const named = typeof title === 'string' ? title.trim() : '';
+  if (!named) return null;
+  return { title: named, author: typeof author === 'string' ? author.trim() : '' };
+}
+
+/**
+ * Models fence their JSON no matter how firmly the prompt says not to - and having been
+ * asked for an array, they still answer with a bare object often enough that refusing one
+ * would throw away a perfectly good reading. Both shapes are accepted.
+ */
+function parseGuesses(raw: string): VisionGuess[] {
+  const match = raw.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+  if (!match) return [];
   try {
-    const parsed = JSON.parse(match[0]) as { title?: unknown; author?: unknown };
-    const title = typeof parsed.title === 'string' ? parsed.title.trim() : '';
-    if (!title) return null;
-    return { title, author: typeof parsed.author === 'string' ? parsed.author.trim() : '' };
+    const parsed: unknown = JSON.parse(match[0]);
+    const entries = Array.isArray(parsed) ? parsed : [parsed];
+    return entries.map(toGuess).filter((g): g is VisionGuess => g !== null);
   } catch {
-    return null; // prose, a refusal, or truncated output
+    return []; // prose, a refusal, or truncated output
   }
 }
 
@@ -149,11 +171,11 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
   const { endpoint, model, apiKey } = deps.config;
 
   return {
-    async guessBook({ imageUrls, text, altText }) {
+    async guessBooks({ imageUrls, text, altText }) {
       // Every attachment, not just the first: a post can put the book second, and three
       // of four pictures used to be discarded before the model ever saw them.
       const images = imageUrls.slice(0, MAX_IMAGES);
-      if (!images.length) return null; // nothing to look at - don't spend a request
+      if (!images.length) return []; // nothing to look at - don't spend a request
 
       const caption = [text, altText].filter(Boolean).join('\n').slice(0, 600);
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -172,7 +194,7 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
         ],
       });
 
-      const once = async (): Promise<{ title: string; author: string; confidence: number } | null> => {
+      const once = async (): Promise<VisionGuess[]> => {
       let res;
       try {
         res = await deps.fetch(endpoint, {
@@ -219,12 +241,11 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
       }
 
       const raw = data?.choices?.[0]?.message?.content;
-      if (typeof raw !== 'string') return null;
+      if (typeof raw !== 'string') return [];
 
-      const guess = parseGuess(raw);
-      // Confidence is nominal: grounding decides what is real, so a guess here is a
-      // query, never an answer.
-      return guess ? { ...guess, confidence: 0.7 } : null;
+      // No confidence attached, deliberately: grounding decides what is real, so a
+      // reading here is a QUERY, never an answer.
+      return parseGuesses(raw).slice(0, MAX_BOOKS);
       };
 
       // Ask again only when the answer could genuinely differ next time. A retired model

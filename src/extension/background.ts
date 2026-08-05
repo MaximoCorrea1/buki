@@ -151,14 +151,14 @@ async function recognize(
   let visionMs = 0;
 
   const vision: VisionClient = {
-    async guessBook(input) {
+    async guessBooks(input) {
       const at = Date.now();
       try {
-        return await visionFor(settings, net).guessBook(input);
+        return await visionFor(settings, net).guessBooks(input);
       } catch (err) {
         if (!(err instanceof NoKeyError)) throw err;
         keyWasMissing = true;
-        return null; // fall through to the retailer link, which needs no key
+        return []; // fall through to the retailer link, which needs no key
       } finally {
         visionMs = Date.now() - at;
       }

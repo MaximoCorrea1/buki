@@ -207,21 +207,22 @@ const STYLE = `
   .buki-act:hover { border-color: var(--glow); background: rgba(255,207,138,.09); }
 }
 
-.buki-alts {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 8px; margin: 9px 0 0;
-  font-size: 11.5px; color: var(--dim);
+
+/* One book among several.
+
+   The hairline between rows is what makes four decisions read as four rather than as one
+   long form: the card is a short list, and a list needs its items separated or it is a
+   paragraph. */
+.buki-find { display: flex; gap: 11px; align-items: flex-start; margin-top: 12px; }
+.buki-find + .buki-find { padding-top: 12px; border-top: 1px solid var(--line); }
+.buki-count { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
+/* Per book, not per card: a photographed stack can be half yours already. */
+.buki-shelf {
+  display: inline-block; margin-left: 3px; padding: 1px 6px 2px; border-radius: 999px;
+  vertical-align: 1px; background: rgba(111,224,182,.14); color: var(--jade);
+  font: 600 9.5px/1.6 var(--tag); letter-spacing: .06em; text-transform: uppercase;
 }
-.buki-alt {
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  cursor: pointer; border: 0; padding: 0; background: transparent; color: var(--dim);
-  font: inherit; text-decoration: underline; text-decoration-color: var(--line);
-  text-underline-offset: 3px;
-  transition: color 140ms ease, text-decoration-color 140ms ease;
-}
-.buki-alt:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; border-radius: 3px; }
-@media (hover: hover) and (pointer: fine) {
-  .buki-alt:hover { color: var(--chalk); text-decoration-color: var(--glow); }
-}
+.buki-act.buki-wide { width: 100%; margin-top: 12px; }
 
 /* Pressing a post that is already on screen. Nothing new happens by design, so the card
    that already exists has to be the thing that answers. */
@@ -232,7 +233,7 @@ const STYLE = `
 .buki-card.buki-nudge { animation: buki-nudge 620ms var(--ease); }
 
 @media (prefers-reduced-motion: reduce) {
-  .buki-card, .buki-slot, .buki-intent, .buki-act, .buki-alt, .buki-x, .buki-btn {
+  .buki-card, .buki-slot, .buki-intent, .buki-act, .buki-x, .buki-btn {
     transition-duration: 1ms !important; animation: none !important;
   }
   .buki-card { transform: none !important; }
@@ -503,10 +504,11 @@ const signature = (c: Card): string =>
   [
     c.state,
     c.text,
-    c.showing,
     c.source ?? '',
     c.image ?? '',
-    c.candidates.map((x) => `${x.book.title}/${x.book.coverUrl ?? ''}/${x.shelvedIn ?? ''}`).join(),
+    c.candidates
+      .map((x) => `${x.book.title}/${x.book.coverUrl ?? ''}/${x.shelvedIn ?? ''}/${x.savedTo ?? ''}`)
+      .join(),
   ].join('|');
 
 /** Reconcile the corner to whatever the tray now says, keyed by card id. */
@@ -611,97 +613,151 @@ const PROVENANCE: Record<string, string> = {
 };
 
 function paintCard(el: HTMLElement, card: Card): void {
-  const book = card.candidates[card.showing]?.book;
+  // The best-read book lends the card its cloth. On a card with no book the cords made
+  // the edge look like a dashed line somebody forgot to finish, so they come off too.
+  const book = card.candidates[0]?.book;
   el.style.setProperty('--cloth', book ? clothFor(book) : '#332a45');
-  // Cords belong to a binding. On a card with no book they made the edge look like a
-  // dashed line somebody forgot to finish.
   if (book) el.dataset['book'] = '';
   else delete el.dataset['book'];
-  el.replaceChildren(...cardBody(card));
+  el.replaceChildren(...(card.state === 'found' ? foundBody(card) : messageBody(card)));
   el.dataset['sig'] = signature(card);
 }
 
-function cardBody(card: Card): Node[] {
-  const cand = card.candidates[card.showing];
-  const book = cand?.book;
-
+/**
+ * A picture can hold more than one book, so the card is a short list rather than a single
+ * answer. Each book carries its own buttons, because a stack of four is four decisions
+ * and they are rarely the same decision.
+ */
+function foundBody(card: Card): Node[] {
   const head = document.createElement('div');
   head.className = 'buki-head';
 
-  const thumb = thumbFor(card, book);
+  const who = document.createElement('div');
+  who.className = 'buki-who';
+  who.append(provenanceOf(card));
+  if (card.candidates.length > 1) {
+    const count = document.createElement('div');
+    count.className = 'buki-count';
+    count.textContent = `${card.candidates.length} books in this picture`;
+    who.append(count);
+  }
+  head.append(who, closeButton(card));
+
+  const body: Node[] = [head, ...card.candidates.map((c, i) => bookRow(card, c, i))];
+  // Only worth offering when there is a batch. On one book it would be a second button
+  // saying what the three above it already say.
+  if (card.candidates.length > 1) body.push(saveAllButton(card));
+  return body;
+}
+
+/** Looking, empty, error, done: one line of text and whatever it can be acted on with. */
+function messageBody(card: Card): Node[] {
+  const head = document.createElement('div');
+  head.className = 'buki-head';
+
+  const thumb = photoThumb(card);
   if (thumb) head.append(thumb);
 
   const who = document.createElement('div');
   who.className = 'buki-who';
-  const eyebrow = eyebrowFor(card, cand);
-  if (eyebrow) who.append(eyebrow);
-
-  if (book) {
-    const title = document.createElement('div');
-    title.className = 'buki-t';
-    title.textContent = book.title;
-    const author = document.createElement('div');
-    author.className = 'buki-a';
-    author.textContent = book.author;
-    who.append(title, author);
-  } else {
-    const msg = document.createElement('div');
-    msg.className = 'buki-t buki-plain';
-    msg.textContent = card.text;
-    who.append(msg);
+  if (card.state === 'empty') {
+    const eye = document.createElement('div');
+    eye.className = 'buki-eyebrow';
+    eye.textContent = 'nothing on the cover';
+    who.append(eye);
   }
+  const msg = document.createElement('div');
+  msg.className = 'buki-t buki-plain';
+  msg.textContent = card.text;
+  who.append(msg);
 
   head.append(who, closeButton(card));
 
   const body: Node[] = [head];
   if (card.state === 'looking') body.push(waitBar());
-  if (cand) {
-    body.push(intentRow(card, cand));
-    const alts = alternates(card);
-    if (alts) body.push(alts);
-  }
   if (card.state === 'empty' && contexts.has(card.job)) body.push(wordsButton(card));
   return body;
 }
 
-function thumbFor(card: Card, book?: Book): HTMLElement | null {
-  const src = book?.coverUrl ?? card.image;
-  if (!book && !src) return null;
+/** One book: its cover, its name, where the shelf already has it, and three decisions. */
+function bookRow(card: Card, cand: Candidate, index: number): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'buki-find';
+  row.append(coverThumb(cand.book));
+
+  const who = document.createElement('div');
+  who.className = 'buki-who';
+
+  const title = document.createElement('div');
+  title.className = 'buki-t';
+  title.textContent = cand.book.title;
+
+  const author = document.createElement('div');
+  author.className = 'buki-a';
+  author.textContent = cand.book.author;
+  if (cand.shelvedIn) {
+    // "IT SAVED A BOOK I ALREADY SAVED." It says so before you touch anything - and per
+    // book, because a stack can be half yours already.
+    const tag = document.createElement('span');
+    tag.className = 'buki-shelf';
+    tag.textContent = `on your shelf · ${cand.shelvedIn}`;
+    author.append(' ', tag);
+  }
+
+  who.append(title, author, intentRow(card, cand, index));
+  row.append(who);
+  return row;
+}
+
+/** The picture this catch is reading, for the states that have no book to show yet. */
+function photoThumb(card: Card): HTMLElement | null {
+  if (!card.image) return null;
   const thumb = document.createElement('div');
   thumb.className = 'buki-thumb';
-  if (src) {
+  const img = document.createElement('img');
+  img.src = card.image;
+  img.alt = '';
+  // The cloth gradient underneath is already the fallback, so a refused picture just
+  // leaves a spine rather than a broken-image glyph.
+  img.addEventListener('error', () => img.remove());
+  thumb.append(img);
+  return thumb;
+}
+
+/**
+ * Where this card's answer came from. It heads the whole card rather than a single book,
+ * because the evidence is the picture and the picture is one thing however many books it
+ * turned out to hold.
+ */
+function provenanceOf(card: Card): HTMLElement {
+  const eye = document.createElement('div');
+  eye.className = 'buki-eyebrow';
+  eye.textContent = PROVENANCE[card.source ?? 'none'] ?? 'found';
+  return eye;
+}
+
+/** A book's own cover. No falling back to the post photo: four books would wear it. */
+function coverThumb(book: Book): HTMLElement {
+  const thumb = document.createElement('div');
+  thumb.className = 'buki-thumb';
+  thumb.style.setProperty('--cloth', clothFor(book));
+  if (book.coverUrl) {
     const img = document.createElement('img');
-    img.src = src;
+    img.src = book.coverUrl;
     img.alt = '';
-    // The cloth gradient underneath is already the fallback, so a refused cover just
-    // leaves a spine rather than a broken-image glyph.
     img.addEventListener('error', () => img.remove());
     thumb.append(img);
   }
   return thumb;
 }
 
-/**
- * Only a card holding an ANSWER has anything to declare.
- *
- * An eyebrow on every state made it decoration wearing the costume of structure -
- * "CATCHING" above "Reading the cover…", "NOTHING ON THE COVER" above "No book on that
- * cover." Both say the sentence underneath them twice. Here it earns its line: where this
- * book came from, or that you already own it.
- */
-function eyebrowFor(card: Card, cand?: Candidate): HTMLElement | null {
-  if (card.state !== 'found') return null;
-  const eye = document.createElement('div');
-  eye.className = 'buki-eyebrow';
-  if (cand?.shelvedIn) {
-    // "IT SAVED A BOOK I ALREADY SAVED." Now it says so before you touch anything - and
-    // which pile matters more here than which signal found it.
-    eye.dataset['shelf'] = '';
-    eye.textContent = `already on your shelf · in ${cand.shelvedIn}`;
-  } else {
-    eye.textContent = PROVENANCE[card.source ?? 'none'] ?? 'found';
-  }
-  return eye;
+/** Everything at once, at the pile you reach for least. The batch case is a batch. */
+function saveAllButton(card: Card): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'buki-act buki-wide';
+  b.textContent = 'Save all to Someday';
+  b.addEventListener('click', () => void saveAll(card, b));
+  return b;
 }
 
 function waitBar(): HTMLElement {
@@ -721,20 +777,23 @@ function closeButton(card: Card): HTMLButtonElement {
   return b;
 }
 
-function intentRow(card: Card, cand: Candidate): HTMLElement {
+function intentRow(card: Card, cand: Candidate, index: number): HTMLElement {
   const row = document.createElement('div');
   row.className = 'buki-row';
   (['now', 'next', 'someday'] as Intent[]).forEach((intent) => {
     const b = document.createElement('button');
     b.className = 'buki-intent';
     b.textContent = intent;
-    if (cand.shelvedIn === intent) {
+    if (cand.savedTo) {
+      b.disabled = true;
+      if (cand.savedTo === intent) b.dataset['here'] = '';
+    } else if (cand.shelvedIn === intent) {
       // Saving it here again would rewrite the same row with the same value.
       b.disabled = true;
       b.dataset['here'] = '';
       b.title = `Already in ${intent}`;
     }
-    b.addEventListener('click', () => void choose(card, cand, intent, row));
+    b.addEventListener('click', () => void choose(card, cand, index, intent, row));
     row.append(b);
   });
   return row;
@@ -744,14 +803,37 @@ function intentRow(card: Card, cand: Candidate): HTMLElement {
 const releaseRow = (row: HTMLElement): void =>
   row.querySelectorAll('button').forEach((b) => (b.disabled = b.hasAttribute('data-here')));
 
-async function choose(card: Card, cand: Candidate, intent: Intent, row: HTMLElement): Promise<void> {
+/** The text a finished card settles on. One book earns its name; four earn a count. */
+function doneText(card: Card, moved: boolean): string {
+  const only = card.candidates.length === 1 ? card.candidates[0] : undefined;
+  return only
+    ? `${moved ? 'Moved' : 'Saved'} · ${only.book.title} → ${only.savedTo}`
+    : `${card.candidates.length} books on your shelf`;
+}
+
+/** Has every book on this card been dealt with? Only then is the card a receipt. */
+function allSettled(id: number): Card | null {
+  const card = tray.list().find((c) => c.id === id);
+  return card && card.candidates.length && card.candidates.every((c) => c.savedTo) ? card : null;
+}
+
+async function choose(
+  card: Card,
+  cand: Candidate,
+  index: number,
+  intent: Intent,
+  row: HTMLElement,
+): Promise<void> {
   // Disable the whole row: a second click would re-enter the save and race the write.
   row.querySelectorAll('button').forEach((b) => (b.disabled = true));
   try {
     const saved = await saveBook(cand.book, intent, contexts.get(card.job)?.source);
     settle(card.job, { outcome: 'confirmed', savedId: saved.id });
-    // The word the write actually earned: this book may already have been on the shelf.
-    tray.done(card.job, `${saved.moved ? 'Moved' : 'Saved'} · ${cand.book.title} → ${intent}`);
+    tray.savedOne(card.job, index, intent);
+    // Filing one book out of four must not take the other three away with it, so the
+    // card only becomes a receipt once there is nothing left on it to decide.
+    const finished = allSettled(card.id);
+    if (finished) tray.done(card.job, doneText(finished, Boolean(saved.moved)));
     paintTray();
   } catch (err) {
     console.error('[Buki] save failed', err);
@@ -762,26 +844,34 @@ async function choose(card: Card, cand: Candidate, intent: Intent, row: HTMLElem
   }
 }
 
-function alternates(card: Card): HTMLElement | null {
-  if (card.candidates.length < 2) return null;
-  const row = document.createElement('div');
-  row.className = 'buki-alts';
-  const label = document.createElement('span');
-  label.textContent = 'Not this book?';
-  row.append(label);
-  card.candidates.forEach((c, i) => {
-    if (i === card.showing) return;
-    const b = document.createElement('button');
-    b.className = 'buki-alt';
-    b.textContent = c.book.title;
-    b.title = `${c.book.title} — ${c.book.author}`;
-    b.addEventListener('click', () => {
-      tray.show(card.id, i);
-      paintTray();
-    });
-    row.append(b);
-  });
-  return row;
+/** Everything still undecided on this card, at the pile you commit to least. */
+async function saveAll(card: Card, button: HTMLButtonElement): Promise<void> {
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  const source = contexts.get(card.job)?.source;
+  let firstId = '';
+  try {
+    // One at a time. The worker serializes shelf writes anyway, so firing four at once
+    // only queues them somewhere nobody can see.
+    for (const [i, cand] of card.candidates.entries()) {
+      if (cand.savedTo) continue;
+      const saved = await saveBook(cand.book, 'someday', source);
+      firstId ||= saved.id;
+      tray.savedOne(card.job, i, 'someday');
+    }
+    // One attempt, one event: the log links a recognition to a book so a later delete can
+    // mark it wrong, and the first is the one the model read most clearly.
+    if (firstId) settle(card.job, { outcome: 'confirmed', savedId: firstId });
+    const finished = allSettled(card.id);
+    if (finished) tray.done(card.job, doneText(finished, false));
+    paintTray();
+  } catch (err) {
+    console.error('[Buki] save failed', err);
+    button.disabled = false;
+    button.textContent = 'Save all to Someday';
+    tray.say(orphaned(err) ? REFRESH : "Couldn't save to your shelf.");
+    paintTray();
+  }
 }
 
 function wordsButton(card: Card): HTMLButtonElement {

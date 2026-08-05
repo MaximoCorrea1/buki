@@ -30,6 +30,13 @@ export interface Candidate {
    * one that would change nothing is the one you can see is pointless.
    */
   shelvedIn?: Intent;
+  /**
+   * Filed just now, from this card. Distinct from `shelvedIn`, which is what the shelf
+   * already held when the answer arrived: one is history, the other is a receipt for
+   * something you did a second ago, and a card holding four books needs to show which
+   * of them you have dealt with.
+   */
+  savedTo?: Intent;
 }
 
 export interface Card {
@@ -39,13 +46,12 @@ export interface Card {
   readonly state: CardState;
   /** The message, for every state except `found` - there, the candidates are the content. */
   readonly text: string;
-  readonly candidates: Candidate[];
   /**
-   * Which candidate the card is currently offering. Lives here rather than in the
-   * renderer because it has to survive a repaint, and has to reset when a fresh answer
-   * arrives - index 1 of the old answer is a different book from index 1 of the new one.
+   * The books found in this picture, best-read first. A photographed stack or a shelf
+   * behind someone's head is several books, and this used to hold competing guesses at
+   * ONE of them - so a second row meant two different things depending on the catch.
    */
-  readonly showing: number;
+  readonly candidates: Candidate[];
   /**
    * What the answer was built from. The card says it out loud: a shelf you cannot audit
    * is a shelf you stop trusting, and "read from the cover" is the whole claim.
@@ -76,10 +82,13 @@ export interface CatchTray {
   fail(job: string, text: string): void;
   /** The choice was made. */
   done(job: string, text: string): void;
+  /**
+   * One book on this card is filed. The card stays put for the others - a photo of four
+   * books is four decisions, and closing on the first would take the other three away.
+   */
+  savedOne(job: string, index: number, intent: Intent): void;
   /** Something worth saying that belongs to no catch - an update notice, a missing key. */
   say(text: string): void;
-  /** Offer a different candidate. "Not this book" is the cheapest correction there is. */
-  show(id: number, index: number): void;
   dismiss(id: number): void;
 }
 
@@ -129,7 +138,6 @@ export function createCatchTray(): CatchTray {
         state: 'looking',
         text,
         candidates: [],
-        showing: 0,
         transient: false,
         ...(image ? { image } : {}),
       });
@@ -138,7 +146,6 @@ export function createCatchTray(): CatchTray {
 
     resolve(job, candidates, source) {
       const common = {
-        showing: 0, // a fresh answer is offered from the top, whatever was showing before
         transient: false,
         ...(source ? { source } : {}),
       };
@@ -155,15 +162,26 @@ export function createCatchTray(): CatchTray {
     retry(job, text) {
       // Candidates cleared: leaving them would offer books from the very answer being
       // replaced, on a card that says it is still looking.
-      replace(job, { state: 'looking', text, candidates: [], showing: 0, transient: false });
+      replace(job, { state: 'looking', text, candidates: [], transient: false });
     },
 
     fail(job, text) {
-      replace(job, { state: 'error', text, candidates: [], showing: 0, transient: true });
+      replace(job, { state: 'error', text, candidates: [], transient: true });
     },
 
     done(job, text) {
-      replace(job, { state: 'done', text, candidates: [], showing: 0, transient: true });
+      replace(job, { state: 'done', text, candidates: [], transient: true });
+    },
+
+    savedOne(job, index, intent) {
+      const at = find(job);
+      if (at === -1) return;
+      const held = cards[at] as Card;
+      if (!held.candidates[index]) return;
+      cards[at] = {
+        ...held,
+        candidates: held.candidates.map((c, i) => (i === index ? { ...c, savedTo: intent } : c)),
+      };
     },
 
     say(text) {
@@ -173,20 +191,10 @@ export function createCatchTray(): CatchTray {
         state: 'error',
         text,
         candidates: [],
-        showing: 0,
         transient: true,
       });
     },
 
-    show(id, index) {
-      const at = cards.findIndex((c) => c.id === id);
-      if (at === -1) return;
-      const held = cards[at] as Card;
-      // A stale click - the card was re-resolved with fewer candidates between the render
-      // and the press - must not point the card at a book that is no longer there.
-      if (index < 0 || index >= held.candidates.length) return;
-      cards[at] = { ...held, showing: index };
-    },
 
     dismiss(id) {
       cards = cards.filter((c) => c.id !== id);

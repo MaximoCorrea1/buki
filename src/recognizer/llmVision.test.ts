@@ -52,8 +52,8 @@ describe('createLlmVision', () => {
     };
     const img = { imageUrls: ['http://c.jpg'], text: '' };
 
-    await createLlmVision({ fetch, config: CFG }).guessBook(img);
-    await createLlmVision({ fetch, config: { ...CFG, apiKey: undefined } }).guessBook(img);
+    await createLlmVision({ fetch, config: CFG }).guessBooks(img);
+    await createLlmVision({ fetch, config: { ...CFG, apiKey: undefined } }).guessBooks(img);
 
     expect(seen[0]).toBe('Bearer k-123');
     expect(seen[1]).toBeUndefined();
@@ -63,7 +63,7 @@ describe('createLlmVision', () => {
     const { fetch, sent } = fakeModel('{"title":"Dune","author":"Frank Herbert"}');
     const vision = createLlmVision({ fetch, config: CFG });
 
-    await vision.guessBook({
+    await vision.guessBooks({
       imageUrls: ['https://pbs.twimg.com/media/cover.jpg'],
       text: 'just finished this one',
     });
@@ -78,44 +78,44 @@ describe('createLlmVision', () => {
 
   it('reads title and author out of the reply', async () => {
     const { fetch } = fakeModel('{"title":"Dune","author":"Frank Herbert","confidence":0.9}');
-    const guess = await createLlmVision({ fetch, config: CFG }).guessBook({
+    const guess = await createLlmVision({ fetch, config: CFG }).guessBooks({
       imageUrls: ['http://c.jpg'],
       text: '',
     });
 
-    expect(guess?.title).toBe('Dune');
-    expect(guess?.author).toBe('Frank Herbert');
+    expect(guess[0]?.title).toBe('Dune');
+    expect(guess[0]?.author).toBe('Frank Herbert');
   });
 
   it('tolerates JSON wrapped in a markdown fence', async () => {
     // Models habitually fence their JSON no matter how the prompt is worded.
     const { fetch } = fakeModel('```json\n{"title":"Clean Code","author":"Robert C. Martin"}\n```');
-    const guess = await createLlmVision({ fetch, config: CFG }).guessBook({
+    const guess = await createLlmVision({ fetch, config: CFG }).guessBooks({
       imageUrls: ['http://c.jpg'],
       text: '',
     });
 
-    expect(guess?.title).toBe('Clean Code');
+    expect(guess[0]?.title).toBe('Clean Code');
   });
 
-  it('returns null when the model reports no book', async () => {
+  it('returns nothing when the model reports no book', async () => {
     const { fetch } = fakeModel('{"title":null,"author":null}');
     expect(
-      await createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
-    ).toBeNull();
+      await createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
+    ).toEqual([]);
   });
 
-  it('returns null on unparseable prose instead of throwing', async () => {
+  it('returns nothing on unparseable prose instead of throwing', async () => {
     const { fetch } = fakeModel("I'm sorry, I can't identify that image.");
     expect(
-      await createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
-    ).toBeNull();
+      await createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
+    ).toEqual([]);
   });
 
   it('throws on an HTTP error so the caller can say the service failed', async () => {
     const { fetch } = fakeModel(null, { ok: false, status: 429 });
     await expect(
-      createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
+      createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
     ).rejects.toThrow(/429/);
   });
 
@@ -143,7 +143,7 @@ describe('createLlmVision', () => {
     });
 
     await expect(
-      createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
+      createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
     ).rejects.toThrow(/is not found for API version/);
   });
 
@@ -163,15 +163,15 @@ describe('createLlmVision', () => {
     const img = { imageUrls: ['http://c.jpg'], text: '' };
 
     await expect(
-      createLlmVision({ fetch: dead, config: CFG }).guessBook(img),
+      createLlmVision({ fetch: dead, config: CFG }).guessBooks(img),
     ).rejects.toMatchObject({ status: 404, permanent: true });
 
     // Rate limiting and outages pass; waiting is genuinely the right advice for these.
     await expect(
-      createLlmVision({ fetch: busy, config: CFG }).guessBook(img),
+      createLlmVision({ fetch: busy, config: CFG }).guessBooks(img),
     ).rejects.toMatchObject({ status: 429, permanent: false });
     await expect(
-      createLlmVision({ fetch: broken, config: CFG }).guessBook(img),
+      createLlmVision({ fetch: broken, config: CFG }).guessBooks(img),
     ).rejects.toMatchObject({ status: 503, permanent: false });
   });
 
@@ -183,7 +183,7 @@ describe('createLlmVision', () => {
     };
 
     await expect(
-      createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
+      createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
     ).rejects.toMatchObject({ permanent: false, message: /took too long/ });
   });
 
@@ -199,7 +199,7 @@ describe('createLlmVision', () => {
     });
 
     await expect(
-      createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: ['http://c.jpg'], text: '' }),
+      createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
     ).rejects.toThrow(/502/);
   });
 
@@ -210,8 +210,8 @@ describe('createLlmVision', () => {
       return { ok: true, status: 200, async json() { return {}; } };
     };
     expect(
-      await createLlmVision({ fetch, config: CFG }).guessBook({ imageUrls: [], text: 'no picture' }),
-    ).toBeNull();
+      await createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: [], text: 'no picture' }),
+    ).toEqual([]);
     expect(called).toBe(false);
   });
 
@@ -221,7 +221,7 @@ describe('createLlmVision', () => {
     // "not reading the image".
     const { fetch, sent } = fakeModel(null);
 
-    await createLlmVision({ fetch, config: CFG }).guessBook({
+    await createLlmVision({ fetch, config: CFG }).guessBooks({
       imageUrls: ['https://a.test/1.jpg', 'https://a.test/2.jpg', 'https://a.test/3.jpg'],
       text: '',
     });
@@ -237,7 +237,7 @@ describe('createLlmVision', () => {
   it('does not send more images than a post can carry', async () => {
     const { fetch, sent } = fakeModel(null);
 
-    await createLlmVision({ fetch, config: CFG }).guessBook({
+    await createLlmVision({ fetch, config: CFG }).guessBooks({
       imageUrls: Array.from({ length: 9 }, (_, i) => `https://a.test/${i}.jpg`),
       text: '',
     });
@@ -250,13 +250,17 @@ describe('createLlmVision', () => {
     // and talks about another then answered with the one it was talking about.
     const { fetch, sent } = fakeModel(null);
 
-    await createLlmVision({ fetch, config: CFG }).guessBook({
+    await createLlmVision({ fetch, config: CFG }).guessBooks({
       imageUrls: ['https://a.test/1.jpg'],
       text: 'I am currently reading Some Other Book',
     });
 
     const prompt = textPart(sent.body);
-    expect(prompt).toMatch(/IN THE IMAGES/);
+    // Same invariant, new wording: the prompt now asks for EVERY book it can SEE, which
+    // is the same instruction ("only what is in the picture") carrying the multi-book
+    // ask as well.
+    expect(prompt).toMatch(/every distinct book you can see in the images/i);
+    expect(prompt).toMatch(/do not add a book because the text mentions it/i);
     expect(prompt).toMatch(/never to name a book you cannot see/i);
   });
 });
@@ -275,7 +279,7 @@ describe('createLlmVision retries', () => {
     throw err;
   };
   const ask = (vision: ReturnType<typeof createLlmVision>) =>
-    vision.guessBook({ imageUrls: ['data:image/jpeg;base64,AAAA'], text: '' });
+    vision.guessBooks({ imageUrls: ['data:image/jpeg;base64,AAAA'], text: '' });
 
   it('tries again when a request hangs instead of losing the catch', async () => {
     // Measured 2026-08-05: five catches ran 1.7s, 4.6s, 5.3s, 6.0s - and one sat until
@@ -290,7 +294,7 @@ describe('createLlmVision retries', () => {
     const book = await ask(createLlmVision({ fetch, config: CFG }));
 
     expect(calls).toBe(2);
-    expect(book?.title).toBe('Dune');
+    expect(book[0]?.title).toBe('Dune');
   });
 
   it('gives up once, not forever', async () => {
@@ -315,7 +319,7 @@ describe('createLlmVision retries', () => {
     const book = await ask(createLlmVision({ fetch, config: CFG }));
 
     expect(calls).toBe(2);
-    expect(book?.title).toBe('Dune');
+    expect(book[0]?.title).toBe('Dune');
   });
 
   it('does not repeat a request that can only fail again', async () => {

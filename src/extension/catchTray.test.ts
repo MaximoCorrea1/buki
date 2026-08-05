@@ -198,50 +198,6 @@ describe('catchTray', () => {
     expect(tray.list()[0]!.source).toBe('vision');
   });
 
-  // ------------------------------------------------------------ not this book
-
-  it('offers the first candidate until told otherwise', () => {
-    const tray = createCatchTray();
-    tray.open('a', 'Reading…');
-
-    tray.resolve('a', [{ book: DUNE }, { book: UBIK }]);
-
-    expect(tray.list()[0]!.showing).toBe(0);
-  });
-
-  it('promotes an alternate when the top guess is wrong', () => {
-    const tray = createCatchTray();
-    tray.open('a', 'Reading…');
-    tray.resolve('a', [{ book: DUNE }, { book: UBIK }]);
-
-    tray.show(tray.list()[0]!.id, 1);
-
-    expect(tray.list()[0]!.showing).toBe(1);
-  });
-
-  it('refuses a candidate that is not there', () => {
-    const tray = createCatchTray();
-    tray.open('a', 'Reading…');
-    tray.resolve('a', [{ book: DUNE }]);
-
-    tray.show(tray.list()[0]!.id, 4);
-
-    expect(tray.list()[0]!.showing).toBe(0);
-  });
-
-  it('starts a re-lookup back at the top candidate', () => {
-    // "Try the post's words" resolves the same card a second time. Leaving `showing` at 1
-    // would point at a book from the previous answer, which is a different book entirely.
-    const tray = createCatchTray();
-    tray.open('a', 'Reading…');
-    tray.resolve('a', [{ book: DUNE }, { book: UBIK }]);
-    tray.show(tray.list()[0]!.id, 1);
-
-    tray.resolve('a', [{ book: UBIK }]);
-
-    expect(tray.list()[0]!.showing).toBe(0);
-  });
-
   // ------------------------------------------------------------ asking a second way
 
   it('puts a card back to work when it is asked a different question', () => {
