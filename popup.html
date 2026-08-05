@@ -325,7 +325,6 @@
       .card .links a { text-decoration: none; }
       .card .links a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
       .src { color: var(--muted); }
-      .src:hover { color: var(--accent); text-decoration: underline; }
       /* A pill, so it reads as an action rather than another link. */
       .buy {
         padding: 3px 9px;
@@ -336,6 +335,7 @@
       }
       .buy:active { transform: scale(0.95); }
       @media (hover: hover) and (pointer: fine) {
+        .src:hover { color: var(--accent); text-decoration: underline; }
         .buy:hover { background: var(--buy-bg-hi); }
       }
 
