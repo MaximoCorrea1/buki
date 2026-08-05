@@ -5,31 +5,37 @@
     <title>Buki</title>
     <style>
       /* ------------------------------------------------------------------
-         Buki — books lie flat, spine out, resting on a shelf board.
+         Buki — the shelf.
 
-         The identity is the spine edge: cloth colour hashed from the book,
-         with two raised cords. The cords are a white highlight over a dark
-         shadow rather than a gold line, because a gold line disappears
-         against marigold cloth — which is how the first version of this
-         design shipped, with its signature detail invisible.
+         Books stand FACE OUT, four to a board. A book with no cover art gets
+         one Buki draws: a deep dyed binding, two stamped rules, and the
+         book's own character tile repeated into cloth. See
+         src/extension/generatedCover.ts and docs/brand.md.
+
+         The piles are places, not headings. One scroll containing four
+         groups made them a typographic convention; you could not be IN Now.
          ------------------------------------------------------------------ */
       :root {
         /* PAPER. The room (docs/index.html, and the card in the feed) is the moment of
            CATCHING: a lit shelf in the dark. This is the moment of READING your list, and
            a list is read on paper. The two are different jobs, so they are different
-           materials, and the cloth spines carry the identity across both.
-
-           Every value is flat. No gradient, no translucent layer over another colour:
-           a spine is one solid ink, a rule is one solid hairline. */
+           materials, and the bindings carry the identity across both. */
         color-scheme: light;
 
         --paper: #faf7f2;
         --card: #ffffff;
         --board: #e3dcd2;
+        --board-lo: #d5cbbf;
         --ink: #14100e;
         --muted: #5c5349;
         --accent: #8a5a00;
         --sunk: #f2ede4;
+
+        /* The two inks a binding gets, and no more. Cream for the title, dimmed cream
+           for the rules. Not --lamp: gilt on every cover would spend the one-accent
+           rule a dozen times per shelf. */
+        --stamp: #faf7f2;
+        --stamp-dim: #d6cec2;
 
         /* The buy pill. Green rather than the accent, so it reads as its own kind of
            action and never competes with a focus ring. */
@@ -37,14 +43,18 @@
         --buy-bg-hi: #d8efe3;
         --buy-ink: #0f6b4a;
 
+        --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
       }
 
       * { box-sizing: border-box; }
 
       body {
-        width: 360px;
-        max-height: 560px;
+        /* 560 gives a 118px cover four across, which is the smallest a title reads at.
+           Chrome allows up to 800. One declaration, so this is a one-line change. */
+        width: 560px;
+        max-height: 600px;
         overflow-y: auto;
         overflow-x: hidden;
         margin: 0;
@@ -66,158 +76,258 @@
         top: 0;
         z-index: 3;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 9px;
-        padding: 13px 16px 11px;
+        gap: 3px;
+        padding: 14px 20px 12px;
         background: var(--paper);
         border-bottom: 1px solid var(--board);
       }
+      header .brand { display: flex; align-items: center; gap: 8px; }
       header svg { display: block; flex: none; }
       h1 {
         margin: 0;
-        flex: 1;
         font-size: 15px;
         font-weight: 800;
         letter-spacing: -0.02em;
       }
       .count {
-        font: 600 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+        font: 600 11px/1 var(--mono);
         color: var(--muted);
         letter-spacing: 0.02em;
       }
 
-      /* --- filter (only rendered past 15 books) -------------------------- */
-      #filter {
-        width: calc(100% - 32px);
-        margin: 11px 16px 0;
-        padding: 8px 11px;
+      /* --- the piles ------------------------------------------------------
+         A segmented control, on the page's axis. The same component appears in
+         the sheet as the move control, so there is one idea to learn. */
+      .piles {
+        display: flex;
+        gap: 2px;
+        width: fit-content;
+        margin: 12px auto 0;
+        padding: 2px;
+        background: var(--sunk);
+        border: 1px solid var(--board);
+        border-radius: 9px;
+      }
+      .pile {
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+        padding: 6px 13px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font: 700 10.5px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        transition: background-color 140ms ease, color 140ms ease;
+      }
+      .pile .n { font-size: 9.5px; letter-spacing: 0.02em; color: var(--muted); }
+      .pile[aria-selected="true"] { background: var(--card); color: var(--ink); }
+      .pile:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+      .pile:disabled { cursor: default; opacity: 0.5; }
+      @media (hover: hover) and (pointer: fine) {
+        .pile:not([aria-selected="true"]):hover { color: var(--ink); }
+      }
+
+      /* --- search --------------------------------------------------------- */
+      #find {
+        width: calc(100% - 40px);
+        margin: 10px 20px 0;
+        padding: 7px 11px;
         background: var(--sunk);
         color: var(--ink);
         border: 1px solid var(--board);
         border-radius: 8px;
         font: 13px/1.3 system-ui, sans-serif;
       }
-      #filter::placeholder { color: var(--muted); }
-      #filter:focus {
+      #find::placeholder { color: var(--muted); }
+      #find:focus {
         outline: 2px solid var(--ink);
         outline-offset: 1px;
         border-color: transparent;
       }
 
-      /* --- group heading -------------------------------------------------- */
-      h2 {
-        position: sticky;
-        top: 45px;
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0;
-        padding: 14px 16px 7px;
-        background: var(--paper);
-        font: 700 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
-        letter-spacing: 0.14em;
+      .record {
+        margin: 16px 20px 0;
+        text-align: center;
+        font: 700 10.5px/1 var(--mono);
+        letter-spacing: 0.13em;
         text-transform: uppercase;
         color: var(--muted);
       }
-      h2 .n {
-        padding: 2px 6px;
-        border-radius: 20px;
+
+      /* --- the shelf ------------------------------------------------------ */
+      .shelf {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        /* start, NOT end. Every cover is the same aspect ratio at the same width, so
+           aligning tops also aligns bottoms and the books stand on one line. Bottom
+           alignment lines up the SLOT, so a two-line caption shoved its cover a line
+           upward and the row stopped resting on the board. */
+        align-items: start;
+        padding: 14px 20px 0;
+      }
+      /* The board. Two solid rules: a shadow under a hairline is a blend, and the flat
+         rule forbids it. */
+      .plank {
+        height: 3px;
+        margin: 9px 20px 0;
         background: var(--board);
-        font-size: 9.5px;
-        letter-spacing: 0.04em;
+        border-bottom: 1px solid var(--board-lo);
       }
 
-      /* --- a book --------------------------------------------------------- */
-      .spine {
-        position: relative;
-        display: grid;
-        grid-template-columns: 8px 36px 1fr auto;
-        align-items: center;
-        gap: 11px;
-        padding: 10px 14px 11px 16px;
-        /* The board: one hairline with a soft shadow beneath, so books rest
-           on something rather than floating in a list. */
-        border-bottom: 1px solid var(--board);
-        border-bottom: 1px solid var(--board);
-        opacity: 0;
-        transform: translateY(6px);
-        animation: rise 260ms var(--ease-out) forwards;
-      }
-      @keyframes rise { to { opacity: 1; transform: none; } }
-
-      .spine.leaving {
-        opacity: 0;
-        transform: scale(0.97);
-        transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
-      }
-
-      /* The cloth edge. Two cords, each a highlight over a shadow — visible
-         on every cloth colour, and what a raised cord actually looks like. */
-      .edge {
-        align-self: stretch;
-        min-height: 54px;
-        border-radius: 2px;
-        background:
-          linear-gradient(#ffffff 1px, transparent 1px) 0 15px / 100% 1px no-repeat,
-          linear-gradient(#ffffff 1px, transparent 1px) 0 37px / 100% 1px no-repeat,
-          var(--cloth);
-      }
-
-      .cover {
-        width: 36px;
-        height: 54px;
-        object-fit: cover;
+      .slot { min-width: 0; }
+      .pick {
         display: block;
-        border-radius: 2px;
-        background: var(--cloth);
-        border: 1px solid var(--board);
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out);
       }
-      /* No cover art: the cloth block carries the initial instead. Darkened over the
-         same cloth, so it reads as a separate object from the spine edge beside it
-         rather than merging into one L-shaped smear. */
-      .cover.blank {
-        display: grid;
-        place-items: center;
-        color: #ffffff;
-        font: 800 16px/1 system-ui, sans-serif;
+      .pick:active { transform: scale(0.97); }
+      .pick:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+      .board,
+      .art {
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        border-radius: 2px 3px 3px 2px;
+        overflow: hidden;
+      }
+      .art { display: block; object-fit: cover; background: var(--sunk); }
+      .board {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding: 11px;
+        background: var(--binding);
       }
 
-      .meta { min-width: 0; }
-      .title {
-        font-weight: 700;
-        letter-spacing: -0.011em;
+      /* The cloth: the book's own mark, repeated. One node, not six hundred.
+         Opacity on white over one solid ground resolves to one solid value, which is why
+         this is not the blend the flat rule forbids. */
+      .cloth {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        /* A 6px cell with a 4.5px glyph in it, so threads are separated in BOTH
+           directions. Letting them touch horizontally merges equal neighbours into bars
+           and the board reads as brick; separating only horizontally leaves the vertical
+           runs and it reads as corduroy. Only the gap in both gives cloth. */
+        font: 4.5px/6px var(--mono);
+        letter-spacing: 3.4px;
+        color: #ffffff;
+        opacity: 0.13;
+        pointer-events: none;
+      }
+
+      /* The signature: the two cords, seen face-on. On a spine they are raised; on a
+         board they are stamped. */
+      .rules {
+        position: relative;
+        flex: none;
+        height: 5px;
+        border-top: 1px solid var(--stamp-dim);
+        border-bottom: 1px solid var(--stamp-dim);
+      }
+
+      .stamp {
+        position: relative;
+        margin-top: auto;
+        font-family: var(--serif);
+        color: var(--stamp);
+        letter-spacing: -0.015em;
+        overflow-wrap: anywhere;
+      }
+      .stamp.large { font-size: 21px; line-height: 1.02; }
+      .stamp.medium { font-size: 15px; line-height: 1.08; }
+      .stamp.small { font-size: 11.5px; line-height: 1.14; }
+
+      .cap { margin-top: 9px; }
+      .cap .t {
+        font: 600 11.5px/1.22 var(--serif);
+        color: var(--ink);
+        /* Two lines always, so the author and the pile tag under every book on a shelf
+           sit on the same line whether the title above them wrapped or not. */
+        min-height: 2.44em;
         overflow: hidden;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
       }
-      .author {
-        margin-top: 1px;
-        font-size: 12px;
+      .cap .a {
+        margin-top: 2px;
+        font: 9.5px/1.3 var(--mono);
         color: var(--muted);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .links {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+      .cap .from {
         margin-top: 4px;
-        font-size: 11px;
+        font: 700 8.5px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* --- the sheet ------------------------------------------------------ */
+      #sheet {
+        position: fixed;
+        inset: 0;
+        z-index: 9;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+      }
+      #scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 16, 14, 0.4);
+        transition: opacity 180ms var(--ease-out);
+      }
+      .card {
+        position: relative;
+        width: 100%;
+        padding: 20px;
+        background: var(--card);
+        border: 1px solid var(--board);
+        border-radius: 13px;
+        /* A modal is not anchored to a trigger, so it scales from its own centre. */
+        transform-origin: center;
+        transition: transform 180ms var(--ease-out), opacity 180ms var(--ease-out);
+      }
+      #sheet[data-in="false"] .card { transform: scale(0.96); opacity: 0; }
+      #sheet[data-in="false"] #scrim { opacity: 0; }
+
+      .card .top { display: flex; gap: 16px; }
+      .card .held { width: 96px; flex: none; }
+      .card .about { min-width: 0; padding-top: 2px; }
+      .card h3 { margin: 0; font: 700 17px/1.2 var(--serif); letter-spacing: -0.015em; }
+      .card .by { margin-top: 3px; font-size: 12.5px; color: var(--muted); }
+      .card .links {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        margin-top: 12px;
+        font-size: 11.5px;
         font-weight: 600;
       }
-      .links a { text-decoration: none; }
-      .links a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
+      .card .links a { text-decoration: none; }
+      .card .links a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
       .src { color: var(--muted); }
       .src:hover { color: var(--accent); text-decoration: underline; }
-
-      /* A pill, so it reads as an action rather than another link. Deliberately small:
-         it sits below the author, never above the title, and carries no urgency. */
+      /* A pill, so it reads as an action rather than another link. */
       .buy {
-        flex: none;
         padding: 3px 9px;
         border-radius: 999px;
         background: var(--buy-bg);
@@ -229,89 +339,101 @@
         .buy:hover { background: var(--buy-bg-hi); }
       }
 
-      .actions { display: flex; gap: 2px; align-self: start; }
-      .act {
-        width: 26px;
-        height: 26px;
+      .card .piles { margin-top: 18px; }
+      .shut {
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        width: 27px;
+        height: 27px;
         display: grid;
         place-items: center;
-        cursor: pointer;
         border: 0;
-        border-radius: 7px;
+        border-radius: 8px;
         background: transparent;
         color: var(--muted);
-        font-size: 14px;
+        font-size: 15px;
         line-height: 1;
-        transition: transform 140ms var(--ease-out), background-color 140ms ease,
-          color 140ms ease;
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out), background-color 140ms ease;
       }
-      .act:active { transform: scale(0.92); }
-      .act:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
-      .act:disabled { opacity: 0.4; cursor: default; }
+      .shut:active { transform: scale(0.92); }
+      .shut:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
       @media (hover: hover) and (pointer: fine) {
-        .act:hover { background: var(--board); color: var(--ink); }
+        .shut:hover { background: var(--board); color: var(--ink); }
+      }
+
+      /* Set apart, and not red. Red is for danger; removing a book you chose to save is
+         a decision. */
+      .drop {
+        display: block;
+        margin: 16px auto 0;
+        padding: 7px 14px;
+        border: 1px solid var(--board);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font: 600 11.5px/1 system-ui, sans-serif;
+        transition: color 140ms ease, border-color 140ms ease;
+      }
+      .drop:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+      .drop:disabled { opacity: 0.5; cursor: default; }
+      @media (hover: hover) and (pointer: fine) {
+        .drop:hover { color: var(--ink); border-color: var(--muted); }
       }
 
       /* --- empty ---------------------------------------------------------- */
-      .empty { margin: 26px 20px; color: var(--muted); line-height: 1.6; }
+      .empty { margin: 24px 20px; color: var(--muted); line-height: 1.6; text-align: center; }
       .empty b { display: block; margin-bottom: 3px; color: var(--ink); font-size: 15px; }
 
       /* --- footer --------------------------------------------------------- */
       footer {
-        margin: 14px 16px 0;
+        margin: 18px 20px 0;
         padding-top: 10px;
         border-top: 1px solid var(--board);
         font-size: 10.5px;
         line-height: 1.5;
         color: var(--muted);
+        text-align: center;
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .spine { animation-duration: 1ms; }
-        .spine.leaving, .act { transition-duration: 1ms; }
+        .card,
+        #scrim,
+        .pick,
+        .pile,
+        .buy,
+        .shut,
+        .drop {
+          transition-duration: 1ms;
+        }
       }
-    
-      /* --- centred ------------------------------------------------------
-         A shelf is a symmetrical object, so everything that is not a book row sits on the
-         page's axis: the mark, the name, the count, and each pile label. Book ROWS stay
-         left-aligned, because a title is read from its first letter and centring a list
-         of names is how a list stops being scannable. */
-      header {
-        flex-direction: column;
-        justify-content: center;
-        gap: 3px;
-        padding: 14px 16px 12px;
-      }
-      /* h1 had flex:1, which pushed the mark and the count to opposite edges and left the
-         name floating between them. Stacked and centred, the three read as one masthead. */
-      header h1 { flex: none; }
-      header .brand { display: flex; align-items: center; gap: 8px; }
-      header .count { margin: 0; }
-      h2 { justify-content: center; text-align: center; }
     </style>
   </head>
   <body>
     <header>
       <div class="brand">
-      <svg width="21" height="21" viewBox="0 0 16 16" aria-hidden="true">
-        <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff5a47" />
-        <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#22b584" />
-        <rect
-          x="10.6"
-          y="4"
-          width="3.2"
-          height="10.5"
-          rx="1"
-          fill="#6274ff"
-          transform="rotate(11 12.2 9.25)"
-        />
-        <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
-      </svg>
-      <h1>Buki</h1>
+        <svg width="21" height="21" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1.5" y="3.5" width="3.5" height="11" rx="1" fill="#ff5a47" />
+          <rect x="5.5" y="1.5" width="3.5" height="13" rx="1" fill="#22b584" />
+          <rect
+            x="10.6"
+            y="4"
+            width="3.2"
+            height="10.5"
+            rx="1"
+            fill="#6274ff"
+            transform="rotate(11 12.2 9.25)"
+          />
+          <rect x="1.5" y="8.5" width="12.8" height="1.3" fill="#fae636" />
+        </svg>
+        <h1>Buki</h1>
       </div>
       <span class="count" id="count"></span>
     </header>
     <main id="app"></main>
+    <div id="sheet" hidden data-in="false"></div>
     <footer id="disclosure" hidden>
       Buy links are affiliate links. Buki may earn a small commission, at no cost to
       you. Nothing else about your shelf leaves this computer.

@@ -235,8 +235,36 @@ half-load. A gradient would be the generic answer and is also banned by the flat
    holds.** A deep binding with a stamped title and a woven character ground reads as a
    book that lost its jacket, which is a real object, rather than as art that failed to
    load. The face-out direction survives its own riskiest piece.
-2. The shelf: width, four-up grid, boards, captions.
-3. The segmented control and per-pile views.
-4. The detail sheet, including move-between-piles.
-5. Search across piles.
-6. The Read view.
+2. ~~The shelf: width, four-up grid, boards, captions.~~ **Done.**
+3. ~~The segmented control and per-pile views.~~ **Done.**
+4. ~~The detail sheet, including move-between-piles.~~ **Done.**
+5. ~~Search across piles.~~ **Done.**
+6. ~~The Read view.~~ **Done.**
+
+---
+
+## Built: where it departs from the above
+
+Recorded so nobody has to rediscover why. Plan:
+`docs/superpowers/plans/2026-08-05-face-out-shelf.md`.
+
+- **Read keeps its move control.** The spec said a finished book gets no move controls.
+  Built that way, a book marked Read by mistake can only be deleted, which throws away
+  its source and its place on the shelf to fix a mis-tap. The buy link is gone, which was
+  the part that actually made Read read as an inbox. The four-way control stays as the
+  only control.
+- **The caption carries the title even though the drawn board stamps it.** The spec
+  called that "the same word twice". Rendering settled it: a board with no words on it is
+  a swatch, not a book (this is variant A in the cover lab, and it is the worst of the
+  three). And real cover art at 118px is often unreadable, so the caption is the only
+  place a title is guaranteed. A shelf where some books are captioned and some are not is
+  worse than saying it twice.
+- **The masthead stacks instead of sharing a line.** Four segments plus a search box on
+  one line at 560px is the crowding the spec's own risk list predicted. Piles on one
+  line, search on the next.
+- **Covers align at the top of their slot, not the bottom.** Bottom alignment lines up
+  the SLOT, and a two-line caption then shoves its cover a line upward, so a row of books
+  stopped resting on the board. Every cover is the same aspect ratio at the same width,
+  so aligning tops aligns bottoms.
+- **Still unverified: 560px in a real Chrome popup frame.** A headless page at 560px is
+  not a popup. It is one declaration in `popup.html`, so it is a one-line change.

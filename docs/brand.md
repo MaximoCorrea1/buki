@@ -70,6 +70,15 @@ spine is one solid ink; a rule is one solid hairline; the gilt cords are one sol
 line each rather than a highlight stacked over a shadow. Shadows are allowed, because a
 shadow is depth rather than colour.
 
+Two things are allowed under that same reading, and nothing else is:
+
+- **A modal scrim.** `rgba(20, 16, 14, 0.4)` behind the shelf's detail sheet. It is
+  depth, like a shadow: it says the sheet is in front, not that the shelf changed colour.
+- **The cloth on a generated cover.** White at `opacity: 0.13` over one solid binding
+  resolves to one solid value, because there is nothing else underneath it. CSS cannot
+  compute a per-book tint without `color-mix`, and five hand-written tints is five more
+  places for the palette to drift out of step.
+
 **Symmetry.** Everything that is not a book row sits on the page's axis: the mark, the
 name, the count, the pile labels, and a catch card's provenance line. Book rows stay
 left-aligned, and so do form fields. A title is read from its first letter, and centring a

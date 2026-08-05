@@ -1,15 +1,19 @@
-import {
-  createLibrary,
-  matchesFilter,
-  type StorageArea,
-  type SavedBook,
-  type Intent,
-} from './storage';
+import { createLibrary, type StorageArea, type SavedBook, type Intent } from './storage';
 import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
 import { buyLink, type Store } from './buyLink';
-import { clothFor } from './cloth';
-import { cachedCover, rememberCover, pruneCovers, liveCoverDeps } from './coverCache';
+import { coverFor } from './cover';
+import { pruneCovers, liveCoverDeps } from './coverCache';
 import { readSettings } from './settings';
+import {
+  PILES,
+  PILE_LABEL,
+  booksIn,
+  countByPile,
+  finishedBooks,
+  finishedHead,
+  searchAll,
+  shelvesOf,
+} from './shelfView';
 import type { BackgroundRequest, ShelfResponse } from './messages';
 
 const storage: StorageArea = {
@@ -38,76 +42,22 @@ async function writeShelf(request: BackgroundRequest): Promise<void> {
 
 /**
  * Reads only. Every write goes through the background worker so the log has exactly one
- * writer - see background.ts. Constructing the full object here just avoids a second way
- * to spell the storage key.
+ * writer - see background.ts.
  */
 const log = createRecognitionLog({ storage, now: () => Date.now() });
 
-const INTENTS: Intent[] = ['now', 'next', 'someday', 'read'];
-const LABELS: Record<Intent, string> = {
-  now: 'Reading now',
-  next: 'Up next',
-  someday: 'Someday',
-  read: 'Finished',
-};
 const SOURCE_LABEL = { tweet: 'the post that sold you', page: 'where you found it' } as const;
 
-/** Past this many books the shelf needs finding, not just scrolling. */
-const FILTER_FROM = 15;
+/** Four across at 560px is a 118px cover, the smallest a title reads at. */
+const PER_SHELF = 4;
 
-function blankCover(initial: string): HTMLElement {
-  const blank = document.createElement('div');
-  blank.className = 'cover blank';
-  blank.textContent = initial;
-  return blank;
-}
-
-/**
- * The cover does real work beyond decoration: a wrong match becomes obvious at a glance,
- * which is the feedback the kept-rate measurement depends on.
- */
-/**
- * Object URLs minted this session, reused across repaints. The filter box repaints on
- * every keystroke, so making a fresh one per draw would leak one per character typed.
- * The popup is torn down when it closes, which is what finally releases them.
- */
-const localSrc = new Map<string, string>();
-
-/**
- * Draw from the local copy if we have it, otherwise the network - and keep what comes
- * back, so a shelf saved before covers were cached becomes instant on the next open.
- * See coverCache.ts: the network path is a 3-hop redirect that measured 1-4 seconds.
- */
-async function applyCover(img: HTMLImageElement, url: string): Promise<void> {
-  const already = localSrc.get(url);
-  if (already) {
-    img.src = already;
-    return;
-  }
-  const blob = await cachedCover(url, covers);
-  if (!blob) {
-    img.src = url;
-    void rememberCover(url, covers);
-    return;
-  }
-  const objectUrl = URL.createObjectURL(blob);
-  localSrc.set(url, objectUrl);
-  img.src = objectUrl;
-}
-
-function coverFor(saved: SavedBook): HTMLElement {
-  const initial = saved.book.title.trim()[0]?.toUpperCase() ?? '?';
-  if (!saved.book.coverUrl) return blankCover(initial);
-
-  const img = document.createElement('img');
-  img.className = 'cover';
-  img.alt = '';
-  img.loading = 'lazy'; // a hundred rows must not fire a hundred requests at once
-  // A cover that 404s should become the cloth block, not a broken-image glyph.
-  img.addEventListener('error', () => img.replaceWith(blankCover(initial)));
-  void applyCover(img, saved.book.coverUrl);
-  return img;
-}
+/** An empty state is an invitation, so each one says what puts a book here. */
+const EMPTY_PILE: Record<Intent, string> = {
+  now: 'Nothing on the go. Open a book from Next and it moves here.',
+  next: 'Nothing queued. Catch a book from a post and it lands here.',
+  someday: 'Nothing parked here yet.',
+  read: "You haven't finished a book yet. Mark one as read and it becomes a record here.",
+};
 
 function link(href: string, text: string, className: string): HTMLAnchorElement {
   const a = document.createElement('a');
@@ -119,34 +69,256 @@ function link(href: string, text: string, className: string): HTMLAnchorElement 
   return a;
 }
 
-function renderBook(
+/* ------------------------------------------------------------------------ *
+ * State. Reading and drawing are separate on purpose: typing in the search
+ * box changes nothing on disk, so it repaints from what is already in memory.
+ * ------------------------------------------------------------------------ */
+
+let shelf: SavedBook[] = [];
+let store: Store = 'amazon';
+let query = '';
+/** Which pile you are standing in. Not persisted: opening the popup starts you at Now. */
+let pile: Intent = 'now';
+let loadFailed = false;
+
+async function load(): Promise<void> {
+  try {
+    [shelf, store] = await Promise.all([library.list(), readSettings().then((s) => s.store)]);
+    loadFailed = false;
+    // Bound the cache by the shelf rather than by everything ever recognized. Safe here
+    // because a book still on the shelf is always in `keep`, including one the worker is
+    // fetching a cover for right now.
+    void pruneCovers(
+      shelf.map((s) => s.book.coverUrl),
+      covers,
+    );
+  } catch (err) {
+    console.error('[Buki] could not read the shelf', err);
+    loadFailed = true;
+  }
+}
+
+/* ------------------------------------------------------------------------ *
+ * The shelf
+ * ------------------------------------------------------------------------ */
+
+/**
+ * One book, face out: its cover, then its title and author underneath.
+ *
+ * The caption carries the title even though the drawn board also stamps it. Real cover
+ * art at 118px is often unreadable, so the caption is the one place a title is
+ * guaranteed - and a shelf where some books are captioned and some are not is worse than
+ * saying it twice.
+ */
+function renderSlot(
   saved: SavedBook,
-  index: number,
-  store: Store,
-  onChange: () => void,
+  tag?: (saved: SavedBook) => string,
 ): HTMLElement {
-  const row = document.createElement('div');
-  row.className = 'spine';
-  row.style.setProperty('--cloth', clothFor(saved.book));
-  // Capped: a hundred books must not spend three seconds cascading in.
-  row.style.animationDelay = `${Math.min(index, 8) * 28}ms`;
+  const slot = document.createElement('div');
+  slot.className = 'slot';
 
-  const edge = document.createElement('div');
-  edge.className = 'edge';
+  const pick = document.createElement('button');
+  pick.className = 'pick';
+  pick.setAttribute('aria-label', `${saved.book.title} by ${saved.book.author}`);
+  pick.addEventListener('click', () => openSheet(saved));
+  pick.appendChild(coverFor(saved, covers));
 
-  const meta = document.createElement('div');
-  meta.className = 'meta';
-
+  const cap = document.createElement('div');
+  cap.className = 'cap';
   const title = document.createElement('div');
-  title.className = 'title';
+  title.className = 't';
   title.textContent = saved.book.title;
-  meta.appendChild(title);
-
+  cap.appendChild(title);
   if (saved.book.author) {
     const author = document.createElement('div');
-    author.className = 'author';
+    author.className = 'a';
     author.textContent = saved.book.author;
-    meta.appendChild(author);
+    cap.appendChild(author);
+  }
+  if (tag) {
+    const from = document.createElement('div');
+    from.className = 'from';
+    from.textContent = tag(saved);
+    cap.appendChild(from);
+  }
+
+  slot.append(pick, cap);
+  return slot;
+}
+
+/** A pile, as boards with four books resting on each. */
+function renderShelves(
+  app: HTMLElement,
+  books: SavedBook[],
+  tag?: (saved: SavedBook) => string,
+): void {
+  for (const row of shelvesOf(books, PER_SHELF)) {
+    const shelfRow = document.createElement('div');
+    shelfRow.className = 'shelf';
+    for (const saved of row) shelfRow.appendChild(renderSlot(saved, tag));
+    const plank = document.createElement('div');
+    plank.className = 'plank';
+    app.append(shelfRow, plank);
+  }
+}
+
+/**
+ * The piles, as places rather than headings.
+ *
+ * One scroll containing four groups made the piles a typographic convention: you could
+ * not be IN Now. A segment is somewhere you stand, and the same control moves a book in
+ * the sheet, so there is one idea to learn rather than two.
+ */
+function renderPiles(app: HTMLElement): void {
+  const counts = countByPile(shelf);
+  const bar = document.createElement('div');
+  bar.className = 'piles';
+  bar.setAttribute('role', 'tablist');
+
+  for (const each of PILES) {
+    const tab = document.createElement('button');
+    tab.className = 'pile';
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', String(each === pile));
+    tab.append(PILE_LABEL[each]);
+    if (counts[each]) {
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = `${counts[each]}`;
+      tab.appendChild(n);
+    }
+    tab.addEventListener('click', () => {
+      pile = each;
+      paint();
+    });
+    bar.appendChild(tab);
+  }
+  app.appendChild(bar);
+}
+
+/* ------------------------------------------------------------------------ *
+ * Picking a book up
+ * ------------------------------------------------------------------------ */
+
+let lastPicked: HTMLElement | null = null;
+
+function closeSheet(): void {
+  const sheet = document.getElementById('sheet');
+  if (!sheet || sheet.hidden) return;
+  sheet.dataset.in = 'false';
+  // Exit is never slower than entrance: the system responding must not feel slower than
+  // the system arriving.
+  setTimeout(() => {
+    sheet.hidden = true;
+    sheet.replaceChildren();
+  }, 150);
+  lastPicked?.focus();
+}
+
+/**
+ * The same control that says where a book is, is the one that moves it.
+ *
+ * That answers "promoting Someday to Now means re-catching the book" without adding a
+ * menu, and it is the same component as the top-level navigation. `saveBook` upserts on
+ * `sameBook`, so this IS the move - there is no move message and there must not be one,
+ * because the worker owns the shelf.
+ */
+function movePiles(saved: SavedBook): HTMLElement {
+  const bar = document.createElement('div');
+  bar.className = 'piles';
+
+  for (const each of PILES) {
+    const to = document.createElement('button');
+    to.className = 'pile';
+    to.setAttribute('aria-selected', String(each === saved.intent));
+    to.textContent = PILE_LABEL[each];
+    to.addEventListener('click', async () => {
+      if (each === saved.intent) return closeSheet();
+      const buttons = [...bar.querySelectorAll('button')] as HTMLButtonElement[];
+      buttons.forEach((b) => (b.disabled = true));
+      try {
+        // Moving is not a wrong match, so it must never flag the recognition. Only
+        // removeBook does that.
+        await writeShelf({
+          type: 'saveBook',
+          book: saved.book,
+          intent: each,
+          ...(saved.source ? { source: saved.source } : {}),
+        });
+        closeSheet();
+        await refresh();
+      } catch (err) {
+        console.error('[Buki] could not move it', err);
+        buttons.forEach((b) => (b.disabled = false));
+      }
+    });
+    bar.appendChild(to);
+  }
+  return bar;
+}
+
+/** Set apart, and not red. Red is for danger; removing a book you chose to save is a
+ *  decision. */
+function removeButton(saved: SavedBook): HTMLElement {
+  const drop = document.createElement('button');
+  drop.className = 'drop';
+  drop.textContent = 'Remove from shelf';
+  drop.addEventListener('click', async () => {
+    drop.disabled = true;
+    try {
+      // One round trip removes the book AND flags the recognition. Deleting a wrong match
+      // is both the fix and the measurement, so the kept rate is fresh by the time this
+      // resolves - no fixed timer racing a sleeping worker.
+      await writeShelf({ type: 'removeBook', savedId: saved.id });
+      closeSheet();
+      await refresh();
+    } catch (err) {
+      console.error('[Buki] remove failed', err);
+      drop.disabled = false;
+    }
+  });
+  return drop;
+}
+
+/** A sheet over the shelf, not a new page: you are still on the shelf, you have just
+ *  taken one book off it. */
+function openSheet(saved: SavedBook): void {
+  const sheet = document.getElementById('sheet');
+  if (!sheet) return;
+  lastPicked = document.activeElement as HTMLElement | null;
+
+  const scrim = document.createElement('div');
+  scrim.id = 'scrim';
+  scrim.addEventListener('click', closeSheet);
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.setAttribute('role', 'dialog');
+  card.setAttribute('aria-modal', 'true');
+  card.setAttribute('aria-label', saved.book.title);
+
+  const shut = document.createElement('button');
+  shut.className = 'shut';
+  shut.textContent = '×';
+  shut.setAttribute('aria-label', 'Close');
+  shut.addEventListener('click', closeSheet);
+
+  const top = document.createElement('div');
+  top.className = 'top';
+  const art = document.createElement('div');
+  art.className = 'held';
+  art.appendChild(coverFor(saved, covers));
+
+  const meta = document.createElement('div');
+  meta.className = 'about';
+  const title = document.createElement('h3');
+  title.textContent = saved.book.title;
+  meta.appendChild(title);
+  if (saved.book.author) {
+    const by = document.createElement('div');
+    by.className = 'by';
+    by.textContent = saved.book.author;
+    meta.appendChild(by);
   }
 
   const links = document.createElement('div');
@@ -156,74 +328,28 @@ function renderBook(
   if (saved.source && /^https?:\/\//i.test(saved.source.url)) {
     links.appendChild(link(saved.source.url, SOURCE_LABEL[saved.source.kind], 'src'));
   }
-  const buy = buyLink(saved.book, store);
+  // No buy link on a finished book. A record is not an inbox item.
+  const buy = saved.intent === 'read' ? null : buyLink(saved.book, store);
   if (buy) links.appendChild(link(buy, 'Buy', 'buy'));
   if (links.childElementCount) meta.appendChild(links);
 
-  const actions = document.createElement('div');
-  actions.className = 'actions';
-
-  if (saved.intent !== 'read') {
-    const done = document.createElement('button');
-    done.className = 'act';
-    done.textContent = '✓';
-    done.title = `Mark ${saved.book.title} as finished`;
-    done.setAttribute('aria-label', `Mark ${saved.book.title} as finished`);
-    done.addEventListener('click', async () => {
-      done.disabled = true;
-      try {
-        // Finishing is not a wrong match, so it must never flag the recognition -
-        // only removeBook does that.
-        await writeShelf({ type: 'saveBook', book: saved.book, intent: 'read', ...(saved.source ? { source: saved.source } : {}) });
-        onChange();
-      } catch (err) {
-        console.error('[Buki] could not mark it finished', err);
-        done.disabled = false;
-      }
-    });
-    actions.appendChild(done);
-  }
-
-  const remove = document.createElement('button');
-  remove.className = 'act';
-  remove.textContent = '×';
-  remove.title = `Remove ${saved.book.title}`;
-  remove.setAttribute('aria-label', `Remove ${saved.book.title}`);
-  remove.addEventListener('click', async () => {
-    remove.disabled = true;
-    // Play the collapse immediately; the worker's answer decides when to re-render.
-    row.classList.add('leaving');
-    try {
-      // One round trip removes the book AND flags the recognition. Deleting a wrong
-      // match is both the fix and the measurement, so the kept rate is guaranteed fresh
-      // by the time this resolves - no fixed timer racing a sleeping worker.
-      await writeShelf({ type: 'removeBook', savedId: saved.id });
-      onChange();
-    } catch (err) {
-      console.error('[Buki] remove failed', err);
-      row.classList.remove('leaving');
-      remove.disabled = false;
-    }
-  });
-  actions.appendChild(remove);
-
-  row.append(edge, coverFor(saved), meta, actions);
-  return row;
-}
-
-function renderEmpty(app: HTMLElement): void {
-  const empty = document.createElement('p');
-  empty.className = 'empty';
-  const lead = document.createElement('b');
-  lead.textContent = 'Nothing on the shelf yet.';
-  empty.append(
-    lead,
-    document.createTextNode(
-      'Hit the book icon on a post, or right-click a cover image, and it lands here.',
-    ),
+  top.append(art, meta);
+  card.append(shut, top, movePiles(saved), removeButton(saved));
+  sheet.replaceChildren(scrim, card);
+  sheet.hidden = false;
+  // Two frames: the element has to be laid out at its start state before the transition
+  // has anything to travel from.
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      sheet.dataset.in = 'true';
+    }),
   );
-  app.replaceChildren(empty);
+  shut.focus();
 }
+
+/* ------------------------------------------------------------------------ *
+ * Paint
+ * ------------------------------------------------------------------------ */
 
 /**
  * One line, in the masthead: `23 caught · 78% kept`. The kept rate is the only number
@@ -251,31 +377,25 @@ async function renderStats(shelfCount: number): Promise<void> {
   el.textContent = keptPct === null ? `${caught} caught` : `${caught} caught · ${keptPct}% kept`;
 }
 
-/**
- * Reading and drawing are separate on purpose. Typing in the filter changes nothing on
- * disk, so it repaints from what is already in memory - the previous version re-read the
- * whole shelf AND the settings from chrome.storage on every keystroke.
- */
-let shelf: SavedBook[] = [];
-let store: Store = 'amazon';
-let filterText = '';
-let loadFailed = false;
+function renderEmpty(app: HTMLElement): void {
+  const empty = document.createElement('p');
+  empty.className = 'empty';
+  const lead = document.createElement('b');
+  lead.textContent = 'Nothing on the shelf yet.';
+  empty.append(
+    lead,
+    document.createTextNode(
+      'Hit the book icon on a post, or right-click a cover image, and it lands here.',
+    ),
+  );
+  app.replaceChildren(empty);
+}
 
-async function load(): Promise<void> {
-  try {
-    [shelf, store] = await Promise.all([library.list(), readSettings().then((s) => s.store)]);
-    loadFailed = false;
-    // Bound the cache by the shelf rather than by everything ever recognized. Safe to run
-    // here because a book still on the shelf is always in `keep`, including one the worker
-    // is fetching a cover for right now.
-    void pruneCovers(
-      shelf.map((s) => s.book.coverUrl),
-      covers,
-    );
-  } catch (err) {
-    console.error('[Buki] could not read the shelf', err);
-    loadFailed = true;
-  }
+function say(app: HTMLElement, text: string): void {
+  const line = document.createElement('p');
+  line.className = 'empty';
+  line.textContent = text;
+  app.appendChild(line);
 }
 
 function paint(): void {
@@ -291,10 +411,10 @@ function paint(): void {
   }
 
   // Snapshot focus before the rebuild, whatever caused it. Restoring only inside the
-  // filter's own handler meant a delete or a finish landing mid-type silently kicked
-  // the user out of the search box.
+  // search box's own handler meant a move or a removal landing mid-type silently kicked
+  // the user out of the field.
   const active = document.activeElement as HTMLInputElement | null;
-  const hadFocus = active?.id === 'filter';
+  const hadFocus = active?.id === 'find';
   const caret = hadFocus ? (active?.selectionStart ?? 0) : 0;
 
   void renderStats(shelf.length);
@@ -307,51 +427,53 @@ function paint(): void {
   }
 
   app.replaceChildren();
+  renderPiles(app);
 
-  // A search box on a shelf of four is chrome for its own sake.
-  if (shelf.length > FILTER_FROM) {
-    const filter = document.createElement('input');
-    filter.id = 'filter';
-    filter.type = 'search';
-    filter.placeholder = `Find among ${shelf.length} books`;
-    filter.value = filterText;
-    filter.addEventListener('input', () => {
-      filterText = filter.value;
-      paint(); // synchronous: no storage read, no await, no render race
-    });
-    app.appendChild(filter);
-  }
+  const find = document.createElement('input');
+  find.id = 'find';
+  find.type = 'search';
+  find.placeholder = `Find among ${shelf.length} book${shelf.length === 1 ? '' : 's'}`;
+  find.value = query;
+  find.addEventListener('input', () => {
+    query = find.value;
+    paint(); // synchronous: no storage read, no await, no render race
+  });
+  app.appendChild(find);
 
-  let index = 0;
-  let shown = 0;
-  for (const intent of INTENTS) {
-    const group = shelf.filter((s) => s.intent === intent && matchesFilter(s, filterText));
-    if (!group.length) continue;
-    shown += group.length;
-
-    const heading = document.createElement('h2');
-    heading.append(LABELS[intent]);
-    const n = document.createElement('span');
-    n.className = 'n';
-    n.textContent = `${group.length}`;
-    heading.appendChild(n);
-    app.appendChild(heading);
-
-    group.forEach((saved) => {
-      app.appendChild(renderBook(saved, index, store, () => void refresh()));
-      index++;
-    });
-  }
-
-  if (!shown) {
-    const none = document.createElement('p');
-    none.className = 'empty';
-    none.textContent = `Nothing matches "${filterText.trim()}".`;
-    app.appendChild(none);
+  // Searching leaves the pile you were in and crosses all of them; clearing the box puts
+  // you back where you were. Finding a book is a different job from browsing a pile.
+  if (query.trim()) {
+    const hits = searchAll(shelf, query);
+    renderShelves(
+      app,
+      hits.map((hit) => hit.saved),
+      (saved) => PILE_LABEL[saved.intent],
+    );
+    if (!hits.length) say(app, `Nothing matches "${query.trim()}".`);
+  } else if (pile === 'read') {
+    const head = finishedHead(shelf);
+    if (head) {
+      const record = document.createElement('p');
+      record.className = 'record';
+      record.textContent = head;
+      app.appendChild(record);
+    }
+    const done = finishedBooks(shelf);
+    const month = new Map(done.map((f) => [f.saved.id, f.month]));
+    renderShelves(
+      app,
+      done.map((f) => f.saved),
+      (saved) => month.get(saved.id) ?? '',
+    );
+    if (!done.length) say(app, EMPTY_PILE.read);
+  } else {
+    const books = booksIn(shelf, pile);
+    renderShelves(app, books);
+    if (!books.length) say(app, EMPTY_PILE[pile]);
   }
 
   if (hadFocus) {
-    const next = document.getElementById('filter') as HTMLInputElement | null;
+    const next = document.getElementById('find') as HTMLInputElement | null;
     next?.focus();
     // Without this the caret jumps to the start of the field on every repaint.
     next?.setSelectionRange(caret, caret);
@@ -363,5 +485,9 @@ async function refresh(): Promise<void> {
   await load();
   paint();
 }
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeSheet();
+});
 
 void refresh();
