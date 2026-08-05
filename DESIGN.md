@@ -422,3 +422,40 @@ Still carrying the old name: the Vercel host `shelfy-pearl.vercel.app`. Renaming
 project retires the old domain at once, so the docs keep pointing at the working host
 until that switch, and then every reference moves together — a privacy-policy URL that
 404s fails Chrome Web Store review.
+
+## Design system extracted (2026-08-05)
+
+`docs/brand.md` is now the source of truth for colour, type, space, motion and voice.
+This file stays what it has always been: the record of *why the product is what it is*.
+brand.md is the record of *what it looks like*. When they disagree about a hex value,
+brand.md wins.
+
+The extraction was forced by a real duplication. The landing page and the catch tray each
+hold their own copy of the palette, because a content script cannot share a stylesheet
+across the extension boundary. That is exactly the shape of the bug that once gave one
+book two colours (`clothFor` defined twice, with two hashes), so the rule is written down:
+change a token in brand.md first, then in both surfaces, in the same commit.
+
+**What changed in the pass, and why.**
+
+The page was near-black with one bright accent, which is one of the three looks generated
+design defaults to. The room metaphor is not the problem: it is doing real work, the
+extension has to be dark to sit on X's feed, and "most spines lost to the dark, three
+caught in the light" is the product's argument as an object. So the room stayed, and the
+freedom went into the two axes the brief actually named.
+
+- **Contrast.** Headlines and book titles moved to pure white; secondary text went from
+  `#A396B8` (6:1) to `#B4A6C8` (8.9:1); hairlines from `#332A45` to `#3A2E4D` so a rule
+  actually reads as a rule. The lamp went from `#FFCF8A` to `#FFC24D`: a bulb, not a pastel.
+- **Type.** The headline roughly doubled, to `clamp(2.75rem, 7.5vw, 5.25rem)` at 800 weight
+  and `-0.045em`. It is the only place type is allowed to be loud, because the sentence has
+  to carry the page with no photograph under it. One serif word in it, in the lamp colour,
+  and that is the single italic on the page.
+- **Density.** The shelf and "how it works" were a stack down a 680px column: two screens
+  of scrolling with one idea on each. They are peers, so they became a grid, and the page
+  measure went to 1060px with prose held at 620px. Someday got a shelf row it never had,
+  which both fills the shorter column and shows the third pile.
+- **Copy.** Em-dashes are out, of the pages and of every user-facing string. The "how it
+  works" section was also factually stale: it still promised that "a strong match saves
+  outright", which was the auto-save deleted in `a06e7ba`. It now says nothing reaches the
+  shelf until you pick a pile, and it mentions that one photo can hold several books.

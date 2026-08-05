@@ -346,7 +346,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     }
     console.error('[Buki] recognition failed', err);
     noteFailure(Date.now() - startedAt, 'contextmenu');
-    await failCard(tabId, job, "Couldn't read that cover — try again in a moment.");
+    await failCard(tabId, job, "Couldn't read that cover. Try again in a moment.");
     return;
   }
 

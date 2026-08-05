@@ -235,7 +235,7 @@ describe('catchTray', () => {
     const tray = createCatchTray();
     tray.open('a', 'Reading…');
 
-    tray.say('Buki just updated — refresh this page.');
+    tray.say('Buki just updated. Refresh this page.');
 
     expect(tray.list()).toHaveLength(2);
     expect(tray.list()[1]!.job).toBe('');

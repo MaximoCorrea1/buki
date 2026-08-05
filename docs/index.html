@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Buki — catch books you see on X</title>
+    <title>Buki: catch books you see on X</title>
     <meta
       name="description"
-      content="A Chrome extension that recognises books in posts on X — from the cover photo, not just the text — and files them on your own shelf under Now, Next or Someday. No account, no sync, nothing leaves your computer."
+      content="A Chrome extension that reads books off the cover photo in posts on X, not just the text, and files them on your own shelf under Now, Next or Someday. No account, no sync, nothing leaves your computer."
     />
     <link rel="canonical" href="https://shelfy-pearl.vercel.app/" />
 
@@ -14,13 +14,13 @@
          whole proposition on its own rather than relying on the tweet around it. -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://shelfy-pearl.vercel.app/" />
-    <meta property="og:title" content="Buki — catch books you see on X" />
+    <meta property="og:title" content="Buki: catch books you see on X" />
     <meta
       property="og:description"
       content="Recognises the book from the cover photo and files it on a shelf that's yours. Nothing leaves your computer."
     />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Buki — catch books you see on X" />
+    <meta name="twitter:title" content="Buki: catch books you see on X" />
     <meta
       name="twitter:description"
       content="Recognises the book from the cover photo and files it on a shelf that's yours. Nothing leaves your computer."
@@ -47,25 +47,29 @@
          No webfonts on purpose. Google Fonts logs the visitor's IP, and this page's entire
          claim is that nothing about you is collected -- a tracking request in the <head>
          would make that a lie before the reader reached the sentence. */
+      /* Tokens are documented in docs/brand.md. The extension holds its own copy of these
+         because a content script cannot share a stylesheet across the extension boundary,
+         so any change here has to land in src/extension/content.ts in the same commit. */
       :root {
         color-scheme: dark;
-        --night: #14101c;
-        --room: #1d1729;
-        --sunk: #221a30;
-        --glow: #ffcf8a;
-        --chalk: #f0eaf6;
-        --dim: #a396b8;
-        --line: #332a45;
+        --night: #0e0a14;
+        --room: #1b1424;
+        --sunk: #1b1424;
+        --glow: #ffc24d;
+        --paper: #ffffff;
+        --chalk: #ede7f4;
+        --dim: #b4a6c8;
+        --line: #3a2e4d;
         --gilt: #fae636;
-        --coral: #ff6352;
-        --marigold: #ffb020;
-        --jade: #2fb88a;
-        --peri: #6c7bff;
-        --plum: #b265d9;
+        --coral: #ff5a47;
+        --marigold: #ffae12;
+        --jade: #22b584;
+        --peri: #6274ff;
+        --plum: #b45ce0;
         --ease: cubic-bezier(0.23, 1, 0.32, 1);
 
-        /* Serif appears only where a real book does -- spine titles and shelf rows.
-           Everywhere else is the interface, and the interface is sans. */
+        /* Serif appears only where a real book does: shelf rows, and one word of the
+           headline. Everywhere else is the interface, and the interface is sans. */
         --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
         --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
         --tag: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -75,14 +79,17 @@
 
       body {
         margin: 0;
-        padding: 0 0 72px;
+        padding: 0 0 56px;
         background: var(--night);
         color: var(--chalk);
-        font: 16px/1.65 var(--ui);
+        font: 16px/1.6 var(--ui);
         -webkit-font-smoothing: antialiased;
       }
 
-      .wrap { max-width: 680px; margin: 0 auto; padding: 0 22px; }
+      /* Wide enough to put things side by side, because a list of peers stacked down a
+         narrow column is a scroll with nothing in it. Prose keeps its own measure. */
+      .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+      .measure { max-width: 620px; }
 
       a { color: var(--glow); }
       a:focus-visible,
@@ -108,7 +115,7 @@
         height: 300px;
         overflow: hidden;
         background:
-          radial-gradient(120% 90% at 22% -10%, rgba(255, 207, 138, 0.17), transparent 62%),
+          radial-gradient(120% 90% at 22% -10%, rgba(255, 194, 77, 0.16), transparent 62%),
           linear-gradient(180deg, var(--room), var(--night));
         border-block: 1px solid var(--line);
       }
@@ -161,7 +168,7 @@
       .board {
         position: absolute; left: 0; right: 0; bottom: 0; height: 9px;
         background: linear-gradient(180deg, #453757, #150f1f);
-        box-shadow: 0 -1px 0 rgba(255, 207, 138, 0.18);
+        box-shadow: 0 -1px 0 rgba(255, 194, 77, 0.2);
       }
 
       /* Haze: the far ends of the shelf recede rather than stopping at a hard edge. */
@@ -194,14 +201,26 @@
       }
 
       /* ---------------------------------------------------------------- hero copy */
+      /* The sentence is the hero, so it has to carry the page on its own. Set as large,
+         as tight and as heavy as it will go before it stops being readable. */
       h1 {
-        margin: 40px 0 0;
-        font-size: clamp(31px, 6.2vw, 45px);
+        margin: 38px 0 0;
+        max-width: 15ch;
+        font-size: clamp(2.75rem, 7.5vw, 5.25rem);
         font-weight: 800;
-        line-height: 1.04;
-        letter-spacing: -0.04em;
+        line-height: 0.98;
+        letter-spacing: -0.045em;
+        color: var(--paper);
       }
-      h1 em { font-family: var(--book); font-style: italic; font-weight: 500; letter-spacing: -0.01em; }
+      /* The one serif word on the page that is not a book title. It is the word the whole
+         product is about, so it gets to look like it came out of a book. */
+      h1 em {
+        font-family: var(--book);
+        font-style: italic;
+        font-weight: 500;
+        letter-spacing: -0.015em;
+        color: var(--glow);
+      }
       .lede { margin: 17px 0 0; font-size: 17.5px; color: var(--dim); max-width: 33em; }
 
       .cta { display: flex; flex-wrap: wrap; gap: 11px; align-items: center; margin: 28px 0 0; }
@@ -219,7 +238,7 @@
 
       /* ---------------------------------------------------------------- shelf demo */
       .shelf {
-        margin: 44px 0 0; border: 1px solid var(--line); border-radius: 14px;
+        border: 1px solid var(--line); border-radius: 14px;
         background: var(--sunk); overflow: hidden;
         box-shadow: 0 30px 70px -40px #000;
       }
@@ -255,24 +274,32 @@
 
       /* ---------------------------------------------------------------- sections */
       h2 {
-        margin: 58px 0 0; font-size: 13px; font-weight: 700; color: var(--dim);
-        text-transform: uppercase; letter-spacing: 0.12em;
+        margin: 44px 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--dim);
+        text-transform: uppercase; letter-spacing: 0.14em;
       }
-      .steps { margin: 20px 0 0; display: grid; gap: 26px; }
-      @media (min-width: 620px) { .steps { grid-template-columns: 1fr 1fr; gap: 30px 34px; } }
-      .steps h3 { margin: 0 0 5px; font-size: 16.5px; font-weight: 700; letter-spacing: -0.02em; }
-      .steps p { margin: 0; color: var(--dim); font-size: 15px; }
-      .body-copy { margin: 18px 0 0; color: var(--dim); }
+      /* The shelf and the explanation of how it fills are peers, so they sit side by
+         side. Stacked down one narrow column they were two screens of scrolling with one
+         idea on each, which is the "large unused space" this layout exists to remove. */
+      .duo { display: grid; gap: 30px; margin: 44px 0 0; align-items: start; }
+      @media (min-width: 860px) { .duo { grid-template-columns: 1.05fr 1fr; gap: 46px; } }
+      .duo > section > h2:first-child { margin-top: 0; }
+      .steps { margin: 18px 0 0; display: grid; gap: 21px; }
+      .steps h3 {
+        margin: 0 0 4px; font-size: 1.125rem; font-weight: 700;
+        letter-spacing: -0.02em; color: var(--paper);
+      }
+      .steps p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.55; }
+      .body-copy { margin: 16px 0 0; color: var(--dim); }
 
       .note {
-        margin: 24px 0 0; padding: 15px 17px; border-radius: 11px;
+        margin: 22px 0 0; padding: 15px 17px; border-radius: 11px;
         border: 1px solid var(--line); background: var(--sunk);
         font-size: 13.5px; color: var(--dim);
       }
       .note b { color: var(--chalk); }
 
       footer {
-        margin: 62px 0 0; padding-top: 22px; border-top: 1px solid var(--line);
+        margin: 48px 0 0; padding-top: 20px; border-top: 1px solid var(--line);
         display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
         font-size: 14px;
       }
@@ -297,31 +324,31 @@
     <div class="wall" role="img"
          aria-label="A shelf of book spines in a dark room. Three are lit; the rest are lost in shadow.">
       <div class="spines">
-        <div class="spine" style="--c: #6c7bff; --h: 74%; --w: 16px"></div>
+        <div class="spine" style="--c: #6274ff; --h: 74%; --w: 16px"></div>
         <div class="spine" style="--c: #ff6352; --h: 88%; --w: 26px"></div>
         <div class="spine" style="--c: #b265d9; --h: 69%; --w: 11px"></div>
         <div class="spine" style="--c: #2fb88a; --h: 93%; --w: 21px"></div>
-        <div class="spine" style="--c: #ffb020; --h: 61%; --w: 33px"></div>
-        <div class="spine" style="--c: #6c7bff; --h: 84%; --w: 14px"></div>
+        <div class="spine" style="--c: #ffae12; --h: 61%; --w: 33px"></div>
+        <div class="spine" style="--c: #6274ff; --h: 84%; --w: 14px"></div>
         <div class="spine" style="--c: #ff6352; --h: 71%; --w: 19px"></div>
         <div class="spine" style="--c: #2fb88a; --h: 96%; --w: 28px"></div>
         <div class="spine lit" style="--c: #ff6352; --h: 90%; --w: 22px"></div>
         <div class="spine" style="--c: #b265d9; --h: 66%; --w: 12px"></div>
-        <div class="spine" style="--c: #ffb020; --h: 79%; --w: 30px"></div>
-        <div class="spine" style="--c: #6c7bff; --h: 87%; --w: 17px"></div>
+        <div class="spine" style="--c: #ffae12; --h: 79%; --w: 30px"></div>
+        <div class="spine" style="--c: #6274ff; --h: 87%; --w: 17px"></div>
         <div class="spine" style="--c: #2fb88a; --h: 63%; --w: 24px"></div>
         <div class="spine" style="--c: #ff6352; --h: 92%; --w: 10px"></div>
         <div class="spine" style="--c: #b265d9; --h: 76%; --w: 27px"></div>
-        <div class="spine lit" style="--c: #ffb020; --h: 99%; --w: 20px"></div>
-        <div class="spine" style="--c: #6c7bff; --h: 68%; --w: 15px"></div>
+        <div class="spine lit" style="--c: #ffae12; --h: 99%; --w: 20px"></div>
+        <div class="spine" style="--c: #6274ff; --h: 68%; --w: 15px"></div>
         <div class="spine" style="--c: #2fb88a; --h: 85%; --w: 31px"></div>
-        <div class="spine" style="--c: #ffb020; --h: 72%; --w: 13px"></div>
-        <div class="spine lit" style="--c: #6c7bff; --h: 82%; --w: 25px"></div>
+        <div class="spine" style="--c: #ffae12; --h: 72%; --w: 13px"></div>
+        <div class="spine lit" style="--c: #6274ff; --h: 82%; --w: 25px"></div>
         <div class="spine" style="--c: #ff6352; --h: 64%; --w: 18px"></div>
         <div class="spine" style="--c: #b265d9; --h: 90%; --w: 23px"></div>
         <div class="spine" style="--c: #2fb88a; --h: 70%; --w: 11px"></div>
-        <div class="spine" style="--c: #ffb020; --h: 86%; --w: 29px"></div>
-        <div class="spine" style="--c: #6c7bff; --h: 75%; --w: 16px"></div>
+        <div class="spine" style="--c: #ffae12; --h: 86%; --w: 29px"></div>
+        <div class="spine" style="--c: #6274ff; --h: 75%; --w: 16px"></div>
         <div class="spine" style="--c: #ff6352; --h: 94%; --w: 21px"></div>
       </div>
       <div class="board"></div>
@@ -331,18 +358,23 @@
     <div class="wrap">
       <main>
         <h1>You saw a book. Then you <em>forgot</em> it.</h1>
+        <div class="measure">
         <p class="lede">
-          Buki recognises books in posts on X — from the cover photo, not just the text —
-          and files them on a shelf that's yours. It lives in your browser. No account, no
-          sync, nothing to sign up for.
+          Buki reads the cover photo, not just the words, and files what it finds on a shelf
+          that is yours. It lives in your browser. No account, no sync, nothing to sign up
+          for.
         </p>
 
         <div class="cta">
           <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get it on GitHub</a>
           <a class="btn ghost" href="privacy.html">Privacy</a>
-          <span class="free">Free · works with your own key</span>
+          <span class="free">Free, with your own recognition key</span>
+        </div>
         </div>
 
+        <div class="duo">
+          <section>
+            <h2>Your shelf</h2>
         <div class="shelf">
           <div class="shelf-top">
             <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true">
@@ -357,7 +389,7 @@
           </div>
 
           <div class="grp">Reading now</div>
-          <div class="row" style="--c: #6c7bff">
+          <div class="row" style="--c: #6274ff">
             <div class="edge"></div>
             <div class="thumb"></div>
             <div>
@@ -368,7 +400,7 @@
           </div>
 
           <div class="grp">Up next</div>
-          <div class="row" style="--c: #ffb020">
+          <div class="row" style="--c: #ffae12">
             <div class="edge"></div>
             <div class="thumb"></div>
             <div>
@@ -377,7 +409,7 @@
               <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
             </div>
           </div>
-          <div class="row" style="--c: #2fb88a">
+          <div class="row" style="--c: #22b584">
             <div class="edge"></div>
             <div class="thumb"></div>
             <div>
@@ -386,43 +418,60 @@
               <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
             </div>
           </div>
-        </div>
 
-        <h2>How it works</h2>
-        <div class="steps">
-          <div>
-            <h3>Right-click the cover</h3>
-            <p>
-              Choose <b>Save book to shelf</b>. Buki sends the cover and the post's words
-              to a vision model together — the caption is often what makes an unreadable
-              cover legible — then checks the answer against OpenLibrary before saving it.
-            </p>
-          </div>
-          <div>
-            <h3>Or hit the book icon</h3>
-            <p>
-              It sits in the post's action bar, beside reply and repost. Same recognition,
-              and you choose where the book goes.
-            </p>
-          </div>
-          <div>
-            <h3>Now, Next, or Someday</h3>
-            <p>
-              Every book gets an intention, so something you mean to read next month doesn't
-              sit in the same pile as something you saved on a whim. Mark it finished when
-              you're done.
-            </p>
-          </div>
-          <div>
-            <h3>It admits when it's unsure</h3>
-            <p>
-              A strong match saves outright. A weak one asks first, rather than quietly
-              putting the wrong book on your shelf. Buki keeps a private count of how
-              often it got it right, so you can decide how much to trust it.
-            </p>
+          <div class="grp">Someday</div>
+          <div class="row" style="--c: #b45ce0">
+            <div class="edge"></div>
+            <div class="thumb"></div>
+            <div>
+              <div class="t">The Dispossessed</div>
+              <div class="a">Ursula K. Le Guin</div>
+              <div class="links"><span class="src">the post that sold you</span><span class="buy">Buy</span></div>
+            </div>
           </div>
         </div>
 
+          </section>
+
+          <section>
+            <h2>How it works</h2>
+            <div class="steps">
+              <div>
+                <h3>Right-click a cover, or press the book icon</h3>
+                <p>
+                  The icon sits in the post's action bar, next to reply and repost. Either
+                  way Buki sends the picture and the post's words to a vision model
+                  together, because the caption is often what makes a hard cover legible,
+                  then checks the answer against OpenLibrary.
+                </p>
+              </div>
+              <div>
+                <h3>One photo can hold several books</h3>
+                <p>
+                  A stack on a desk, a shelf behind someone's head. Each book it can read
+                  gets its own row and its own decision, or you take the lot at once.
+                </p>
+              </div>
+              <div>
+                <h3>Now, Next, or Someday</h3>
+                <p>
+                  Nothing reaches your shelf until you pick one. A book you already have
+                  says so, and says which pile it is in, before you touch anything.
+                </p>
+              </div>
+              <div>
+                <h3>It says where it looked</h3>
+                <p>
+                  Every catch names its evidence: read from the cover, from the link in the
+                  post, or unverified when the catalogue could not confirm it. A shelf you
+                  cannot question is a shelf you stop trusting.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="measure">
         <h2>What it does with your data</h2>
         <p class="body-copy">
           Your shelf never leaves your computer. The only things sent anywhere are the image
@@ -439,6 +488,8 @@
           which books Buki shows you or in what order. You can point it at Bookshop.org
           instead, which supports independent bookshops.
         </p>
+
+        </div>
 
         <footer>
           <a href="https://github.com/MaximoCorrea1/buki">Source</a>

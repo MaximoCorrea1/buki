@@ -65,8 +65,12 @@ const STYLE = `
    only by the screen: catching six books in a row should show six cards, and the stack
    that used to cap at three quietly dropped the rest of your afternoon. */
 .buki-tray {
-  --night: #14101c; --sunk: #221a30; --line: #332a45;
-  --chalk: #f0eaf6; --dim: #a396b8; --glow: #ffcf8a; --jade: #6fe0b6;
+  /* docs/brand.md is the source. A content script cannot share a stylesheet with the
+     landing page, so these are a copy: change them there and here in the same commit. */
+  --night: #0e0a14; --sunk: #1b1424; --line: #3a2e4d;
+  --paper: #ffffff; --chalk: #ede7f4; --dim: #b4a6c8; --glow: #ffc24d;
+  /* The shelf marker's jade is lightened for text; the binding jade lives in cloth.ts. */
+  --jade: #6fe0b6;
   --ease: cubic-bezier(.23,1,.32,1);
   --drawer: cubic-bezier(.32,.72,0,1);
   --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -130,7 +134,7 @@ const STYLE = `
   /* The cloth gradient is the floor, not a placeholder: X's own CSP can refuse an
      OpenLibrary cover, and a broken-image glyph would read as the extension being
      broken rather than as a picture that didn't load. */
-  background: linear-gradient(150deg, var(--cloth, #332a45), rgba(0,0,0,.6));
+  background: linear-gradient(150deg, var(--cloth, #3a2e4d), rgba(0,0,0,.6));
 }
 .buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .buki-who { flex: 1; min-width: 0; }
@@ -144,9 +148,10 @@ const STYLE = `
 .buki-eyebrow[data-shelf] { color: var(--jade); }
 .buki-t {
   margin-top: 1px; font: 15.5px/1.25 var(--book); overflow-wrap: anywhere;
+  color: var(--paper);
 }
 /* A message is the interface talking, not a book title - so it stays in the UI face. */
-.buki-t.buki-plain { font: 13.5px/1.45 var(--ui); margin-top: 0; }
+.buki-t.buki-plain { font: 13.5px/1.45 var(--ui); margin-top: 0; color: var(--chalk); }
 .buki-a { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
 
 .buki-x {
@@ -295,7 +300,7 @@ const orphaned = (err?: unknown): boolean =>
   !chrome.runtime?.id ||
   (err instanceof Error && /context invalidated|receiving end does not exist/i.test(err.message));
 
-const REFRESH = 'Buki just updated — refresh this page to keep catching books.';
+const REFRESH = 'Buki just updated. Refresh this page to keep catching books.';
 
 interface Recognized {
   candidates: Book[];
@@ -616,7 +621,7 @@ function paintCard(el: HTMLElement, card: Card): void {
   // The best-read book lends the card its cloth. On a card with no book the cords made
   // the edge look like a dashed line somebody forgot to finish, so they come off too.
   const book = card.candidates[0]?.book;
-  el.style.setProperty('--cloth', book ? clothFor(book) : '#332a45');
+  el.style.setProperty('--cloth', book ? clothFor(book) : '#3a2e4d');
   if (book) el.dataset['book'] = '';
   else delete el.dataset['book'];
   el.replaceChildren(...(card.state === 'found' ? foundBody(card) : messageBody(card)));
@@ -903,7 +908,7 @@ async function tryWords(card: Card): Promise<void> {
     paintTray();
   } catch (err) {
     console.error('[Buki] lookup failed', err);
-    tray.fail(card.job, orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.');
+    tray.fail(card.job, orphaned(err) ? REFRESH : 'Book lookup failed. Try again in a moment.');
     paintTray();
   }
 }
@@ -1000,7 +1005,7 @@ function addButton(article: HTMLElement): void {
         console.error('[Buki] lookup failed', err);
         // A dismissed catch has no card left, so this quietly does nothing - which is
         // exactly right for a lookup the user called off.
-        tray.fail(job, orphaned(err) ? REFRESH : 'Book lookup failed — try again in a moment.');
+        tray.fail(job, orphaned(err) ? REFRESH : 'Book lookup failed. Try again in a moment.');
         paintTray();
       }
     },

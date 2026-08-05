@@ -5,7 +5,7 @@ import type { Book } from '../recognizer/types';
  * its own colour rather than being colour-coded by status - the grouping already says
  * which pile it's in.
  */
-export const CLOTH = ['#ff6352', '#FFB020', '#2FB88A', '#6C7BFF', '#B265D9'];
+export const CLOTH = ['#ff5a47', '#ffae12', '#22b584', '#6274ff', '#b45ce0'];
 
 /**
  * Same book, same cloth, forever - derived from the book, not from insertion order.

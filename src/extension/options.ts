@@ -55,7 +55,7 @@ async function main(): Promise<void> {
     try {
       const wanted = endpoint.value.trim() || DEFAULT_SETTINGS.endpoint;
       if (!(await allowEndpoint(wanted))) {
-        say('Not saved — Buki needs permission to reach that endpoint.');
+        say('Not saved. Buki needs permission to reach that endpoint.');
         return;
       }
       await writeSettings({
@@ -78,7 +78,7 @@ async function main(): Promise<void> {
     model.value = DEFAULT_SETTINGS.model;
     // The button only fills the fields, so claiming it reset the provider would be a
     // lie you discover later, when recognition still fails.
-    say('Fields filled — hit Save to apply.');
+    say('Fields filled. Press Save to apply.');
   });
 
   const clearLog = $<HTMLButtonElement>('clearLog');
