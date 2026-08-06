@@ -46,6 +46,14 @@
         --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
         --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+        /* The tooth of the paper. One inline SVG, tiled: no file to request, no script,
+           and the browser rasterizes it once. It sits on the BACKGROUND rather than in a
+           layer over the page, because grain across type costs legibility and buys
+           nothing, and because a full-bleed overlay is what made this popup unclickable
+           once already. Same carve-out as the cloth in docs/brand.md: noise over one
+           solid ground is texture, not a blend. */
+        --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
       }
 
       * { box-sizing: border-box; }
@@ -59,7 +67,8 @@
         overflow-x: hidden;
         margin: 0;
         padding: 0 0 10px;
-        background: var(--paper);
+        background-color: var(--paper);
+        background-image: var(--grain);
         color: var(--ink);
         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
       }
@@ -80,7 +89,8 @@
         align-items: center;
         gap: 3px;
         padding: 14px 20px 12px;
-        background: var(--paper);
+        background-color: var(--paper);
+        background-image: var(--grain);
         border-bottom: 1px solid var(--board);
       }
       header .brand { display: flex; align-items: center; gap: 8px; }
