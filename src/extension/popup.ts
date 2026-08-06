@@ -88,8 +88,10 @@ async function load(): Promise<void> {
     // Bound the cache by the shelf rather than by everything ever recognized. Safe here
     // because a book still on the shelf is always in `keep`, including one the worker is
     // fetching a cover for right now.
+    // Both urls per book: pruning on coverUrl alone would delete every caught picture
+    // on the next open, which is the cache going from a speed-up to a liability.
     void pruneCovers(
-      shelf.map((s) => s.book.coverUrl),
+      shelf.flatMap((s) => [s.shot, s.book.coverUrl]),
       covers,
     );
   } catch (err) {

@@ -358,12 +358,16 @@ async function recognize(tweet: Tweet, job: string, fromText = false): Promise<R
  * write queue cannot see a sibling context's write, and two of them interleaving is how
  * a book gets silently dropped.
  */
-async function saveBook(book: Book, intent: Intent, source?: SavedSource) {
+async function saveBook(book: Book, intent: Intent, source?: SavedSource, shot?: string) {
   const resp = (await chrome.runtime.sendMessage({
     type: 'saveBook',
     book,
     intent,
     ...(source ? { source } : {}),
+    // The picture this catch was read from. It becomes the cover on the shelf, because
+    // it is the book that was actually seen rather than whatever edition a relevance
+    // index put first.
+    ...(shot ? { shot } : {}),
   } satisfies BackgroundRequest)) as ShelfResponse | undefined;
 
   if (!resp) throw new Error('No response from the shelf');
@@ -837,7 +841,7 @@ async function choose(
   // Disable the whole row: a second click would re-enter the save and race the write.
   row.querySelectorAll('button').forEach((b) => (b.disabled = true));
   try {
-    const saved = await saveBook(cand.book, intent, contexts.get(card.job)?.source);
+    const saved = await saveBook(cand.book, intent, contexts.get(card.job)?.source, card.image);
     settle(card.job, { outcome: 'confirmed', savedId: saved.id });
     tray.savedOne(card.job, index, intent);
     // Filing one book out of four must not take the other three away with it, so the
@@ -865,7 +869,7 @@ async function saveAll(card: Card, button: HTMLButtonElement): Promise<void> {
     // only queues them somewhere nobody can see.
     for (const [i, cand] of card.candidates.entries()) {
       if (cand.savedTo) continue;
-      const saved = await saveBook(cand.book, 'someday', source);
+      const saved = await saveBook(cand.book, 'someday', source, card.image);
       firstId ||= saved.id;
       tray.savedOne(card.job, i, 'someday');
     }

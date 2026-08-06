@@ -1,6 +1,7 @@
 import type { SavedBook } from './storage';
 import { bindingFor, titleStep, weaveOf } from './generatedCover';
 import { cachedCover, rememberCover, type CoverDeps } from './coverCache';
+import { coverSources } from './coverSource';
 
 /**
  * A cover, face out.
@@ -84,16 +85,35 @@ export function drawnCover(saved: SavedBook): HTMLElement {
   return board;
 }
 
-/** The cover for one book: its art, or the board we draw when there is none. */
+/**
+ * The cover for one book: the picture it was caught from, then the catalogue's art, then
+ * the board we draw.
+ *
+ * Each source falls through to the next ON ERROR rather than being chosen once up front,
+ * because a URL that resolves today can 404 tomorrow - a deleted post takes its picture
+ * with it. Walking the list means the shelf degrades a step at a time instead of showing
+ * a broken-image glyph, which is the one outcome that reads as the extension being
+ * broken rather than the internet being the internet.
+ */
 export function coverFor(saved: SavedBook, covers: CoverDeps): HTMLElement {
-  if (!saved.book.coverUrl) return drawnCover(saved);
+  const sources = coverSources(saved);
+  if (!sources.length) return drawnCover(saved);
 
   const img = document.createElement('img');
   img.className = 'art';
   img.alt = '';
   img.loading = 'lazy'; // a hundred books must not fire a hundred requests at once
-  // Art that 404s becomes the drawn board, never a broken-image glyph.
-  img.addEventListener('error', () => img.replaceWith(drawnCover(saved)));
-  void applyCover(img, saved.book.coverUrl, covers);
+
+  let next = 0;
+  const tryNext = (): void => {
+    const url = sources[next++];
+    if (!url) {
+      img.replaceWith(drawnCover(saved));
+      return;
+    }
+    void applyCover(img, url, covers);
+  };
+  img.addEventListener('error', tryNext);
+  tryNext();
   return img;
 }

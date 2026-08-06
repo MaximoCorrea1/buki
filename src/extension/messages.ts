@@ -96,7 +96,12 @@ export type BackgroundRequest =
    * script save and drop a book, which is the exact data loss the queue was built to
    * prevent. Other contexts now ask the worker to write; they still read directly.
    */
-  | { type: 'saveBook'; book: Book; intent: Intent; source?: SavedSource }
+  /**
+   * `shot` is the picture this book was read from, and it becomes the cover on the
+   * shelf. Additive: a record saved before this simply has none and falls back to the
+   * catalogue's art. `savedBooks` keeps its name and its shape.
+   */
+  | { type: 'saveBook'; book: Book; intent: Intent; source?: SavedSource; shot?: string }
   /** Removes AND flags the recognition, so the popup needs one round trip, not two. */
   | { type: 'removeBook'; savedId: string }
   | { type: 'logEvent'; event: PendingEvent }

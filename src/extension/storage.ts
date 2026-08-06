@@ -19,6 +19,14 @@ export interface SavedBook {
   book: Book;
   intent: Intent;
   source?: SavedSource;
+  /**
+   * The picture this book was caught from, which is what the shelf shows as its cover.
+   *
+   * Not on `Book`, because it is not a property of the book: it is a property of THIS
+   * catch. Two people catching Dune from two posts hold the same book and different
+   * pictures, and the recognizer must not have to know about either.
+   */
+  shot?: string;
   savedAt: number;
   /**
    * True when this replaced a book already on the shelf rather than adding one. Not
@@ -70,7 +78,7 @@ export function createLibrary(deps: {
   }
 
   return {
-    async add(book: Book, intent: Intent, source?: SavedSource): Promise<SavedBook> {
+    async add(book: Book, intent: Intent, source?: SavedSource, shot?: string): Promise<SavedBook> {
       return serialize(async () => {
         const existing = await read();
         // sameBook, not a key comparison: a matching ISBN counts even when the titles are
@@ -84,6 +92,10 @@ export function createLibrary(deps: {
           book,
           intent,
           source: source ?? previous?.source,
+          // Keep the picture across a move. Moving Someday to Now goes through add(),
+          // and it carries no picture, so without this the cover would vanish the first
+          // time a book changed pile.
+          shot: shot ?? previous?.shot,
           savedAt: deps.now(),
           moved: Boolean(previous),
         };

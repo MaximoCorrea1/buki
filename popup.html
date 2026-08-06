@@ -280,7 +280,14 @@
       }
 
       /* --- the sheet ------------------------------------------------------ */
-      #sheet {
+      /* Both of these matter, and the second one is why the whole popup was dead.
+         `#sheet` is specificity (1,0,0) and the browser's own `[hidden] { display: none }`
+         is (0,1,0), so a bare `#sheet { display: grid }` BEATS the hidden attribute: the
+         sheet stayed laid out, fixed and full-viewport, swallowing every click on the
+         shelf underneath it. Scoping the layout to :not([hidden]) makes a closed sheet an
+         ordinary empty block with no size; the explicit [hidden] rule then makes it
+         impossible for a future `display` here to resurrect the bug. */
+      #sheet:not([hidden]) {
         position: fixed;
         inset: 0;
         z-index: 9;
@@ -288,6 +295,7 @@
         place-items: center;
         padding: 20px;
       }
+      #sheet[hidden] { display: none; }
       #scrim {
         position: fixed;
         inset: 0;

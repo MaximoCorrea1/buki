@@ -81,14 +81,33 @@ export async function rememberCover(
   }
 }
 
-/** The bytes we hold for this cover, or null to fall back to the network. */
+/**
+ * How long the cache gets to answer before the shelf stops waiting for it.
+ *
+ * A local lookup that takes longer than this is not a cache any more, and every cover
+ * on the shelf is blocked behind its own one.
+ */
+export const DEADLINE_MS = 400;
+
+/**
+ * The bytes we hold for this cover, or null to fall back to the network.
+ *
+ * A store that THROWS was always handled. A store that simply never settles was not, and
+ * the difference matters: the caller assigns nothing until this resolves, so a hung
+ * lookup is a permanently empty cover with no error anywhere to explain it. Losing the
+ * cache costs a slow cover; waiting forever costs the picture.
+ */
 export async function cachedCover(
   url: string | undefined,
   deps: Pick<CoverDeps, 'store'>,
+  deadlineMs = DEADLINE_MS,
 ): Promise<Blob | null> {
   if (!url) return null;
   try {
-    const res = await deps.store.match(url);
+    const res = await Promise.race([
+      deps.store.match(url),
+      new Promise<undefined>((resolve) => setTimeout(resolve, deadlineMs)),
+    ]);
     return res ? await res.blob() : null;
   } catch (err) {
     console.error('[Buki] could not read a cached cover', err);

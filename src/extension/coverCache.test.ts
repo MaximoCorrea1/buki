@@ -163,3 +163,30 @@ describe('pruneCovers', () => {
     expect(held.has(URL_A)).toBe(true);
   });
 });
+
+describe('a cache that never answers', () => {
+  it('gives up, so one hung lookup cannot leave the shelf blank forever', async () => {
+    // Found by instrumenting the popup: every cover reported "no src yet" after ten
+    // seconds, because applyCover awaits this before it assigns anything. A store that
+    // THROWS was already handled; a store that never settles was not, and the difference
+    // is a shelf of empty boxes with no way out of it.
+    const store: CoverStore = {
+      match: () => new Promise(() => {}), // never settles
+      async put() {},
+      async keys() {
+        return [];
+      },
+      async delete() {
+        return false;
+      },
+    };
+    expect(await cachedCover(URL_A, { store }, 10)).toBeNull();
+  });
+
+  it('still prefers the cached bytes when the store answers in time', async () => {
+    const { store } = fakeStore();
+    await store.put(URL_A, new Response('jpeg-bytes'));
+    const blob = await cachedCover(URL_A, { store }, 1_000);
+    expect(await blob?.text()).toBe('jpeg-bytes');
+  });
+});
