@@ -25,7 +25,7 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 
 | Token | Value | What it is |
 | --- | --- | --- |
-| `--ink` | `#0E0A14` | The room. The page sits on this and nothing else. |
+| `--ink` | `#0F0D10` | The room. The page sits on this and nothing else. Sampled from the landing's hero photograph, so the picture has no visible edge against the page. It was `#0E0A14`, a violet black chosen before there was a photograph. |
 | `--board` | `#1B1424` | A raised surface: a shelf, a card, an inset well. |
 | `--rule` | `#3A2E4D` | Hairlines and borders. Bright enough to actually read. |
 | `--paper` | `#FFFFFF` | Headlines and book titles. Nothing else gets pure white. |

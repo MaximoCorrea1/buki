@@ -67,7 +67,7 @@ const STYLE = `
 .buki-tray {
   /* docs/brand.md is the source. A content script cannot share a stylesheet with the
      landing page, so these are a copy: change them there and here in the same commit. */
-  --night: #0e0a14; --sunk: #1b1424; --line: #3a2e4d;
+  --night: #0f0d10; --sunk: #1b1424; --line: #3a2e4d;
   --paper: #ffffff; --chalk: #ede7f4; --dim: #b4a6c8; --glow: #ffc24d;
   /* The shelf marker's jade is lightened for text; the binding jade lives in cloth.ts. */
   --jade: #6fe0b6;
