@@ -176,21 +176,62 @@ describe('rank tie-breaking', () => {
     expect(rank(QUERY, RESULTS)).toHaveLength(4);
   });
 
-  it('does not let a longer title win by sharing one more word', () => {
-    // Score still leads. A book sharing two query words beats one sharing one, however
-    // many extra words of its own the loser carries.
+  it('a parenthesised edition on the correct record beats a bare wrong sequel', () => {
+    // Verified bug: matchScore ties at 3 (both share dune+frank+herbert), and the OLD
+    // stray count compared raw titles, so "(Deluxe Edition)"'s own words outweighed the
+    // sequel's one stray word ("children") and picked wrong.
     const results = [
-      { title: 'Dune', author: 'Someone Else' },
-      { title: 'Dune', author: 'Frank Herbert' },
+      { title: 'Dune (Deluxe Edition)', author: 'Frank Herbert' },
+      { title: 'Children of Dune', author: 'Frank Herbert' },
+    ];
+    expect(rank(QUERY, results)[0]?.book.title).toBe('Dune (Deluxe Edition)');
+  });
+
+  it('a colon subtitle on the correct record beats a bare wrong sequel', () => {
+    // Worse than the parenthetical case: unstripped, "Dune:" doesn't even tokenize as
+    // "dune", so this record used to SCORE lower (2) than the sequel (3) and lose before
+    // the tie-break ever ran.
+    const results = [
+      { title: 'Dune: Special Edition', author: 'Frank Herbert' },
+      { title: 'Children of Dune', author: 'Frank Herbert' },
+    ];
+    expect(rank(QUERY, results)[0]?.book.title).toBe('Dune: Special Edition');
+  });
+
+  it('a subtitled correct record still beats the whole sequel fixture', () => {
+    // Same RESULTS as the top of this block, with the correct record written the way
+    // OpenLibrary actually writes it (see bookIdentity.test.ts's own 'Dune: Special
+    // Edition' fixture) instead of the clean 'Dune' the earlier tests used.
+    const withSubtitle = RESULTS.map((book) =>
+      book.title === 'Dune' ? { ...book, title: 'Dune: Special Edition' } : book,
+    );
+    expect(rank(QUERY, withSubtitle)[0]?.book.title).toBe('Dune: Special Edition');
+  });
+
+  it('lets score outrank a longer title, however many stray words it carries', () => {
+    // Score still leads over the tie-break. A record sharing all three query words beats
+    // one sharing only "dune", no matter how much extra text the loser's title carries.
+    const results = [
+      { title: 'The Dune Encyclopedia', author: 'Willis E. McNelly' }, // shares "dune" only
+      { title: 'Dune', author: 'Frank Herbert' }, // shares "dune", "frank", "herbert"
     ];
     expect(rank(QUERY, results)[0]?.book.author).toBe('Frank Herbert');
   });
 
-  it('leaves noisy OCR grounding alone', () => {
+  it('leaves noisy OCR grounding alone, but still prefers the plain title on a tie', () => {
     // groundText feeds raw OCR lines, where the query is longer than the title and every
-    // result carries words the query never had. The tie-break must not throw those away.
+    // result carries words the query never had. A single candidate can't tell a REORDER
+    // from a FILTER, so this needs a second one that also matches: the tie-break must
+    // still prefer the fewer stray words even when the query itself is the noisy side.
     const noisy = 'THE LEFT HAND OF DARKNESS URSULA K LE GUIN ACE SCIENCE FICTION';
-    const results = [{ title: 'The Left Hand of Darkness', author: 'Ursula K. Le Guin' }];
-    expect(rank(noisy, results)).toHaveLength(1);
+    const results = [
+      { title: 'The Left Hand of Darkness and Other Stories', author: 'Ursula K. Le Guin' },
+      { title: 'The Left Hand of Darkness', author: 'Ursula K. Le Guin' },
+    ];
+
+    const ranked = rank(noisy, results);
+
+    expect(ranked).toHaveLength(2); // reorder, not filter
+    expect(ranked[0]?.book.title).toBe('The Left Hand of Darkness');
   });
 });

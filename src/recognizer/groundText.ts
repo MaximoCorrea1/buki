@@ -20,6 +20,10 @@ function significantWords(text: string): Set<string> {
   return new Set(
     text
       .toLowerCase()
+      // Same strip as cleanLine's. Without it "Dune:" and "dune" are different tokens, so
+      // a subtitled OpenLibrary record could share ONE FEWER word than a bare sequel for
+      // the exact word that makes it the right book, and lose before ranking even began.
+      .replace(/[^\p{L}\p{N} ]+/gu, ' ')
       .split(' ')
       .filter((w) => w.length >= 4),
   );
@@ -41,6 +45,22 @@ function matchScore(query: string, book: Book): number {
 }
 
 /**
+ * The title with subtitle and edition noise removed, for `strayWords` only.
+ *
+ * Mirrors `../extension/bookIdentity.ts`'s `normTitle` ("a subtitle is what one catalogue
+ * writes and another leaves out"), narrowed to the colon and parenthesis shapes an
+ * OpenLibrary edition record adds ("Dune: 40th Anniversary Edition", "Dune (Deluxe
+ * Edition)"). Not imported from there: src/recognizer/ is the standalone domain layer and
+ * must not depend on src/extension/, so the narrow rule is repeated here rather than
+ * shared. Without it, the correct record's own edition tag counted as MORE stray words
+ * than a sequel's one real extra word, and the tie-break picked the sequel again.
+ */
+function stripEditionNoise(title: string): string {
+  const mainTitle = title.split(':')[0] ?? '';
+  return mainTitle.replace(/\([^)]*\)/g, ' ');
+}
+
+/**
  * Significant words the RESULT's title has and the query never mentioned.
  *
  * The tie-break, not the score. "Children of Dune" and "Dune" share exactly the same
@@ -54,7 +74,7 @@ function matchScore(query: string, book: Book): number {
 function strayWords(query: string, book: Book): number {
   const wanted = significantWords(query);
   let stray = 0;
-  for (const word of significantWords(book.title)) {
+  for (const word of significantWords(stripEditionNoise(book.title))) {
     if (!wanted.has(word)) stray++;
   }
   return stray;
