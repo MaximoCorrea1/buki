@@ -77,3 +77,31 @@ describe('decideAccess', () => {
     expect((await decideAccess(token, 'https://example.com', opts)).kind).toBe('pro');
   });
 });
+
+describe('a broken credential is not the same as no credential', () => {
+  const opts = { secret: SECRET, extensionId: ID, now: NOW };
+
+  it('refuses an empty token rather than quietly demoting it to trial', async () => {
+    // `Authorization: Bearer ` with nothing after it means the extension HAD a session and
+    // it is now broken, not that it never had one. Treating that as a trial request
+    // silently spends a paying customer's free catches and never sends the 401 that would
+    // make them re-exchange the licence and heal.
+    expect(await decideAccess('', `chrome-extension://${ID}`, opts)).toEqual({
+      kind: 'refused',
+      status: 401,
+    });
+  });
+
+  it('refuses a whitespace-only token the same way', async () => {
+    expect(await decideAccess('   ', `chrome-extension://${ID}`, opts)).toEqual({
+      kind: 'refused',
+      status: 401,
+    });
+  });
+
+  it('still treats a genuinely absent header as a trial request', async () => {
+    // The distinction that makes the trial work at all: no header is the normal, correct
+    // state for somebody who has never paid.
+    expect(await decideAccess(null, `chrome-extension://${ID}`, opts)).toEqual({ kind: 'trial' });
+  });
+});

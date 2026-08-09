@@ -25,7 +25,15 @@ export async function decideAccess(
   origin: string | null,
   opts: { secret: string; extensionId: string; now: number },
 ): Promise<Access> {
-  if (!token) {
+  // `null` means the Authorization header was ABSENT, which is the normal and correct
+  // state for somebody who has never paid. An empty string means the header was there and
+  // carried nothing, which is a session that BROKE rather than one that never existed.
+  //
+  // Collapsing the two with a falsy check quietly demotes a paying customer to the trial
+  // path, spending free catches they already bought their way past, and never sends the
+  // 401 that would make the extension re-exchange its licence and heal itself. An empty
+  // string therefore falls through to verify below, which rejects it as bad.
+  if (token === null) {
     return fromExtension(origin, opts.extensionId)
       ? { kind: 'trial' }
       : { kind: 'refused', status: 403 };
