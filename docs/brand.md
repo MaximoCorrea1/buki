@@ -78,6 +78,22 @@ Two things are allowed under that same reading, and nothing else is:
   resolves to one solid value, because there is nothing else underneath it. CSS cannot
   compute a per-book tint without `color-mix`, and five hand-written tints is five more
   places for the palette to drift out of step.
+- **Grain.** Noise is texture, not colour. See below.
+
+### Grain
+
+```css
+--grain: url("data:image/svg+xml,…feTurbulence…");
+```
+
+One inline SVG `feTurbulence`, tiled. No file to request, no script, and the browser
+rasterizes it once. It is cheaper than a PNG and far cheaper than a CSS `filter`.
+
+It goes on the **background**, never in a layer over the page. Grain across type costs
+legibility and buys nothing, and a full-bleed overlay is how the popup once shipped with
+nothing clickable (see the checklist). On paper it is the tooth of the sheet, at
+`opacity: 0.1`, and it should be felt rather than noticed. The room does not need it: its
+hero is a photograph that already carries real film grain.
 
 **Symmetry.** Everything that is not a book row sits on the page's axis: the mark, the
 name, the count, the pile labels, and a catch card's provenance line. Book rows stay
@@ -247,3 +263,15 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] Paper tokens changed in `popup.html` and `options.html` together
 - [ ] No gradient, and no colour laid over another colour with alpha
 - [ ] Anything that is not a book row or a form field sits on the axis
+- [ ] **Nothing full-bleed and `position: fixed` can take a click**
+
+That last one is not a style rule, and it is here because it shipped. `#sheet` at
+specificity (1,0,0) beat the browser's own `[hidden] { display: none }` at (0,1,0), so a
+closed sheet stayed laid out over the entire popup and **every control was dead**. Neither
+check in the repo could see it: a screenshot cannot click, and `element.click()` dispatches
+straight at the node without hit-testing. Both passed against a completely dead UI.
+
+Scope the layout to `:not([hidden])` AND spell out `[hidden] { display: none }`. Then
+verify with `?demo&probe` on the dev server, which calls `elementFromPoint` on every
+control and prints what is actually on top of it. `popupChrome.test.ts` guards the CSS
+shape; the probe is the only thing that proves the behaviour.

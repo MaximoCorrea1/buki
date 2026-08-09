@@ -5,7 +5,7 @@ Everything here is copy-paste ready. Fields match the Web Store developer dashbo
 ## Name
 
 ```
-Buki — catch books from X
+Buki: catch books from X
 ```
 
 ## Short description (132 characters max)
@@ -37,9 +37,11 @@ same pile as something you saved on a whim. Mark it finished when you're done.
 
 IT TELLS YOU WHEN IT'S UNSURE
 
-A strong match saves outright. A weak one asks first, rather than quietly putting the
-wrong book on your shelf. Buki also keeps a private count of how often it got it right,
-so you can decide how much to trust it — that count never leaves your computer.
+Every catch names its evidence: read from the cover, from a link in the post, or
+unverified when the catalogue could not confirm it. Nothing reaches your shelf until you
+pick a pile, so a wrong guess costs you a glance rather than a cleanup. Buki also keeps a
+private count of how often it got it right, so you can decide how much to trust it. That
+count never leaves your computer.
 
 YOUR SHELF IS YOURS
 
@@ -49,7 +51,7 @@ Uninstalling takes it all with it.
 ONE-TIME SETUP
 
 Reading a cover from a photo is the one thing Buki can't do on your machine, so it
-needs a vision model. Paste a free key from Google AI Studio — about two minutes, no
+needs a vision model. Paste a free key from Google AI Studio. About two minutes, no
 billing details. Any OpenAI-compatible endpoint works instead.
 
 Without a key, Buki still catches books from retailer links and from a post's own
@@ -87,22 +89,23 @@ https://shelfy-pearl.vercel.app/privacy
 ```
 
 Vercel serves `docs/` as the site root (see `vercel.json`). Redeploy with
-`vercel deploy --prod`. Use the project's production domain, never a raw deployment URL —
+`vercel deploy --prod`. Use the project's production domain, never a raw deployment URL:
 those are SSO-protected on this account and a reviewer would hit a login wall.
 
-## Screenshots — 1280×800, at least one, up to five
+## Screenshots: 1280×800, at least one, up to five
 
 Take these against a shelf with **real** books you actually saved. A mocked shelf reads
 as a mock.
 
-1. **The shelf**, eight to twelve books across Now / Next / Someday, covers visible. This
-   is the one that sells it — lead with it.
-2. **A catch in progress** on a real post: the picker open beside a cover image.
+1. **The shelf**, face out: eight to twelve books across two or three boards, with the
+   pile control visible above them. This is the one that sells it, so lead with it.
+2. **A catch in progress** on a real post: the card in the corner with a book found and
+   the three pile buttons unpressed.
 3. **The book icon** in a post's action bar, so people see where it lives.
-4. **The masthead stat** (`23 caught · 87% kept`) — nothing else in this category shows
+4. **The masthead stat** (`23 caught · 87% kept`). Nothing else in this category shows
    you its own accuracy.
 
-## Promotional tile — 440×280
+## Promotional tile: 440×280
 
 The mark on a `#F4F2FB` ground, wordmark to the right, one line beneath:
 "Catch books before you forget them."

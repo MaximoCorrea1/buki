@@ -1,6 +1,12 @@
 # The face-out shelf and the piles: implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+**Status: DONE.** Shipped across `0b4506f`, `2979e59`, `878d670`, `ffdda6e` and
+`926b1ea`. The plan is kept as written; where the build departed from it, the departures
+are recorded at the bottom of the spec, not here. One item was NOT in the plan and was
+found by dogfooding: the cover is the picture the book was caught from, before the
+catalogue's art.
 
 **Goal:** Turn the popup from one scroll of rows grouped by heading into a face-out shelf
 where each pile is a place you are in.
@@ -58,7 +64,7 @@ must be one DOM node rather than six hundred, so the tiling produces lines of te
 - Modify: `src/extension/generatedCover.ts`
 - Test: `src/extension/generatedCover.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `src/extension/generatedCover.test.ts`, and add `weaveOf` to the import on
 line 2:
@@ -98,13 +104,13 @@ describe('weaveOf', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and watch them fail**
+- [x] **Step 2: Run the tests and watch them fail**
 
 Run: `./node_modules/.bin/vitest run src/extension/generatedCover.test.ts`
 Expected: FAIL, `weaveOf is not a function` (or a transform error naming the missing
 export). If it fails for any other reason, fix that first.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append to `src/extension/generatedCover.ts`:
 
@@ -136,18 +142,18 @@ export function weaveOf(book: Book, cols: number, rows: number): string[] {
 }
 ```
 
-- [ ] **Step 4: Run the tests and watch them pass**
+- [x] **Step 4: Run the tests and watch them pass**
 
 Run: `./node_modules/.bin/vitest run src/extension/generatedCover.test.ts`
 Expected: PASS, 18 tests.
 
-- [ ] **Step 5: Prove the half-drop test discriminates**
+- [x] **Step 5: Prove the half-drop test discriminates**
 
 Temporarily change `HALF_DROP` to `0`, re-run, and confirm ONLY
 `half-drops alternate tile rows` fails. Change it back. A test that passes either way is
 not a test.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/extension/generatedCover.ts src/extension/generatedCover.test.ts
@@ -162,7 +168,7 @@ git commit -m "feat: the cover's mark, repeated, becomes its cloth"
 - Create: `src/extension/shelfView.ts`
 - Test: `src/extension/shelfView.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -233,12 +239,12 @@ describe('shelvesOf', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and watch them fail**
+- [x] **Step 2: Run the tests and watch them fail**
 
 Run: `./node_modules/.bin/vitest run src/extension/shelfView.test.ts`
 Expected: FAIL, `Cannot find module './shelfView'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/extension/shelfView.ts`:
 
@@ -283,14 +289,14 @@ export function shelvesOf<T>(books: T[], per: number): T[][] {
 }
 ```
 
-- [ ] **Step 4: Run the tests and watch them pass**
+- [x] **Step 4: Run the tests and watch them pass**
 
 Run: `./node_modules/.bin/vitest run src/extension/shelfView.test.ts`
 Expected: PASS, 9 tests. If `does not reorder the caller its own array` fails, `filter`
 already copied and `sort` is safe; keep the test, it guards the next person who
 reorders these two calls.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/extension/shelfView.ts src/extension/shelfView.test.ts
@@ -308,7 +314,7 @@ which pile you filed it in.
 - Modify: `src/extension/shelfView.ts`
 - Test: `src/extension/shelfView.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append, and add `searchAll` to the import:
 
@@ -348,12 +354,12 @@ describe('searchAll', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and watch them fail**
+- [x] **Step 2: Run the tests and watch them fail**
 
 Run: `./node_modules/.bin/vitest run src/extension/shelfView.test.ts -t searchAll`
 Expected: FAIL, `searchAll is not a function`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `src/extension/shelfView.ts`, with `matchesFilter` added to the storage import:
 
@@ -376,12 +382,12 @@ export function searchAll(shelf: SavedBook[], query: string): Hit[] {
 }
 ```
 
-- [ ] **Step 4: Run the tests and watch them pass**
+- [x] **Step 4: Run the tests and watch them pass**
 
 Run: `./node_modules/.bin/vitest run src/extension/shelfView.test.ts`
 Expected: PASS, 14 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/extension/shelfView.ts src/extension/shelfView.test.ts
@@ -396,7 +402,7 @@ git commit -m "feat: finding a book does not mean guessing which pile it is in"
 - Modify: `src/extension/shelfView.ts`
 - Test: `src/extension/shelfView.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append, and add `finishedBooks` and `finishedHead` to the import:
 
@@ -448,12 +454,12 @@ describe('finished', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and watch them fail**
+- [x] **Step 2: Run the tests and watch them fail**
 
 Run: `./node_modules/.bin/vitest run src/extension/shelfView.test.ts -t finished`
 Expected: FAIL, `finishedBooks is not a function`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `src/extension/shelfView.ts`:
 
@@ -492,7 +498,7 @@ export function finishedHead(shelf: SavedBook[]): string {
 }
 ```
 
-- [ ] **Step 4: Run the tests and watch them pass**
+- [x] **Step 4: Run the tests and watch them pass**
 
 Run: `./node_modules/.bin/vitest run src/extension/shelfView.test.ts`
 Expected: PASS, 20 tests.
@@ -502,7 +508,7 @@ by one month, the machine is far enough west that `Date.UTC(2026, 7, 2)` is stil
 locally. Move the fixture to mid-month (`Date.UTC(2026, 7, 15)`) rather than switching to
 `getUTCMonth`, because the user's own months are local ones.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/extension/shelfView.ts src/extension/shelfView.test.ts
@@ -522,7 +528,7 @@ No unit test: this returns an `HTMLElement` and the test runner has no DOM. It i
 by screenshot in Task 6, against a shelf that deliberately contains books both with and
 without art.
 
-- [ ] **Step 1: Create the module**
+- [x] **Step 1: Create the module**
 
 ```typescript
 import type { SavedBook } from './storage';
@@ -608,7 +614,7 @@ export function coverFor(saved: SavedBook, covers: CoverDeps): HTMLElement {
 }
 ```
 
-- [ ] **Step 2: Delete the old cover code from `popup.ts`**
+- [x] **Step 2: Delete the old cover code from `popup.ts`**
 
 Remove `blankCover`, the `localSrc` map, `applyCover`, and `coverFor` (currently lines
 58-110), plus the now-unused `cachedCover`/`rememberCover` names from the import on
@@ -618,13 +624,13 @@ line 11. Keep `pruneCovers` and `liveCoverDeps`. Add:
 import { coverFor } from './cover';
 ```
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 Run: `node node_modules/typescript/bin/tsc --noEmit`
 Expected: errors only where `popup.ts` still calls `coverFor(saved)` with one argument.
 Leave them; Task 6 rewrites that call site.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/extension/cover.ts src/extension/popup.ts
@@ -642,7 +648,7 @@ The visible change: 560px, four covers to a row, resting on a board, captioned.
 - Modify: `src/extension/popup.ts` (`renderBook` becomes `renderSlot`; `paint` renders
   shelves)
 
-- [ ] **Step 1: Widen the popup and add the shelf styles**
+- [x] **Step 1: Widen the popup and add the shelf styles**
 
 In `popup.html`, change `body { width: 360px; ... }` to `width: 560px;` and add, after
 the `--ease-out` line in `:root`:
@@ -760,7 +766,7 @@ white text layer over one solid ground produces one solid value, and computing f
 in CSS is not possible without `color-mix`. If review objects, replace with a
 `--cloth-ink` custom property set per book from `lighten(binding, 0.095)` in `cover.ts`.
 
-- [ ] **Step 2: Render shelves instead of rows in `popup.ts`**
+- [x] **Step 2: Render shelves instead of rows in `popup.ts`**
 
 Replace `renderBook` with:
 
@@ -834,7 +840,7 @@ In `paint`, replace the `for (const intent of INTENTS)` block with:
 Delete the now-unused `INTENTS`, `LABELS`, `SOURCE_LABEL`, `FILTER_FROM`, `link` and
 `buyLink`/`Store` imports; Task 8 reintroduces them inside the sheet.
 
-- [ ] **Step 3: Build and look at it**
+- [x] **Step 3: Build and look at it**
 
 ```bash
 node build.mjs
@@ -853,7 +859,7 @@ The `?demo` stub only holds five books; widen it in `serve.mjs` to fifteen so a 
 third shelf actually appear, and so at least two books carry a `coverUrl` and the rest do
 not.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add popup.html src/extension/popup.ts
@@ -868,7 +874,7 @@ git commit -m "design: books stand face out on a board, four to a shelf"
 - Modify: `popup.html` (styles + the masthead)
 - Modify: `src/extension/popup.ts`
 
-- [ ] **Step 1: Add the segmented control styles**
+- [x] **Step 1: Add the segmented control styles**
 
 ```css
       /* --- the piles ------------------------------------------------------ */
@@ -904,7 +910,7 @@ git commit -m "design: books stand face out on a board, four to a shelf"
       }
 ```
 
-- [ ] **Step 2: Render it**
+- [x] **Step 2: Render it**
 
 Add to `popup.ts`, above `paint`:
 
@@ -951,7 +957,7 @@ and in `paint`, before the shelves:
 Wrap `.piles` in a centred container: add `.piles { width: fit-content; }` so it sits on
 the page's axis per `brand.md`.
 
-- [ ] **Step 3: Empty piles need a sentence, not a blank**
+- [x] **Step 3: Empty piles need a sentence, not a blank**
 
 After `renderShelves`, add:
 
@@ -976,12 +982,12 @@ const EMPTY_PILE: Record<Intent, string> = {
 };
 ```
 
-- [ ] **Step 4: Build, screenshot, look**
+- [x] **Step 4: Build, screenshot, look**
 
 Same command as Task 6 Step 3. Check: four segments, the count beside each, the selected
 one lifted onto the card colour, and clicking one changes the shelf below.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add popup.html src/extension/popup.ts
@@ -996,7 +1002,7 @@ git commit -m "feat: a pile is somewhere you are, not a heading you scroll past"
 - Modify: `popup.html` (sheet styles + a `<div id="sheet" hidden>`)
 - Modify: `src/extension/popup.ts`
 
-- [ ] **Step 1: Styles**
+- [x] **Step 1: Styles**
 
 ```css
       /* --- the sheet ------------------------------------------------------ */
@@ -1072,7 +1078,7 @@ git commit -m "feat: a pile is somewhere you are, not a heading you scroll past"
 `Remove from shelf` is deliberately not red. Red is for danger; removing a book you chose
 to save is a decision.
 
-- [ ] **Step 2: Add the mount point**
+- [x] **Step 2: Add the mount point**
 
 In `popup.html`, before `<script>`:
 
@@ -1080,7 +1086,7 @@ In `popup.html`, before `<script>`:
     <div id="sheet" hidden data-in="false"></div>
 ```
 
-- [ ] **Step 3: Build the sheet**
+- [x] **Step 3: Build the sheet**
 
 Replace the `openSheet` stub in `popup.ts`:
 
@@ -1159,7 +1165,7 @@ function openSheet(saved: SavedBook): void {
 }
 ```
 
-- [ ] **Step 4: The move control**
+- [x] **Step 4: The move control**
 
 ```typescript
 /**
@@ -1220,7 +1226,7 @@ function removeButton(saved: SavedBook): HTMLElement {
 }
 ```
 
-- [ ] **Step 5: Escape closes it**
+- [x] **Step 5: Escape closes it**
 
 At the bottom of `popup.ts`, above `void refresh()`:
 
@@ -1230,7 +1236,7 @@ document.addEventListener('keydown', (event) => {
 });
 ```
 
-- [ ] **Step 6: Restore the deleted imports**
+- [x] **Step 6: Restore the deleted imports**
 
 ```typescript
 import { buyLink, type Store } from './buyLink';
@@ -1238,12 +1244,12 @@ import { buyLink, type Store } from './buyLink';
 
 and re-add `SOURCE_LABEL` and `link` from the old `popup.ts` (lines 53 and 112-120).
 
-- [ ] **Step 7: Build, screenshot with the sheet open, look**
+- [x] **Step 7: Build, screenshot with the sheet open, look**
 
 `node build.mjs`, then temporarily call `openSheet(shelf[0]!)` at the end of `refresh()`,
 screenshot, look, and remove the call.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add popup.html src/extension/popup.ts
@@ -1258,7 +1264,7 @@ git commit -m "feat: taking a book off the shelf, and putting it in another pile
 - Modify: `popup.html` (style `#find`)
 - Modify: `src/extension/popup.ts`
 
-- [ ] **Step 1: Style the box**
+- [x] **Step 1: Style the box**
 
 ```css
       #find {
@@ -1282,7 +1288,7 @@ git commit -m "feat: taking a book off the shelf, and putting it in another pile
       }
 ```
 
-- [ ] **Step 2: Render it, and let it take over the view**
+- [x] **Step 2: Render it, and let it take over the view**
 
 In `paint`, after `renderPiles(app)`:
 
@@ -1332,15 +1338,15 @@ function renderSlot(
   }
 ```
 
-- [ ] **Step 3: Keep the caret where it was**
+- [x] **Step 3: Keep the caret where it was**
 
 Move `popup.ts`'s existing focus snapshot (lines 296-298 and 353-358) into
 `restoreFocus()`, keyed on `#find` rather than `#filter`. Without the
 `setSelectionRange` the caret jumps to the start of the box on every keystroke.
 
-- [ ] **Step 4: Build, screenshot mid-search, look**
+- [x] **Step 4: Build, screenshot mid-search, look**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add popup.html src/extension/popup.ts
@@ -1355,7 +1361,7 @@ git commit -m "feat: search crosses every pile and says which one each book is i
 - Modify: `popup.html`
 - Modify: `src/extension/popup.ts`
 
-- [ ] **Step 1: Style the head and the month**
+- [x] **Step 1: Style the head and the month**
 
 ```css
       .record {
@@ -1368,7 +1374,7 @@ git commit -m "feat: search crosses every pile and says which one each book is i
       }
 ```
 
-- [ ] **Step 2: Branch on the pile**
+- [x] **Step 2: Branch on the pile**
 
 In `paint`, replace the single `renderShelves` call with:
 
@@ -1386,7 +1392,7 @@ In `paint`, replace the single `renderShelves` call with:
   }
 ```
 
-- [ ] **Step 3: A finished book offers no move and no buy**
+- [x] **Step 3: A finished book offers no move and no buy**
 
 In `openSheet`, guard both:
 
@@ -1404,9 +1410,9 @@ removed. Keep one way back: render `movePiles` for `read` too, and let the spec'
 controls" mean the four-way control is the ONLY control, rather than none. Implement it
 that way and record the deviation in the spec.
 
-- [ ] **Step 4: Build, screenshot the Read pile, look**
+- [x] **Step 4: Build, screenshot the Read pile, look**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add popup.html src/extension/popup.ts
@@ -1422,7 +1428,7 @@ git commit -m "feat: Read shows when, which is the one thing the other piles can
 - Modify: `docs/superpowers/specs/2026-08-05-shelf-and-piles-design.md`
 - Modify: `options.html` if any token changed
 
-- [ ] **Step 1: Run everything**
+- [x] **Step 1: Run everything**
 
 ```bash
 ./node_modules/.bin/vitest run
@@ -1432,21 +1438,21 @@ node build.mjs
 
 Expected: all green. Paste the counts into the commit message rather than describing them.
 
-- [ ] **Step 2: Walk `brand.md`'s pre-ship checklist against the popup**
+- [x] **Step 2: Walk `brand.md`'s pre-ship checklist against the popup**
 
 Every line, honestly. In particular: body text at 7:1 (the caption's `--muted` on
 `--paper` is 7.2:1, and the pile tag at 8.5px is a label, not body); focus visible on the
 cover button, every pile tag, the search box, and both sheet controls;
 `prefers-reduced-motion`; no em-dash in any new string.
 
-- [ ] **Step 3: Record what changed from the spec**
+- [x] **Step 3: Record what changed from the spec**
 
 At minimum: the Read view keeps its move control (Task 10 Step 3), and whether 560px
 survived a real Chrome popup. **That last one cannot be checked here** - a headless page
 at 560px is not a popup frame. Leave it as the one open item for Maximo, and keep the
 width a single declaration so it is a one-line change.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/ popup.html options.html

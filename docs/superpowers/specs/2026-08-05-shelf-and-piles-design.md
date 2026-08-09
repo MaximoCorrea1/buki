@@ -266,5 +266,14 @@ Recorded so nobody has to rediscover why. Plan:
   the SLOT, and a two-line caption then shoves its cover a line upward, so a row of books
   stopped resting on the board. Every cover is the same aspect ratio at the same width,
   so aligning tops aligns bottoms.
+- **The cover is the picture the book was caught from**, before the catalogue's art. This
+  spec assumed catalogue art with a drawn board behind it, and the order turned out to be
+  wrong: OpenLibrary's art is for whatever edition its relevance index ranked first, and
+  on 2026-08-06 the top three hits for "Dune Frank Herbert" were Children of Dune, God
+  Emperor of Dune and Heretics of Dune. Art for the wrong edition is worse than no art,
+  because it is wrong silently, and the photo cannot be the wrong book: it IS the book
+  that was read. Sources are walked on error - photo, art, drawn board - because a deleted
+  post takes its picture with it. `SavedBook.shot` is additive; `savedBooks` keeps its
+  name and its shape.
 - **Still unverified: 560px in a real Chrome popup frame.** A headless page at 560px is
   not a popup. It is one declaration in `popup.html`, so it is a one-line change.
