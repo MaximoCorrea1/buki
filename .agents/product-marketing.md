@@ -1,0 +1,214 @@
+# Product Marketing Context
+
+**Document version:** v1
+**Last updated:** 2026-08-09
+
+## Product Overview
+
+**One-liner:** Catch a book from any image on the web into a shelf that is yours.
+
+**What it does:** Buki is a Chrome extension that recognises a book from a *photograph*,
+not from the text around it. Right-click any cover image anywhere on the web, or press the
+book icon on a post on X, and Buki reads the picture, confirms the book against
+OpenLibrary, and files it on a face-out shelf under Now, Next, Someday or Read. It keeps
+the post you caught it from, so months later you can see not just which book you saved but
+why you wanted it. The shelf lives in the browser and is never synced anywhere.
+
+**Product category:** Book capture. Sits beside "reading list" and "book tracker" in how
+people search, but the job is upstream of both: trackers begin after you already know the
+title. Buki is how you get the title.
+
+**Product type:** Chrome extension (MV3), local-first, MIT licensed. Freemium with a
+hosted recognition service.
+
+**Business model:**
+- **Free forever:** unlimited catches from retailer links, the entire shelf, and unlimited
+  cover-photo recognition with your own API key.
+- **10 hosted catches free**, no key, no card, no account. Zero setup at install.
+- **Pro $4/month or $29/year:** hosted instant recognition with no key and no throttling,
+  export to Goodreads/StoryGraph, and sync plus backup when it ships.
+- Affiliate revenue from Buy links (disclosed in three places, never reorders results).
+
+## Target Audience
+
+**Target customers:** Individual readers who spend time on X, Reddit, YouTube, newsletters
+and blogs, who see books recommended in passing and mean to read them. Not organisations.
+No buying committee.
+
+**Primary use case:** You see a book in a post, you save the post, and the book disappears
+into a bookmark folder you will never open again.
+
+**Jobs to be done:**
+- "When I see a book I want, help me keep it somewhere I will actually look."
+- "When I look at my list later, remind me *why* I wanted this one."
+- "Tell me what this book is when the picture is the only clue."
+
+**Use cases:**
+- A photo of a stack of books on someone's desk, no titles in the text
+- A shelf behind someone's head in a video thumbnail
+- A cover in a Reddit post, a newsletter screenshot, a friend's blog
+- A recommendation thread listing ten titles as plain text
+
+## Personas
+
+Not applicable. Consumer product, single buyer, no committee.
+
+## Problems & Pain Points
+
+**Core problem:** Bookmarks are where books go to die. A saved post is not a saved book:
+it has no title you can search, no cover you can recognise, no sense of whether you meant
+it or impulse-saved it, and it sinks under everything saved after it.
+
+**Why alternatives fall short:**
+- **Google Lens** identifies the book, then hands you a search page that evaporates. It
+  answers "what is this?" and never "and I want to read it."
+- **TBR Bookmarker and similar extensions** read the *text* of a page. A photograph of a
+  book with no title written anywhere is invisible to them, which on X is most books.
+- **Phone scanner apps** (TroveScore, Shelf Scan, ScanMyBook) use the same recognition
+  technology but assume the book is physically in your hands. They cannot help at 11pm
+  when the book is on a screen.
+- **Goodreads and StoryGraph** begin after you already know the title and are willing to
+  type it. That typing is the step where the intention dies.
+
+**What it costs them:** Books they genuinely wanted to read, never read. Not measurable in
+dollars, which is why the product is priced low and sold on relief rather than ROI.
+
+**Emotional tension:** The quiet guilt of a bookmark folder. Knowing there were good things
+in there and no longer being able to find them, or trust which ones you meant.
+
+## Competitive Landscape
+
+**Direct:** TBR Bookmarker (Bookship) reads page *text* only, so it cannot see a book that
+exists only as a photograph. BookFinder requires you to highlight the title as selectable
+text.
+
+**Secondary:** Google Lens. Free, pre-installed, in the same right-click menu, and better
+at recognition than Buki can afford. Falls short because it produces an answer, not a list.
+No shelf, no intent, no provenance, nothing to return to.
+
+**Indirect:** Chrome's own Reading List and plain bookmarks save *pages*, not books. This
+is the behaviour Buki replaces, and it is the real competitor.
+
+Full research in `competitor-profiles/_summary.md`.
+
+## Differentiation
+
+**Key differentiators:**
+1. **Reads the picture, not the caption.** The whole category above either reads text or
+   needs the physical book.
+2. **Works anywhere there is an image.** Not one website. Not a phone camera.
+3. **Keeps the post that sold you on it.** No competitor found stores *why* you saved a
+   book. This is the hardest to copy and the reason a shelf gets opened in March.
+
+**How we do it differently:** The picture and the post's words go to a vision model
+together, because the caption is often what makes an unreadable cover legible, and the
+guess is then confirmed against OpenLibrary rather than trusted. Nothing is ever saved
+without you choosing a pile.
+
+**Why that's better:** You end up with books, filed by intention, with their reason
+attached, instead of a folder of links.
+
+**Why customers choose us:** It is the only thing that works at the moment the book appears
+on the screen.
+
+## Objections
+
+| Objection | Response |
+| --- | --- |
+| "Google Lens does this for free." | Lens tells you what the book is. It does not keep it. Close the panel and it is gone. Buki is the shelf, not the answer. |
+| "Why pay when the code is MIT and free?" | You never have to pay. Bring your own recognition key and it is unlimited, forever. Pro is for people who would rather not hold a key. |
+| "Is my reading list being harvested?" | There is no account and no sync. The shelf is in your browser. Only the picture you ask us to identify leaves your machine, and only when you ask. |
+| "Will it get the book wrong?" | Often enough that nothing is ever saved automatically. You confirm every book, and the shelf shows its own kept rate so you can see how much to trust it. |
+| "$4 a month for an extension?" | Ten catches free, no card, no account. If it has not earned it by then, do not pay. |
+
+**Anti-persona:** Someone who wants a social reading network, ratings, reviews, challenges
+or friends' shelves. Buki has no social layer and is not going to grow one. Send them to
+StoryGraph or Goodreads, and give them a CSV so they can take their shelf with them.
+
+## Switching Dynamics
+
+**Push:** A bookmark folder that has become useless. The specific memory of a book they
+wanted and cannot name.
+
+**Pull:** Recognition from a photo, which nothing else in the browser does, and a shelf
+that looks like a shelf.
+
+**Habit:** Bookmarking is one keystroke and costs nothing in the moment. That is the real
+incumbent.
+
+**Anxiety:** "Another list I will abandon." Answered by zero setup, zero account, and the
+shelf being visibly small and finite rather than an inbox.
+
+## Customer Language
+
+**How they describe the problem (verbatim, founder as first user):**
+- "I was tired of seeing books on X and saving them but they stayed hidden in my bookmarks."
+- "They stayed hidden in my bookmarks."
+
+**How they describe us:**
+- "It reads the cover."
+- "It doesn't need to stay on X. I can use it everywhere."
+
+**Words to use:** catch, shelf, pile, the post that sold you, face out, read the picture,
+yours.
+
+**Words to avoid:** *organise*, *manage*, *productivity*, *AI-powered*, *seamless*,
+*game-changing*, *revolutionise*. Also avoid *scan*: it implies a camera and a physical
+book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/brand.md`).
+
+**Glossary:**
+
+| Term | Meaning |
+| --- | --- |
+| Catch | One act of recognising and saving a book. The unit of value and of price. |
+| Shelf | The user's whole collection, face out, in the popup. |
+| Pile | Now, Next, Someday, Read. A place you stand in, not a label. |
+| The post that sold you | The source a book was caught from, kept with it. |
+| Cloth / binding | The generated cover drawn when no art exists. |
+
+## Brand Voice
+
+**Tone:** Plain, warm, unhurried. Writes from the reader's side of the screen.
+
+**Style:** Says what happens. Active voice. Errors state the fact, never apologise, never
+say "something went wrong." Empty states are invitations.
+
+**Personality:** Made by a person. Quiet. Literate. Honest about limits. Never salesy.
+
+Full rules in `docs/brand.md`.
+
+## Proof Points
+
+**Metrics:** The shelf reports its own kept rate on the masthead (`23 caught · 78% kept`),
+which is a rare thing for a recognition product to publish about itself. Local OCR
+(Tesseract) measured ~5% on real covers, which is why a vision model is used instead.
+
+**Customers:** None yet. Pre-launch, zero users. Do not fabricate any.
+
+**Testimonials:** None yet. The founder is the only documented user, and the origin story
+is his own.
+
+**Value themes:**
+
+| Theme | Proof |
+| --- | --- |
+| Reads the picture | Vision model plus OpenLibrary grounding; multi-book from one photo |
+| Yours, not ours | No account, no sync, `chrome.storage.local`, MIT source |
+| Nothing saved by accident | Auto-save was built, then deliberately removed |
+| It remembers why | `SavedSource` keeps the post, unique in the category |
+
+## Goals
+
+**Business goal:** First paying customers. Validate that removing setup friction converts,
+before building sync.
+
+**Conversion action:** Install from the Chrome Web Store, then upgrade at the tenth catch.
+
+**Current metrics:** Zero users, zero revenue. Baseline is being set now.
+
+## Changelog
+
+*Newest first. One line per revision: what changed and why.*
+- v1 (2026-08-09). Initial context. Captures the repositioning from an X-only free tool
+  to "any image anywhere" with a freemium hosted tier, and records the competitor research
+  that identified provenance ("the post that sold you") as the defensible differentiator.
