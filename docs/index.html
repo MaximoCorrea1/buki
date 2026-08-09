@@ -6,20 +6,16 @@
     <title>Buki: catch a book from any picture</title>
     <meta
       name="description"
-      content="A Chrome extension that reads a book off the cover photo, anywhere on the web, and files it on a shelf that is yours. Ten catches free, no account, no setup."
+      content="A Chrome extension that reads a book off its cover photograph, anywhere on the web, and files it on a shelf that is yours. Ten catches free, no account, no setup."
     />
     <link rel="canonical" href="https://buki.vercel.app/" />
 
-    <!-- The card is the first thing anyone sees when this is posted, so it says the whole
-         proposition on its own rather than relying on the post around it. JPEG, not WebP:
-         this is the one asset that has to render inside someone else's product, and not
-         every scraper decodes WebP. -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://buki.vercel.app/" />
     <meta property="og:title" content="Buki: catch a book from any picture" />
     <meta
       property="og:description"
-      content="Reads the cover, not the caption, and files it on a shelf that is yours. Anywhere on the web."
+      content="Reads the cover, not the caption. Anywhere on the web, into a shelf that is yours."
     />
     <meta property="og:image" content="https://buki.vercel.app/og.jpg" />
     <meta property="og:image:width" content="1200" />
@@ -28,7 +24,7 @@
     <meta name="twitter:title" content="Buki: catch a book from any picture" />
     <meta
       name="twitter:description"
-      content="Reads the cover, not the caption, and files it on a shelf that is yours. Anywhere on the web."
+      content="Reads the cover, not the caption. Anywhere on the web, into a shelf that is yours."
     />
     <meta name="twitter:image" content="https://buki.vercel.app/og.jpg" />
 
@@ -39,7 +35,7 @@
         "name": "Buki",
         "applicationCategory": "BrowserApplication",
         "operatingSystem": "Chrome",
-        "description": "Recognises a book from its cover photograph anywhere on the web and files it on a local shelf under Now, Next or Someday.",
+        "description": "Recognises a book from its cover photograph anywhere on the web and files it on a local shelf.",
         "offers": [
           { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Ten catches free" },
           { "@type": "Offer", "price": "4", "priceCurrency": "USD", "name": "Buki Pro, monthly" },
@@ -49,481 +45,533 @@
       }
     </script>
 
-    <!-- The hero is the page. Ask for it before the stylesheet is even parsed. -->
-    <link rel="preload" as="image" href="hero-1600.webp" imagesrcset="hero-1100.webp 1100w, hero-1600.webp 1600w" />
+    <link rel="preload" href="bricolage.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="instrument.woff2" as="font" type="font/woff2" crossorigin />
 
     <style>
-      /* A library at night: one warm lamp, most spines lost to the dark, a few caught in
-         the light. The photograph says that outright, so the page's job is to get out of
-         its way.
+      /* ------------------------------------------------------------------------------
+         Buki, the landing.
 
-         The picture and the page are ONE SURFACE. Sampled from the file itself, the
-         image's darkest field is #0f0d10 and the page is the same value, so the
-         photograph has no visible edge on the side where the type sits. That is also why
-         there is no scrim over it: the frame already contains a black third, and a
-         gradient wash would be both unnecessary and against the flat rule.
+         The old page opened on a stock photograph of an oil lamp. It said "ancient
+         library" about a product for someone losing a book in their bookmarks at 11pm,
+         and it wasted the one visual language this product already owns.
 
-         No webfonts on purpose. Google Fonts logs the visitor's IP, and this page makes a
-         claim about what is collected: a tracking request in the <head> would undercut it
-         before the reader reached the sentence.
+         Buki draws covers. src/extension/generatedCover.ts hashes a book with djb2, rolls
+         an xorshift32 field, blurs it, mirrors it, weights it toward the middle, and
+         tiles the result into cloth across a dyed board. Every book gets the same board
+         forever, and no two books get the same one. That algorithm is the brand: it needs
+         no photography, it cannot be stock, and nobody else has it.
 
-         Tokens are documented in docs/brand.md. The extension holds its own copy because
-         a content script cannot share a stylesheet across the extension boundary, so any
-         change here has to land in src/extension/content.ts in the same commit. */
+         So the hero is a wall of real Buki covers, drawn in the browser by a port of the
+         shipped code. Not a mockup of the product. The product.
+
+         Self-hosted fonts, no third party. The old ban on webfonts existed because the
+         page claimed nothing about you was collected; a file served from this domain
+         never broke that, and the claim has changed anyway now that recognition is
+         hosted. Two variable faces, 71KB total.
+         ------------------------------------------------------------------------------ */
+
+      @font-face {
+        font-family: "Bricolage";
+        src: url("bricolage.woff2") format("woff2-variations");
+        font-weight: 200 800;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Instrument";
+        src: url("instrument.woff2") format("woff2-variations");
+        font-weight: 400 700;
+        font-display: swap;
+      }
+
       :root {
-        color-scheme: dark;
-        --night: #0f0d10;
-        --room: #1b1424;
-        --glow: #ffc24d;
-        --paper: #ffffff;
-        --chalk: #ede7f4;
-        --dim: #b4a6c8;
-        --line: #3a2e4d;
-        --ease: cubic-bezier(0.23, 1, 0.32, 1);
-        --drawer: cubic-bezier(0.32, 0.72, 0, 1);
+        color-scheme: light;
 
-        /* Serif appears only where a real book does: shelf rows, book titles, and one
-           word of the headline. Everywhere else is the interface, and the interface is
-           sans. That rule is what keeps the serif meaning something. */
+        /* Uncoated book stock. Greyer and warmer than the cream this kind of page usually
+           lands on, because it is meant to read as paper rather than as a background. */
+        --paper: #ede7dc;
+        --paper-lift: #f4efe6;
+        --ink: #171310;
+        --ink-soft: #5f554b;
+        --rule: #d5cbba;
+
+        /* The accent system IS the bindings. Five dyes, straight out of
+           generatedCover.ts, and the covers are the only saturated thing on the page. */
+        --oxblood: #4a1414;
+        --tobacco: #4a3208;
+        --forest: #0c4033;
+        --indigo: #1b2570;
+        --aubergine: #3a1550;
+        --stamp: #f5f0e6;
+        --stamp-dim: #cec4b4;
+
+        --display: "Bricolage", system-ui, sans-serif;
+        --body: "Instrument", system-ui, sans-serif;
+        /* Cover titles only, because that is what the product stamps on a real board. */
         --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-        --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
         --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-        /* One radius scale for the whole page. See brand.md: mixed corner systems are the
-           fastest way to make a page look assembled rather than designed. */
-        --r: 12px;
-        --r-pill: 999px;
+        --ease: cubic-bezier(0.23, 1, 0.32, 1);
+        --measure: 60ch;
       }
 
       * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        background: var(--night);
-        color: var(--chalk);
-        font: 16px/1.6 var(--ui);
+        background: var(--paper);
+        color: var(--ink);
+        font: 400 17px/1.62 var(--body);
         -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
       }
 
-      .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
-      /* Prose does not get wider than its measure just because the page is. */
-      .measure { max-width: 62ch; }
-
-      a { color: var(--glow); }
-      a:focus-visible,
-      .btn:focus-visible,
-      summary:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; border-radius: 4px; }
-
-      /* ---------------------------------------------------------------- masthead */
-      /* Over the photograph, so the page starts inside the room rather than above it. */
-      header {
+      .skip {
         position: absolute;
-        z-index: 2;
-        left: 0;
-        right: 0;
+        left: -9999px;
+        top: 0;
+        background: var(--ink);
+        color: var(--paper);
+        padding: 10px 16px;
+        z-index: 20;
+      }
+      .skip:focus { left: 8px; top: 8px; }
+
+      .wrap { max-width: 1240px; margin: 0 auto; padding: 0 28px; }
+
+      a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+      a:focus-visible,
+      button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+      /* ------------------------------------------------------------------- masthead */
+      .top {
         display: flex;
         align-items: center;
         gap: 11px;
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 24px 24px 0;
+        padding: 26px 0 0;
       }
-      header svg { display: block; flex: none; }
-      .word { font-size: 19px; font-weight: 800; letter-spacing: -0.03em; color: var(--paper); }
-      .top-get {
-        margin-left: auto;
-        font-size: 14px;
-        color: var(--dim);
+      .top svg { display: block; flex: none; }
+      .word {
+        font: 700 20px/1 var(--display);
+        letter-spacing: -0.03em;
+      }
+      .top nav { margin-left: auto; display: flex; gap: 22px; align-items: center; }
+      .top nav a {
+        font-size: 15px;
+        color: var(--ink-soft);
         text-decoration: none;
-        border-bottom: 1px solid var(--line);
-        padding-bottom: 2px;
-        transition: color 160ms var(--ease), border-color 160ms var(--ease);
+        white-space: nowrap;
       }
       @media (hover: hover) and (pointer: fine) {
-        .top-get:hover { color: var(--chalk); border-color: var(--glow); }
+        .top nav a:hover { color: var(--ink); text-decoration: underline; }
       }
 
-      /* ---------------------------------------------------------------- the hero */
-      .hero { position: relative; isolation: isolate; }
-      .hero img {
-        display: block;
-        width: 100%;
-        /* Tall enough that the lamp and the scroll niches both survive, short enough that
-           the headline beside them is above the fold on a laptop. */
-        height: clamp(520px, 74vh, 760px);
-        object-fit: cover;
-        /* Hold the lit third at the left. The right of the frame is the black the type
-           sits in, and cropping from the right would eat it. */
-        object-position: 22% 55%;
-      }
-
-      .hero-copy {
-        position: absolute;
-        inset: 0;
+      /* ----------------------------------------------------------------------- hero */
+      /* Type on the left, a shelf intruding from the right and running off the edge. The
+         page is not centred anywhere: a shelf continues past the frame, so the picture
+         should too. */
+      .hero {
         display: grid;
-        align-content: center;
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 0 24px;
+        gap: 44px;
+        padding: 56px 0 0;
+        align-items: center;
       }
-      /* The type lives in the photograph's own darkness, in the right half, with no wash
-         laid over the picture to make room for it. Measured on the file: the field behind
-         this is #0f0d10, so white here is about 18:1. */
-      .hero-text { grid-column: 1; justify-self: end; width: min(52ch, 56%); }
+      @media (min-width: 1000px) {
+        .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 56px; }
+      }
 
       h1 {
         margin: 0;
-        /* Sized so the sentence breaks in two, not three. A hero headline that runs to a
-           third line is a font-size error rather than a copy-length one. */
-        font-size: clamp(2.2rem, 4.1vw, 3.5rem);
-        font-weight: 800;
-        line-height: 1;
+        font-family: var(--display);
+        font-size: clamp(2.7rem, 5.4vw, 4.4rem);
+        font-weight: 700;
+        line-height: 0.98;
         letter-spacing: -0.045em;
-        color: var(--paper);
         text-wrap: balance;
       }
-      /* The one serif word on the page that is not a book title. It is the word the whole
-         product is about, so it gets to look like it came out of a book. Italic needs the
-         extra leading and the reserve below, or the descender clips. */
-      h1 em {
+      /* The one word set in a book's own face, because it is the word about books. */
+      h1 i {
         font-family: var(--book);
         font-style: italic;
         font-weight: 500;
-        letter-spacing: -0.015em;
-        line-height: 1.1;
+        letter-spacing: -0.02em;
+        line-height: 1.12;
         padding-bottom: 2px;
-        color: var(--glow);
       }
       .lede {
-        margin: 20px 0 0;
-        font-size: 17.5px;
-        line-height: 1.55;
-        color: var(--chalk);
-        max-width: 42ch;
+        margin: 22px 0 0;
+        max-width: 44ch;
+        font-size: 18.5px;
+        color: var(--ink-soft);
       }
 
-      .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 26px 0 0; }
+      .actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 30px 0 0; }
       .btn {
         display: inline-block;
-        padding: 12px 22px;
-        border-radius: var(--r-pill);
-        font-size: 15px;
-        font-weight: 650;
+        padding: 13px 24px;
+        border-radius: 4px;
+        border: 0;
+        background: var(--ink);
+        color: var(--paper);
+        font: 600 15.5px/1 var(--body);
         white-space: nowrap;
         text-decoration: none;
-        background: var(--glow);
-        color: #241705;
-        border: 1px solid transparent;
-        transition: transform 140ms var(--ease), box-shadow 140ms var(--ease);
+        transition: transform 150ms var(--ease), background-color 150ms var(--ease);
       }
-      .btn:active { transform: translateY(1px) scale(0.98); }
+      .btn:active { transform: translateY(1px); }
       @media (hover: hover) and (pointer: fine) {
-        .btn:hover { box-shadow: 0 0 34px -8px var(--glow); }
-        .btn.ghost:hover { border-color: var(--dim); box-shadow: none; }
+        .btn:hover { background: var(--oxblood); }
       }
-      .btn.ghost { background: transparent; color: var(--chalk); border-color: var(--line); }
-      .free { font-size: 13.5px; color: var(--dim); }
+      .aside { font-size: 14.5px; color: var(--ink-soft); }
 
-      /* One orchestrated moment: the type comes up out of the dark, once, on load. The
-         picture does not move, because a photograph that drifts is a slideshow. */
-      @media (prefers-reduced-motion: no-preference) {
-        .hero-text > * { animation: lit 620ms var(--drawer) backwards; }
-        .hero-text > :nth-child(2) { animation-delay: 90ms; }
-        .hero-text > :nth-child(3) { animation-delay: 170ms; }
-        @keyframes lit { from { opacity: 0; transform: translateY(10px); } }
+      /* --------------------------------------------------------------- the cover wall */
+      /* Real covers, drawn by a port of src/extension/generatedCover.ts. Three columns,
+         each offset, bleeding off the top and the right, because a shelf has no edge. */
+      .wall {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        align-items: start;
+        margin-right: -120px;
+      }
+      .col { display: grid; gap: 18px; }
+      .col:nth-child(2) { margin-top: -46px; }
+      .col:nth-child(3) { margin-top: 26px; }
+
+      .cover {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        aspect-ratio: 2 / 3;
+        padding: 13px;
+        border-radius: 2px 4px 4px 2px;
+        overflow: hidden;
+        background: var(--binding);
+        /* Tinted to the paper's hue rather than pure black, so the board sits on the
+           sheet instead of floating over it. */
+        box-shadow: 0 12px 28px -18px rgba(60, 42, 20, 0.55);
+        transition: transform 260ms var(--ease), box-shadow 260ms var(--ease);
+      }
+      @media (hover: hover) and (pointer: fine) {
+        /* Taking a book off the shelf. The one micro-interaction on the page, and it is
+           the product's actual gesture. */
+        .cover:hover { transform: translateY(-9px); box-shadow: 0 22px 40px -20px rgba(60, 42, 20, 0.6); }
       }
 
-      /* ---------------------------------------------------------------- sections */
-      section { padding: 72px 0 0; }
+      .cloth {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        font: 6px/6px var(--mono);
+        color: #fff;
+        opacity: 0.1;
+        pointer-events: none;
+        user-select: none;
+      }
+      /* The two stamped cords, seen face on. One solid line each: a gilt line vanishes on
+         a light dye, and a highlight over a shadow is a blend. */
+      .rules {
+        position: relative;
+        flex: none;
+        height: 5px;
+        border-top: 1px solid var(--stamp-dim);
+        border-bottom: 1px solid var(--stamp-dim);
+      }
+      .title {
+        position: relative;
+        margin-top: auto;
+        font-family: var(--book);
+        color: var(--stamp);
+        letter-spacing: -0.015em;
+        overflow-wrap: anywhere;
+      }
+      .title.large { font-size: 20px; line-height: 1.04; }
+      .title.medium { font-size: 15px; line-height: 1.1; }
+      .title.small { font-size: 11.5px; line-height: 1.16; }
+      .by {
+        position: relative;
+        margin-top: 6px;
+        font: 8.5px/1.3 var(--mono);
+        letter-spacing: 0.04em;
+        color: var(--stamp-dim);
+      }
+
+      /* -------------------------------------------------------------------- sections */
+      section { padding: 108px 0 0; }
+      .kicker {
+        margin: 0 0 16px;
+        font: 600 12px/1 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
       h2 {
         margin: 0;
-        font-size: 0.8125rem;
+        font-family: var(--display);
+        font-size: clamp(1.9rem, 3.6vw, 2.9rem);
         font-weight: 700;
-        color: var(--dim);
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
-      }
-      .head {
-        margin: 12px 0 0;
-        font-size: clamp(1.7rem, 3.2vw, 2.3rem);
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        color: var(--paper);
+        line-height: 1.04;
+        letter-spacing: -0.038em;
         text-wrap: balance;
+        max-width: 22ch;
       }
-      .body-copy { margin: 14px 0 0; color: var(--dim); }
+      .sub { margin: 18px 0 0; max-width: var(--measure); color: var(--ink-soft); }
 
-      /* The shelf and the things worth knowing are peers, so they sit side by side.
-         Stacked down one column they were two screens with one idea on each. */
-      .duo { display: grid; gap: 34px; align-items: center; margin: 28px 0 0; }
-      @media (min-width: 900px) { .duo { grid-template-columns: 0.95fr 1fr; gap: 52px; } }
-
-      .shot {
-        width: 100%;
-        display: block;
-        border: 1px solid var(--line);
-        border-radius: var(--r);
-        /* The shelf is paper and the page is a dark room, so it needs to sit ON the page
-           rather than float in it. */
-        box-shadow: 0 40px 80px -50px #000;
+      /* ------------------------------------------------------------------ the moments */
+      /* Three steps of one gesture, staggered rather than set in equal cards. They are a
+         sequence, so they are numbered; nothing else on the page is. */
+      .moments { margin: 52px 0 0; display: grid; gap: 4px; }
+      .moment {
+        display: grid;
+        gap: 6px 28px;
+        padding: 28px 0;
+        border-top: 1px solid var(--rule);
+        align-items: start;
       }
-
-      .beats { display: grid; gap: 24px; }
-      .beats h3 {
-        margin: 0 0 5px;
-        font-size: 1.0625rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: var(--paper);
+      @media (min-width: 860px) {
+        .moment { grid-template-columns: 3.5rem minmax(0, 26ch) minmax(0, 1fr); }
+        .moment:nth-child(2) { padding-left: 3rem; }
+        .moment:nth-child(3) { padding-left: 6rem; }
       }
-      .beats p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.55; }
-
-      /* ------------------------------------------------------- anywhere (statement) */
-      /* A full-width statement rather than a screenshot. The claim is about EVERY page on
-         the web, and a picture of one page would say less than the sentence does. */
-      .claim {
-        margin: 28px 0 0;
-        padding: 44px 0;
-        border-top: 1px solid var(--line);
-        border-bottom: 1px solid var(--line);
+      .n {
+        font: 600 13px/1.5 var(--mono);
+        color: var(--ink-soft);
+        font-variant-numeric: tabular-nums;
       }
-      .claim > p:first-child {
+      .moment h3 {
         margin: 0;
-        max-width: 24ch;
-        font-size: clamp(1.9rem, 4.6vw, 3.1rem);
-        font-weight: 800;
-        line-height: 1.06;
-        letter-spacing: -0.04em;
-        color: var(--paper);
-      }
-      .claim > p:first-child b { color: var(--glow); font-weight: 800; }
-      /* The answer to the claim, at reading size. Sized explicitly rather than inheriting:
-         a supporting sentence set at display size is two headlines arguing. */
-      .claim .body-copy {
-        max-width: 46ch;
-        margin-top: 22px;
-        font-size: 17px;
-        font-weight: 400;
-        line-height: 1.6;
-        letter-spacing: normal;
-        color: var(--dim);
-      }
-
-      /* ---------------------------------------------------------------- the plans */
-      /* Two plans, not three cards. The comparison IS the layout. */
-      .plans { display: grid; gap: 18px; margin: 28px 0 0; }
-      @media (min-width: 760px) { .plans { grid-template-columns: 1fr 1fr; gap: 20px; } }
-
-      .plan {
-        padding: 26px 24px;
-        border: 1px solid var(--line);
-        border-radius: var(--r);
-        background: var(--room);
-      }
-      .plan.lit { border-color: var(--glow); }
-      .plan h3 {
-        margin: 0;
-        font: 700 11px/1 var(--mono);
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--dim);
-      }
-      .price { margin: 14px 0 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.035em; color: var(--paper); }
-      .price span { font-size: 0.95rem; font-weight: 500; color: var(--dim); letter-spacing: 0; }
-      .plan ul { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px; }
-      .plan li { font-size: 14.5px; color: var(--dim); padding-left: 20px; position: relative; }
-      .plan li::before {
-        content: "";
-        position: absolute;
-        left: 2px;
-        top: 9px;
-        width: 8px;
-        height: 2px;
-        background: var(--line);
-      }
-      .plan.lit li::before { background: var(--glow); }
-      .plan .btn { margin-top: 20px; }
-
-      .terms { margin: 18px 0 0; font-size: 13.5px; color: var(--dim); }
-
-      /* ---------------------------------------------------------------- the note */
-      .note {
-        margin: 22px 0 0;
-        padding: 16px 18px;
-        border-radius: var(--r);
-        border: 1px solid var(--line);
-        background: var(--room);
-        font-size: 13.5px;
-        color: var(--dim);
-      }
-      .note b { color: var(--chalk); }
-
-      /* ---------------------------------------------------------------- questions */
-      /* An accordion, because these are objections a reader arrives with rather than a
-         story the page is telling. Answering them in prose would bury the page. */
-      .qs { margin: 24px 0 0; border-top: 1px solid var(--line); }
-      details { border-bottom: 1px solid var(--line); }
-      summary {
-        list-style: none;
-        cursor: pointer;
-        padding: 16px 0;
-        font-size: 16px;
+        font-family: var(--display);
+        font-size: 1.28rem;
         font-weight: 600;
-        color: var(--paper);
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
       }
-      summary::-webkit-details-marker { display: none; }
-      summary::after {
-        content: "+";
-        margin-left: auto;
-        color: var(--dim);
-        font-weight: 400;
-        font-size: 19px;
+      .moment p { margin: 0; color: var(--ink-soft); font-size: 16px; }
+
+      /* ----------------------------------------------------------------------- claim */
+      .claim { padding: 108px 0 0; }
+      .claim blockquote {
+        margin: 0;
+        max-width: 17ch;
+        font-family: var(--display);
+        font-size: clamp(2.4rem, 6.4vw, 4.6rem);
+        font-weight: 700;
+        line-height: 0.96;
+        letter-spacing: -0.05em;
+      }
+      .claim blockquote span { color: var(--oxblood); }
+      .claim .answer {
+        margin: 30px 0 0;
+        max-width: 48ch;
+        font-size: 18px;
+        color: var(--ink-soft);
+      }
+
+      /* ----------------------------------------------------------------------- plans */
+      /* Not two matching towers. Free is a quiet line of text; Pro is the object. */
+      .plans { margin: 44px 0 0; display: grid; gap: 34px; align-items: start; }
+      @media (min-width: 860px) { .plans { grid-template-columns: 1fr 1.15fr; gap: 56px; } }
+
+      .free-plan { padding-top: 6px; }
+      .free-plan h3,
+      .pro-plan h3 {
+        margin: 0;
+        font: 600 12px/1 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .amount {
+        margin: 14px 0 0;
+        font-family: var(--display);
+        font-size: 2.6rem;
+        font-weight: 700;
+        letter-spacing: -0.04em;
         line-height: 1;
       }
-      details[open] summary::after { content: "\2212"; }
-      details p { margin: 0 0 18px; color: var(--dim); font-size: 15px; max-width: 62ch; }
+      .amount small { font-size: 0.95rem; font-weight: 500; color: var(--ink-soft); letter-spacing: 0; }
+      .plan-list { margin: 20px 0 0; padding: 0; list-style: none; display: grid; gap: 11px; }
+      .plan-list li {
+        position: relative;
+        padding-left: 22px;
+        font-size: 16px;
+        color: var(--ink-soft);
+      }
+      .plan-list li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 11px;
+        width: 11px;
+        height: 1px;
+        background: var(--ink-soft);
+      }
+      .pro-plan {
+        padding: 32px;
+        border-radius: 6px;
+        background: var(--ink);
+        color: var(--paper-lift);
+      }
+      .pro-plan h3 { color: var(--stamp-dim); }
+      .pro-plan .amount { color: var(--paper-lift); }
+      .pro-plan .amount small { color: var(--stamp-dim); }
+      .pro-plan .plan-list li { color: var(--stamp-dim); }
+      .pro-plan .plan-list li::before { background: var(--stamp-dim); }
+      .pro-plan .btn { margin-top: 26px; background: var(--paper-lift); color: var(--ink); }
+      @media (hover: hover) and (pointer: fine) {
+        .pro-plan .btn:hover { background: #fff; }
+      }
+      .fine { margin: 26px 0 0; max-width: var(--measure); font-size: 15px; color: var(--ink-soft); }
 
+      /* --------------------------------------------------------------------- answers */
+      /* A two-column list, not an accordion. These are four short answers and hiding
+         them behind a click buys nothing. */
+      .answers { margin: 44px 0 0; display: grid; gap: 34px; }
+      @media (min-width: 800px) { .answers { grid-template-columns: 1fr 1fr; gap: 40px 56px; } }
+      .answers dt {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 1.08rem;
+        letter-spacing: -0.02em;
+      }
+      .answers dd { margin: 8px 0 0; color: var(--ink-soft); font-size: 16px; max-width: 46ch; }
+
+      /* ---------------------------------------------------------------------- footer */
       footer {
-        margin: 72px 0 0;
-        padding: 22px 0 44px;
-        border-top: 1px solid var(--line);
+        margin: 116px 0 0;
+        padding: 30px 0 56px;
+        border-top: 1px solid var(--rule);
         display: flex;
         flex-wrap: wrap;
-        gap: 16px;
-        align-items: center;
-        font-size: 14px;
+        gap: 8px 26px;
+        align-items: baseline;
+        font-size: 15px;
+        color: var(--ink-soft);
       }
-      footer p { width: 100%; margin: 0; color: var(--dim); font-size: 13px; }
+      footer a { text-decoration: none; }
+      @media (hover: hover) and (pointer: fine) { footer a:hover { text-decoration: underline; } }
+      footer .made { width: 100%; margin: 10px 0 0; font-size: 14px; }
 
-      /* ---------------------------------------------------------------- narrow */
-      /* Below this the frame has no room for a black third, so the picture becomes a band
-         and the type sits under it on the page's own night. Same two materials, stacked. */
-      @media (max-width: 780px) {
-        /* Centre the crop ON the lamp. object-position aligns that point of the image
-           with the same point of the box, and the lamp sits at 19% of the frame. */
-        .hero img { height: 42vh; min-height: 290px; object-position: 19% 62%; }
-        .hero-copy { position: static; padding: 30px 24px 0; }
-        .hero-text { width: 100%; justify-self: stretch; }
-        header { position: static; }
-        section { padding: 56px 0 0; }
-        .claim { padding: 32px 0; }
+      /* ---------------------------------------------------------------------- narrow */
+      @media (max-width: 999px) {
+        .wall { margin-right: -28px; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .col:nth-child(2) { margin-top: 0; }
+        .col:nth-child(3) { margin-top: 0; }
+        .col:nth-child(3) { display: none; }
+        .hero { padding-top: 40px; }
+        section, .claim { padding-top: 76px; }
+      }
+      @media (max-width: 620px) {
+        body { font-size: 16px; }
+        .wall { grid-template-columns: repeat(2, 1fr); }
+        .top nav a.hide-sm { display: none; }
+        .moment { grid-template-columns: 1fr; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .cover, .btn { transition: none; }
+        .cover:hover { transform: none; }
       }
     </style>
   </head>
   <body>
-    <div class="hero">
-      <header>
-        <!-- The mark: four spines, one caught in the lamp. Most of a shelf is lost to the
-             dark and a few books are lit, which is the product in one picture. The gold
-             spine is the only place the accent appears in the masthead, per the one-accent
-             rule in brand.md.
-             The unlit spines are --dim, NOT --line. At 26px over a dark photograph, a
-             #3a2e4d spine disappears entirely and the mark reads as one gold bar, which
-             says nothing. The contrast between muted and lit is what carries the idea, so
-             the unlit ones have to be visible enough to be counted. -->
-        <svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#b4a6c8" opacity="0.55" />
-          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#b4a6c8" opacity="0.72" />
-          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#ffc24d" />
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="wrap">
+      <header class="top">
+        <!-- Four spines, one caught in the lamp. See docs/brand.md, "The mark". Ink
+             values here because the page is paper. -->
+        <svg width="24" height="24" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#5f554b" opacity="0.45" />
+          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#5f554b" opacity="0.62" />
+          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#4a1414" />
           <rect x="11.6" y="4.6" width="2.7" height="10" rx="0.9"
-                transform="rotate(9 12.95 9.6)" fill="#b4a6c8" opacity="0.55" />
+                transform="rotate(9 12.95 9.6)" fill="#5f554b" opacity="0.45" />
         </svg>
         <span class="word">Buki</span>
-        <a class="top-get" href="https://github.com/MaximoCorrea1/buki">Get it</a>
+        <nav>
+          <a class="hide-sm" href="#costs">Pricing</a>
+          <a class="hide-sm" href="privacy.html">Privacy</a>
+          <a href="https://github.com/MaximoCorrea1/buki">Source</a>
+        </nav>
       </header>
 
-      <img
-        src="hero-1600.webp"
-        srcset="hero-1100.webp 1100w, hero-1600.webp 1600w"
-        sizes="100vw"
-        width="1600"
-        height="900"
-        fetchpriority="high"
-        alt="An oil lamp burning on a desk in a dark Roman study, a few scrolls in its light and rows of niches disappearing into the shadow behind."
-      />
-
-      <div class="hero-copy">
-        <div class="hero-text">
-          <h1>You saw a book. Then you <em>forgot</em> it.</h1>
-          <p class="lede">
-            Buki reads the cover, not the caption, and files it on a shelf that is yours.
-            Any picture, anywhere on the web.
-          </p>
-          <div class="cta">
-            <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
-            <span class="free">Ten catches free. No account, no setup.</span>
+      <main id="main">
+        <div class="hero">
+          <div>
+            <h1>You saw a book. Then you <i>forgot</i> it.</h1>
+            <p class="lede">
+              Buki reads the cover, not the caption, and files it on a shelf that is yours.
+              Any picture, anywhere on the web.
+            </p>
+            <div class="actions">
+              <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
+              <span class="aside">Ten catches free. No account, no setup.</span>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="wrap">
-      <main>
-        <section>          <p class="head">Books stand face out, the way they do in a shop.</p>
-          <div class="duo">
-            <img class="shot" src="shelf.webp" width="760" height="551" loading="lazy"
-                 alt="Buki's shelf: six book covers standing face out on two shelves, above tabs reading Now, Next, Someday and Read." />
-            <div class="beats">
-              <div>
-                <h3>It reads the picture, not the caption</h3>
-                <p>
-                  Right-click any cover image and Buki sends the photo and the words around
-                  it to a vision model together, because the text beside a cover is often
-                  what makes a hard one legible. Then it checks the answer against
-                  OpenLibrary rather than trusting it.
-                </p>
-              </div>
-              <div>
-                <h3>One photo can hold several books</h3>
-                <p>
-                  A stack on a desk, a shelf behind someone's head. Each book it can read
-                  gets its own row and its own decision, or you take the lot at once.
-                </p>
-              </div>
-              <div>
-                <h3>It remembers why you wanted it</h3>
-                <p>
-                  Every book keeps the page you caught it from. In March, a list of titles
-                  is just a list. The post that sold you on one is the reason you open it.
-                </p>
-              </div>
+          <!-- Filled by the drawing code below. Every board here is generated the way the
+               extension generates it, from the real title and author. -->
+          <div class="wall" id="wall" aria-hidden="true"></div>
+        </div>
+
+        <section>
+          <p class="kicker">The gesture</p>
+          <h2>Right-click a cover. That is the whole thing.</h2>
+          <div class="moments">
+            <div class="moment">
+              <p class="n">01</p>
+              <h3>It looks at the picture</h3>
+              <p>
+                The cover and the words around it go to a vision model together, because
+                the text beside a cover is often what makes a hard one legible.
+              </p>
+            </div>
+            <div class="moment">
+              <p class="n">02</p>
+              <h3>It checks its own answer</h3>
+              <p>
+                The guess is confirmed against OpenLibrary rather than trusted. One photo
+                can hold several books, and each one it can read gets its own decision.
+              </p>
+            </div>
+            <div class="moment">
+              <p class="n">03</p>
+              <h3>You choose a pile</h3>
+              <p>
+                Now, Next, Someday. Nothing reaches the shelf until you say so, and every
+                book keeps the page you caught it from.
+              </p>
             </div>
           </div>
         </section>
 
-        <section>
-          <div class="claim">
-            <p>Every book scanner assumes the book is <b>in your hands</b>.</p>
-            <p class="body-copy">
-              Buki is for the ones you will never hold. A cover in a post, a spine in a
-              video thumbnail, a paperback on someone's desk in a photograph. If it is a
-              picture in a browser, it is a book you can keep.
-            </p>
-          </div>
+        <section class="claim">
+          <blockquote>Every book scanner assumes the book is <span>in your hands</span>.</blockquote>
+          <p class="answer">
+            Buki is for the ones you will never hold. A cover in a post, a spine in a video
+            thumbnail, a paperback on someone's desk in a photograph. If it is a picture in
+            a browser, it is a book you can keep.
+          </p>
         </section>
 
-        <section>
-          <h2>What it costs</h2>
-          <p class="head">Ten catches to find out, then four dollars.</p>
+        <section id="costs">
+          <h2>Ten catches to find out, then four dollars.</h2>
           <div class="plans">
-            <div class="plan">
+            <div class="free-plan">
               <h3>Free</h3>
-              <p class="price">$0</p>
-              <ul>
-                <li>Ten cover photos read for you</li>
+              <p class="amount">$0</p>
+              <ul class="plan-list">
+                <li>Ten cover photographs read for you</li>
                 <li>Unlimited catches from a shop link</li>
-                <li>The whole shelf, forever</li>
-                <li>Or bring your own recognition key and read as many covers as you like</li>
+                <li>The whole shelf, kept forever</li>
+                <li>Or bring your own recognition key and read as many as you like</li>
               </ul>
             </div>
-            <div class="plan lit">
+            <div class="pro-plan">
               <h3>Pro</h3>
-              <p class="price">$4 <span>a month, or $29 a year</span></p>
-              <ul>
-                <li>Unlimited cover reading, no key to fetch</li>
+              <p class="amount">$4 <small>a month, or $29 a year</small></p>
+              <ul class="plan-list">
+                <li>Unlimited cover reading, and no key to go and fetch</li>
                 <li>Faster, and it does not throttle</li>
                 <li>Export to Goodreads and StoryGraph</li>
                 <li>Sync and backup when it ships, included</li>
@@ -531,76 +579,196 @@
               <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             </div>
           </div>
-          <p class="terms">
+          <p class="fine">
             Cancel whenever you like and you keep every book you caught. Nothing you have
-            saved is ever held behind a payment.
+            already saved is ever held behind a payment.
           </p>
         </section>
 
-        <section>          <p class="head">Your shelf never leaves your computer.</p>
-          <div class="measure">
-            <p class="body-copy">
-              When you ask Buki to read a cover, the picture goes to Buki and on to the
-              vision model, and the title it finds goes to OpenLibrary to confirm the book
-              is real. That is everything that leaves. There is no account, no tracking, no
-              analytics, and the shelf itself is stored in your browser and is never sent
-              anywhere. <a href="privacy.html">Read the privacy policy</a>.
-            </p>
-
-            <p class="note">
-              <b>Affiliate disclosure.</b> Saved books carry a <b>Buy</b> link. As an Amazon
-              Associate, Buki earns from qualifying purchases, at no extra cost to you. The
-              link appears only on books you have already chosen to save, and it never
-              changes which books Buki shows you or in what order. You can point it at
-              Bookshop.org instead, which supports independent bookshops.
-            </p>
-          </div>
+        <section>
+          <h2>Your shelf never leaves your computer.</h2>
+          <p class="sub">
+            When you ask Buki to read a cover, the picture goes to Buki and on to the vision
+            model, and the title it finds goes to OpenLibrary to confirm the book is real.
+            That is everything that leaves. No account, no tracking, no analytics, and the
+            shelf itself is stored in your browser.
+            <a href="privacy.html">Read the privacy policy</a>.
+          </p>
+          <p class="fine">
+            Saved books carry a Buy link. As an Amazon Associate, Buki earns from qualifying
+            purchases at no extra cost to you. It appears only on books you have already
+            chosen to save, and it never changes which books Buki shows you or in what
+            order. You can point it at Bookshop.org instead.
+          </p>
         </section>
 
-        <section>          <p class="head">The questions worth answering.</p>
-          <div class="qs">
-            <details>
-              <summary>Google Lens already does this, free.</summary>
-              <p>
-                Lens tells you what the book is. It does not keep it. Close the panel and
-                the answer is gone, with nowhere it went and no record you wanted it. Buki
-                is the shelf, not the answer.
-              </p>
-            </details>
-            <details>
-              <summary>Why pay when the source is open?</summary>
-              <p>
-                You never have to. The code is MIT and the free path is real: bring your
-                own recognition key and read as many covers as you like, forever. Pro is
-                for people who would rather not hold a key at all.
-              </p>
-            </details>
-            <details>
-              <summary>What happens if I stop paying?</summary>
-              <p>
-                Every book you caught stays on your shelf, opens, moves between piles and
-                keeps its Buy link. Your shelf is on your computer and it is yours. Only
-                new cover reading stops.
-              </p>
-            </details>
-            <details>
-              <summary>Will it get the book wrong?</summary>
-              <p>
-                Sometimes, which is why nothing is ever saved without you choosing a pile.
-                The shelf also shows how often it was right, so you can see for yourself
-                how much to trust it rather than taking our word.
-              </p>
-            </details>
-          </div>
+        <section>
+          <h2>Before you ask.</h2>
+          <dl class="answers">
+            <div>
+              <dt>Google Lens already does this, free.</dt>
+              <dd>
+                Lens tells you what the book is. It does not keep it. Close the panel and the
+                answer is gone. Buki is the shelf, not the answer.
+              </dd>
+            </div>
+            <div>
+              <dt>Why pay when the source is open?</dt>
+              <dd>
+                You never have to. Bring your own recognition key and read as many covers as
+                you like, forever. Pro is for people who would rather not hold a key at all.
+              </dd>
+            </div>
+            <div>
+              <dt>What happens if I stop paying?</dt>
+              <dd>
+                Every book you caught stays, opens, moves between piles and keeps its Buy
+                link. The shelf is on your computer and it is yours. Only new reading stops.
+              </dd>
+            </div>
+            <div>
+              <dt>Will it get a book wrong?</dt>
+              <dd>
+                Sometimes, which is why nothing is saved without you choosing a pile. The
+                shelf shows how often it was right, so you can judge it yourself.
+              </dd>
+            </div>
+          </dl>
         </section>
-
-        <footer>
-          <a href="https://github.com/MaximoCorrea1/buki">Source</a>
-          <a href="privacy.html">Privacy</a>
-          <a href="https://github.com/MaximoCorrea1/buki/issues">Report a problem</a>
-          <p>Made by Maximo Correa. MIT licensed.</p>
-        </footer>
       </main>
+
+      <footer>
+        <a href="https://github.com/MaximoCorrea1/buki">Source</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://github.com/MaximoCorrea1/buki/issues">Report a problem</a>
+        <p class="made">Made by Maximo Correa. MIT licensed.</p>
+      </footer>
     </div>
+
+    <script>
+      /* A port of src/extension/generatedCover.ts and cloth.ts, close enough that a board
+         drawn here is the board the extension would draw for the same book. Kept in sync
+         by hand, which is acceptable because the shipped module is the one under test and
+         this is a picture of it. */
+      (function () {
+        var BINDING = ["#4a1414", "#4a3208", "#0c4033", "#1b2570", "#3a1550"];
+        var RAMP = [" ", "░", "▒", "▓", "█"];
+        var SIZE = 7, SPREAD = 1, LIFT = 1.6, FALLOFF = 1.3, HALF_DROP = 3;
+
+        function hashOf(key) {
+          var h = 5381;
+          for (var i = 0; i < key.length; i++) h = ((h << 5) + h + key.charCodeAt(i)) >>> 0;
+          return h;
+        }
+        function rolls(seed, count) {
+          var x = seed || 1, out = [];
+          for (var i = 0; i < count; i++) {
+            x ^= x << 13; x ^= x >>> 17; x ^= x << 5; x >>>= 0; out.push(x);
+          }
+          return out;
+        }
+        function deviceFor(seed) {
+          var half = Math.ceil(SIZE / 2), mid = (SIZE - 1) / 2;
+          var draw = rolls(seed, SIZE * half), field = [];
+          for (var r = 0; r < SIZE; r++) {
+            field[r] = [];
+            for (var c = 0; c < SIZE; c++) {
+              var src = Math.min(c, SIZE - 1 - c);
+              field[r][c] = (draw[r * half + src] || 0) % RAMP.length;
+            }
+          }
+          var clamp = function (n, hi) { return Math.max(0, Math.min(hi, n)); };
+          var at = function (r, c) { return field[clamp(r, SIZE - 1)][clamp(c, SIZE - 1)]; };
+          return field.map(function (line, r) {
+            return line.map(function (_, c) {
+              var sum = 0;
+              for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) sum += at(r + dr, c + dc);
+              var ring = Math.max(Math.abs(r - mid), Math.abs(c - mid));
+              var level = (sum / 9) * SPREAD + LIFT - Math.max(0, ring - 1) * FALLOFF;
+              return RAMP[clamp(Math.round(level), RAMP.length - 1)];
+            }).join("");
+          });
+        }
+        function weaveOf(seed, cols, rows) {
+          var tile = deviceFor(seed), out = [];
+          for (var r = 0; r < rows; r++) {
+            var shift = Math.floor(r / SIZE) % 2 ? HALF_DROP : 0;
+            var source = tile[r % SIZE], line = "";
+            for (var c = 0; c < cols; c++) line += source[(c + shift) % SIZE];
+            out.push(line);
+          }
+          return out;
+        }
+        function titleStep(title) {
+          var words = title.trim().split(/\s+/), total = title.trim().length, widest = 0;
+          words.forEach(function (w) { widest = Math.max(widest, w.length); });
+          if (total <= 12 && widest <= 9) return "large";
+          if (total <= 28 && widest <= 12) return "medium";
+          return "small";
+        }
+
+        /* Real books, real authors. A shelf of invented titles is the fastest way to make
+           a page about reading look like it was written by someone who does not. */
+        /* Chosen so all five bindings appear, and chosen by CHECKING rather than by
+           hoping: the binding is derived from the book, so a shelf can legitimately come
+           up with none of a given dye. The first twelve titles here produced no oxblood
+           at all, which is the one the rest of the page borrows its accent from. */
+        /* Names spelled the way their authors spell them. This is a page about books read
+           by people who read, and "Stanislaw Lem" on a shelf is the tell that nobody here
+           actually does. Note that the diacritic changes the hash and therefore the dye:
+           correcting Lem moved Solaris from tobacco to forest, so the set was reselected
+           around the correct spellings rather than the convenient ones. */
+        var SHELF = [
+          ["Ficciones", "Jorge Luis Borges"],
+          ["Pedro Páramo", "Juan Rulfo"],
+          ["The Left Hand of Darkness", "Ursula K. Le Guin"],
+          ["Solaris", "Stanisław Lem"],
+          ["Pale Fire", "Vladimir Nabokov"],
+          ["A Wizard of Earthsea", "Ursula K. Le Guin"]
+        ];
+
+        var wall = document.getElementById("wall");
+        if (!wall) return;
+
+        var COLS = 3, PER = 2;
+        for (var c = 0; c < COLS; c++) {
+          var col = document.createElement("div");
+          col.className = "col";
+          for (var i = 0; i < PER; i++) {
+            var book = SHELF[(i * COLS + c) % SHELF.length];
+            var seed = hashOf(book[0] + "|" + book[1]);
+
+            var board = document.createElement("div");
+            board.className = "cover";
+            board.style.setProperty("--binding", BINDING[seed % BINDING.length]);
+
+            var cloth = document.createElement("pre");
+            cloth.className = "cloth";
+            /* Enough rows and columns to reach the bottom corner of the board at every
+               size the wall renders at. Overflow clips the excess; falling short leaves a
+               flat undyed third, which is what the first pass shipped. */
+            cloth.textContent = weaveOf(seed, 78, 62).join("\n");
+
+            var rules = document.createElement("div");
+            rules.className = "rules";
+
+            var title = document.createElement("div");
+            title.className = "title " + titleStep(book[0]);
+            title.textContent = book[0];
+
+            var by = document.createElement("div");
+            by.className = "by";
+            by.textContent = book[1];
+
+            board.appendChild(cloth);
+            board.appendChild(rules);
+            board.appendChild(title);
+            board.appendChild(by);
+            col.appendChild(board);
+          }
+          wall.appendChild(col);
+        }
+      })();
+    </script>
   </body>
 </html>
