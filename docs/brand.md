@@ -21,6 +21,43 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 
 ---
 
+## The mark
+
+**Four spines. One caught in the lamp.**
+
+```
+ ▍▌█▎     three muted, one gold, the last one leaning
+```
+
+The mark is the product in one picture: a shelf where most books are lost to the dark and
+one is lit. It is the same sentence as "The idea" above, drawn rather than written, which
+is why it is the only mark that could belong to this product and not to a generic reading
+app.
+
+| Part | Value | Why |
+| --- | --- | --- |
+| Unlit spines | `--faded` at `0.55` and `0.72` opacity | Two weights, so the row reads as depth rather than as a bar chart |
+| The caught spine | `--lamp`, full strength | The one accent, on the one thing that is lit |
+| The leaning spine | rotated `9°` | A shelf nobody has straightened. Perfectly upright spines read as a UI element, not as books |
+
+**The unlit spines are `--faded`, never `--rule`.** This is not a preference, it is a
+measured failure: at 26px over the landing's photograph, a `#3A2E4D` spine disappears
+completely and the mark reads as a single gold bar, which says nothing at all. The
+contrast between *muted* and *lit* is the entire idea, so the muted ones have to be
+visible enough to be counted.
+
+**Where it appears:** the landing masthead, the popup masthead, the options page, and the
+extension icon. It must be identical in all four. It currently is not: `popup.html` and
+`options.html` still carry an older three-colour mark, and `docs/shelf.webp` is a
+screenshot taken while that mark was live.
+
+**What it must never become:** a book glyph, an open book, a bookmark ribbon, a magnifying
+glass over a book, or a letter B. Every one of those is the mark of a reading app in
+general. This one is about *catching*, and catching is the difference between a lit spine
+and a dark one.
+
+---
+
 ## Colour
 
 | Token | Value | What it is |
