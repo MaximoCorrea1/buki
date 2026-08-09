@@ -54,3 +54,30 @@ describe('sign and verify', () => {
     expect(await verify(token, SECRET, past)).toEqual({ state: 'dead' });
   });
 });
+
+describe('the token survives being carried around', () => {
+  // The payload half was standard base64 while only the MAC was URL-safe. Standard
+  // base64 can contain + and /, and a bare + in a query string decodes as a space, so
+  // the token would corrupt silently and only for certain byte alignments.
+  const AWKWARD = { licenseKeyId: 'lk_>>>???~~~', activationId: 'act_>>>???~~~' };
+
+  it('contains no character that a URL would change', async () => {
+    const token = await sign(AWKWARD, SECRET, NOW);
+    expect(token).not.toMatch(/[+/=]/);
+  });
+
+  it('round-trips through a query string unharmed', async () => {
+    // The failure this prevents: URLSearchParams turns a + into a space on the way out.
+    const token = await sign(AWKWARD, SECRET, NOW);
+    const carried = new URLSearchParams(`t=${token}`).get('t');
+    expect(await verify(carried ?? '', SECRET, NOW)).toMatchObject({ state: 'valid' });
+  });
+
+  it('signs a claim carrying characters outside Latin-1 without throwing', async () => {
+    // btoa throws on any code point above 255. Polar ids are ASCII today, but a server
+    // that 500s on one unexpected character is a licence nobody can activate.
+    const wide = { licenseKeyId: 'lk_\u00e9\u4e2d\u6587', activationId: 'act_1' };
+    const token = await sign(wide, SECRET, NOW);
+    expect(await verify(token, SECRET, NOW)).toMatchObject({ state: 'valid', claim: wide });
+  });
+});

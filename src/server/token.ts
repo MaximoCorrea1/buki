@@ -47,18 +47,56 @@ async function key(secret: string): Promise<CryptoKey> {
   );
 }
 
-/** Base64 of the bytes, URL-safe so the token survives a header and a query string. */
-function toBase64(bytes: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(bytes)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+const decoder = new TextDecoder();
+
+/**
+ * URL-safe base64, on BOTH halves of the token.
+ *
+ * The payload used to be plain `btoa`, so it could contain `+` and `/` while only the MAC
+ * was URL-safe. That round-trips fine in an `Authorization` header, which is why it passed
+ * every test, but a bare `+` in a query string decodes as a space. It only happens on
+ * certain byte alignments, so it would have surfaced as a rare corruption nobody could
+ * reproduce.
+ *
+ * Built from bytes with a loop rather than `String.fromCharCode(...spread)`: the MAC is
+ * always 32 bytes, but the payload is not bounded, and a spread of an arbitrary-length
+ * array is how you find an engine's argument limit in production.
+ */
+function toBase64Url(bytes: Uint8Array): string {
+  let raw = '';
+  for (const byte of bytes) raw += String.fromCharCode(byte);
+  return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromBase64Url(text: string): Uint8Array {
+  const raw = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, (ch) => ch.charCodeAt(0));
+}
+
+/**
+ * Equal, without telling the caller HOW equal.
+ *
+ * Native string comparison short-circuits at the first differing byte, which is the
+ * textbook side channel for forging a MAC one byte at a time. The payload is not secret
+ * and never was: an attacker submits whatever claim they like, and the whole point of the
+ * attack is to discover a matching signature without ever having seen a valid one. The
+ * length check up front is safe because the expected length is a fixed constant, 43
+ * characters of unpadded base64url, independent of the secret.
+ */
+function equalInConstantTime(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let differences = 0;
+  for (let i = 0; i < a.length; i++) differences |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return differences === 0;
 }
 
 export async function sign(claim: Claim, secret: string, now: number): Promise<string> {
-  const payload = btoa(JSON.stringify({ ...claim, exp: now + TOKEN_TTL_MS }));
+  // Encoded through TextEncoder rather than handed to btoa directly: btoa throws on any
+  // code point above 255, and a server that 500s on one unexpected character in an id is
+  // a licence nobody can activate.
+  const payload = toBase64Url(encoder.encode(JSON.stringify({ ...claim, exp: now + TOKEN_TTL_MS })));
   const mac = await crypto.subtle.sign('HMAC', await key(secret), encoder.encode(payload));
-  return `${payload}.${toBase64(mac)}`;
+  return `${payload}.${toBase64Url(new Uint8Array(mac))}`;
 }
 
 /**
@@ -73,19 +111,17 @@ export async function verify(token: string, secret: string, now: number): Promis
 
   let expected: string;
   try {
-    expected = toBase64(
-      await crypto.subtle.sign('HMAC', await key(secret), encoder.encode(payload)),
+    expected = toBase64Url(
+      new Uint8Array(await crypto.subtle.sign('HMAC', await key(secret), encoder.encode(payload))),
     );
   } catch {
     return { state: 'bad' };
   }
-  // Length-equal comparison. The timing side channel here leaks nothing an attacker can
-  // use without already holding a valid payload, but constant-ish beats careless.
-  if (mac.length !== expected.length || mac !== expected) return { state: 'bad' };
+  if (!equalInConstantTime(mac, expected)) return { state: 'bad' };
 
   let claim: SignedClaim;
   try {
-    claim = JSON.parse(atob(payload)) as SignedClaim;
+    claim = JSON.parse(decoder.decode(fromBase64Url(payload))) as SignedClaim;
   } catch {
     return { state: 'bad' };
   }
