@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decide, footer, TRIAL_CATCHES, WARN_FROM, type Standing } from './entitlement';
+import { decide, footer, planLabel, TRIAL_CATCHES, WARN_FROM, type Standing } from './entitlement';
 
 const free: Standing = { pro: false, trialSpent: 0, ownKey: false };
 const withKey: Standing = { pro: false, trialSpent: 0, ownKey: true };
@@ -63,5 +63,45 @@ describe('footer', () => {
   it('says nothing to Pro or to someone with their own key', () => {
     expect(footer(pro)).toBe('');
     expect(footer({ ...withKey, trialSpent: 9 })).toBe('');
+  });
+});
+
+describe('the case that actually pays', () => {
+  it('lets Pro through even after the trial was exhausted first', () => {
+    // How nearly every subscriber arrives: they spend ten catches, meet the wall, and
+    // buy. If the cap were checked before the plan, converting would change nothing and
+    // the customer would still be looking at a paywall. Moving the cap check above the
+    // pro check leaves all twelve original tests green, so nothing guarded this.
+    const converted: Standing = { pro: true, trialSpent: TRIAL_CATCHES, ownKey: false };
+    expect(decide(converted, 'cover')).toEqual({ allow: true, spendTrial: false });
+    expect(decide({ ...converted, trialSpent: TRIAL_CATCHES + 50 }, 'cover')).toEqual({
+      allow: true,
+      spendTrial: false,
+    });
+  });
+
+  it('says Pro rather than counting catches nobody is counting', () => {
+    expect(planLabel({ pro: true, trialSpent: 7, ownKey: false })).toBe('Pro');
+  });
+
+  it('names the own-key plan, which is also not metered', () => {
+    expect(planLabel({ pro: false, trialSpent: 7, ownKey: true })).toBe('Your own key');
+  });
+
+  it('counts only for someone actually on the trial', () => {
+    expect(planLabel({ pro: false, trialSpent: 7, ownKey: false })).toBe('3 of 10 free catches left');
+  });
+
+  it('treats a corrupt count as an untouched trial, not as a spent one', () => {
+    // trialSpent arrives from storage, which is user-editable and shared with every other
+    // key in the extension, so a NaN is far likelier to be a bug than an attack. Failing
+    // closed would show a paywall to somebody who never earned one, and it would defend
+    // nothing: the count is deliberately forgeable, so anyone wanting a free trial could
+    // simply write 0. Generous is both kinder and consistent with trial.ts's own read.
+    const corrupt = { pro: false, ownKey: false, trialSpent: Number.NaN } as Standing;
+    expect(decide(corrupt, 'cover')).toEqual({ allow: true, spendTrial: true });
+    // What the clamp is really for: without it this line reads "NaN catches left".
+    expect(footer(corrupt)).toBe('');
+    expect(planLabel(corrupt)).toBe('10 of 10 free catches left');
   });
 });
