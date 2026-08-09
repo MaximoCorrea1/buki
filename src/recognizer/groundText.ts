@@ -41,6 +41,26 @@ function matchScore(query: string, book: Book): number {
 }
 
 /**
+ * Significant words the RESULT's title has and the query never mentioned.
+ *
+ * The tie-break, not the score. "Children of Dune" and "Dune" share exactly the same
+ * three words with "Dune Frank Herbert", so matchScore cannot tell them apart and the
+ * catalogue's relevance order decides, which is how a photo of Dune put Children of Dune
+ * on the shelf. A title carrying words nobody asked for is the further away of the two.
+ *
+ * Title only, never the author: the author is shared by every book in a series, so
+ * counting it would score all the sequels identically all over again.
+ */
+function strayWords(query: string, book: Book): number {
+  const wanted = significantWords(query);
+  let stray = 0;
+  for (const word of significantWords(book.title)) {
+    if (!wanted.has(word)) stray++;
+  }
+  return stray;
+}
+
+/**
  * Score every result against the query, drop the ones that share nothing with it, and
  * put the closest first.
  *
@@ -52,9 +72,13 @@ function matchScore(query: string, book: Book): number {
  */
 export function rank(query: string, results: Book[]): GroundedBook[] {
   return results
-    .map((book) => ({ book, score: matchScore(query, book) }))
+    .map((book) => ({ book, score: matchScore(query, book), stray: strayWords(query, book) }))
     .filter((scored) => scored.score > 0)
-    .sort((a, b) => b.score - a.score);
+    // Score first, so a closer match always wins. Stray words only separate equals, and
+    // it is a REORDER rather than a filter: grounding raw OCR lines produces results that
+    // legitimately carry words the query never had, and those must still ground.
+    .sort((a, b) => b.score - a.score || a.stray - b.stray)
+    .map(({ book, score }) => ({ book, score }));
 }
 
 /**

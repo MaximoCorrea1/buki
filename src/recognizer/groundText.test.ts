@@ -154,3 +154,43 @@ describe('rank', () => {
     expect(ranked[0]?.score).toBe(3);
   });
 });
+
+describe('rank tie-breaking', () => {
+  // The real top of OpenLibrary's answer for this query on 2026-08-06, in its order.
+  // Every one of these is by Frank Herbert and contains the word Dune, so matchScore
+  // gives all four the same 3 and the catalogue's own ordering decides. It chose wrong.
+  const QUERY = 'Dune Frank Herbert';
+  const RESULTS = [
+    { title: 'Children of Dune', author: 'Frank Herbert' },
+    { title: 'God Emperor of Dune', author: 'Frank Herbert' },
+    { title: 'Heretics of Dune', author: 'Frank Herbert' },
+    { title: 'Dune', author: 'Frank Herbert' },
+  ];
+
+  it('puts the book that was asked for first, not its sequel', () => {
+    expect(rank(QUERY, RESULTS)[0]?.book.title).toBe('Dune');
+  });
+
+  it('still keeps the sequels, because they did match', () => {
+    // The tie-break REORDERS. It must not filter: the caller shows alternatives.
+    expect(rank(QUERY, RESULTS)).toHaveLength(4);
+  });
+
+  it('does not let a longer title win by sharing one more word', () => {
+    // Score still leads. A book sharing two query words beats one sharing one, however
+    // many extra words of its own the loser carries.
+    const results = [
+      { title: 'Dune', author: 'Someone Else' },
+      { title: 'Dune', author: 'Frank Herbert' },
+    ];
+    expect(rank(QUERY, results)[0]?.book.author).toBe('Frank Herbert');
+  });
+
+  it('leaves noisy OCR grounding alone', () => {
+    // groundText feeds raw OCR lines, where the query is longer than the title and every
+    // result carries words the query never had. The tie-break must not throw those away.
+    const noisy = 'THE LEFT HAND OF DARKNESS URSULA K LE GUIN ACE SCIENCE FICTION';
+    const results = [{ title: 'The Left Hand of Darkness', author: 'Ursula K. Le Guin' }];
+    expect(rank(noisy, results)).toHaveLength(1);
+  });
+});
