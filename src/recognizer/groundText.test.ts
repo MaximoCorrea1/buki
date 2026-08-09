@@ -235,3 +235,45 @@ describe('rank tie-breaking', () => {
     expect(ranked[0]?.book.title).toBe('The Left Hand of Darkness');
   });
 });
+
+describe('tokenizing does not destroy hyphenated words', () => {
+  // Stripping punctuation everywhere splits a compound into pieces that are each too
+  // short to be significant, so a cover reading only "X-MEN" grounded to nothing at all.
+  // Punctuation at the EDGE of a token is noise; punctuation inside it is the word.
+  it('grounds a title whose only word is a short hyphenated compound', () => {
+    expect(rank('X-Men', [{ title: 'X-Men', author: 'Chris Claremont' }])).toHaveLength(1);
+  });
+
+  it('does not let half a hyphenated name match an unrelated book', () => {
+    // Splitting "Jean-Paul" hands every book by any Paul a free point, and a score above
+    // zero is the only thing standing between a stray word and a save.
+    const hits = rank('Nausea Jean-Paul Sartre', [
+      { title: 'Nausea', author: 'Jean-Paul Sartre' },
+      { title: 'Unrelated Book', author: 'Paul Someone' },
+    ]);
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.book.title).toBe('Nausea');
+  });
+
+  it('still ignores punctuation stuck to the outside of a word', () => {
+    // The thing the strip was added for, which must keep working: a subtitled record
+    // has to match on its main title.
+    expect(rank('Dune Frank Herbert', [{ title: 'Dune: Special Edition', author: 'Frank Herbert' }]))
+      .toHaveLength(1);
+  });
+});
+
+describe('score outranks the tie-break', () => {
+  // Nothing in the suite proved this. Swapping the comparator's two operands left every
+  // test green, so the ordering that makes the whole thing safe was untested.
+  it('prefers the better match even when it carries more stray words', () => {
+    // A: shares dune, frank, herbert (3) and carries 2 stray words of its own.
+    // B: shares only dune (1) and carries none.
+    // Score must win. Stray-first would pick B.
+    const hits = rank('Dune Frank Herbert', [
+      { title: 'Dune Wormhole Chronicles', author: 'Frank Herbert' },
+      { title: 'Dune', author: 'Someone Else' },
+    ]);
+    expect(hits[0]?.book.title).toBe('Dune Wormhole Chronicles');
+  });
+});

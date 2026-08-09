@@ -20,11 +20,17 @@ function significantWords(text: string): Set<string> {
   return new Set(
     text
       .toLowerCase()
-      // Same strip as cleanLine's. Without it "Dune:" and "dune" are different tokens, so
-      // a subtitled OpenLibrary record could share ONE FEWER word than a bare sequel for
-      // the exact word that makes it the right book, and lose before ranking even began.
-      .replace(/[^\p{L}\p{N} ]+/gu, ' ')
-      .split(' ')
+      .split(/\s+/)
+      // Punctuation at the EDGE of a token is noise; punctuation inside it is the word.
+      //
+      // Without any trim, "Dune:" and "dune" are different tokens, so a subtitled
+      // OpenLibrary record shares one fewer word than a bare sequel for the exact word
+      // that makes it the right book. But stripping punctuation EVERYWHERE splits
+      // "X-Men" into "x" and "men", both under the significance threshold, so a cover
+      // reading only "X-MEN" grounded to nothing at all, and every book by any Paul
+      // scored a free point against "Jean-Paul". Trimming the edges fixes the first
+      // without causing the second.
+      .map((word) => word.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''))
       .filter((w) => w.length >= 4),
   );
 }
