@@ -13,9 +13,49 @@ For the shelf's reasoning, `docs/superpowers/specs/2026-08-05-shelf-and-piles-de
 
 ---
 
-## 1. A confirmed bug, not yet fixed
+## 1. Ranking
 
-### 1.1 The wrong book gets saved when a work has sequels
+### 1.0 FIXED 2026-08-09, with known limits worth reading
+
+§1.1 below is **fixed** across `5335566`, `e0ebbba` and `f640412`. `rank` now breaks a
+score tie on stray words: significant words in the result's title that the query never
+mentioned. Catching *Dune* no longer shelves *Children of Dune*.
+
+Two things are worth knowing before anyone touches this again.
+
+**It took three commits, and the middle one shipped a regression.** `e0ebbba` stripped
+punctuation everywhere so that `Dune:` would match `dune`. That splits `X-Men` into two
+pieces which are both under the four-character significance threshold, so a cover reading
+only `X-MEN` produced an empty word set and grounded to **nothing at all**, which is worse
+than the bug being fixed. `f640412` trims punctuation from each token's edges instead.
+Edge punctuation is noise; punctuation inside a token is part of the word.
+
+**The tie-break is a heuristic and it does not cover every title shape.** These were
+measured against the real `rank` on 2026-08-09 and are still wrong. None is a regression:
+each is the pre-existing behaviour the tie-break simply does not reach.
+
+| Shape | What happens |
+| --- | --- |
+| `Dune - Special Edition` (dash) | wrong book wins |
+| `Dune; Special Edition` (semicolon) | wrong book wins |
+| `Dune [Deluxe Edition]` (square brackets) | wrong book wins |
+| `Dune Series Book 1` (bare series words) | wrong book wins |
+| `Deluxe Edition: Dune` (tag BEFORE the title) | wrong book wins. `split(':')[0]` keeps whatever is left of the colon, and here that is the noise |
+| `Dune (Deluxe (2021) Edition)` (nested parens) | tie, order-dependent |
+
+**The sharpest one**, because stripping actively destroys signal rather than merely missing
+it: querying `Dune Frank Herbert` against `Dune Saga: Book One` and
+`Dune: Sandworms of Dune` picks the second. The wrong book's real differentiator sits
+after its colon, so removing the subtitle erases the very words that should have demoted
+it.
+
+`stripEditionNoise` handles only the colon and round-parenthesis shapes. Widening it is
+not obviously right: every separator added is another chance to delete a differentiator.
+If this is revisited, the better fix is probably to stop guessing from a concatenated
+string. `VisionGuess` already carries `title` and `author` as **separate fields**, so a
+title-to-title comparison is available and was never used.
+
+### 1.1 The wrong book gets saved when a work has sequels (FIXED, see 1.0)
 
 **Catching a photo of *Dune* puts *Children of Dune* on the shelf.**
 
