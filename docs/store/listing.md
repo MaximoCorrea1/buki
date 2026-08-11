@@ -1,5 +1,23 @@
 # Chrome Web Store listing
 
+> ## ⚠ STALE. Do not submit this as written. Last accurate at `3175abd`.
+>
+> Every line below describes the **X-only, bring-your-own-key, no-server** product. Three
+> things on the `buki-pro` branch invalidate it, and each one is a separate rewrite:
+>
+> | What changed | What this file must say instead |
+> | --- | --- |
+> | Catch works on **any image anywhere**, not just X (plan Task 11) | The name, the short description and the whole detailed description. "catch books from X" is the narrow version of the product and it is no longer the pitch. |
+> | Recognition is **hosted**, with ten free catches then $4/month or $29/year | The listing must disclose that a paid tier exists and that recognition contacts a Buki server. |
+> | The landing and the mark were **redesigned** (2026-08-11) | The promo tile and screenshot shot-list, which describe the old lamp artwork. |
+>
+> **Nothing here can be finalised until the Vercel rename lands**, because the privacy URL
+> in this file has to point at the production domain and a 404 there fails review. See
+> `OPENWORK.md` §1.1 and plan Task 14.
+>
+> The positioning to write against is in `.agents/product-marketing.md`, and the
+> differentiator is in `competitor-profiles/_summary.md`.
+
 Everything here is copy-paste ready. Fields match the Web Store developer dashboard.
 
 ## Name

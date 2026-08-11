@@ -1,12 +1,28 @@
 # Buki: the design system
 
-One file, four surfaces, two materials. The landing page (`docs/index.html`), the in-page
-catch tray (`src/extension/content.ts`), the shelf popup (`popup.html`) and the setup page
-(`options.html`) each hold their own copy of these values, because a content script and an
-extension page cannot share a stylesheet with a website. **That duplication is the risk
-this file exists to manage.** `clothFor` was once defined in two files with two different
-hashes, so one book was one colour on the shelf and another in the picker. Change a token
-here first, then in every surface that uses it, in the same commit.
+One file, four surfaces, **and as of 2026-08-11 two design systems that do not match.**
+The landing page (`docs/index.html`), the in-page catch tray (`src/extension/content.ts`),
+the shelf popup (`popup.html`) and the setup page (`options.html`) each hold their own copy
+of these values, because a content script and an extension page cannot share a stylesheet
+with a website. **That duplication is the risk this file exists to manage.** `clothFor` was
+once defined in two files with two different hashes, so one book was one colour on the shelf
+and another in the picker. Change a token here first, then in every surface that uses it, in
+the same commit.
+
+## Read this before changing anything
+
+| System | Where | State |
+| --- | --- | --- |
+| **The plates.** Cobalt on cream, navy type, Bricolage Grotesque | `docs/index.html` | current, see "The plates" below |
+| **The room.** Violet-black, one warm lamp | `src/extension/content.ts` | previous generation |
+| **Paper.** Cream, one darkened accent | `popup.html`, `options.html` | previous generation |
+
+**They diverge on purpose for now and that is a decision waiting to be made, not a bug.**
+The landing was rebuilt around artwork Maximo supplied; the extension was not touched,
+because changing four surfaces to chase a landing is how you ship an inconsistent product
+in the middle of a paid-tier build. The cloth spines and the mark still cross all of them,
+which is the thread that stops this being two products. `OPENWORK.md` §3.3 carries the open
+question.
 
 ---
 
@@ -58,7 +74,69 @@ and a dark one.
 
 ---
 
-## Colour
+## The plates (the landing, current)
+
+Four duotone prints, classical colonnades and arcades screened in cobalt on cream, in
+`images/` with sized webp derivatives in `docs/`. **Every one of them is a threshold**: you
+stand under an arch and look through it at something you want, which is the product's whole
+gesture. They are the argument, not the wallpaper.
+
+### The palette is SAMPLED, not chosen
+
+| Token | Value | Sampled from |
+| --- | --- | --- |
+| `--paper` | `#F1E9CE` | the stock the plates are printed on |
+| `--paper-lift` | `#F8F2DE` | a raised surface |
+| `--ink` | `#0A1042` | the columns, which read `#000465` |
+| `--ink-soft` | `#4A5480` | secondary text |
+| `--blue` | `#1B42A4` | the lit cobalt. The one accent. |
+| `--rule` | `#D5CBA8` | hairlines |
+
+Using the artwork's own values is what lets a full-bleed plate meet the page **with no
+seam**, and it is why the type reads as printed at the same time as the picture rather than
+laid on afterwards. Navy on that cream is about 15:1.
+
+**If the plates are ever replaced, resample.** The palette is downstream of the art, so new
+art means three new hex values and everything else survives.
+
+### The one rule that came out of getting it wrong
+
+> **A plate carries a statement. The cream carries the reading.**
+
+The first pass set the lede, the button and a whole answer paragraph over column detail and
+statuary, where none of it could be read. The picture gets one sentence; anything you have
+to read more than once goes on the page. The same rule moved the masthead off the plate,
+because laid over the picture the mark sat on a column and vanished, and a logo you have to
+hunt for is not a logo. It also chose which plate carries the claim: the arcade's dye is far
+more saturated than the cypress's and swallowed type whole.
+
+### Type, and the webfont ban being lifted
+
+| Role | Face |
+| --- | --- |
+| Display | **Bricolage Grotesque** variable, `docs/bricolage.woff2` |
+| Body | **Instrument Sans** variable, `docs/instrument.woff2` |
+| Book titles only | `ui-serif` stack, because that is what the product stamps on a board |
+
+**Self-hosted, 71KB, no third party.** The old ban existed because the page claimed nothing
+about you was collected, and a Google Fonts request would have made that a lie above the
+fold. A file served from our own domain never broke that promise, and the promise has
+changed anyway now that recognition is hosted. **The ban still stands for any third-party
+font host.**
+
+Serif survives in exactly one place on the landing, and it is the rule that keeps it
+meaning something: one word of the headline, plus the titles stamped on a generated board.
+
+### Images
+
+The halftone is what makes these look printed and it is also what makes them expensive:
+fine high-frequency dots are worst-case for lossy codecs. **Quality 32 webp is the floor
+where the dots survive and the file stops being absurd.** Sources stay in `images/`,
+derivatives in `docs/`, and nothing unreferenced ships.
+
+---
+
+## Colour (the room, previous generation)
 
 | Token | Value | What it is |
 | --- | --- | --- |

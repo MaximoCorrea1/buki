@@ -472,3 +472,51 @@ freedom went into the two axes the brief actually named.
   works" section was also factually stale: it still promised that "a strong match saves
   outright", which was the auto-save deleted in `a06e7ba`. It now says nothing reaches the
   shelf until you pick a pile, and it mentions that one photo can hold several books.
+
+## The paid tier and the plates (2026-08-09/11)
+
+A dated record, like the rest of this file. The decisions live in
+`docs/superpowers/specs/2026-08-09-buki-pro-design.md`; only what is not written down
+elsewhere is here.
+
+**The product changed shape.** It went from a free, MIT, X-only, bring-your-own-key tool to
+a freemium one: ten hosted catches free, then $4/month or $29/year, with the own-key path
+kept free forever. Maximo's own framing was the decisive one. *"Users should not have to
+setup. They should just install the extension and start using it right away."* Paste-an-
+API-key is where most installs die, and removing it is worth more than anything on the
+feature backlog.
+
+**The differentiator was found by using the product, not by planning.** Maximo noticed that
+the right-click flow does not actually need X: it works on any image. Competitor research
+then confirmed the quadrant was empty. Google Lens answers and keeps nothing, TBR Bookmarker
+reads page text and cannot see a photograph, and the phone scanners need the book physically
+in your hands. Nobody catches a book from a picture on a screen into a list you own, and
+nobody else stores *why* you saved it.
+
+**Three economic facts settled arguments that would otherwise have gone in circles.** One
+catch costs about $0.00011, so trial size is a design decision rather than a cost one.
+Polar takes 5% + 50c on its Starter plan, which is 17.5% of a $4 monthly charge and 6.7% of
+a $29 annual one. And Polar's licence keys carry usage counters, which is what removed the
+database from the design entirely.
+
+**The plates.** Maximo supplied four duotone prints of classical colonnades and arcades.
+The useful observation was that every one of them is a threshold: you stand under an arch
+and look through it. That is the product's gesture, so the artwork became the argument
+rather than the background, and the palette was sampled from the prints so the page and the
+picture are one surface. Their provenance is still unconfirmed, which `OPENWORK.md` §3.1
+records as a real risk rather than a footnote.
+
+**What this session got wrong, recorded because the pattern will repeat.** Five defects
+reached commits and every one originated in the implementation plan rather than in an
+implementer's work. Three were the same shape: a paying customer silently losing their
+entitlement. Every one was caught by a reviewer that ignored the specification and asked
+whether a fix traded one failure mode for another. Two were caught only because a subagent
+refused to silently patch code it had been told to write verbatim and reported the problem
+instead. A plan transmits its author's errors with high fidelity; the review loop is what
+catches them, and the question that does the work is "does this trade one failure for
+another", not "does this match the spec".
+
+**The first landing rebuild was rejected**, correctly. It kept the photograph, the palette,
+the layout skeleton and the headline, and improved the details. That is a refresh wearing a
+redesign's clothes. The second rebuild threw away the stock photograph and used the one
+visual language the product already owned and had never shown: the generated covers.

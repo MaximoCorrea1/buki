@@ -1,7 +1,7 @@
 # Product Marketing Context
 
-**Document version:** v1
-**Last updated:** 2026-08-09
+**Document version:** v2
+**Last updated:** 2026-08-11
 
 ## Product Overview
 
@@ -166,6 +166,28 @@ book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/
 | The post that sold you | The source a book was caught from, kept with it. |
 | Cloth / binding | The generated cover drawn when no art exists. |
 
+## Visual Identity
+
+Established 2026-08-11 and documented in full in `docs/brand.md`.
+
+**The world:** four duotone plates, classical colonnades and arcades screened in cobalt on
+cream. Every one is a threshold you look through, which is the product's gesture. The
+palette is sampled from the artwork rather than chosen beside it, so the page and the
+picture are one surface.
+
+**Type:** Bricolage Grotesque for display, Instrument Sans for text, self-hosted, no third
+party. Serif appears only where a real book does.
+
+**The mark:** four spines, one caught in the lamp. Most of a shelf is lost to the dark and
+one book is lit, which is the product in one picture.
+
+**The rule that governs every layout:** a plate carries a statement, the cream carries the
+reading. Anything a person has to read more than once belongs on the page, never on the
+picture.
+
+**Open:** the plates' provenance is unconfirmed (see `OPENWORK.md` §3.1), and the extension
+surfaces still use the previous generation's palette.
+
 ## Brand Voice
 
 **Tone:** Plain, warm, unhurried. Writes from the reader's side of the screen.
@@ -209,6 +231,10 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v2 (2026-08-11). Added Visual Identity after the landing was rebuilt twice: the duotone
+  plates, the sampled palette, the self-hosted type, and the plate-versus-cream rule.
+  Positioning and audience are unchanged, so downstream copy built against v1 is still
+  valid. Records that the plates' provenance is unconfirmed.
 - v1 (2026-08-09). Initial context. Captures the repositioning from an X-only free tool
   to "any image anywhere" with a freemium hosted tier, and records the competitor research
   that identified provenance ("the post that sold you") as the defensible differentiator.
