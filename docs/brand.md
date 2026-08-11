@@ -76,28 +76,50 @@ and a dark one.
 
 ## The plates (the landing, current)
 
-Four duotone prints, classical colonnades and arcades screened in cobalt on cream, in
-`images/` with sized webp derivatives in `docs/`. **Every one of them is a threshold**: you
-stand under an arch and look through it at something you want, which is the product's whole
-gesture. They are the argument, not the wallpaper.
+Two duotone plates, both 18th-century architectural capricci, both **public domain**,
+sourced from Wikimedia Commons as 4000px museum scans and duotoned by `tools/plates.sh`.
 
-### The palette is SAMPLED, not chosen
+| Where | Painting | Source scan |
+| --- | --- | --- |
+| Hero | Michele Marieschi, *Capriccio with Ruins and an Antique Arch* | 4896x3264 |
+| Band | Giovanni Paolo Panini, *An Architectural Capriccio of the Roman Forum* | 4501x3255 |
+
+**Both are a threshold**: you stand under an arch and look through it at something you
+want, which is the product's whole gesture. They are the argument, not the wallpaper.
+
+Public domain was a requirement, not a coincidence. The previous plates came from X media
+ids with unknown rights, which was an open legal risk on a commercial page for two
+sessions. Anything that replaces these must clear the same bar, and the credit line in the
+page footer names both paintings and both sources.
+
+### The palette is SAMPLED, then pushed apart
 
 | Token | Value | Sampled from |
 | --- | --- | --- |
-| `--paper` | `#F1E9CE` | the stock the plates are printed on |
-| `--paper-lift` | `#F8F2DE` | a raised surface |
-| `--ink` | `#0A1042` | the columns, which read `#000465` |
-| `--ink-soft` | `#4A5480` | secondary text |
-| `--blue` | `#1B42A4` | the lit cobalt. The one accent. |
-| `--rule` | `#D5CBA8` | hairlines |
+| `--paper` | `#FBF7EC` | the stock, lifted for contrast |
+| `--paper-2` | `#F3ECD9` | a sunk surface |
+| `--ink` | `#0A0F33` | the deepest cobalt in the arch |
+| `--ink-2` | `#3D477A` | secondary text |
+| `--blue` | `#1231A8` | the lit cobalt. The one accent. |
+| `--rule` | `#DED4B4` | hairlines |
 
 Using the artwork's own values is what lets a full-bleed plate meet the page **with no
-seam**, and it is why the type reads as printed at the same time as the picture rather than
-laid on afterwards. Navy on that cream is about 15:1.
+seam**. The values are then pushed apart until every pair clears AAA, because sampled and
+legible are two different tests and the first does not imply the second.
 
-**If the plates are ever replaced, resample.** The palette is downstream of the art, so new
-art means three new hex values and everything else survives.
+| Pair | Ratio |
+| --- | --- |
+| `--ink` on `--paper` | 17.4:1 |
+| `--ink-2` on `--paper` | 8.2:1 |
+| `--blue` on `--paper` | 9.7:1 |
+| `--cream` on `--navy` | 16.2:1 |
+
+The old pair `--ink-soft` on the old cream was 6.0:1, which passed AA and was the weakest
+thing on the page. Secondary text is most of the words, so that was the number worth
+moving.
+
+**If the plates are ever replaced, resample and then re-run the ratios.** The palette is
+downstream of the art, so new art means new hex values and a fresh contrast pass.
 
 ### The one rule that came out of getting it wrong
 
@@ -114,25 +136,73 @@ more saturated than the cypress's and swallowed type whole.
 
 | Role | Face |
 | --- | --- |
-| Display | **Bricolage Grotesque** variable, `docs/bricolage.woff2` |
-| Body | **Instrument Sans** variable, `docs/instrument.woff2` |
+| Display | **Bodoni Moda** variable, `docs/bodoni.woff2`, 26KB |
+| Body and UI | **Instrument Sans** variable, `docs/instrument.woff2`, 30KB |
 | Book titles only | `ui-serif` stack, because that is what the product stamps on a board |
 
-**Self-hosted, 71KB, no third party.** The old ban existed because the page claimed nothing
+**Self-hosted, 56KB, no third party.** The old ban existed because the page claimed nothing
 about you was collected, and a Google Fonts request would have made that a lie above the
 fold. A file served from our own domain never broke that promise, and the promise has
 changed anyway now that recognition is hosted. **The ban still stands for any third-party
 font host.**
 
-Serif survives in exactly one place on the landing, and it is the rule that keeps it
-meaning something: one word of the headline, plus the titles stamped on a generated board.
+### Why a didone, when serif display is the most-tested cliche in the trade
 
-### Images
+Bricolage Grotesque was the display face and it was replaced because it was not carrying
+enough. Bodoni Moda earns the slot for reasons specific to this page, not because books
+imply serifs:
 
-The halftone is what makes these look printed and it is also what makes them expensive:
-fine high-frequency dots are worst-case for lossy codecs. **Quality 32 webp is the floor
-where the dots survive and the file stops being absurd.** Sources stay in `images/`,
-derivatives in `docs/`, and nothing unreferenced ships.
+- **It is period-correct with the plates.** Bodoni cut his types in the 1790s. Marieschi
+  and Panini painted the capricci a generation earlier. The page is one century.
+- **A didone is a contrast instrument.** Thick to thin is a second contrast axis running
+  alongside the palette's, which is exactly what the page was asked for.
+- **It is not the cliche it looks like.** The AI-default editorial serifs are warm and
+  humanist: Fraunces, Instrument Serif, Playfair. A didone is cold, rational and
+  geometric, and it sits against cobalt rather than terracotta.
+
+**The rule that keeps it working: Bodoni is never set below 28px anywhere.** Didone
+hairlines disappear at text sizes. Every heading, price and step number is Bodoni; every
+sentence a person actually reads is Instrument Sans. The italic in the headline needs
+`line-height: 1.06` and a padding reserve or the descender of *forgot* clips against the
+0.94 leading.
+
+### Images, and the halftone that had to go
+
+The first generation of plates carried a **halftone dot screen baked in at 1400px**, and
+that single decision was the reason they looked soft. Three things compounded:
+
+1. **A regular grid cannot be rescaled.** Fit a baked dot screen to a retina hero and the
+   dots beat against the pixel grid into moire. No re-encode recovers it, because the
+   detail was destroyed at authoring time and not at encode time.
+2. **1400px was upscaled about 2x** on any current laptop.
+3. The sources were already-compressed social media images, so there was nothing to
+   recover even in principle.
+
+**The plates now carry no screen at all.** They are duotoned from 4000px scans, and the
+print tooth is applied in CSS as random `feTurbulence` grain, which has no period and
+therefore cannot alias. It is the same grain the popup already uses.
+
+`yuv420p` is kept and costs nothing here, which is worth writing down because it looks
+wrong: a duotone carries all its detail in luma, which 4:2:0 keeps at full resolution, and
+the chroma it halves is nearly flat. Lossless triples the file for a difference that is
+not visible on a two-colour image.
+
+The pipeline is `tools/plates.sh`, with the exact commands that produced the shipped files
+in its header. **The one ordering rule: shape the channel spread first, clamp with
+`colorlevels` last.** Reversed, the blue curve lifts the highlights past the cream and the
+plate goes cold lavender.
+
+### Real book covers
+
+The shelf on the landing shows **real covers, fetched from OpenLibrary**, which is the same
+catalogue the extension queries. They are shipped locally as webp rather than hotlinked, so
+the page does not depend on a third party being up and OpenLibrary does not carry our
+traffic. Covers are shown to identify the books they are the covers of, and the footer says
+so.
+
+The books are chosen to read as one person's actual shelf, not a stock grid: Rand, Borges,
+Cortazar, Kleppmann, Norman, Graham, Fitzpatrick, Thiel, Marcus Aurelius, Harari, Kahneman,
+Hunt and Thomas. **A shelf that reads as a mock undoes the argument the section is making.**
 
 ---
 

@@ -92,29 +92,28 @@ a Goodreads-format CSV is the only route into both.
 
 ---
 
-## 3. The landing, and one question only Maximo can answer
+## 3. The landing
 
-The landing was rebuilt twice this session and now sits on four duotone plates Maximo
-supplied: classical colonnades and arcades screened in cobalt on cream, in `images/`, with
-sized webp derivatives in `docs/`.
+### 3.1 Provenance of the plates. RESOLVED 2026-08-11
 
-### 3.1 Provenance of the plates. UNANSWERED, and it is a real risk
+The supplied plates were named `HPbW-r-bUAAPm2l.jfif` and similar, which is X's media
+naming, and the rights were never established. That was flagged twice and never answered,
+so **the plates were replaced rather than left as an open legal risk on a commercial
+page.**
 
-The source files are named `HPbW-r-bUAAPm2l.jfif` and similar, which is X's media naming.
-**If the artwork is someone else's, using it on a public commercial landing page needs
-their permission.** This was flagged and has not been answered. It is a legal and
-reputational risk to the business, not a hypothetical. Either confirm the rights, or
-replace the plates. Everything else about the design survives a swap: the palette is
-sampled from the plates, so new art means resampling three hex values.
+Both current plates are public domain 18th-century capricci from Wikimedia Commons:
+Marieschi's *Capriccio with Ruins and an Antique Arch* and Panini's *An Architectural
+Capriccio of the Roman Forum*. The footer credits both. This also fixed the image quality
+complaint, because the new sources are 4000px museum scans rather than social media
+re-compressions, and the halftone that made the old plates alias is gone. See
+`docs/brand.md` and `tools/plates.sh`.
 
-### 3.2 The fourth plate is unused
-
-`images/HPbW-saasAAdwcZ.jfif` (a rotunda) is converted and was cut, because a landing with
-four full-bleed plates is a gallery. It is available if a section wants one.
+**No action is outstanding here.** If the plates are ever swapped again, the bar is the
+same: public domain or licensed, and re-run the contrast pass.
 
 ### 3.3 The extension surfaces still look like the old product
 
-The landing is now cream and cobalt with Bricolage Grotesque. `popup.html`, `options.html`
+The landing is now cream and cobalt with Bodoni Moda. `popup.html`, `options.html`
 and `src/extension/content.ts` are still the paper-and-lamp system from before, and they
 carry the mark in its paper values. **They are not wrong, they are just from a different
 year.** Decide whether the extension follows the landing or the landing is the marketing
