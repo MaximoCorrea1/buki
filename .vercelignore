@@ -1,0 +1,12 @@
+# Vercel serves docs/ as the site root (see vercel.json outputDirectory), which means
+# every file under it is a public URL. These are working documents, not pages, and they
+# were reachable at buki.vercel.app/superpowers/plans/... until this file existed.
+#
+# Nothing here holds a secret. It holds the plan: pricing strategy, trial mechanics, the
+# names of the server environment variables, and store copy that is currently marked
+# STALE and would be actively misleading if a reviewer or a customer found it first.
+#
+# If you add a document under docs/, decide whether it is a page. If it is not, add it.
+docs/superpowers
+docs/store
+docs/brand.md

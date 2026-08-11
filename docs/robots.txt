@@ -1,0 +1,33 @@
+# Buki. A two page site, and everything on it is meant to be read.
+#
+# The AI search crawlers are allowed on purpose. Most of the people who need this product
+# will not search for it, because "extension that reads a book off a photograph" is not a
+# phrase anyone knows to type. They will describe the problem to an assistant instead.
+# A blocked crawler is a platform that cannot cite us, so all of them are allowed.
+
+User-agent: *
+Allow: /
+
+# Named explicitly so that a future blanket rule does not quietly remove them.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://buki.vercel.app/sitemap.xml

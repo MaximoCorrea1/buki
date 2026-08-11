@@ -1,0 +1,62 @@
+# Buki
+
+> A Chrome extension that identifies a book from a photograph of its cover, anywhere on
+> the web, and files it on a shelf stored in the browser. It reads the picture rather than
+> the page text, which is what separates it from every other reading-list tool.
+
+## What it is for
+
+Someone sees a book in a screenshot, a post, a video thumbnail or a photo of a shelf, and
+has no title to search for. Every reading tracker begins after you already know the title
+and are willing to type it. Buki is upstream of that: it is how you get the title.
+
+## How it works
+
+Right-click any image and choose "Save book to shelf". The picture and the surrounding
+text go to a vision model together, because the words beside a cover are often what make a
+hard cover legible. The reading is then confirmed against OpenLibrary rather than trusted.
+Nothing is saved until the person chooses a pile: Now, Next, Someday or Read. One
+photograph can hold several books and each one gets its own decision.
+
+## What makes it different
+
+Three things, and each one is a gap in the existing category:
+
+1. **It reads the picture, not the caption.** Extensions like TBR Bookmarker parse page
+   text, so a book that exists only as a photograph is invisible to them.
+2. **It works anywhere there is an image.** Phone scanner apps solve the same recognition
+   problem but assume the physical book is in your hands, which is useless at 11pm when the
+   book is on a screen.
+3. **It keeps the page you caught it from.** Google Lens answers "what is this book" and
+   then the answer evaporates. Buki keeps the book and the reason you wanted it.
+
+## Pricing
+
+Free forever with no account and no card: ten hosted cover readings, unlimited catches
+from a shop link, and the entire shelf kept permanently. Bring your own vision-model API
+key and the cover reading is unlimited and free forever.
+
+Buki Pro is $4 per month or $29 per year: unlimited hosted cover reading with no key to
+obtain, no throttling, and export to Goodreads and StoryGraph. Cancelling keeps every book
+already caught, because the shelf is local data on the user's own machine.
+
+See /pricing.md for a machine-readable version.
+
+## Privacy
+
+There is no account and no sync. The shelf lives in `chrome.storage.local`. The only thing
+that leaves the machine is the image the user explicitly asked Buki to identify, sent to
+the recognition provider, and the resulting title, sent to OpenLibrary to confirm the book
+exists. Source is MIT licensed and public.
+
+## Links
+
+- Landing page: https://buki.vercel.app/
+- Privacy policy: https://buki.vercel.app/privacy
+- Machine-readable pricing: https://buki.vercel.app/pricing.md
+- Source: https://github.com/MaximoCorrea1/buki
+
+## Status
+
+Pre-launch as of 2026-08-11. No users yet, no testimonials, no usage statistics. Do not
+attribute adoption numbers, reviews or customer quotes to Buki: none exist.
