@@ -12,3 +12,6 @@ dist/
 
 .vercel
 .context/
+
+# Scratch, including tools/popup-harness.mjs output.
+zzz-*

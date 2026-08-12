@@ -6,6 +6,18 @@
     <style>
       /* Tokens match popup.html exactly: --paper is the ground, --ink is the type.
          (This page used to have them the other way round.) */
+      @font-face {
+        font-family: "Instrument";
+        src: url("fonts/instrument.woff2") format("woff2-variations");
+        font-weight: 400 700;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Petrona";
+        src: url("fonts/petrona.woff2") format("woff2-variations");
+        font-weight: 100 900;
+        font-display: block;
+      }
       :root {
         /* PAPER. The room (docs/index.html, and the card in the feed) is the moment of
            CATCHING: a lit shelf in the dark. This is the moment of READING your list, and
@@ -16,13 +28,15 @@
            a spine is one solid ink, a rule is one solid hairline. */
         color-scheme: light;
 
-        --paper: #faf7f2;
+        --paper: #fbf7ec;
         --card: #ffffff;
-        --board: #e3dcd2;
-        --ink: #14100e;
-        --muted: #5c5349;
-        --accent: #8a5a00;
-        --sunk: #f2ede4;
+        --board: #e6dcc2;
+        --ink: #0a0f33;
+        --muted: #3d477a;
+        --accent: #1231a8;
+        --ui: "Instrument", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --display: "Petrona", "Iowan Old Style", Georgia, serif;
+        --sunk: #f3ecd9;
 
         /* The buy pill. Green rather than the accent, so it reads as its own kind of
            action and never competes with a focus ring. */
@@ -30,22 +44,34 @@
         --buy-bg-hi: #d8efe3;
         --buy-ink: #0f6b4a;
 
+        /* A binding dye, straight from generatedCover.ts. Used for the spine on .why. */
+        --forest: #0c4033;
+
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
       }
 
       * { box-sizing: border-box; }
+
+      ::selection { background: #d5ddf5; color: var(--ink); }
+      :root { accent-color: var(--accent); caret-color: var(--accent); }
+      :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+        outline: 2.5px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 3px;
+      }
+
       body {
         margin: 0;
         padding: 40px 24px 64px;
         background: var(--paper);
         color: var(--ink);
-        font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+        font: 15px/1.55 var(--ui);
       }
       main { max-width: 560px; margin: 0 auto; }
 
       .brand { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
       .brand svg { display: block; flex: none; }
-      h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+      h1 { margin: 0; font-family: var(--display); font-size: 22px; font-weight: 800; letter-spacing: -0.005em; }
       .lede { margin: 0 0 30px; color: var(--muted); }
 
       h2 {
@@ -74,7 +100,10 @@
         left: 0; top: 0; bottom: 0;
         width: 11px;
         border-radius: 8px 0 0 8px;
-        background: #2fb88a;
+        /* One of the five dyes generatedCover.ts actually binds books in, not a green
+           chosen to look like one. The old #2fb88a was a mint that appeared nowhere else
+           in the product and read as a decorative accent bar rather than a spine. */
+        background: var(--forest);
       }
       /* Cords: a highlight over a shadow, so they read on any cloth. A flat gold line
          disappears against a warm colour - the mistake the shelf shipped with once. */
@@ -105,16 +134,12 @@
         color: var(--ink);
         border: 1px solid var(--board);
         border-radius: 7px;
-        font: 13.5px/1.4 system-ui, sans-serif;
+        font: 13.5px/1.4 var(--ui);
       }
       input {
         font-family: ui-monospace, "SF Mono", Menlo, monospace;
       }
-      input:focus, select:focus {
-        outline: 2px solid var(--ink);
-        outline-offset: 1px;
-        border-color: transparent;
-      }
+      input:focus-visible, select:focus-visible { border-color: transparent; }
       .hint { margin: 0 0 22px; font-size: 12.5px; color: var(--muted); }
       .hint a { color: var(--accent); }
 
@@ -136,16 +161,16 @@
         border: 0;
         border-radius: 7px;
         padding: 9px 16px;
-        font: 700 13px/1 system-ui, sans-serif;
+        font: 700 13px/1 var(--ui);
         transition: transform 140ms var(--ease-out), background-color 140ms ease;
       }
       button:active { transform: scale(0.97); }
-      button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-      /* Dark ink on the lamp, not white: the accent is a light warm amber now, and white
-         on it was barely legible. Hover glows rather than changing colour, because a
-         second accent would be a second idea. */
-      .save { background: var(--accent); color: #241705; }
-      .save:hover { box-shadow: 0 0 26px -8px var(--accent); }
+      /* Paper on cobalt, 9.7:1. This button previously carried a near-black brown, from
+         when the accent was a light amber; against the cobalt it measured 1.69:1 and was
+         effectively unlabelled. A retokening that changes an accent's LIGHTNESS invalidates
+         every hardcoded colour that sat on it. */
+      .save { background: var(--accent); color: var(--paper); }
+      .save:hover { background: #0e2989; box-shadow: 0 3px 14px -4px rgba(10, 15, 51, 0.5); }
       .ghost { background: transparent; color: var(--muted); }
       .ghost:hover { color: var(--ink); background: var(--board); }
 
@@ -180,11 +205,11 @@
         <!-- Four spines, one caught in the lamp. See docs/brand.md, "The mark".
              Paper values, matching popup.html exactly. -->
         <svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#5c5349" opacity="0.45" />
-          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#5c5349" opacity="0.6" />
-          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#8a5a00" />
+          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#3d477a" opacity="0.45" />
+          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#3d477a" opacity="0.6" />
+          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#1231a8" />
           <rect x="11.6" y="4.6" width="2.7" height="10" rx="0.9"
-                transform="rotate(9 12.95 9.6)" fill="#5c5349" opacity="0.45" />
+                transform="rotate(9 12.95 9.6)" fill="#3d477a" opacity="0.45" />
         </svg>
         <h1>Buki</h1>
       </div>

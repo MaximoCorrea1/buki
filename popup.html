@@ -15,6 +15,18 @@
          The piles are places, not headings. One scroll containing four
          groups made them a typographic convention; you could not be IN Now.
          ------------------------------------------------------------------ */
+      @font-face {
+        font-family: "Instrument";
+        src: url("fonts/instrument.woff2") format("woff2-variations");
+        font-weight: 400 700;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Petrona";
+        src: url("fonts/petrona.woff2") format("woff2-variations");
+        font-weight: 100 900;
+        font-display: block;
+      }
       :root {
         /* PAPER. The room (docs/index.html, and the card in the feed) is the moment of
            CATCHING: a lit shelf in the dark. This is the moment of READING your list, and
@@ -22,14 +34,14 @@
            materials, and the bindings carry the identity across both. */
         color-scheme: light;
 
-        --paper: #faf7f2;
+        --paper: #fbf7ec;
         --card: #ffffff;
-        --board: #e3dcd2;
-        --board-lo: #d5cbbf;
-        --ink: #14100e;
-        --muted: #5c5349;
-        --accent: #8a5a00;
-        --sunk: #f2ede4;
+        --board: #e6dcc2;
+        --board-lo: #d9cca8;
+        --ink: #0a0f33;
+        --muted: #3d477a;
+        --accent: #1231a8;
+        --sunk: #f3ecd9;
 
         /* The two inks a binding gets, and no more. Cream for the title, dimmed cream
            for the rules. Not --lamp: gilt on every cover would spend the one-accent
@@ -43,6 +55,8 @@
         --buy-bg-hi: #d8efe3;
         --buy-ink: #0f6b4a;
 
+        --ui: "Instrument", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --display: "Petrona", "Iowan Old Style", Georgia, serif;
         --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
         --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -58,6 +72,18 @@
 
       * { box-sizing: border-box; }
 
+      /* Surfaces the browser hands us with defaults belonging to no design system. */
+      ::selection { background: #d5ddf5; color: var(--ink); }
+      :root { accent-color: var(--accent); caret-color: var(--accent); }
+      :where(button, a, input, select, [tabindex]):focus-visible {
+        outline: 2.5px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 3px;
+      }
+      /* Counts and dates line up in columns, so they get lining figures. */
+      .count, .shelf-stat, time { font-variant-numeric: tabular-nums; }
+
+
       body {
         /* 560 gives a 118px cover four across, which is the smallest a title reads at.
            Chrome allows up to 800. One declaration, so this is a one-line change. */
@@ -70,7 +96,7 @@
         background-color: var(--paper);
         background-image: var(--grain);
         color: var(--ink);
-        font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+        font: 14px/1.45 var(--ui);
       }
       body::-webkit-scrollbar { width: 10px; }
       body::-webkit-scrollbar-thumb {
@@ -95,11 +121,15 @@
       }
       header .brand { display: flex; align-items: center; gap: 8px; }
       header svg { display: block; flex: none; }
+      /* The wordmark, and the only place display type belongs in a 560px panel. Petrona
+         is a text serif, so it holds together at this size where the landing's larger
+         setting would not survive being shrunk to fit here. */
       h1 {
         margin: 0;
-        font-size: 15px;
+        font-family: var(--display);
+        font-size: 18px;
         font-weight: 800;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.005em;
       }
       .count {
         font: 600 11px/1 var(--mono);
@@ -273,9 +303,12 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
       }
+      /* An author's name is not code, not data and not a measurement, so it is not
+         monospace. Mono stays where it earns its keep: the shelf count, the tracked
+         labels, and the cloth, which is a character grid and could not be anything else. */
       .cap .a {
         margin-top: 2px;
-        font: 9.5px/1.3 var(--mono);
+        font: 10.5px/1.3 var(--ui);
         color: var(--muted);
         white-space: nowrap;
         overflow: hidden;
@@ -438,11 +471,11 @@
              metaphor and it still holds, the caught book is the one in ink and the rest
              are pale. -->
         <svg width="21" height="21" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#5c5349" opacity="0.45" />
-          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#5c5349" opacity="0.6" />
-          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#8a5a00" />
+          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#0a0f33" opacity="0.45" />
+          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#0a0f33" opacity="0.6" />
+          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#1231a8" />
           <rect x="11.6" y="4.6" width="2.7" height="10" rx="0.9"
-                transform="rotate(9 12.95 9.6)" fill="#5c5349" opacity="0.45" />
+                transform="rotate(9 12.95 9.6)" fill="#0a0f33" opacity="0.45" />
         </svg>
         <h1>Buki</h1>
       </div>
