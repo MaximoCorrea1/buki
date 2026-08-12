@@ -79,9 +79,16 @@ Every one has complete code in the plan.
 | 14 | Privacy, permissions, listing, README | nothing |
 | 15 | Close the loop | everything |
 
-**Task 11 is genuinely unblocked and it is the differentiator.** Catch-anywhere needs no
-server, no domain and no Polar. If you want progress while §1 is outstanding, that is the
-one to take.
+**Task 11 is DONE as of `e1b014c`.** Catch-anywhere shipped: the context menu is no longer
+scoped to X, the worker injects a tray on demand under `activeTab`, and it asks for one
+host origin only when the image actually needs one. This closes the gap where the landing
+claimed "any picture, anywhere on the web" and the code only worked on X.
+
+**One box in Task 11 is still open and only Maximo can tick it: Step 5, by hand in a real
+Chrome.** Chrome stable refuses `--load-extension`, so there is no headless substitute and
+no agent can verify it. The plan carries six specific checks. The one most likely to be
+wrong is the permission prompt, because `permissions.request` needs the click's user
+gesture and no unit test can prove the gesture survived the await.
 
 ### 2.1 Goodreads and StoryGraph export is promised and does not exist
 
