@@ -95,8 +95,8 @@
       }
     </script>
 
-    <link rel="preload" href="bodoni.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="bodoni-italic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="petrona.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="petrona-italic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="instrument.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" as="image" href="arch-1400.webp"
           imagesrcset="arch-1400.webp 1400w, arch-2800.webp 2800w" />
@@ -121,32 +121,40 @@
          texture is applied here in CSS as random grain instead, which cannot alias
          because it has no period. Same feTurbulence the popup already uses.
 
-         THE TYPE. Bodoni Moda for display, Instrument Sans for everything read in
-         sentences. A didone is period-correct with the plates, Bodoni cut his in the
-         1790s while Marieschi and Panini were a generation earlier, and its thick-to-thin
-         is a second contrast axis running alongside the palette's. Didones break at small
-         sizes, so Bodoni is never set below 28px anywhere on this page.
+         THE TYPE. Petrona 800 for display, Instrument Sans for everything read in
+         sentences. Petrona replaced Bodoni Moda because a didone is sharp rather than
+         round, and round was the brief. It is warm, bookish and generous in the curves
+         while staying a classical text serif, and at 800 it carries real weight. Both
+         the roman and the REAL italic are loaded: with only the roman, the browser
+         shears it to fake the slant, and the one italic word in the headline is the most
+         looked-at glyph run on the page.
 
          THE PALETTE is sampled from the plates and then pushed apart. Every text pair on
          this page is AAA: ink on paper 17.4:1, secondary 8.2:1, blue 9.7:1.
+
+         MOTION is scroll-reveal only, driven by IntersectionObserver. No scroll event
+         listener anywhere: those fire every frame and jank. Transform and opacity only,
+         so it stays on the compositor. Everything collapses to static under
+         prefers-reduced-motion, and the reveal sets its own final state if the observer
+         never runs, so content can never be stranded invisible.
          ------------------------------------------------------------------------------ */
 
       @font-face {
-        font-family: "Bodoni";
-        src: url("bodoni.woff2") format("woff2-variations");
-        font-weight: 400 900;
+        font-family: "Petrona";
+        src: url("petrona.woff2") format("woff2-variations");
+        font-weight: 100 900;
         font-style: normal;
         font-display: swap;
       }
       /* The real italic, and it is not optional. Without this file the browser fakes the
-         slant by shearing the roman, which on a didone destroys the vertical stress that
-         is the entire point of the face: circular bowls stay circular instead of becoming
-         ovals, and the f loses its descender. The one italic word in the headline is the
-         most looked-at glyph run on the page. */
+         slant by shearing the roman: circular bowls stay circular instead of becoming
+         ovals, and the f never gains its descender. The one italic word in the headline
+         is the most looked-at glyph run on the page. Proved with font-synthesis:none,
+         which renders fully upright when a family has no italic face. */
       @font-face {
-        font-family: "Bodoni";
-        src: url("bodoni-italic.woff2") format("woff2-variations");
-        font-weight: 400 900;
+        font-family: "Petrona";
+        src: url("petrona-italic.woff2") format("woff2-variations");
+        font-weight: 100 900;
         font-style: italic;
         font-display: swap;
       }
@@ -183,7 +191,7 @@
         --stamp: #f5f0e6;
         --stamp-dim: #cec4b4;
 
-        --display: "Bodoni", "Bodoni MT", Didot, Georgia, serif;
+        --display: "Petrona", "Iowan Old Style", Georgia, serif;
         --body: "Instrument", system-ui, -apple-system, "Segoe UI", sans-serif;
         --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 
@@ -228,28 +236,64 @@
       .wrap { max-width: var(--shell); margin: 0 auto; padding: 0 32px; }
       @media (max-width: 700px) { .wrap { padding: 0 20px; } }
 
-      /* ---------- masthead ---------- */
+      /* ---------- masthead ----------
+         Sticky and translucent. The blur is the one piece of glass on the page: used
+         once, where it does a job (the plate scrolls under it and has to stay legible),
+         not sprinkled on every card. The hairline and the shadow only appear once the
+         page has scrolled, so the header sits flush on the plate at rest and separates
+         itself the moment it starts overlapping content. That state is toggled by an
+         IntersectionObserver on a sentinel, never by a scroll listener. */
+      .top-wrap {
+        position: sticky; top: 0; z-index: 40;
+        background: rgba(251, 247, 236, 0.72);
+        backdrop-filter: blur(14px) saturate(140%);
+        -webkit-backdrop-filter: blur(14px) saturate(140%);
+        border-bottom: 1px solid transparent;
+        transition: background-color 240ms var(--ease), border-color 240ms var(--ease),
+                    box-shadow 240ms var(--ease);
+      }
+      .top-wrap[data-stuck="true"] {
+        background: rgba(251, 247, 236, 0.88);
+        border-bottom-color: var(--rule-soft);
+        box-shadow: 0 10px 30px -24px rgba(10, 15, 51, 0.7);
+      }
+      /* backdrop-filter is a progressive enhancement. Without it the bar must still be
+         opaque enough to read against the plate, so raise the alpha rather than relying
+         on a blur that is not there. */
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .top-wrap { background: rgba(251, 247, 236, 0.96); }
+      }
+      @media (prefers-reduced-transparency: reduce) {
+        .top-wrap { background: var(--paper); backdrop-filter: none; -webkit-backdrop-filter: none; }
+      }
+
       .top {
         max-width: var(--shell); margin: 0 auto;
-        padding: 22px 32px;
-        display: flex; align-items: center; gap: 12px;
+        height: 68px; padding: 0 32px;
+        display: flex; align-items: center; gap: 11px;
       }
       .top .word {
         font-family: var(--display);
-        font-weight: 700;
-        font-size: 30px;
-        letter-spacing: 0.01em;
+        font-weight: 800;
+        font-size: 27px;
+        letter-spacing: 0.005em;
         margin-right: auto;
       }
-      .top nav { display: flex; gap: 26px; align-items: center; }
+      .top nav { display: flex; gap: 24px; align-items: center; }
       .top nav a {
         color: var(--ink-2); text-decoration: none;
         font-size: 15px; font-weight: 500;
+        transition: color 160ms var(--ease);
       }
       .top nav a:hover { color: var(--blue); }
-      @media (max-width: 700px) {
-        .top { padding: 18px 20px; }
+      .top .btn { padding: 9px 18px; font-size: 14.5px; }
+      @media (max-width: 860px) {
+        .top { height: 60px; padding: 0 20px; }
+        .top nav { gap: 18px; }
         .top nav a.hide-sm { display: none; }
+      }
+      @media (max-width: 520px) {
+        .top nav a.hide-xs { display: none; }
       }
 
       /* ---------- hero ---------- */
@@ -286,7 +330,7 @@
       @media (min-width: 861px) { .hero-type h1 { margin-left: 4.5%; } }
       h1 {
         font-family: var(--display);
-        font-weight: 700;
+        font-weight: 800;
         font-size: clamp(2.8rem, 7.4vw, 6.6rem);
         line-height: 0.94;
         letter-spacing: -0.022em;
@@ -296,7 +340,7 @@
       }
       h1 em {
         font-style: italic;
-        font-weight: 500;
+        font-weight: 600;
         /* Didone italic descenders clip against a 0.94 leading. Give the f and g room. */
         line-height: 1.06;
         padding-bottom: 0.06em;
@@ -370,7 +414,7 @@
       }
       h2 {
         font-family: var(--display);
-        font-weight: 700;
+        font-weight: 800;
         font-size: clamp(2rem, 4.1vw, 3.3rem);
         line-height: 1.02;
         letter-spacing: -0.019em;
@@ -384,29 +428,6 @@
       }
       .sub a { color: var(--blue); text-underline-offset: 3px; }
       .fine { font-size: 14.5px; color: var(--ink-2); max-width: 62ch; }
-
-      /* ---------- the three moments ---------- */
-      .moments {
-        display: grid; grid-template-columns: repeat(3, 1fr);
-        gap: 0; margin-top: 46px;
-        border-top: 1.5px solid var(--rule);
-      }
-      .moment { padding: 26px 30px 6px 0; border-right: 1px solid var(--rule-soft); }
-      .moment:last-child { border-right: 0; }
-      .moment:not(:first-child) { padding-left: 30px; }
-      /* The numbers are a real sequence: this is the order the three things happen in. */
-      .moment .n {
-        font-family: var(--display); font-size: 30px; font-weight: 600;
-        color: var(--blue); margin: 0 0 10px; font-variant-numeric: tabular-nums;
-      }
-      .moment h3 { font-size: 1.06rem; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.005em; }
-      .moment p { margin: 0; font-size: 0.985rem; color: var(--ink-2); }
-      @media (max-width: 860px) {
-        .moments { grid-template-columns: 1fr; }
-        .moment { border-right: 0; border-bottom: 1px solid var(--rule-soft); padding: 22px 0 20px; }
-        .moment:not(:first-child) { padding-left: 0; }
-        .moment:last-child { border-bottom: 0; }
-      }
 
       /* ---------- the sequence: what actually happens on screen ---------- */
       .seq {
@@ -474,7 +495,8 @@
       .board-line { height: 3px; background: #d5cbbf; border-radius: 2px; margin: 9px 0 11px; }
       .shelf-stat { font-size: 11.5px; color: #5c5349; }
 
-      @media (max-width: 860px) { .seq { grid-template-columns: 1fr; gap: 26px; } }
+      .step-body { margin: 2px 0 0; font-size: 0.965rem; color: var(--ink-2); }
+      @media (max-width: 860px) { .seq { grid-template-columns: 1fr; gap: 30px; } }
 
       /* ---------- the real shelf ---------- */
       .shelf-wide { margin-top: 44px; }
@@ -514,7 +536,7 @@
       }
       .plate-band blockquote {
         margin: 0; max-width: 15ch;
-        font-family: var(--display); font-weight: 600;
+        font-family: var(--display); font-weight: 700;
         font-size: clamp(1.7rem, 3.4vw, 2.9rem);
         line-height: 1.06; letter-spacing: -0.018em;
         color: var(--ink);
@@ -586,7 +608,7 @@
       /* Fixed-height price and promise blocks keep the two feature lists starting on the
          same baseline, which is the thing that makes a two-plan table read as a table. */
       .amount { margin: 0 0 6px; display: flex; align-items: baseline; gap: 10px; min-height: 62px; }
-      .amount b { font-family: var(--display); font-size: 58px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+      .amount b { font-family: var(--display); font-size: 58px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
       .amount span { font-size: 14.5px; color: var(--ink-2); }
       .plan.pro .amount span { color: var(--cream-2); }
       .plan-line { margin: 0 0 22px; font-size: 15.5px; color: var(--ink-2); min-height: 48px; }
@@ -651,7 +673,16 @@
         .credit { padding: 0 20px 36px; }
       }
 
-      /* ---------- entrance ---------- */
+      /* ---------- motion ----------
+         Two behaviours only, and both are motivated. The hero rises on load so the page
+         resolves rather than snapping into place. Everything else reveals as it enters
+         the viewport, which paces the argument: the reader meets one claim at a time
+         instead of a wall.
+
+         The reveal is opt-in via the .js class that script.js sets on <html>. If the
+         script never runs, or the browser has no IntersectionObserver, no element is ever
+         hidden and the page is simply static. Content stranded invisible by a failed
+         animation is the worst outcome, so it is made structurally impossible. */
       @media (prefers-reduced-motion: no-preference) {
         .rise { animation: rise 620ms var(--ease) both; }
         .rise:nth-child(2) { animation-delay: 70ms; }
@@ -660,28 +691,47 @@
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: none; }
         }
+
+        html.js [data-reveal] {
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 620ms var(--ease), transform 620ms var(--ease);
+          transition-delay: calc(var(--i, 0) * 70ms);
+        }
+        html.js [data-reveal][data-shown] { opacity: 1; transform: none; }
+
+        /* Covers lift in with a shorter throw. They are already a grid, so a long
+           translate reads as the shelf collapsing rather than settling. */
+        html.js .row img[data-reveal] { transform: translateY(12px) scale(0.985); }
+        html.js .row img[data-reveal][data-shown] { transform: none; }
       }
     </style>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
-    <header class="top">
-      <svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true">
-        <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#0a0f33" opacity="0.35" />
-        <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#0a0f33" opacity="0.55" />
-        <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#1231a8" />
-        <rect x="11.6" y="4.6" width="2.7" height="10" rx="0.9"
-              transform="rotate(9 12.95 9.6)" fill="#0a0f33" opacity="0.35" />
-      </svg>
-      <span class="word">Buki</span>
-      <nav>
-        <a class="hide-sm" href="#how">How it works</a>
-        <a href="#costs">Pricing</a>
-        <a class="hide-sm" href="privacy.html">Privacy</a>
-        <a href="https://github.com/MaximoCorrea1/buki">Source</a>
-      </nav>
-    </header>
+    <!-- The sentinel is a zero-height marker at the very top of the document. When it
+         leaves the viewport the header has started overlapping content, which is exactly
+         when it should gain its hairline. One observer, no scroll handler. -->
+    <div id="top-sentinel" aria-hidden="true"></div>
+    <div class="top-wrap" id="top-wrap">
+      <header class="top">
+        <svg width="25" height="25" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#0a0f33" opacity="0.35" />
+          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#0a0f33" opacity="0.55" />
+          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#1231a8" />
+          <rect x="11.6" y="4.6" width="2.7" height="10" rx="0.9"
+                transform="rotate(9 12.95 9.6)" fill="#0a0f33" opacity="0.35" />
+        </svg>
+        <span class="word">Buki</span>
+        <nav>
+          <a class="hide-sm" href="#how">How it works</a>
+          <a class="hide-xs" href="#costs">Pricing</a>
+          <a class="hide-sm" href="https://github.com/MaximoCorrea1/buki">Source</a>
+          <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
+        </nav>
+      </header>
+    </div>
 
     <main id="main">
       <div class="hero">
@@ -707,12 +757,13 @@
         </p>
         <div class="actions rise">
           <div class="cta-row">
-            <a class="btn" href="https://github.com/MaximoCorrea1/buki">Add Buki to Chrome</a>
+            <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             <a class="btn ghost" href="#how">See it catch a book</a>
+            <!-- Inline with the buttons, not stacked under them. It is a qualifier on the
+                 action, and it is also the honest disclosure: there is no Web Store
+                 listing yet, so the link goes to the source. Swap both when it ships. -->
+            <p class="aside"><b>Ten catches free.</b> No account, no card.</p>
           </div>
-          <p class="aside">
-            <b>Ten catches free.</b> No account, no card, nothing to set up.
-          </p>
         </div>
       </div>
 
@@ -740,6 +791,10 @@
                   </div>
                 </div>
               </div>
+              <p class="step-body">
+                The cover and the words around it go to a vision model together, because
+                the text beside a cover is often what makes a hard one legible.
+              </p>
             </div>
 
             <div class="step">
@@ -758,6 +813,10 @@
                   <i class="on">Now</i><i>Next</i><i>Someday</i>
                 </div>
               </div>
+              <p class="step-body">
+                The guess is confirmed against OpenLibrary rather than trusted. One photo
+                can hold several books, and each one it can read gets its own decision.
+              </p>
             </div>
 
             <div class="step">
@@ -770,32 +829,9 @@
                   <img src="covers/hackers.webp" width="312" height="500" loading="lazy" alt="" />
                 </div>
                 <div class="board-line"></div>
-                <p class="shelf-stat">Now &middot; 4 books &middot; 23 caught, 87% kept</p>
+                <p class="shelf-stat">4 books in Now &middot; 87% kept</p>
               </div>
-            </div>
-          </div>
-
-          <div class="moments">
-            <div class="moment">
-              <p class="n">01</p>
-              <h3>It looks at the picture</h3>
-              <p>
-                The cover and the words around it go to a vision model together, because the
-                text beside a cover is often what makes a hard one legible.
-              </p>
-            </div>
-            <div class="moment">
-              <p class="n">02</p>
-              <h3>It checks its own answer</h3>
-              <p>
-                The guess is confirmed against OpenLibrary rather than trusted. One photo can
-                hold several books, and each one it can read gets its own decision.
-              </p>
-            </div>
-            <div class="moment">
-              <p class="n">03</p>
-              <h3>You choose a pile</h3>
-              <p>
+              <p class="step-body">
                 Now, Next, Someday. Nothing reaches the shelf until you say so, and every
                 book keeps the page you caught it from.
               </p>
@@ -864,8 +900,7 @@
         <section class="band">
           <div class="duo">
             <div>
-              <p class="kicker">When the catalogue has nothing</p>
-              <h2>A book with no cover art still gets a cover.</h2>
+                  <h2>A book with no cover art still gets a cover.</h2>
               <p class="sub">
                 Catalogues have no art for a great many books, so Buki draws the rest: a dyed
                 board, two stamped rules, and a weave hashed from the book itself. The same
@@ -901,7 +936,7 @@
                 <li class="off">Export to Goodreads and StoryGraph</li>
               </ul>
               <p class="plan-foot">No account. Nothing to cancel.</p>
-              <a class="btn ghost" href="https://github.com/MaximoCorrea1/buki">Add Buki to Chrome</a>
+              <a class="btn ghost" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             </div>
 
             <div class="plan pro">
@@ -919,7 +954,7 @@
               <p class="plan-foot">
                 Cancel whenever you like. Every book you caught stays on your shelf.
               </p>
-              <a class="btn cream" href="https://github.com/MaximoCorrea1/buki">Start with ten free</a>
+              <a class="btn cream" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             </div>
           </div>
 
@@ -1012,7 +1047,7 @@
             install.
           </p>
           <div class="cta-row" style="margin-top: 26px">
-            <a class="btn cream" href="https://github.com/MaximoCorrea1/buki">Add Buki to Chrome</a>
+            <a class="btn cream" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             <p class="aside" style="margin: 0"><b>Free.</b> Then $4 a month if you keep using it.</p>
           </div>
         </div>
@@ -1033,6 +1068,69 @@
     </main>
 
     <script>
+      /* Motion. IntersectionObserver only: a scroll listener fires on every frame and is
+         the classic source of jank, and nothing here needs per-frame precision. */
+      (function () {
+        var root = document.documentElement;
+        var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (still || !("IntersectionObserver" in window)) return;
+
+        /* Only now does anything become hidden. Setting this class is what arms the CSS
+           above, so a failure before this line leaves the page fully visible. */
+        root.className += " js";
+
+        /* The header gains its hairline when a sentinel at the top of the document
+           leaves the viewport, which is the exact moment it starts overlapping content. */
+        var bar = document.getElementById("top-wrap");
+        var sentinel = document.getElementById("top-sentinel");
+        if (bar && sentinel) {
+          new IntersectionObserver(function (entries) {
+            bar.setAttribute("data-stuck", String(!entries[0].isIntersecting));
+          }).observe(sentinel);
+        }
+
+        /* Groups reveal their children in sequence. The index is set here rather than in
+           markup so the stagger survives any reordering of the HTML. */
+        /* Deliberately NOT ".wall .cover": those boards are built by the script below
+           this one, so they do not exist yet. Arming them on a later tick would hide
+           elements that are already painted, which flashes. They keep their hover
+           transition and reveal with their section heading instead. */
+        var GROUPS = [".seq .step", ".row img", ".plans .plan", ".answers > div"];
+        GROUPS.forEach(function (sel) {
+          var kids = document.querySelectorAll(sel);
+          for (var i = 0; i < kids.length; i++) {
+            kids[i].setAttribute("data-reveal", "");
+            kids[i].style.setProperty("--i", String(i % 6));
+          }
+        });
+        var SINGLES = ".band > .kicker, .band > h2, .band > .sub, .shelf-wide, .answer, .picker, .close-band .inner";
+        var solo = document.querySelectorAll(SINGLES);
+        for (var j = 0; j < solo.length; j++) solo[j].setAttribute("data-reveal", "");
+
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              e.target.setAttribute("data-shown", "");
+              io.unobserve(e.target);
+            });
+          },
+          { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
+        );
+        var all = document.querySelectorAll("[data-reveal]");
+        for (var k = 0; k < all.length; k++) io.observe(all[k]);
+
+        /* Anything already on screen at load must not wait for a scroll that may never
+           come. A short timeout lets the observer fire naturally first. */
+        window.setTimeout(function () {
+          var pending = document.querySelectorAll("[data-reveal]:not([data-shown])");
+          for (var m = 0; m < pending.length; m++) {
+            var r = pending[m].getBoundingClientRect();
+            if (r.top < window.innerHeight) pending[m].setAttribute("data-shown", "");
+          }
+        }, 350);
+      })();
+
       /* A port of src/extension/generatedCover.ts and cloth.ts, close enough that a board
          drawn here is the board the extension draws for the same book. */
       (function () {

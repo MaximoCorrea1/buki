@@ -136,35 +136,45 @@ more saturated than the cypress's and swallowed type whole.
 
 | Role | Face |
 | --- | --- |
-| Display | **Bodoni Moda** variable, `docs/bodoni.woff2`, 26KB |
+| Display | **Petrona** variable at 800, `docs/petrona.woff2` + `petrona-italic.woff2`, 91KB |
 | Body and UI | **Instrument Sans** variable, `docs/instrument.woff2`, 30KB |
 | Book titles only | `ui-serif` stack, because that is what the product stamps on a board |
 
-**Self-hosted, 56KB, no third party.** The old ban existed because the page claimed nothing
+**Self-hosted, 121KB, no third party.** The old ban existed because the page claimed nothing
 about you was collected, and a Google Fonts request would have made that a lie above the
 fold. A file served from our own domain never broke that promise, and the promise has
 changed anyway now that recognition is hosted. **The ban still stands for any third-party
 font host.**
 
-### Why a didone, when serif display is the most-tested cliche in the trade
+### Why Petrona, after two other faces
 
-Bricolage Grotesque was the display face and it was replaced because it was not carrying
-enough. Bodoni Moda earns the slot for reasons specific to this page, not because books
-imply serifs:
+The display face has changed twice, and each move was a correction rather than a taste
+swing. **Bricolage Grotesque** was not carrying enough weight. **Bodoni Moda** was bolder
+and elegant, but a didone is *sharp*, and the brief that followed was explicitly "bolder
+and rounder, still classic". A didone cannot become round.
 
-- **It is period-correct with the plates.** Bodoni cut his types in the 1790s. Marieschi
-  and Panini painted the capricci a generation earlier. The page is one century.
-- **A didone is a contrast instrument.** Thick to thin is a second contrast axis running
-  alongside the palette's, which is exactly what the page was asked for.
-- **It is not the cliche it looks like.** The AI-default editorial serifs are warm and
-  humanist: Fraunces, Instrument Serif, Playfair. A didone is cold, rational and
-  geometric, and it sits against cobalt rather than terracotta.
+Petrona is a warm, bookish, classical text serif with generous curves. At 800 it carries
+real weight without losing the period feeling that ties the page to the capricci. It is
+also not in the AI-default editorial serif cluster, which matters: that cluster is
+Fraunces, Instrument Serif and Playfair, and this page has spent real effort staying out
+of it.
 
-**The rule that keeps it working: Bodoni is never set below 28px anywhere.** Didone
-hairlines disappear at text sizes. Every heading, price and step number is Bodoni; every
-sentence a person actually reads is Instrument Sans. The italic in the headline needs
-`line-height: 1.06` and a padding reserve or the descender of *forgot* clips against the
-0.94 leading.
+**Young Serif was the roundest candidate and was rejected on one fact: it ships no
+italic.** See the rule below for why that was disqualifying rather than a minor gap.
+
+### The italic is not optional, and this is how to check
+
+`docs/index.html` loads the roman **and** the italic as two separate `@font-face` blocks.
+With only the roman, the browser fakes the slant by shearing the upright: circular bowls
+stay circular instead of becoming ovals, and the `f` never gains its descender. The one
+italic word in the headline is the most looked-at glyph run on the page.
+
+**To test any future face, set `font-synthesis: none` on a sample.** If the italic word
+renders fully upright, the family has no italic face and the page has been faking it. That
+is exactly how the fake was caught here, after it had already shipped.
+
+The headline italic also needs `line-height: 1.06` plus a padding reserve, or the
+descender of *forgot* clips against the 0.94 leading.
 
 ### Images, and the halftone that had to go
 
