@@ -109,9 +109,17 @@ export const livePrep = (signal?: AbortSignal): ImagePrep => ({
       // against them: Gemini bills 258 tokens per 768px tile, so anything at or under
       // 768x768 must come back as one tile. A token count that says four means this line
       // and that one disagree, and one of them is lying.
+      //
+      // It says "kept" when nothing was resized. A picture already inside MAX_EDGE is the
+      // common case off X, where a page often shows a thumbnail, and printing
+      // "shrank 306x359 → 306x359" made a no-op look like work and hid the fact that the
+      // model was handed a small original.
+      const resized = width !== bitmap.width || height !== bitmap.height;
       console.info(
-        `[Buki] shrank ${bitmap.width}x${bitmap.height} → ${width}x${height} · ` +
-          `${Math.round(shrunk.size / 1024)}KB`,
+        resized
+          ? `[Buki] shrank ${bitmap.width}x${bitmap.height} → ${width}x${height} · ` +
+              `${Math.round(shrunk.size / 1024)}KB`
+          : `[Buki] kept ${width}x${height} · ${Math.round(shrunk.size / 1024)}KB`,
       );
       return `data:image/jpeg;base64,${await base64(shrunk)}`;
     } finally {
