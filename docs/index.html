@@ -96,6 +96,7 @@
     </script>
 
     <link rel="preload" href="bodoni.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="bodoni-italic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="instrument.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" as="image" href="arch-1400.webp"
           imagesrcset="arch-1400.webp 1400w, arch-2800.webp 2800w" />
@@ -134,6 +135,19 @@
         font-family: "Bodoni";
         src: url("bodoni.woff2") format("woff2-variations");
         font-weight: 400 900;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* The real italic, and it is not optional. Without this file the browser fakes the
+         slant by shearing the roman, which on a didone destroys the vertical stress that
+         is the entire point of the face: circular bowls stay circular instead of becoming
+         ovals, and the f loses its descender. The one italic word in the headline is the
+         most looked-at glyph run on the page. */
+      @font-face {
+        font-family: "Bodoni";
+        src: url("bodoni-italic.woff2") format("woff2-variations");
+        font-weight: 400 900;
+        font-style: italic;
         font-display: swap;
       }
       @font-face {
