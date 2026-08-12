@@ -19,6 +19,7 @@ import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { withSignal } from './cancellable';
 import { createLookupMemo, postKey } from './lookupMemo';
+import { originPatternFor } from './imageOrigin';
 import type {
   BackgroundRequest,
   BackgroundResponse,
@@ -29,9 +30,6 @@ import type {
 } from './messages';
 
 const MENU_ID = 'buki-save-image';
-
-/** The only surfaces we can give feedback on - the content script lives here. */
-const SUPPORTED_PAGES = ['https://twitter.com/*', 'https://x.com/*'];
 
 const storage: StorageArea = {
   get: (key) => chrome.storage.local.get(key),
@@ -270,9 +268,11 @@ chrome.runtime.onInstalled.addListener((details) => {
         id: MENU_ID,
         title: 'Save book to shelf',
         contexts: ['image'],
-        // Scoped deliberately: off these pages there is no content script, so a save
-        // would run and mutate the shelf with no visible feedback at all.
-        documentUrlPatterns: SUPPORTED_PAGES,
+        // Every image on the web, deliberately. This used to be scoped to X because off
+        // it there is no content script, so a save would mutate the shelf with nothing on
+        // screen to say so. That was a FEEDBACK problem, not a recognition one: the
+        // recogniser never cared what site it was on. The worker now puts a tray on the
+        // tab before it starts, so the feedback follows the catch anywhere.
       },
       () => void chrome.runtime.lastError,
     );
@@ -298,6 +298,53 @@ async function tellTab<T>(tabId: number | undefined, msg: ContentRequest): Promi
   }
 }
 
+/**
+ * Put a tray on this tab, wherever it is.
+ *
+ * A context-menu click is a user gesture, and a user gesture grants `activeTab`, which is
+ * exactly enough to inject here without asking for host access at install. Returns false
+ * when there is nowhere to inject, which is the normal answer on a chrome:// page or the
+ * Web Store: those tabs are closed to every extension and the catch simply does not start.
+ */
+async function ensureTray(tabId: number | undefined): Promise<boolean> {
+  if (tabId == null) return false;
+  // Cheapest possible probe. X already has a tray from the manifest, and injecting a
+  // second one would leave that tab with two listeners answering the same messages.
+  const alive = await tellTab<{ ok: true }>(tabId, { type: 'ping' });
+  if (alive) return true;
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['dist/content.js'] });
+    return true;
+  } catch (err) {
+    console.error('[Buki] could not put a tray on this page', err);
+    return false;
+  }
+}
+
+/**
+ * Ask for the one origin this catch needs, if it needs one.
+ *
+ * MUST be the first await in the click handler. `permissions.request` requires the user
+ * gesture from the click, and awaiting anything else first can consume it. It is also
+ * called WITHOUT a `permissions.contains` check in front of it, for the same reason: an
+ * already-granted origin resolves true with no prompt, so the check would buy nothing and
+ * cost the gesture.
+ *
+ * A rejection is not a refusal. `false` means the user said no, so the catch stops. A
+ * throw means the pattern was unusable, and then the honest move is to carry on and let
+ * the fetch succeed or fail visibly rather than silently doing nothing.
+ */
+async function mayFetch(srcUrl: string): Promise<boolean> {
+  const origin = originPatternFor(srcUrl);
+  if (origin === null) return true; // nothing to ask for; see originPatternFor
+  try {
+    return await chrome.permissions.request({ origins: [origin] });
+  } catch (err) {
+    console.error('[Buki] could not ask for', origin, err);
+    return true;
+  }
+}
+
 /** Put a card up for this catch on the tab that started it. */
 const openCard = (
   tabId: number | undefined,
@@ -313,6 +360,12 @@ const failCard = (tabId: number | undefined, job: string, text: string): Promise
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
   const tabId = tab?.id;
+
+  // Order is load-bearing. The permission ask goes first because it needs the click's
+  // user gesture and every await erodes it. The tray goes second so that anything after
+  // this point has somewhere to report to.
+  if (!(await mayFetch(info.srcUrl))) return; // declined, and a card would have nowhere to go
+  if (!(await ensureTray(tabId))) return; // a page no extension may touch
 
   // The post's words are the best hint for a hard-to-read cover, so pull the whole tweet
   // around the clicked image rather than sending the picture on its own.

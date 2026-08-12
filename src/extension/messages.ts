@@ -68,7 +68,17 @@ export type ContentRequest =
     }
   | { type: 'catchFail'; job: string; text: string }
   /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
-  | { type: 'tweetContextFor'; srcUrl: string };
+  | { type: 'tweetContextFor'; srcUrl: string }
+  /**
+   * "is there already a tray on this tab?" Answered `{ ok: true }`.
+   *
+   * The worker injects the content script on demand now that a catch can start anywhere,
+   * and X already has one from the manifest. Injecting twice would give that tab two
+   * trays listening to the same messages, so the worker asks first. An unanswered ping
+   * is the normal negative: `tellTab` swallows the "no receiving end" error and returns
+   * undefined.
+   */
+  | { type: 'ping' };
 
 /** content script / popup / options -> background */
 export type BackgroundRequest =

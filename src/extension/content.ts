@@ -1066,6 +1066,13 @@ function sameImage(a: string, b: string): boolean {
 }
 
 chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse) => {
+  // Answered first and cheaply: this is how the worker decides whether it still needs to
+  // inject this file. Getting a reply at all is the whole signal.
+  if (msg?.type === 'ping') {
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (msg?.type === 'catchOpen') {
     if (tray.open(msg.job, msg.text, msg.image)) paintTray();
     else nudge(msg.job);
