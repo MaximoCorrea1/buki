@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Buki">
+  <!--
+    The mark on its own ground, for every context we do not control: favicon, browser tab
+    strip, Chrome's toolbar, the Web Store tile.
+
+    WHY THE PLATE EXISTS. The bare mark is two ink spines and one lit spine. On a dark
+    surface the ink spines vanish into it and all that survives is a single pale bar with
+    two floating cords, which is not the mark. Chrome's toolbar and tab strip are dark in
+    dark mode, so a transparent icon would break for every user who runs one. The cream
+    plate makes the ground ours instead of the host's.
+
+    Use icons/mark.svg instead wherever the page owns its background.
+  -->
+  <rect width="100" height="100" rx="22" fill="#fbf7ec"/>
+  <g transform="translate(6.45 6.63) scale(0.864)">
+    <g fill="#0a0f33">
+      <rect x="16.44" y="6.22" width="18.44" height="87.89" rx="9.22"/>
+      <rect x="66.00" y="6.22" width="18.44" height="87.89" rx="9.22"/>
+    </g>
+    <rect x="41.65" y="10.80" width="18.10" height="80.20" rx="9.05"
+          fill="#7cc0fd" transform="rotate(10 50.7 50.9)"/>
+    <g fill="#fbf7ec">
+      <rect x="16.44" y="66.08" width="18.44" height="0.62"/>
+      <rect x="16.44" y="74.77" width="18.44" height="0.62"/>
+      <rect x="66.00" y="66.08" width="18.44" height="0.62"/>
+      <rect x="66.00" y="74.77" width="18.44" height="0.62"/>
+      <g transform="rotate(10 50.7 50.9)">
+        <rect x="41.65" y="65.42" width="18.10" height="0.62"/>
+        <rect x="41.65" y="73.36" width="18.10" height="0.62"/>
+      </g>
+    </g>
+  </g>
+</svg>

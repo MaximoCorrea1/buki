@@ -182,7 +182,7 @@
         color: var(--ink);
         border: 1px solid var(--board);
         border-radius: 8px;
-        font: 13px/1.3 system-ui, sans-serif;
+        font: 13px/1.3 var(--ui);
       }
       #find::placeholder { color: var(--muted); }
       #find:focus {
@@ -425,7 +425,7 @@
         background: transparent;
         color: var(--muted);
         cursor: pointer;
-        font: 600 11.5px/1 system-ui, sans-serif;
+        font: 600 11.5px/1 var(--ui);
         transition: color 140ms ease, border-color 140ms ease;
       }
       .drop:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
@@ -470,12 +470,13 @@
              is --accent, the same hue at a readable value. The material inverts the
              metaphor and it still holds, the caught book is the one in ink and the rest
              are pale. -->
-        <svg width="21" height="21" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.4" y="4.2" width="2.7" height="10.4" rx="0.9" fill="#0a0f33" opacity="0.45" />
-          <rect x="4.7" y="2.6" width="2.7" height="12" rx="0.9" fill="#0a0f33" opacity="0.6" />
-          <rect x="8" y="3.4" width="3" height="11.2" rx="0.9" fill="#1231a8" />
-          <rect x="11.6" y="4.6" width="2.7" height="10" rx="0.9"
-                transform="rotate(9 12.95 9.6)" fill="#0a0f33" opacity="0.45" />
+        <svg width="22" height="22" viewBox="14 4 72 92" aria-hidden="true">
+          <g fill="var(--ink)">
+            <rect x="16.44" y="6.22" width="18.44" height="87.89" rx="9.22"/>
+            <rect x="66.00" y="6.22" width="18.44" height="87.89" rx="9.22"/>
+          </g>
+          <rect x="41.65" y="10.80" width="18.10" height="80.20" rx="9.05"
+                fill="#7cc0fd" transform="rotate(10 50.7 50.9)"/>
         </svg>
         <h1>Buki</h1>
       </div>

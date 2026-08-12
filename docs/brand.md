@@ -1,30 +1,36 @@
 # Buki: the design system
 
-One file, four surfaces, **and as of 2026-08-11 two design systems that do not match.**
-The landing page (`docs/index.html`), the in-page catch tray (`src/extension/content.ts`),
-the shelf popup (`popup.html`) and the setup page (`options.html`) each hold their own copy
-of these values, because a content script and an extension page cannot share a stylesheet
-with a website. **That duplication is the risk this file exists to manage.** `clothFor` was
-once defined in two files with two different hashes, so one book was one colour on the shelf
-and another in the picker. Change a token here first, then in every surface that uses it, in
-the same commit.
+One file, four surfaces. The landing page (`docs/index.html`), the in-page catch tray
+(`src/extension/content.ts`), the shelf popup (`popup.html`) and the setup page
+(`options.html`) each hold their own copy of these values, because a content script and an
+extension page cannot share a stylesheet with a website. **That duplication is the risk
+this file exists to manage.** `clothFor` was once defined in two files with two different
+hashes, so one book was one colour on the shelf and another in the picker. Change a token
+here first, then in every surface that uses it, in the same commit.
 
 ## Read this before changing anything
 
-| System | Where | State |
-| --- | --- | --- |
-| **The plates.** Cobalt on cream, navy type, Bricolage Grotesque | `docs/index.html` | current, see "The plates" below |
-| **The room.** Violet-black, one warm lamp | `src/extension/content.ts` | previous generation |
-| **Paper.** Cream, one darkened accent | `popup.html`, `options.html` | previous generation |
+| Surface | State |
+| --- | --- |
+| `docs/index.html` | current: cobalt on cream, Petrona and Instrument Sans |
+| `popup.html`, `options.html` | current, realigned 2026-08-12 |
+| `src/extension/content.ts` | **previous generation:** the violet-black room with one warm lamp |
 
-**They diverge on purpose for now and that is a decision waiting to be made, not a bug.**
-The landing was rebuilt around artwork Maximo supplied; the extension was not touched,
-because changing four surfaces to chase a landing is how you ship an inconsistent product
-in the middle of a paid-tier build. The cloth spines and the mark still cross all of them,
-which is the thread that stops this being two products. `OPENWORK.md` §3.3 carries the open
-question.
+The popup and the setup page were the paper-and-lamp system until 2026-08-12. The
+divergence was narrower than it looked: paper was already effectively the same, and what
+actually differed was the accent, gold against the landing's cobalt, plus warm neutrals
+against cool. So the ink, the muted tone and the accent moved and the paper metaphor
+stayed, because a list is read on paper and the landing is paper too.
 
----
+**The catch tray in `content.ts` has not been touched and is the last surface still on the
+old system.** It is also the only one that renders inside somebody else's page, which is a
+different problem: it has to hold up against an arbitrary background rather than one we
+chose. Do not retheme it by copying tokens across without solving that first.
+
+**One trap, learned the expensive way.** A retokening that changes an accent's LIGHTNESS
+invalidates every hardcoded colour sitting on it. Moving `--accent` from a light amber to
+cobalt left `options.html`'s save button at `#241705` on `#1231a8`, which measures 1.69:1
+and is an unlabelled button. Grep for hex literals near any token you relight.
 
 ## The idea
 
@@ -39,33 +45,51 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 
 ## The mark
 
-**Four spines. One caught in the lamp.**
+**Three spines. One pulled out and lit.**
 
-```
- ▍▌█▎     three muted, one gold, the last one leaning
-```
-
-The mark is the product in one picture: a shelf where most books are lost to the dark and
-one is lit. It is the same sentence as "The idea" above, drawn rather than written, which
-is why it is the only mark that could belong to this product and not to a generic reading
-app.
+Drawn by Maximo (`brand/logo-source.jpg`) and redrawn as geometry in `icons/mark.svg`:
+bars measured off the 900x900 raster and divided by 9, so the proportions are his and the
+edges are exact rather than resampled. The tilt is 10 degrees, which is what the original
+measures. The two rules are the stamped cords every generated cover carries, so the mark
+and the covers are the same object at two sizes.
 
 | Part | Value | Why |
 | --- | --- | --- |
-| Unlit spines | `--faded` at `0.55` and `0.72` opacity | Two weights, so the row reads as depth rather than as a bar chart |
-| The caught spine | `--lamp`, full strength | The one accent, on the one thing that is lit |
-| The leaning spine | rotated `9°` | A shelf nobody has straightened. Perfectly upright spines read as a UI element, not as books |
+| The two shelved spines | `#0a0f33`, the page ink | Solid, not faded. At 16px an opacity-reduced spine is a smudge |
+| The caught spine | `#7cc0fd` | Light, so it separates from its neighbours |
+| The cords | `#fbf7ec` | The same two rules stamped on every generated board |
+| The tilt | `10°` | A shelf nobody has straightened. Upright spines read as a UI element, not as books |
 
-**The unlit spines are `--faded`, never `--rule`.** This is not a preference, it is a
-measured failure: at 26px over the landing's photograph, a `#3A2E4D` spine disappears
-completely and the mark reads as a single gold bar, which says nothing at all. The
-contrast between *muted* and *lit* is the entire idea, so the muted ones have to be
-visible enough to be counted.
+### Why the caught spine is a light blue and not the cobalt accent
 
-**Where it appears:** the landing masthead, the popup masthead, the options page, and the
-extension icon. It must be identical in all four. It currently is not: `popup.html` and
-`options.html` still carry an older three-colour mark, and `docs/shelf.webp` is a
-screenshot taken while that mark was live.
+This looks like a palette violation and is not. The two candidates are exact mirrors:
+
+| | against the cream page | against the ink spines |
+| --- | --- | --- |
+| `#7cc0fd` | 1.81 | **9.58** |
+| `--blue` `#1231a8` | 9.66 | **1.80** |
+
+**The caught spine has to separate from the other spines, not from the page.** That
+separation is the entire meaning of the mark. In cobalt it would sink into its neighbours
+and the mark would say nothing, while the page ground is already handled by the two ink
+spines framing it.
+
+### Two files, and using the wrong one breaks it
+
+| File | Use |
+| --- | --- |
+| `icons/mark.svg` | Anywhere the page owns its background. Accepts `--mark-spine`, `--mark-caught`, `--mark-cord` |
+| `icons/icon.svg` | Everywhere else: favicon, tab strip, Chrome toolbar, store tile |
+
+`icon.svg` carries a cream plate with a 22% corner radius, and it is not decoration.
+**Rendered transparent on navy the mark breaks:** both ink spines vanish into the ground
+and all that survives is one pale bar with two floating cords. Chrome's toolbar and tab
+strip are dark in dark mode, so a transparent icon fails for every user who runs one. The
+plate makes the ground ours rather than the host's.
+
+Inline marks at 22 to 26px omit the cords. A 0.62-unit rule at that size is well under a
+pixel and renders as grey dirt rather than a cord; the icon files keep them, because at
+128 they read.
 
 **What it must never become:** a book glyph, an open book, a bookmark ribbon, a magnifying
 glass over a book, or a letter B. Every one of those is the mark of a reading app in
