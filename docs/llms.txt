@@ -51,9 +51,9 @@ exists. Source is MIT licensed and public.
 
 ## Links
 
-- Landing page: https://buki.vercel.app/
-- Privacy policy: https://buki.vercel.app/privacy
-- Machine-readable pricing: https://buki.vercel.app/pricing.md
+- Landing page: https://get-buki.vercel.app/
+- Privacy policy: https://get-buki.vercel.app/privacy
+- Machine-readable pricing: https://get-buki.vercel.app/pricing.md
 - Source: https://github.com/MaximoCorrea1/buki
 
 ## Status

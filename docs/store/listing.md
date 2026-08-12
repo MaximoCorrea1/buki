@@ -103,7 +103,7 @@ in the user's own browser.
 Already live. Paste this:
 
 ```
-https://shelfy-pearl.vercel.app/privacy
+https://get-buki.vercel.app/privacy
 ```
 
 Vercel serves `docs/` as the site root (see `vercel.json`). Redeploy with

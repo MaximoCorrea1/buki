@@ -21,15 +21,19 @@ positioning and voice, `.agents/product-marketing.md`. For the paid rail's reaso
 Tasks 6, 7 and 9 of the plan cannot start until all three of these exist. Tasks 1 to 5 are
 done, so **there is no other code to write.**
 
-### 1.1 The Vercel rename
+### 1.1 The Vercel rename. DONE 2026-08-12
 
-The project still answers on `shelfy-pearl.vercel.app`, from the product's old name.
-`DEFAULT_SETTINGS.endpoint` gets compiled into every installed copy, and renaming a Vercel
-project retires the old domain **immediately**. So the rename has to happen before the
-endpoint is chosen, or the first shipped build points at a domain that is about to 404.
+**The production domain is `https://get-buki.vercel.app`** and it is defined once, in
+`src/shared/host.ts`. Every shipped file that carried the old host was updated in the same
+commit: `docs/index.html`, `robots.txt`, `sitemap.xml`, `llms.txt` and the store listing.
 
-Plan Task 0 has the exact steps, including creating `src/shared/host.ts` so the host is
-defined once rather than in nine files.
+The plan's Task 0 Step 3 named three files. It was written before `robots.txt`,
+`sitemap.xml` and `llms.txt` existed, so the real count was seven. **If you add a file that
+names the host, import it from `src/shared/host.ts` instead.**
+
+Nothing imports `VISION_ENDPOINT` yet. `DEFAULT_SETTINGS.endpoint` still points straight at
+Google, which is the bring-your-own-key build; Task 6 stands up the proxy and Task 8
+repoints the default.
 
 ### 1.2 Five environment variables
 

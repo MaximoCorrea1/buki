@@ -30,4 +30,4 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://buki.vercel.app/sitemap.xml
+Sitemap: https://get-buki.vercel.app/sitemap.xml

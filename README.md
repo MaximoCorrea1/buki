@@ -172,10 +172,10 @@ the Internet Archive.
 
 ## Shipping
 
-**The production domain is not settled.** The Vercel project still answers on
-`shelfy-pearl.vercel.app`, from the product's old name. Renaming it changes the domain and
-retires the old one immediately, so the rename has to land before
-`DEFAULT_SETTINGS.endpoint` is baked into a shipped build. See `OPENWORK.md` §1.1.
+**The production domain is `https://get-buki.vercel.app`**, defined once in
+`src/shared/host.ts`. Anything that needs the host imports it from there rather than
+spelling it out, because this host has been renamed once already and was spelled out in
+seven files when it happened.
 
 Vercel serves `docs/` as the site root (see `vercel.json`). Deploy with
 `vercel deploy --prod`. Raw deployment URLs are SSO-protected on this account, so only the
