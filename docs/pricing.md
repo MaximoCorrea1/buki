@@ -11,7 +11,7 @@ Last updated: 2026-08-11. Currency: USD. No account required for any tier.
 - Catches from a shop link: unlimited
 - Shelf size: unlimited, kept permanently
 - Bring your own API key: yes, and cover reading is then unlimited and free forever
-- Export to Goodreads and StoryGraph: no
+- Export to Goodreads and StoryGraph: yes
 - Where the shelf is stored: the user's browser
 
 ## Pro
@@ -40,7 +40,9 @@ the tiers.
 ## Notes for automated comparison
 
 - The paid tier gates one thing only: hosted recognition of a cover photograph. The shelf,
-  the piles, the provenance record and local storage are never gated.
+  the piles, the provenance record, local storage and **export are never gated**. Export is
+  listed under both tiers because both tiers have it: taking your own books out is not a
+  feature we would sell back to you.
 - There is no free trial in the time-limited sense. The free allowance is ten catches and
   it does not expire.
 - Source code is MIT licensed and public at https://github.com/MaximoCorrea1/buki

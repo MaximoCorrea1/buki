@@ -1,6 +1,7 @@
 import { readSettings, writeSettings, DEFAULT_SETTINGS } from './settings';
 import { createRecognitionLog } from './recognitionLog';
-import type { StorageArea } from './storage';
+import { createLibrary, type StorageArea } from './storage';
+import { toGoodreadsCsv, shelfFilename } from './goodreadsCsv';
 import type { BackgroundRequest } from './messages';
 
 const $ = <T extends HTMLElement>(id: string): T | null => document.getElementById(id) as T | null;
@@ -11,6 +12,8 @@ const storage: StorageArea = {
 };
 /** Reads only - the background worker is the log's single writer. */
 const log = createRecognitionLog({ storage, now: () => Date.now() });
+/** Reads only, for the same reason. The worker is the shelf's single writer. */
+const library = createLibrary({ storage, now: () => Date.now(), newId: () => crypto.randomUUID() });
 
 async function main(): Promise<void> {
   const key = $<HTMLInputElement>('key');
@@ -80,6 +83,50 @@ async function main(): Promise<void> {
     // lie you discover later, when recognition still fails.
     say('Fields filled. Press Save to apply.');
   });
+
+  const exportCsv = $<HTMLButtonElement>('exportCsv');
+  const exportStatus = $<HTMLElement>('exportStatus');
+  if (exportCsv && exportStatus) {
+    const books = (n: number): string => `${n} book${n === 1 ? '' : 's'}`;
+
+    const showShelf = async (): Promise<void> => {
+      try {
+        const shelf = await library.list();
+        exportCsv.disabled = shelf.length === 0;
+        // An empty state is an invitation, not a wall.
+        exportStatus.textContent = shelf.length
+          ? `${books(shelf.length)} ready`
+          : 'Nothing on the shelf yet. Catch a book and it lands here.';
+      } catch (err) {
+        console.error('[Buki] could not read the shelf', err);
+      }
+    };
+    void showShelf();
+
+    exportCsv.addEventListener('click', async () => {
+      exportCsv.disabled = true;
+      try {
+        const shelf = await library.list();
+        const blob = new Blob([toGoodreadsCsv(shelf)], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = shelfFilename(Date.now());
+        a.click();
+        // Next tick, not this one: Chrome starts the download from the click, and
+        // revoking inside the same task can cancel it before it begins. No `downloads`
+        // permission is involved, which is deliberate - asking for one right before store
+        // review, for something a blob can already do, is a bad trade.
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        exportStatus.textContent = `${books(shelf.length)} exported`;
+      } catch (err) {
+        console.error('[Buki] could not export the shelf', err);
+        exportStatus.textContent = "Couldn't build the file";
+      } finally {
+        exportCsv.disabled = false;
+      }
+    });
+  }
 
   const clearLog = $<HTMLButtonElement>('clearLog');
   const logStatus = $<HTMLElement>('logStatus');

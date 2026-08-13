@@ -492,4 +492,8 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeSheet();
 });
 
+document.getElementById('settings')?.addEventListener('click', () => {
+  void chrome.runtime.openOptionsPage();
+});
+
 void refresh();

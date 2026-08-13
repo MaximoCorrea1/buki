@@ -121,6 +121,19 @@
       }
       header .brand { display: flex; align-items: center; gap: 8px; }
       header svg { display: block; flex: none; }
+      /* Pinned to the corner rather than added as a third centred line. The header is a
+         centred column, so anything in the flow makes a 560px panel taller to hold one
+         link. This is the same move the catch card makes with its dismiss control: take
+         it out of the flow so the mark and the count stay on the axis. */
+      header .settings {
+        position: absolute; top: 13px; right: 14px;
+        font: 600 11px/1 var(--mono); letter-spacing: 0.02em;
+        color: var(--muted); background: none; border: 0;
+        padding: 4px; cursor: pointer;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        header .settings:hover { color: var(--accent); }
+      }
       /* The wordmark, and the only place display type belongs in a 560px panel. Petrona
          is a text serif, so it holds together at this size where the landing's larger
          setting would not survive being shrunk to fit here. */
@@ -481,6 +494,10 @@
         <h1>Buki</h1>
       </div>
       <span class="count" id="count"></span>
+      <!-- The first route from the shelf to settings the product has had. Without it the
+           export the landing advertises is reachable only by right-clicking the toolbar
+           icon, which nobody does. -->
+      <button class="settings" type="button" id="settings">Settings</button>
     </header>
     <main id="app"></main>
     <div id="sheet" hidden data-in="false"></div>
