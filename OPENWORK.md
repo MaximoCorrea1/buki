@@ -4,10 +4,10 @@
 
 | | |
 | --- | --- |
-| Tests | 294 across 27 files, all passing |
+| Tests | 329 across 32 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
-| Working tree | clean |
+| Working tree | **items 4, 5, 6, 7, 20 and 22 done and uncommitted** |
 | Branch | `buki-pro`, **28 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
@@ -49,56 +49,151 @@ unblocks.
       unit test can prove the gesture survived the await. Watch the service worker console:
       `could not ask for` means it threw.
 
+      **A seventh check, added 2026-08-13 with item 6.** Decline the permission prompt, and
+      right-click an image on `chrome://extensions`. Each should put a mark on the Buki
+      toolbar button with the reason in its tooltip, and clear itself after 6 seconds.
+      This is unit-tested against a fake `chrome.action` and has **never been seen in a
+      real browser**, for the same reason as everything else in this item.
+
+      **An eighth, added with item 7.** Open the popup, press `Settings` in the top right,
+      press `Export the shelf`. A `buki-shelf-<date>.csv` should download. Then actually
+      feed it to Goodreads' importer at goodreads.com/review/import and check three things:
+      the books arrive, `read` books land on the read shelf, and the `buki-*` shelves are
+      created. **This is the only check that proves the format**, and no unit test can
+      stand in for it.
+
 ---
 
 ## Part 2. Unblocked. An agent can start any of these right now
 
-Ordered by value. 4 and 5 came out of the code review on 2026-08-13.
+Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4, 5, 6 and 7 are
+done. 8's dark-mode half is the next one an agent can take**, and 9 waits on 8 and 3.
 
-- [ ] **4. Make `ensureTray` and `mayFetch` testable.** `src/extension/background.ts:309`
-      and `:337`. They call `chrome.scripting` and `chrome.permissions` directly, so they
-      cannot be tested at all, which contradicts this project's own convention:
-      `src/extension/storage.ts:39` says *"Minimal shape of chrome.storage.local we depend
-      on, so this tests without Chrome"*, and `trial.ts` takes `deps.storage`. The riskiest
-      behaviour in the whole feature has zero coverage and is also the part only item 3 can
-      check. **Fix:** `ensureTray(tabId, { tell, inject })` and `mayFetch(url, { request })`.
+**The product no longer advertises anything that does not exist except the hosted proxy
+and the ten free catches**, both of which are items 10 and 14 and both of which wait on
+Maximo's items 1 and 2.
 
-- [ ] **5. Guard the host against drift.** `src/shared/host.ts` says it is the one
-      definition of the production host. Nothing imports it, and the landing cannot: the
-      host is hardcoded in `docs/index.html` five times plus `llms.txt`, `sitemap.xml`,
-      `robots.txt` and `pricing.md`. As written, the next rename repeats exactly the
-      failure that file was created to prevent. **Fix:** a test, or a check in `build.mjs`,
-      asserting `docs/index.html`'s canonical URL equals `BUKI_HOST`.
+- [x] **4. Make `ensureTray` and `mayFetch` testable.** Done 2026-08-13. Both moved out of
+      `background.ts`, which cannot be imported by a test at all: it registers
+      `chrome.contextMenus` and `chrome.runtime` listeners at module scope, so importing it
+      throws before any test runs. `ensureTray(tabId, { tell, inject })` now lives in
+      `src/extension/ensureTray.ts`; `mayFetch(url, { request })` went into
+      `imageOrigin.ts`, beside the `originPatternFor` that decides what it asks for.
+      `background.ts` holds the live wiring as `liveTray` and `livePermissions`. 9 tests,
+      including the double-listener case and the chrome:// page.
 
-- [ ] **6. Give the two silent early returns some feedback.**
-      `src/extension/background.ts:367-368`. Decline the permission prompt, or right-click
-      an image on a `chrome://` page or the Web Store, and the menu item does nothing with
-      no explanation at all. The decline case at least has Chrome's own prompt as context;
-      the injection failure has nothing. **Fix:** a brief `chrome.action.setBadgeText`,
-      which is the only feedback channel that works on a page extensions cannot touch.
+- [x] **5. Guard the host against drift.** Done 2026-08-13. `src/shared/host.test.ts`
+      globs every shipped file plus `docs/superpowers` (the plan carries pasteable code
+      with the host in it) and fails naming each file that disagrees with `BUKI_HOST`.
+      Proved by renaming the host and watching it list all 14 mentions across 7 files.
+      **It globs rather than listing files by hand on purpose**, because the last rename
+      broke on files the list did not know about. It uses `import.meta.glob` via a
+      declaration in `src/raw.d.ts`, since this repo deliberately has no `@types/node`.
+      One correction to the item as written: `docs/pricing.md` does *not* carry the host,
+      only a GitHub URL.
 
-- [ ] **7. Goodreads and StoryGraph export.** *(see §2.1 below)* The last thing the product
-      sells that does not exist.
+- [x] **6. Give the two silent early returns some feedback.** Done 2026-08-13.
+      `src/extension/toolbar.ts`: `sayStopped` puts a mark on the toolbar and the reason in
+      the tooltip, then takes both off after 6s. The tooltip exists because `brand.md` says
+      errors are never vague and a badge holds four characters. The mark is a book board,
+      cream `#FAF7F2` on oxblood `#4A1414` at 14.2:1, because cream on the coral cloth
+      measures 3.09:1 and that is the exact failure bindings exist to solve. **It is NOT
+      called before `mayFetch`**: that ask must stay the first await in the handler.
 
-- [ ] **8. The landing: eyebrows and dark mode.** *(see §4 for the eyebrow decision, which
-      is Maximo's)* Dark mode is the one pre-flight box that cannot be ticked today. The
-      plates can be re-rendered inverted by swapping the endpoints in `tools/plates.sh`,
-      and `icons/icon.svg` already survives a dark ground.
+- [x] **7. Goodreads and StoryGraph export.** Done 2026-08-13. *(§2.1 below is now the
+      record of why, not a to-do.)*
+
+      **It is FREE on both tiers, and that was a correction, not a giveaway.**
+      `docs/pricing.md` contained four statements that could not all be true: Free "export:
+      no", Pro "export: yes", "the key is the entire difference between the tiers", and
+      "the shelf, the piles, the provenance record and local storage are never gated".
+      Exporting your shelf is a shelf feature. Maximo resolved it in favour of the two
+      statements that define the product, so `entitlement.ts` is not involved at all and
+      there is no paywall path to build.
+
+      **What ships:** `src/extension/goodreadsCsv.ts`, one pure module, 15 tests. Goodreads
+      closed its write API in 2020, so a file is the only route into either service, and
+      StoryGraph reads Goodreads' format, so one file serves both.
+
+      | Decision | Why |
+      | --- | --- |
+      | now/next/someday → `to-read`, read → `read` | The shelf spec calls the piles a *priority*, not a reading state. Mapping Now to `currently-reading` would announce you are actively reading everything you meant to read next. |
+      | Pile kept as a `Bookshelves` tag (`buki-next`) | Goodreads has three exclusive shelves and Buki has four piles. The tag is what stops the collapse losing the ordering. |
+      | `My Review` = `Caught from <url>` | The post that sold you is the one thing no competitor stores. Without it the export drops the differentiator. Empty when there is no source, never an invented sentence. |
+      | ISBN written as `="978…"` | A bare 13 digit ISBN opened in Excel becomes `9.78145E+12`, and re-saving before import corrupts it silently. This is Goodreads' *own* export format, so both importers demonstrably read it. |
+      | **No** UTF-8 BOM | Same Excel argument, opposite answer. A BOM would make the first header read `﻿Title` and risk the importer not finding Title at all. The primary path is upload, not Excel, so the wrapper is worth it and the BOM is not. |
+      | No `Date Read` column | Buki never records when you finished a book, only when you caught it. Emitting `savedAt` there would be a lie about the reader's own history. |
+      | Blob + `<a download>`, **no `downloads` permission** | Asking for a new permission right before store review, for something a blob already does, works directly against item 17. |
+
+      **Surfaces.** Options page gained a *Your shelf* section above Recognition log
+      (feature above diagnostics). The popup masthead gained a `Settings` button, pinned to
+      the corner rather than added as a third centred line, because the header is a centred
+      column and a 560px panel should not get taller to hold one link. That is the same
+      move the catch card makes with its dismiss control. **It is also the first route from
+      the shelf to settings the product has ever had**, without which the export the
+      landing advertises was reachable only by right-clicking the toolbar icon.
+
+      **Three polish fixes to `options.html` came out of building this**, all against the
+      checklist in `docs/brand.md` rather than taste:
+
+      1. **`button:disabled` did not exist.** The page had no disabled styling at all, so
+         the export button on an empty shelf would have looked identical to a working one.
+         Given the popup's own `opacity: 0.5; cursor: default`.
+      2. **No hover was gated.** `options.html` carried zero
+         `@media (hover: hover) and (pointer: fine)` while the popup carried five, so on a
+         touch screen a tapped button stayed lit. Both rules are gated now.
+      3. **`.ghost` had no ring**, so three controls on the page read as bold text. The
+         ring is `--muted`, the same value as the label, so the whole control is one solid
+         colour and the flat rule holds. **Not `--board`: measured 1.28:1 on the paper**,
+         a boundary you cannot see.
+
+      **One finding left alone on purpose.** The landing's `.btn.ghost` ring is `--rule` on
+      `--paper`, which measures **1.38:1** and fails the 3:1 bar for a control boundary the
+      same way. It is not changed here, because retouching the landing as a side effect of
+      extension work is how unrelated regressions get in. Worth its own pass.
+
+      **Known limitation, stated rather than discovered later:** importing twice creates
+      duplicates for ISBN-less books. Goodreads dedupes on ISBN when present. The fix is on
+      their side and it is not worth chasing.
+
+      **Not verified in a real browser**, like items 3 and 6: the CSV is unit-tested, but
+      nobody has clicked the button in Chrome or fed the file to Goodreads. Worth adding to
+      the item 3 pass.
+
+- [ ] **8. The landing: ~~eyebrows~~ and dark mode.** **The eyebrow half is done**, see
+      item 20. Dark mode is the one pre-flight box that cannot be ticked today. The plates
+      can be re-rendered inverted by swapping the endpoints in `tools/plates.sh`, and
+      `icons/icon.svg` already survives a dark ground.
+
+      **While doing the eyebrows I found and fixed a live defect on the same page**, so it
+      is recorded here rather than left in a commit message. The masthead's primary call to
+      action is an `<a class="btn">` inside the nav. `.top nav a` is specificity (0,1,2) and
+      `.btn` is (0,1,0), so the nav rule was repainting the button: **2.11:1 at rest**, and
+      on hover the background and the text both became `--blue`, measuring **1.00:1**. The
+      label was not faint, it was invisible, on the one control the page exists to get
+      clicked. Fixed with `:not(.btn)`, the same answer `popup.html` used for `#sheet`.
+      `src/shared/landingChrome.test.ts` guards it and `docs/brand.md` now carries the rule.
+      I swept the rest of the stylesheet for the same trap: six candidate rules, five safe,
+      and `.close-band` already handles its own components correctly (16.19:1 and 10.73:1).
 
 - [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Do 8 first**, and item 3,
       so they show the redesigned product doing catch-anywhere rather than the X-only one.
       Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
       *Unblocks item 15.*
 
-### 2.1 Goodreads and StoryGraph export is promised and does not exist
+### 2.1 Goodreads and StoryGraph export: shipped 2026-08-13, and free
 
-The pricing section and `docs/pricing.md` both say "Export to Goodreads and StoryGraph".
-There is no task for it in the plan and no code. **It must ship before Pro is advertised
-with that line**, or the page is selling something that is not there. Goodreads closed its
-write API in 2020, so a Goodreads-format CSV is the only route into both.
+Kept as the record of why, because the interesting part was not the CSV.
 
-`docs/pricing.md` makes this worse than it was: a machine-readable file is the kind of
-thing an AI agent quotes verbatim when comparing tools.
+The landing and `docs/pricing.md` advertised export as a **Pro** feature while the same
+file said the paid tier gates one thing only and that the shelf is never gated. Both could
+not be true, and `pricing.md` is machine-readable, which is exactly the kind of file an AI
+agent quotes verbatim when comparing tools. So the contradiction was not a copy tidiness
+problem, it was the product telling two different stories to whoever asked.
+
+Resolved by making export free on both tiers. Pro lost a bullet; the sentence "the key is
+the entire difference between the tiers" became true again. See item 7 for the format
+decisions.
 
 ---
 
@@ -123,12 +218,13 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
 
 ## Part 4. Decisions only Maximo can make
 
-- [ ] **20. The eyebrow conflict.** Two skills disagree and I am not silently splitting the
-      difference. `impeccable`'s craft floor **bans** the small uppercase label above a
-      heading outright: *"no brief earns it back"*. `taste-skill` permits a ration of
-      `ceil(sections / 3)`. The landing currently has three, at the ration limit:
-      `THE GESTURE`, `WHAT YOU END UP WITH`, `WHAT IT COSTS`.
-      **My recommendation: delete all three.** The headlines carry themselves.
+- [x] **20. The eyebrow conflict. DECIDED 2026-08-13 by Maximo: delete all three.** Done
+      the same day. `THE GESTURE`, `WHAT YOU END UP WITH` and `WHAT IT COSTS` are gone,
+      along with the `.kicker` rule and its entry in the reveal script's `SINGLES`. The
+      section rhythm did not need repair: the gap above a heading comes from
+      `.band { padding: 108px 0 0 }`, not from the label. Checked in a real render at
+      1440px and at 390px. **Do not reintroduce one**; `index.html` says so where the rule
+      used to be.
 
 - [ ] **21. The catch tray is the last surface on the old design system.**
       `src/extension/content.ts` is still the violet-black room with one warm lamp. The
@@ -138,13 +234,12 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
       one we chose. **Do not retheme it by copying tokens across without solving that
       first.**
 
-- [ ] **22. Ship free-first, or wait for the paid tier?** The landing sells ten free hosted
-      catches and $4/month. Neither exists: today Buki needs the user's own Gemini key.
-      Shipping the free build means rewriting the landing back to bring-your-own-key, which
-      is the narrow product already rejected as the pitch. Waiting means the Web Store
-      review clock does not start. **My recommendation: wait**, because the positioning doc
-      says the goal is validating that *removing setup friction converts*, and
-      bring-your-own-key is that friction.
+- [x] **22. Ship free-first, or wait for the paid tier? DECIDED 2026-08-13 by Maximo:
+      wait.** The landing copy therefore stays as written and stays true on the day it
+      ships. The consequence is that **items 1 and 2 are now the critical path for the
+      whole project**, not routine setup: nothing in Part 3 can start until the Polar
+      product exists and the five Vercel variables are set. The Web Store review clock does
+      not start until then, and that is the accepted cost.
 
 ---
 

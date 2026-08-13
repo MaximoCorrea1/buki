@@ -14,7 +14,23 @@ here first, then in every surface that uses it, in the same commit.
 | --- | --- |
 | `docs/index.html` | current: cobalt on cream, Petrona and Instrument Sans |
 | `popup.html`, `options.html` | current, realigned 2026-08-12 |
+| `src/extension/toolbar.ts` | current: a book board on Chrome's own toolbar. See below |
 | `src/extension/content.ts` | **previous generation:** the violet-black room with one warm lamp |
+
+### The fifth surface: Chrome's toolbar
+
+Added 2026-08-13. When a catch cannot start at all, because the origin prompt was declined
+or the page is one no extension may touch, the toolbar badge is the only channel left.
+There is no tray to put a card in and no content script to ask.
+
+**It is drawn with the binding rule, not with a new colour.** Cream `#FAF7F2` on the
+coral cloth `#FF5A47` measures **3.09:1** and cannot be read, which is the exact problem
+bindings exist to solve. On oxblood `#4A1414`, the binding coral pairs with, the same cream
+measures **14.2:1**. So the badge is a book board at 16px with one character stamped on it.
+
+This is the second dye allowed to carry a status, and it earns it the same way jade does:
+it appears nowhere else in that role. The reason lives in the tooltip rather than the
+badge, because a badge holds about four characters and Voice says errors are never vague.
 
 The popup and the setup page were the paper-and-lamp system until 2026-08-12. The
 divergence was narrower than it looked: paper was already effectively the same, and what
@@ -483,6 +499,7 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] No gradient, and no colour laid over another colour with alpha
 - [ ] Anything that is not a book row or a form field sits on the axis
 - [ ] **Nothing full-bleed and `position: fixed` can take a click**
+- [ ] **A component still owns its own colours inside a scoped block**
 
 That last one is not a style rule, and it is here because it shipped. `#sheet` at
 specificity (1,0,0) beat the browser's own `[hidden] { display: none }` at (0,1,0), so a
@@ -494,3 +511,18 @@ Scope the layout to `:not([hidden])` AND spell out `[hidden] { display: none }`.
 verify with `?demo&probe` on the dev server, which calls `elementFromPoint` on every
 control and prints what is actually on top of it. `popupChrome.test.ts` guards the CSS
 shape; the probe is the only thing that proves the behaviour.
+
+**The second-to-last one is the same failure wearing different clothes, and it also
+shipped.** The landing's primary call to action is an `<a class="btn">` inside the
+masthead nav. `.top nav a` is specificity (0,1,2) and `.btn` is (0,1,0), so the nav rule
+repainted the button: `--ink-2` on `--ink` measures **2.11:1**, and on hover `.btn:hover`
+set the background to `--blue` while the nav rule set the text to `--blue` as well, which
+measures **1.00:1**. The label was not faint, it was gone. It also dropped the button from
+weight 600 to 500.
+
+Both take the same answer, and it is worth stating as a rule: **when a scoped block styles
+a bare element, exclude the components living inside it with `:not()`. Never raise the
+component's own specificity to win back its colours**, because that starts a war the
+component loses again the next time a block is scoped around it. `landingChrome.test.ts`
+guards this one, and it is worth grepping any block that styles a bare `a`, `p` or `button`
+inside a container class for the same trap.

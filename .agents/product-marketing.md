@@ -22,11 +22,11 @@ title. Buki is how you get the title.
 hosted recognition service.
 
 **Business model:**
-- **Free forever:** unlimited catches from retailer links, the entire shelf, and unlimited
-  cover-photo recognition with your own API key.
+- **Free forever:** unlimited catches from retailer links, the entire shelf, export to
+  Goodreads/StoryGraph, and unlimited cover-photo recognition with your own API key.
 - **10 hosted catches free**, no key, no card, no account. Zero setup at install.
 - **Pro $4/month or $29/year:** hosted instant recognition with no key and no throttling,
-  export to Goodreads/StoryGraph, and sync plus backup when it ships.
+  and sync plus backup when it ships.
 - Affiliate revenue from Buy links (disclosed in three places, never reorders results).
 
 ## Target Audience
@@ -233,10 +233,17 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v4 (2026-08-13). Export to Goodreads/StoryGraph **shipped and moved to Free**. It was
+  advertised as a Pro feature while `docs/pricing.md` simultaneously said the paid tier
+  gates one thing only and the shelf is never gated; the contradiction was resolved in
+  favour of the latter, so "you would rather not hold a key" is once again the entire
+  difference between the tiers. Positioning and audience unchanged. Two advertised things
+  still do not exist: the hosted proxy and the ten free catches.
 - v3 (2026-08-13). Visual Identity rewritten after the mark shipped and the extension
   surfaces were realigned to the landing. Positioning, audience and pricing are unchanged,
   so copy built against v1 or v2 is still valid. Records that three advertised features do
-  not exist yet: the hosted proxy, the ten free catches, and Goodreads export.
+  not exist yet: the hosted proxy, the ten free catches, and Goodreads export. *(Goodreads
+  export shipped in v4.)*
 - v2 (2026-08-11). Added Visual Identity after the landing was rebuilt twice: the duotone
   plates, the sampled palette, the self-hosted type, and the plate-versus-cream rule.
   Positioning and audience are unchanged, so downstream copy built against v1 is still
