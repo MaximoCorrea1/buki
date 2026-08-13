@@ -39,3 +39,35 @@ export function originPatternFor(srcUrl: string): string | null {
 
   return `https://${host}/*`;
 }
+
+/**
+ * The one thing asking needs from Chrome, injected so this can be tested without one.
+ * `chrome.permissions.request({ origins })`, narrowed to the argument that varies.
+ */
+export interface PermissionDeps {
+  request(origins: string[]): Promise<boolean>;
+}
+
+/**
+ * Ask for the one origin this catch needs, if it needs one.
+ *
+ * MUST be the first await in the click handler. `permissions.request` requires the user
+ * gesture from the click, and awaiting anything else first can consume it. It is also
+ * called WITHOUT a `permissions.contains` check in front of it, for the same reason: an
+ * already-granted origin resolves true with no prompt, so the check would buy nothing and
+ * cost the gesture.
+ *
+ * A rejection is not a refusal. `false` means the user said no, so the catch stops. A
+ * throw means the pattern was unusable, and then the honest move is to carry on and let
+ * the fetch succeed or fail visibly rather than silently doing nothing.
+ */
+export async function mayFetch(srcUrl: string, deps: PermissionDeps): Promise<boolean> {
+  const origin = originPatternFor(srcUrl);
+  if (origin === null) return true; // nothing to ask for; see originPatternFor
+  try {
+    return await deps.request([origin]);
+  } catch (err) {
+    console.error('[Buki] could not ask for', origin, err);
+    return true;
+  }
+}

@@ -19,7 +19,9 @@ import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { withSignal } from './cancellable';
 import { createLookupMemo, postKey } from './lookupMemo';
-import { originPatternFor } from './imageOrigin';
+import { mayFetch, type PermissionDeps } from './imageOrigin';
+import { ensureTray, type TrayDeps } from './ensureTray';
+import { sayStopped, type ToolbarDeps } from './toolbar';
 import type {
   BackgroundRequest,
   BackgroundResponse,
@@ -299,51 +301,26 @@ async function tellTab<T>(tabId: number | undefined, msg: ContentRequest): Promi
 }
 
 /**
- * Put a tray on this tab, wherever it is.
- *
- * A context-menu click is a user gesture, and a user gesture grants `activeTab`, which is
- * exactly enough to inject here without asking for host access at install. Returns false
- * when there is nowhere to inject, which is the normal answer on a chrome:// page or the
- * Web Store: those tabs are closed to every extension and the catch simply does not start.
+ * The live wiring for the two things a catch has to secure before it can start. Both
+ * decisions moved out to `ensureTray.ts` and `imageOrigin.ts` so they could be tested at
+ * all: reaching Chrome directly from here made the riskiest behaviour in catch-anywhere
+ * the only behaviour with no coverage, and it is also the part no headless check can
+ * reach. Same convention as `storage.ts` and `trial.ts`, which take their deps.
  */
-async function ensureTray(tabId: number | undefined): Promise<boolean> {
-  if (tabId == null) return false;
-  // Cheapest possible probe. X already has a tray from the manifest, and injecting a
-  // second one would leave that tab with two listeners answering the same messages.
-  const alive = await tellTab<{ ok: true }>(tabId, { type: 'ping' });
-  if (alive) return true;
-  try {
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['dist/content.js'] });
-    return true;
-  } catch (err) {
-    console.error('[Buki] could not put a tray on this page', err);
-    return false;
-  }
-}
+const liveTray: TrayDeps = {
+  tell: tellTab,
+  inject: (tabId) =>
+    chrome.scripting.executeScript({ target: { tabId }, files: ['dist/content.js'] }),
+};
 
-/**
- * Ask for the one origin this catch needs, if it needs one.
- *
- * MUST be the first await in the click handler. `permissions.request` requires the user
- * gesture from the click, and awaiting anything else first can consume it. It is also
- * called WITHOUT a `permissions.contains` check in front of it, for the same reason: an
- * already-granted origin resolves true with no prompt, so the check would buy nothing and
- * cost the gesture.
- *
- * A rejection is not a refusal. `false` means the user said no, so the catch stops. A
- * throw means the pattern was unusable, and then the honest move is to carry on and let
- * the fetch succeed or fail visibly rather than silently doing nothing.
- */
-async function mayFetch(srcUrl: string): Promise<boolean> {
-  const origin = originPatternFor(srcUrl);
-  if (origin === null) return true; // nothing to ask for; see originPatternFor
-  try {
-    return await chrome.permissions.request({ origins: [origin] });
-  } catch (err) {
-    console.error('[Buki] could not ask for', origin, err);
-    return true;
-  }
-}
+const livePermissions: PermissionDeps = {
+  request: (origins) => chrome.permissions.request({ origins }),
+};
+
+const liveToolbar: ToolbarDeps = {
+  toolbar: chrome.action,
+  after: (ms, run) => void setTimeout(run, ms),
+};
 
 /** Put a card up for this catch on the tab that started it. */
 const openCard = (
@@ -364,8 +341,26 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   // Order is load-bearing. The permission ask goes first because it needs the click's
   // user gesture and every await erodes it. The tray goes second so that anything after
   // this point has somewhere to report to.
-  if (!(await mayFetch(info.srcUrl))) return; // declined, and a card would have nowhere to go
-  if (!(await ensureTray(tabId))) return; // a page no extension may touch
+  //
+  // Both of these end the catch before anything is on screen, and both used to end it in
+  // total silence: the menu item did nothing and said nothing. The toolbar is the only
+  // surface Chrome still owns for us on a page we may not touch, so it carries the news.
+  if (!(await mayFetch(info.srcUrl, livePermissions))) {
+    await sayStopped(
+      tabId,
+      'Buki needs permission for that image. Nothing was caught.',
+      liveToolbar,
+    );
+    return;
+  }
+  if (!(await ensureTray(tabId, liveTray))) {
+    await sayStopped(
+      tabId,
+      'Chrome closes this page to extensions. Nothing can be caught here.',
+      liveToolbar,
+    );
+    return;
+  }
 
   // The post's words are the best hint for a hard-to-read cover, so pull the whole tweet
   // around the clicked image rather than sending the picture on its own.
