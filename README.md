@@ -8,16 +8,23 @@ those books a place: it recognizes the book **from the cover photograph**, keeps
 that sold you on it, and files it under **Now / Next / Someday**. Mark a book finished when
 you're done, and every saved book carries a quiet Buy link.
 
-> **Branch note.** `main` is the shipped extension described below. **`buki-pro`** is an
-> unmerged branch carrying the paid tier and the redesigned landing. What is built there,
-> what is not, and what is blocked is in `OPENWORK.md`. Read that before continuing the
-> work; this file describes what runs today.
+> **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
+> 28 commits ahead as of 2026-08-13, carrying catch-anywhere, the redesigned landing, the
+> new mark, and the decision layer for the paid tier. **This file describes `buki-pro`,
+> because that is where the work is.** What is built, what is not, and what is blocked is
+> an ordered checklist in `OPENWORK.md`. Read that first.
+>
+> Three things the landing advertises do **not** exist yet: the hosted proxy, the ten free
+> catches, and export to Goodreads and StoryGraph. Today recognition needs the user's own
+> API key. See `OPENWORK.md` items 7 and 22.
 
 ## Two ways to catch a book
 
-**Right-click a cover image → "Save book to shelf."** The cover and the post's words go to
-a vision model together and the guess is grounded against OpenLibrary. This is the one that
-works on a photo with no link and no title in the text.
+**Right-click any cover image, anywhere on the web → "Save book to shelf."** The cover and
+the surrounding words go to a vision model together and the guess is grounded against
+OpenLibrary. This is the one that works on a photo with no link and no title in the text,
+and it is no longer scoped to X: the worker injects the catch tray on demand under
+`activeTab`, and asks for one host origin only when the picture needs one.
 
 **Hit 📚 on a post.** Same recognition: link, then cover and words together, then the
 post's text.

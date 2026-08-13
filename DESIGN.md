@@ -520,3 +520,43 @@ another", not "does this match the spec".
 the layout skeleton and the headline, and improved the details. That is a refresh wearing a
 redesign's clothes. The second rebuild threw away the stock photograph and used the one
 visual language the product already owned and had never shown: the generated covers.
+
+---
+
+## 2026-08-13: the session that finished the look and started the wiring
+
+A dated record, not a description of the code. For what is true now read `OPENWORK.md`,
+which is an ordered checklist, and `docs/brand.md` for the system.
+
+**The landing's image problem was not resolution.** The plates carried a halftone dot
+screen baked in at 1400px. A regular grid cannot be rescaled: fit one to a retina hero and
+the dots beat against the pixel grid into moire, and no re-encode recovers detail destroyed
+at authoring time. Replaced with public domain 18th-century capricci duotoned from 4000px
+museum scans, which also closed a legal risk that had been flagged twice and never
+answered.
+
+**Type moved twice and the second move was a correction.** Bricolage Grotesque to Bodoni
+Moda for weight and elegance, then Bodoni Moda to Petrona when the brief turned out to be
+"rounder": a didone is sharp and cannot become round. Young Serif was the roundest
+candidate and was rejected on one fact, that it ships no italic, so the headline's
+signature word would have been permanently faked.
+
+**Catch-anywhere shipped**, which closed the gap where the landing claimed "any picture,
+anywhere on the web" and the code only worked on X. The plan's own `mayFetch` had three
+defects that only appear on a real page, so the decision became a pure function with tests.
+
+**The mark is Maximo's.** Three spines, one pulled out and lit, redrawn as geometry from
+his raster. Two findings came from rendering it at shipping sizes rather than assuming:
+the caught spine stays his light blue because it must separate from the other spines rather
+than from the page, and the icon needs its own cream plate because on a dark ground both
+ink spines vanish and only one floating bar survives.
+
+**The extension and the landing became one product again.** The divergence was narrower
+than it looked. Paper was already the same; the accent was gold against cobalt. The paper
+metaphor stayed, because a list is read on paper and the landing is paper too.
+
+**What this session cost in rework, written down so it is not paid twice:** a retokening
+that changes an accent's lightness invalidates every hardcoded colour sitting on it, and
+one such colour shipped at 1.69:1 before it was caught. `str.replace` does not fail when it
+matches nothing, which silently skipped three font swaps. A whole-document replace hits the
+first match in the file, not in the section, which ticked two checkboxes in the wrong task.

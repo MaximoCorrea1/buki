@@ -1,220 +1,209 @@
 # Open work
 
-Everything raised in the session of **2026-08-09/11** that is not finished. Written at
-`39b2059`, on branch **`buki-pro`** (18 commits ahead of `main`, not merged).
+**State as of 2026-08-13**, verified by running the commands, not from memory:
 
-State: **284 tests across 26 files, typecheck clean, build clean, working tree clean.**
-
-Each item says what it is, why it matters, what "done" looks like, and which file to open.
-The first section is the only thing standing between this branch and a shippable product,
-and none of it can be done by an agent.
-
-For what the product does, read `README.md`. For the design system, `docs/brand.md`. For
-positioning and voice, `.agents/product-marketing.md`. For the paid rail's reasoning,
-`docs/superpowers/specs/2026-08-09-buki-pro-design.md`, and for its remaining tasks,
-`docs/superpowers/plans/2026-08-09-buki-pro.md`.
-
----
-
-## 1. Blocked on Maximo, and it is the critical path
-
-Tasks 6, 7 and 9 of the plan cannot start until all three of these exist. Tasks 1 to 5 are
-done, so **there is no other code to write.**
-
-### 1.1 The Vercel rename. DONE 2026-08-12
-
-**The production domain is `https://get-buki.vercel.app`** and it is defined once, in
-`src/shared/host.ts`. Every shipped file that carried the old host was updated in the same
-commit: `docs/index.html`, `robots.txt`, `sitemap.xml`, `llms.txt` and the store listing.
-
-The plan's Task 0 Step 3 named three files. It was written before `robots.txt`,
-`sitemap.xml` and `llms.txt` existed, so the real count was seven. **If you add a file that
-names the host, import it from `src/shared/host.ts` instead.**
-
-Nothing imports `VISION_ENDPOINT` yet. `DEFAULT_SETTINGS.endpoint` still points straight at
-Google, which is the bring-your-own-key build; Task 6 stands up the proxy and Task 8
-repoints the default.
-
-### 1.2 Five environment variables
-
-Set in the Vercel dashboard, all environments. **None of these may ever appear in a file
-under `src/extension/`**: that is a leak, not a shortcut.
-
-| Name | Notes |
+| | |
 | --- | --- |
-| `GEMINI_API_KEY` | a **paid tier** key, not the free tier. The free tier throttles, and "faster, and it does not throttle" is a line on the pricing page. |
-| `BUKI_TOKEN_SECRET` | 32+ random bytes, `openssl rand -base64 32` |
-| `BUKI_EXTENSION_ID` | the published Chrome Web Store id |
-| `POLAR_ACCESS_TOKEN` | organisation access token |
-| `POLAR_ORGANIZATION_ID` | from Polar settings |
+| Tests | 294 across 27 files, all passing |
+| Typecheck | `tsc --noEmit` exit 0 |
+| Build | `node build.mjs` clean |
+| Working tree | clean |
+| Branch | `buki-pro`, **28 commits ahead of `main`, not merged** |
+| Plan | 37 steps done, 49 left |
 
-### 1.3 The Polar product
-
-One product, **Buki Pro**, two prices: **$4/month and $29/year**. Add the **License Key**
-benefit, activation limit 5 (a person has more than one browser), usage limits off because
-Pro is unlimited by design.
-
-Polar restructured its fees on 2026-05-27 and a new organisation lands on **Starter, 5% +
-50c**, plus 1.5% on non-US cards. At $4/month that is 17.5% gone to fees and at $29/year it
-is 6.7%, which is why annual is the number to push.
-
-### 1.4 Chrome Web Store screenshots
-
-1280x800, at least one, up to five. **None exist.** Take them against a shelf with books
-actually caught, not demo data: a mocked shelf reads as a mock.
+**This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
+whole document so "do 7 next" is unambiguous. Each one says who can do it and what it
+unblocks.
 
 ---
 
-## 2. The plan, unfinished
+## Part 1. Maximo only. Nothing in Part 3 can start until 1 and 2 are done
 
-`docs/superpowers/plans/2026-08-09-buki-pro.md`. Tasks 6 to 15 remain, 57 unticked steps.
-Every one has complete code in the plan.
+- [ ] **1. Create the Polar product.** Two products, one per billing interval: Buki Pro
+      Monthly $4 and Buki Pro Yearly $29. **Attach the License Key benefit to BOTH** or a
+      yearly subscriber pays and gets nothing to paste in. Activation limit 5 on both.
+      Also create the API key Polar asks for; that is `POLAR_ACCESS_TOKEN` below.
+      The webhook Polar recommends is **not needed**: the design validates on demand and
+      stores no subscription state, which is why there is no database.
+      *Unblocks: item 2, then Tasks 6, 7, 9.*
 
-| Task | What | Gated on |
-| --- | --- | --- |
-| 6 | `api/vision.ts`, the recognition proxy | §1.1, §1.2 |
-| 7 | `api/license.ts`, licence to session token | §1.1, §1.2, §1.3 |
-| 8 | `src/extension/license.ts` | nothing, but pointless before 7 |
-| 9 | Settings gain `license` and `session` | §1.1 |
-| 10 | The worker gates a catch | 8, 9 |
-| 11 | Catch anywhere, `scripting` + `activeTab` | nothing |
-| 12 | The wall, with two doors | 10 |
-| 13 | Options page holds a licence | 9 |
-| 14 | Privacy, permissions, listing, README | nothing |
-| 15 | Close the loop | everything |
+- [ ] **2. Set five environment variables** in Vercel, project `buki`, all environments.
+      **None of these may ever appear in a file under `src/extension/`.** That is a leak,
+      not a shortcut.
 
-**Task 11 is DONE as of `e1b014c`.** Catch-anywhere shipped: the context menu is no longer
-scoped to X, the worker injects a tray on demand under `activeTab`, and it asks for one
-host origin only when the image actually needs one. This closes the gap where the landing
-claimed "any picture, anywhere on the web" and the code only worked on X.
+      | Name | Notes |
+      | --- | --- |
+      | `GEMINI_API_KEY` | **Paid tier.** Create at https://aistudio.google.com/apikey then link billing at https://aistudio.google.com/plan_information. The free tier queues rather than erroring, which is what the 12-second hang on 2026-08-12 looked like, and "it does not throttle" is a line on the pricing page. |
+      | `BUKI_TOKEN_SECRET` | 32+ random bytes, `openssl rand -base64 32` |
+      | `BUKI_EXTENSION_ID` | from `chrome://extensions` with the extension loaded unpacked |
+      | `POLAR_ACCESS_TOKEN` | from item 1 |
+      | `POLAR_ORGANIZATION_ID` | Polar settings |
 
-**One box in Task 11 is still open and only Maximo can tick it: Step 5, by hand in a real
-Chrome.** Chrome stable refuses `--load-extension`, so there is no headless substitute and
-no agent can verify it. The plan carries six specific checks. The one most likely to be
-wrong is the permission prompt, because `permissions.request` needs the click's user
-gesture and no unit test can prove the gesture survived the await.
+      Nothing reads these yet. `/api/vision` does not exist; that is Task 6.
+
+- [ ] **3. Task 11 Step 5: verify catch-anywhere by hand.** Six checks, written out in
+      `docs/superpowers/plans/2026-08-09-buki-pro.md` under Task 11. **No agent can ever
+      tick this**: Chrome stable refuses `--load-extension` and `--disable-extensions-except`,
+      so there is no headless substitute. The check most likely to fail is the permission
+      prompt, because `chrome.permissions.request` needs the click's user gesture and no
+      unit test can prove the gesture survived the await. Watch the service worker console:
+      `could not ask for` means it threw.
+
+---
+
+## Part 2. Unblocked. An agent can start any of these right now
+
+Ordered by value. 4 and 5 came out of the code review on 2026-08-13.
+
+- [ ] **4. Make `ensureTray` and `mayFetch` testable.** `src/extension/background.ts:309`
+      and `:337`. They call `chrome.scripting` and `chrome.permissions` directly, so they
+      cannot be tested at all, which contradicts this project's own convention:
+      `src/extension/storage.ts:39` says *"Minimal shape of chrome.storage.local we depend
+      on, so this tests without Chrome"*, and `trial.ts` takes `deps.storage`. The riskiest
+      behaviour in the whole feature has zero coverage and is also the part only item 3 can
+      check. **Fix:** `ensureTray(tabId, { tell, inject })` and `mayFetch(url, { request })`.
+
+- [ ] **5. Guard the host against drift.** `src/shared/host.ts` says it is the one
+      definition of the production host. Nothing imports it, and the landing cannot: the
+      host is hardcoded in `docs/index.html` five times plus `llms.txt`, `sitemap.xml`,
+      `robots.txt` and `pricing.md`. As written, the next rename repeats exactly the
+      failure that file was created to prevent. **Fix:** a test, or a check in `build.mjs`,
+      asserting `docs/index.html`'s canonical URL equals `BUKI_HOST`.
+
+- [ ] **6. Give the two silent early returns some feedback.**
+      `src/extension/background.ts:367-368`. Decline the permission prompt, or right-click
+      an image on a `chrome://` page or the Web Store, and the menu item does nothing with
+      no explanation at all. The decline case at least has Chrome's own prompt as context;
+      the injection failure has nothing. **Fix:** a brief `chrome.action.setBadgeText`,
+      which is the only feedback channel that works on a page extensions cannot touch.
+
+- [ ] **7. Goodreads and StoryGraph export.** *(see §2.1 below)* The last thing the product
+      sells that does not exist.
+
+- [ ] **8. The landing: eyebrows and dark mode.** *(see §4 for the eyebrow decision, which
+      is Maximo's)* Dark mode is the one pre-flight box that cannot be ticked today. The
+      plates can be re-rendered inverted by swapping the endpoints in `tools/plates.sh`,
+      and `icons/icon.svg` already survives a dark ground.
+
+- [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Do 8 first**, and item 3,
+      so they show the redesigned product doing catch-anywhere rather than the X-only one.
+      Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
+      *Unblocks item 15.*
 
 ### 2.1 Goodreads and StoryGraph export is promised and does not exist
 
-The pricing page and the tier table both say "Export to Goodreads and StoryGraph". There
-is no task for it and no code. **It must ship before Pro is advertised with that line**, or
-the page is selling something that is not there. Goodreads closed its write API in 2020, so
-a Goodreads-format CSV is the only route into both.
+The pricing section and `docs/pricing.md` both say "Export to Goodreads and StoryGraph".
+There is no task for it in the plan and no code. **It must ship before Pro is advertised
+with that line**, or the page is selling something that is not there. Goodreads closed its
+write API in 2020, so a Goodreads-format CSV is the only route into both.
+
+`docs/pricing.md` makes this worse than it was: a machine-readable file is the kind of
+thing an AI agent quotes verbatim when comparing tools.
 
 ---
 
-## 3. The landing
+## Part 3. Blocked on Part 1. Plan tasks, in dependency order
 
-### 3.1 Provenance of the plates. RESOLVED 2026-08-11
+Each is fully specified in `docs/superpowers/plans/2026-08-09-buki-pro.md` with complete
+code. Tasks 1 to 5 are done and tested; these are the wiring.
 
-The supplied plates were named `HPbW-r-bUAAPm2l.jfif` and similar, which is X's media
-naming, and the rights were never established. That was flagged twice and never answered,
-so **the plates were replaced rather than left as an open legal risk on a commercial
-page.**
-
-Both current plates are public domain 18th-century capricci from Wikimedia Commons:
-Marieschi's *Capriccio with Ruins and an Antique Arch* and Panini's *An Architectural
-Capriccio of the Roman Forum*. The footer credits both. This also fixed the image quality
-complaint, because the new sources are 4000px museum scans rather than social media
-re-compressions, and the halftone that made the old plates alias is gone. See
-`docs/brand.md` and `tools/plates.sh`.
-
-**No action is outstanding here.** If the plates are ever swapped again, the bar is the
-same: public domain or licensed, and re-run the contrast pass.
-
-### 3.3 The extension surfaces still look like the old product
-
-The landing is now cream and cobalt with Bodoni Moda. `popup.html`, `options.html`
-and `src/extension/content.ts` are still the paper-and-lamp system from before, and they
-carry the mark in its paper values. **They are not wrong, they are just from a different
-year.** Decide whether the extension follows the landing or the landing is the marketing
-skin. `docs/brand.md` now documents both and says plainly that they diverge.
-
-### 3.4 The store listing and privacy policy are stale in a way that fails review
-
-`docs/store/listing.md` and `docs/store/permissions.md` still describe the X-only,
-BYO-key, no-server product. `docs/privacy.html` still implies no Buki server exists.
-**An inaccurate data-usage declaration fails Chrome Web Store review**, and the privacy
-policy would be a lie the moment the proxy is live. Plan Task 14 covers it.
+- [ ] **10. Task 6, the vision proxy.** 5 steps. Needs items 1 and 2.
+- [ ] **11. Task 7, exchanging a licence for a session.** 4 steps. Needs item 10.
+- [ ] **12. Task 8, the extension holds a licence.** 5 steps.
+- [ ] **13. Task 9, settings learn about the licence.** 6 steps. Needs item 11.
+- [ ] **14. Task 10, the worker gates a catch.** 6 steps. Needs items 12 and 13.
+- [ ] **15. Task 12, the wall.** 9 steps. The paywall UI.
+- [ ] **16. Task 13, the options page holds a licence.** 4 steps.
+- [ ] **17. Task 14, the documents that are now false.** 4 steps. *(see §3 below)*
+- [ ] **18. Task 15, close the loop.** 4 steps.
+- [ ] **19. Merge `buki-pro` into `main`.** 28 commits and counting. Use
+      `superpowers:finishing-a-development-branch`.
 
 ---
 
-## 4. Known limits, deliberately not fixed
+## Part 4. Decisions only Maximo can make
 
-### 4.1 The ranking tie-break does not cover every title shape
+- [ ] **20. The eyebrow conflict.** Two skills disagree and I am not silently splitting the
+      difference. `impeccable`'s craft floor **bans** the small uppercase label above a
+      heading outright: *"no brief earns it back"*. `taste-skill` permits a ration of
+      `ceil(sections / 3)`. The landing currently has three, at the ration limit:
+      `THE GESTURE`, `WHAT YOU END UP WITH`, `WHAT IT COSTS`.
+      **My recommendation: delete all three.** The headlines carry themselves.
 
-`rank` in `src/recognizer/groundText.ts` now breaks a score tie on stray words, which fixed
-the confirmed bug where catching *Dune* shelved *Children of Dune*. Six shapes are still
-wrong, measured on 2026-08-09 and listed in §1.0 of this file's previous revision and in the
-commit message for `3bef3fe`: dash, semicolon and bracket subtitles, bare series words, an
-edition tag before the title, and nested parentheses.
+- [ ] **21. The catch tray is the last surface on the old design system.**
+      `src/extension/content.ts` is still the violet-black room with one warm lamp. The
+      popup and options page were realigned on 2026-08-12; the tray was deliberately left,
+      because it is the only surface that renders **inside somebody else's page**. That is
+      a different problem: it has to hold up against an arbitrary background rather than
+      one we chose. **Do not retheme it by copying tokens across without solving that
+      first.**
 
-The sharpest one is where stripping a subtitle **deletes the differentiator** rather than
-noise. Widening `stripEditionNoise` is not obviously right, because every separator added is
-another chance to delete signal. **The better route is that `VisionGuess` already carries
-`title` and `author` as separate fields**, so a title-to-title comparison is available and
-this code has never used it. That is a redesign, not a patch.
-
-### 4.2 The trial can deliver eleven catches, not ten
-
-`decide` answers from a snapshot and `trial.spend()` increments after the vision call
-returns. Two concurrent catches at nine both pass. `trial.ts`'s write queue guarantees
-neither increment is lost, which makes the overshoot land rather than preventing it.
-Holding a reservation across an async recognition to protect two hundredths of a cent is not
-worth the machinery. Documented in `entitlement.ts`.
-
-### 4.3 Constant-time comparison is not provable by test
-
-`equalInConstantTime` in `src/server/token.ts` XOR-accumulates over the full length. Nothing
-in the suite would catch a regression to a short-circuiting compare, because timing is not
-observable from a test. If that function is ever edited, it needs a human reading it.
+- [ ] **22. Ship free-first, or wait for the paid tier?** The landing sells ten free hosted
+      catches and $4/month. Neither exists: today Buki needs the user's own Gemini key.
+      Shipping the free build means rewriting the landing back to bring-your-own-key, which
+      is the narrow product already rejected as the pitch. Waiting means the Web Store
+      review clock does not start. **My recommendation: wait**, because the positioning doc
+      says the goal is validating that *removing setup friction converts*, and
+      bring-your-own-key is that friction.
 
 ---
 
-## 5. Engineering, unblocked, not done
+## 3. The store documents are stale and one of them fails review
 
-### 5.1 The right-click flow does not share the lookup CARD
+Both carry banners saying so. `docs/store/listing.md` describes the X-only,
+bring-your-own-key, no-server product: the name, the short description and the whole
+detailed description are the narrow version.
 
-Still true. Both flows share the recognition memo, so the same post is not looked up twice,
-but the right-click path does not reuse the card the button path opened.
-**File:** `src/extension/content.ts`, the `tweetContextFor` / `catchOpen` path.
+**`docs/store/permissions.md` is the one that fails review.** It says *"Nothing is
+transmitted"*, which stops being true the day the proxy ships, and it does not justify the
+three permissions now in the manifest:
 
-### 5.2 `groundText`'s per-line search is unchanged
+| Permission | Why it is needed |
+| --- | --- |
+| `scripting` | Inject the catch tray into a tab that has no content script |
+| `activeTab` | The grant a context-menu click gives, which makes that injection legal without host access at install |
+| `https://*/*` optional | Fetch a cover from a CDN that is not the tab's own origin |
 
-Fires up to `MAX_QUERIES = 6` searches concurrently and takes the first that grounds. It
-predates the circuit breaker and the best-effort-grounding change and has not been
-re-examined. Low priority.
+The narrowest honest framing is the one to use: `activeTab` plus an optional host permission
+requested on first use, **not** a broad host permission at install. Say that explicitly,
+because a reviewer comparing the manifest against this file is exactly who it is for.
 
-### 5.3 Keyless setup is what this whole branch is for
-
-Recognition needs the user's own key until the proxy holds one. That is Tasks 6 and 7.
+That is item 17.
 
 ---
 
-## 6. Settled this session, so nobody reopens it
+## 4. Things that are done, so nobody re-opens them
 
-- **What is sold.** Ten hosted catches free, then $4/month or $29/year. Free forever:
-  retailer-link catches, the entire local shelf, and bring-your-own-key recognition. The
-  two audiences are disjoint, so keeping the free key path cannibalises nothing and defuses
-  "they paywalled an MIT extension" before anyone says it.
-- **The local shelf is never gated.** Not after the trial, not after a cancellation. It is
-  the user's data on the user's disk. This is also the risk reversal that no competitor with
-  a server-side shelf can copy.
-- **A trial catch is only spent on a reading that came back.** A timeout, a no-match, a
-  refused grounding or a dismissed card is free.
-- **No database.** A Polar licence is exchanged once a day for an HMAC session token, and
-  that token is the only state. A Polar outage is invisible to paying customers for seven
-  days via the grace window.
-- **Ten free catches, not five.** Books stand four to a board, so eight to ten is where the
-  shelf stops being a list and becomes furniture. One catch costs about **$0.00011**, so the
-  number is a design decision, not an economic one.
-- **Pro is unlimited, not a monthly quota.** A per-user quota cannot be counted without a
-  database and would guard a resource where an abusive user costs about $1.10 against $4
-  collected.
-- **The differentiator.** Every book scanner assumes the book is in your hands. Buki is for
-  the ones you will never hold. Research in `competitor-profiles/_summary.md`; the empty
-  quadrant is real and provenance ("the post that sold you") is the part nobody can copy
-  cheaply.
-- **The webfont ban is lifted, for self-hosted files only.** It existed because the page
-  claimed nothing about you was collected. A file served from our own domain never broke
-  that, and the claim has changed anyway.
+- **The Vercel rename.** Production domain is `https://get-buki.vercel.app`, defined once
+  in `src/shared/host.ts`. Every shipped file that carried the old host was updated.
+- **Plate provenance.** Both plates are public domain 18th-century capricci from Wikimedia
+  Commons, credited in the page footer. The old ones came from X media ids with unknown
+  rights and were an open legal risk for two sessions.
+- **Catch-anywhere.** Task 11 is built and committed. Only the manual check remains, item 3.
+- **The mark.** `icons/mark.svg` and `icons/icon.svg`. See `docs/brand.md` for why the
+  caught spine is a light blue and not the cobalt accent, and why the icon has a plate.
+- **The popup and options page** follow the landing as of 2026-08-12.
+
+---
+
+## 5. Traps that have already cost time
+
+- **A retokening that changes an accent's LIGHTNESS invalidates every hardcoded colour
+  sitting on it.** Moving `--accent` from amber to cobalt left the options save button at
+  `#241705` on `#1231a8`, which measures 1.69:1 and is an unlabelled button. Grep for hex
+  literals near any token you relight.
+- **`str.replace` does not fail when it matches nothing.** Three font swaps silently did
+  nothing because the real declaration was `15px/1.55` and the search string said
+  `15px/1.5`. Assert the match or diff the result.
+- **A whole-document `replace(..., 1)` hits the first match in the FILE, not in the
+  section.** Two checkboxes were ticked in the wrong task that way. Scope to the section.
+- **Diacritics change a generated cover's dye.** `hashOf` runs over the raw string, so
+  correcting `Stanisław Lem` moves Solaris from tobacco to forest.
+- **Windows and Git Bash:** `npm run` and `npx` both fail here. Use
+  `./node_modules/.bin/vitest run`, `node node_modules/typescript/bin/tsc --noEmit`,
+  `node build.mjs`. Chrome is at
+  `/c/Program Files (x86)/Google/Chrome/Application/chrome.exe`, and it refuses
+  `--load-extension`. Chrome also clamps its window width to about 485px, so a true mobile
+  viewport needs the iframe harness, not `--window-size`.
+- **`popup.html` renders nothing outside an extension host.** It is `<main id="app">` and
+  draws itself from `chrome.storage`. Use `node tools/popup-harness.mjs`.

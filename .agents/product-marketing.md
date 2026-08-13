@@ -1,7 +1,7 @@
 # Product Marketing Context
 
-**Document version:** v2
-**Last updated:** 2026-08-11
+**Document version:** v3
+**Last updated:** 2026-08-13
 
 ## Product Overview
 
@@ -168,25 +168,27 @@ book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/
 
 ## Visual Identity
 
-Established 2026-08-11 and documented in full in `docs/brand.md`.
+Established 2026-08-11, extended through 2026-08-13. Full system in `docs/brand.md`.
 
-**The world:** four duotone plates, classical colonnades and arcades screened in cobalt on
-cream. Every one is a threshold you look through, which is the product's gesture. The
-palette is sampled from the artwork rather than chosen beside it, so the page and the
-picture are one surface.
+**The world:** two duotone plates, both 18th-century architectural capricci, both public
+domain, duotoned from 4000px museum scans. Both are a threshold you look through, which is
+the product's gesture. The palette is sampled from the artwork and then pushed apart until
+every text pair clears AAA.
 
-**Type:** Bricolage Grotesque for display, Instrument Sans for text, self-hosted, no third
-party. Serif appears only where a real book does.
+**Type:** Petrona at 800 for display, Instrument Sans for text, self-hosted, no third
+party. Roman and real italic both loaded, because a faked slant is visible at headline size.
 
-**The mark:** four spines, one caught in the lamp. Most of a shelf is lost to the dark and
-one book is lit, which is the product in one picture.
+**The mark:** three spines, one pulled out and lit. Drawn by Maximo and redrawn as
+geometry. The caught spine is a light blue rather than the cobalt accent, and that is
+deliberate: it has to separate from the other spines, not from the page.
 
 **The rule that governs every layout:** a plate carries a statement, the cream carries the
 reading. Anything a person has to read more than once belongs on the page, never on the
 picture.
 
-**Open:** the plates' provenance is unconfirmed (see `OPENWORK.md` §3.1), and the extension
-surfaces still use the previous generation's palette.
+**Surface consistency:** the landing, the popup and the setup page are one system as of
+2026-08-13. The in-page catch tray is not, deliberately: it renders inside somebody else's
+page and has to hold up against an arbitrary background.
 
 ## Brand Voice
 
@@ -231,6 +233,10 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v3 (2026-08-13). Visual Identity rewritten after the mark shipped and the extension
+  surfaces were realigned to the landing. Positioning, audience and pricing are unchanged,
+  so copy built against v1 or v2 is still valid. Records that three advertised features do
+  not exist yet: the hosted proxy, the ten free catches, and Goodreads export.
 - v2 (2026-08-11). Added Visual Identity after the landing was rebuilt twice: the duotone
   plates, the sampled palette, the self-hosted type, and the plate-versus-cream rule.
   Positioning and audience are unchanged, so downstream copy built against v1 is still

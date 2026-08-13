@@ -1,33 +1,29 @@
 # Permission justifications
 
-> ## ⚠ STALE, and this is the file that fails review. Last accurate at `3175abd`.
+> ## ⚠ STALE, and this is the file that fails review. Rewrite is OPENWORK item 17.
 >
-> **"Nothing is transmitted" is about to become false.** A hosted recognition proxy means
-> the picture a user asks Buki to identify goes to a Buki server before it goes to the
-> model. An inaccurate data-usage declaration is one of the most reliable ways to fail
-> Chrome Web Store review, and it would also be a lie in the one section reviewers read
-> most carefully.
->
-> Three permissions are being added on the `buki-pro` branch and **none of them is
-> justified here yet**:
+> **Two of the three permissions below are no longer hypothetical.** `scripting` and
+> `activeTab` shipped in the manifest on 2026-08-12 with catch-anywhere, and neither is
+> justified anywhere in this file. A reviewer comparing the manifest against this document
+> is exactly who it is for.
 >
 > | Permission | Why it is needed | What breaks without it |
 > | --- | --- | --- |
 > | `scripting` | Inject the catch tray into a tab that has no content script | Catching a book anywhere except X shows no feedback at all |
 > | `activeTab` | The grant a context-menu click gives, which makes that injection legal without host access at install | Injection needs a broad host permission instead, which is a worse ask |
-> | `https://*/*` (already declared **optional**) | Fetch a cover image from a CDN that is not the tab's own origin | Off X, the picture cannot be read at all |
+> | `https://*/*` (declared **optional**) | Fetch a cover from a CDN that is not the tab's own origin, requested per host on first use | Off X, the picture cannot be read at all |
 >
 > **The narrowest honest framing is the one to use:** `activeTab` plus an optional host
 > permission requested on first use, not a broad host permission at install. Say that
-> explicitly, because a reviewer comparing the manifest against this file is exactly who
-> this document is for.
+> explicitly.
 >
-> Also re-check the existing data-usage answers end to end. They predate cover caching in
-> the Cache API and the caught picture being stored as a book's cover, so they were already
-> drifting before any of this.
+> **"Nothing is transmitted" below becomes false the day the proxy ships.** An inaccurate
+> data-usage declaration is one of the most reliable ways to fail review, and it would be a
+> lie in the section reviewers read most carefully. Re-check the existing answers end to
+> end too: they predate cover caching in the Cache API and the caught picture being stored
+> as a book's cover.
 >
-> Rewrite is plan Task 14. It cannot be finished before the proxy exists and its domain is
-> chosen: see `OPENWORK.md` §1.
+> Cannot be finished before the proxy exists: see `OPENWORK.md` Part 1.
 
 Paste each into the matching field on the Web Store **Privacy practices** tab. Reviewers
 reject vague answers, so each one names the feature that needs it.
