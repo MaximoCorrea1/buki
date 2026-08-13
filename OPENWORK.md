@@ -7,8 +7,8 @@
 | Tests | 329 across 32 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
-| Working tree | **items 4, 5, 6, 7, 20 and 22 done and uncommitted** |
-| Branch | `buki-pro`, **28 commits ahead of `main`, not merged** |
+| Working tree | clean. Items 4, 5, 6, 7, 8, 20 and 22 are committed |
+| Branch | `buki-pro`, **34 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
@@ -66,8 +66,8 @@ unblocks.
 
 ## Part 2. Unblocked. An agent can start any of these right now
 
-Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4, 5, 6 and 7 are
-done. 8's dark-mode half is the next one an agent can take**, and 9 waits on 8 and 3.
+Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8 are all
+done. 9 is the next one an agent can take**, and it waits on item 3 being done by hand.
 
 **The product no longer advertises anything that does not exist except the hosted proxy
 and the ten free catches**, both of which are items 10 and 14 and both of which wait on
@@ -160,10 +160,53 @@ Maximo's items 1 and 2.
       nobody has clicked the button in Chrome or fed the file to Goodreads. Worth adding to
       the item 3 pass.
 
-- [ ] **8. The landing: ~~eyebrows~~ and dark mode.** **The eyebrow half is done**, see
-      item 20. Dark mode is the one pre-flight box that cannot be ticked today. The plates
-      can be re-rendered inverted by swapping the endpoints in `tools/plates.sh`, and
-      `icons/icon.svg` already survives a dark ground.
+- [x] **8. The landing: eyebrows and dark mode.** Done 2026-08-13. Eyebrows: see item 20.
+
+      **Dark mode was three times the job it looked like**, and the reason is worth keeping.
+      The token swap was the easy part. What actually had to be found:
+
+      1. **Thirteen hardcoded `rgba(251, 247, 236, …)`**, the cream at an alpha: the
+         masthead's glass, the hero scrim that carries the reading, the band quote's halo.
+         Relighting `--paper` would not have touched one of them, because none of them
+         mentioned it, and every one would have survived into dark mode as a cream bar
+         across a navy page. They now go through `--paper-rgb`. **This is the retokening
+         trap in `docs/brand.md` one step removed, and it is worth adding to the grep: look
+         for `rgba(` as well as `#`.**
+      2. **The masthead mark was `fill="#0a0f33"` inline.** On a dark ground both shelved
+         spines vanish, which is the exact failure `brand.md` records for `icon.svg`. Now
+         `--mark-spine` / `--mark-caught`, the names `brand.md` already gave them. Mirrored,
+         not merely lightened: cream spines with a **cobalt** catch is 9.00:1 against 9.58:1
+         in daylight, where leaving the light blue would have been **1.69:1** and the mark
+         would say nothing.
+      3. **The plates.** `tools/plates.sh` needs the 4000px museum scans, which are not in
+         the repo. `tools/plates-dark.sh` derives them from the **shipped webp** instead,
+         which is legitimate because `colorlevels` runs last in that pipeline, so the
+         shipped file's luma is monotonic in the original's. Not a CSS filter: a duotone's
+         argument is that its two colours are the page's two colours.
+
+      **Tonal order is kept rather than negated**, and that was measured, not preferred. For
+      a cream headline to clear 7:1 the plate's brightest area must sit at or below 0.0806
+      relative luminance; the sky at `#35457f` is 0.0655, so cream lands at **7.92:1** with
+      the painting's own light still reading as light. Negating looks more dramatic, puts
+      the headline on the pale ruin where it measures worse, and inverts a credited
+      painting's values. `plates-dark.sh` is parameterised, so it is one command to change
+      your mind.
+
+      Dark plates are **smaller** than the light ones (125KB against 305KB at 1400): a
+      compressed tonal range gives the encoder less to keep. `<picture>` with a `media`
+      source means exactly one downloads, and the hero preload is split in two so a dark
+      machine does not fetch the light plate and throw it away.
+
+      **Deliberately NOT darkened: the three step mockups.** `.frame` is `#faf7f2`, which is
+      the extension's own paper. Those panels depict a real light surface, so dimming them
+      to suit the page would misrepresent the product, the same way the real book covers on
+      the shelf are photographs and do not invert. They are the brightest thing on the dark
+      page and that is the honest answer.
+
+      **One trap for whoever verifies this:** the machine renders dark by default, so a
+      plain screenshot is NOT the light mode. Neutralise all five `(prefers-color-scheme:
+      dark)` occurrences, not just the `@media` block, or you get the dark plate under
+      light tokens and it looks like a regression that is not there.
 
       **While doing the eyebrows I found and fixed a live defect on the same page**, so it
       is recorded here rather than left in a commit message. The masthead's primary call to

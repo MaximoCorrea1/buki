@@ -48,6 +48,56 @@ invalidates every hardcoded colour sitting on it. Moving `--accent` from a light
 cobalt left `options.html`'s save button at `#241705` on `#1231a8`, which measures 1.69:1
 and is an unlabelled button. Grep for hex literals near any token you relight.
 
+**And grep for `rgba(` too, which is the same trap wearing gloves.** Dark mode found
+thirteen hardcoded `rgba(251, 247, 236, …)` on the landing: the masthead's glass, the hero
+scrim, the band quote's halo. Every one is the cream at an alpha, none of them names
+`--paper`, so relighting `--paper` would have left thirteen cream veils across a navy page.
+They go through `--paper-rgb` now. A colour written as three numbers is still a hardcoded
+colour.
+
+---
+
+## The same room, at night
+
+Added 2026-08-13. `docs/index.html` only. Not a second design: the tokens swap roles and
+everything downstream follows, because it was already written in tokens.
+
+| Token | Day | Night |
+| --- | --- | --- |
+| `--paper` | `#FBF7EC` | `#080D20` |
+| `--paper-2` | `#F3ECD9` | `#111832` |
+| `--ink` | `#0A0F33` | `#F5EFDE` |
+| `--ink-2` | `#3D477A` | `#BCC4E0` |
+| `--blue` | `#1231A8` | `#7F9BEA` |
+| `--rule` | `#DED4B4` | `#262E4D` |
+
+| Pair | Ratio |
+| --- | --- |
+| `--ink` on `--paper` | 16.8:1 |
+| `--ink-2` on `--paper` | 11.1:1 |
+| `--blue` on `--paper` | 7.1:1 |
+| cream on the plate's sky | 7.9:1 |
+
+**The dyes do not appear in that table, and that is the rule.** A binding is a dye, not a
+status colour, and a book keeps its cloth in any light. The generated covers, the spines
+and the cloth edge are identical in both modes.
+
+**The mark mirrors rather than lightens.** Cream spines with a cobalt catch measures 9.00:1
+against 9.58:1 in daylight. Keeping the light blue would have measured 1.69:1 against cream
+neighbours and the mark would say nothing, which is the whole reason `--mark-caught` exists
+as a token.
+
+**The plates are re-duotoned, never filtered.** `tools/plates-dark.sh`, from the shipped
+webp rather than the museum scan, which works because `colorlevels` runs last in
+`plates.sh`. The tonal order is kept rather than negated: for a cream headline to clear 7:1
+the plate's brightest area must sit at or below 0.0806 relative luminance, and the sky at
+`#35457f` is 0.0655. Negating is more dramatic, measures worse under the headline, and
+inverts a credited painting's values.
+
+**What stays light on purpose.** The three step mockups. `.frame` is `#faf7f2`, the
+extension's own paper, so those panels depict a real light surface. Dimming them to suit
+the page would misrepresent the product, exactly as inverting the real book covers would.
+
 ## The idea
 
 A library at night. One warm lamp. Most spines are lost to the dark and a few are caught
