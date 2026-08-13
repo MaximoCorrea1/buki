@@ -283,12 +283,20 @@
         margin-right: auto;
       }
       .top nav { display: flex; gap: 24px; align-items: center; }
-      .top nav a {
+      /* `:not(.btn)` is load-bearing, not tidiness. The call to action is an <a class="btn">
+         inside this nav, and `.top nav a` at specificity (0,1,2) beats `.btn` at (0,1,0),
+         so without the exclusion the nav rule repaints the button: var(--ink-2) on
+         var(--ink) is 2.11:1, and on hover `.btn:hover` sets the background to var(--blue)
+         while this rule sets the text to var(--blue) too, which measures 1.00:1. The label
+         did not just go faint, it disappeared. It also dropped the button to weight 500.
+         Same trap as `#sheet` beating `[hidden]` in popup.html, and the same answer:
+         exclude the case here rather than escalating specificity on `.btn`. */
+      .top nav a:not(.btn) {
         color: var(--ink-2); text-decoration: none;
         font-size: 15px; font-weight: 500;
         transition: color 160ms var(--ease);
       }
-      .top nav a:hover { color: var(--blue); }
+      .top nav a:not(.btn):hover { color: var(--blue); }
       .top .btn { padding: 9px 18px; font-size: 14.5px; }
       @media (max-width: 860px) {
         .top { height: 60px; padding: 0 20px; }
@@ -409,12 +417,10 @@
       .band.tight { padding-top: 76px; }
       @media (max-width: 860px) { .band { padding-top: 72px; } }
 
-      .kicker {
-        font-size: 12.5px; font-weight: 600;
-        letter-spacing: 0.14em; text-transform: uppercase;
-        color: var(--blue);
-        margin: 0 0 14px;
-      }
+      /* No kicker rule, and this is deliberate rather than an omission. The small
+         uppercase label above a heading was deleted from all three bands on 2026-08-13:
+         the headline is set in Petrona 800 at up to 3.3rem and does not need a label
+         announcing what it is about to say. Do not reintroduce one. */
       h2 {
         font-family: var(--display);
         font-weight: 800;
@@ -624,8 +630,9 @@
         transform: rotate(-45deg);
       }
       .plan.pro li::before { border-color: #7f9bea; }
-      .plan li.off { color: var(--ink-2); }
-      .plan li.off::before { border: 0; content: "·"; top: -2px; left: 6px; font-size: 22px; color: var(--rule); transform: none; width: auto; height: auto; }
+      /* `.plan li.off` lived here to strike out a feature a tier did not get. Its only
+         user was the export bullet in Free, and export is free on both tiers as of
+         2026-08-13, so the rule went with it rather than sitting unused. */
       .plan-foot { font-size: 13.5px; color: var(--ink-2); margin: 14px 0 0; }
       .plan.pro .plan-foot { color: var(--cream-2); }
       .plan .btn { text-align: center; }
@@ -773,7 +780,6 @@
 
       <div class="wrap">
         <section class="band" id="how">
-          <p class="kicker">The gesture</p>
           <h2>Right-click a cover. That is the whole thing.</h2>
           <p class="sub">
             No tab to open, no title to type, no app to switch to. Three seconds from
@@ -844,7 +850,6 @@
         </section>
 
         <section class="band">
-          <p class="kicker">What you end up with</p>
           <h2>A shelf, face out, that looks like a shelf.</h2>
           <p class="sub">
             Not a list of links. Not a folder you will never open. Covers you recognise on
@@ -920,7 +925,6 @@
         </section>
 
         <section class="band" id="costs">
-          <p class="kicker">What it costs</p>
           <h2>Ten catches to find out. Then four dollars.</h2>
           <p class="sub">
             Reading a cover from a photograph is the one thing that costs real money to run.
@@ -937,7 +941,7 @@
                 <li>Unlimited catches from a shop link</li>
                 <li>The whole shelf, kept forever</li>
                 <li>Bring your own key and read unlimited covers, free</li>
-                <li class="off">Export to Goodreads and StoryGraph</li>
+                <li>Export to Goodreads and StoryGraph</li>
               </ul>
               <p class="plan-foot">No account. Nothing to cancel.</p>
               <a class="btn ghost" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
@@ -1107,7 +1111,7 @@
             kids[i].style.setProperty("--i", String(i % 6));
           }
         });
-        var SINGLES = ".band > .kicker, .band > h2, .band > .sub, .shelf-wide, .answer, .picker, .close-band .inner";
+        var SINGLES = ".band > h2, .band > .sub, .shelf-wide, .answer, .picker, .close-band .inner";
         var solo = document.querySelectorAll(SINGLES);
         for (var j = 0; j < solo.length; j++) solo[j].setAttribute("data-reveal", "");
 
