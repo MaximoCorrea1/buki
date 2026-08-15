@@ -575,6 +575,12 @@
          picture. Start the headline clear of it rather than fighting it with more wash. */
       /* The old rule here nudged the headline clear of the arch on the plate's left
          edge. The headline is centred now, so there is nothing to clear. */
+      /* text-align is the load-bearing line here, not margin.
+         The hero was centred by giving `.inner` `align-items: center`, which centres each
+         child's BOX. The h1's text still inherited `left`, so inside its centred box the
+         two lines set flush left and the shorter one — "You saw a book." — hung off the
+         axis by half the difference in their lengths. The block was centred and the
+         headline was not, which is a distinction only the reader can see. */
       h1 {
         font-family: var(--display);
         font-weight: 800;
@@ -584,6 +590,7 @@
         margin: 0;
         max-width: 15ch;
         text-wrap: balance;
+        text-align: center;
       }
       /* "forgot" takes the ACCENT. It is not a fade.
          It was --ink-2, on the theory that the word the sentence is about should be the one

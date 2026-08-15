@@ -10,23 +10,35 @@
     plate makes the ground ours instead of the host's.
 
     Use icons/mark.svg instead wherever the page owns its background.
+
+    GEOMETRY IS tools/mark.mjs. Every coordinate below is asserted against it by
+    src/shared/mark.test.ts, because this drawing now exists in five places and the last
+    value that was "defined once" turned up in seven files.
+
+    THE CORDS ARE PAINTED HERE, not masked, and that is allowed exactly because this file
+    owns its ground: they are the plate colour, on the plate. Everywhere else they are cut
+    with a mask, since a painted cord carries a background with it and the mark would then
+    only work on the one surface that background matches.
   -->
   <rect width="100" height="100" rx="22" fill="#fbf7ec"/>
-  <g transform="translate(6.45 6.63) scale(0.864)">
+  <g transform="translate(50 50) scale(0.86) translate(-50 -50)">
     <g fill="#0a0f33">
-      <rect x="16.44" y="6.22" width="18.44" height="87.89" rx="9.22"/>
-      <rect x="66.00" y="6.22" width="18.44" height="87.89" rx="9.22"/>
+      <rect x="15" y="6" width="19" height="88" rx="9.5"/>
+      <rect x="66" y="6" width="19" height="88" rx="9.5"/>
     </g>
-    <rect x="41.65" y="10.80" width="18.10" height="80.20" rx="9.05"
-          fill="#7cc0fd" transform="rotate(10 50.7 50.9)"/>
+    <!-- #2f7fd6, not the #7cc0fd this file carried before. On cream, #7cc0fd measures
+         1.81:1 against the plate and 9.58:1 against the spines; the accent #1231a8 is
+         9.66:1 and 1.80:1. Only #2f7fd6 clears both, at 3.83:1 and 4.54:1. -->
+    <rect x="40.5" y="7" width="19" height="86" rx="9.5"
+          fill="#2f7fd6" transform="rotate(-8 50 50)"/>
     <g fill="#fbf7ec">
-      <rect x="16.44" y="66.08" width="18.44" height="0.62"/>
-      <rect x="16.44" y="74.77" width="18.44" height="0.62"/>
-      <rect x="66.00" y="66.08" width="18.44" height="0.62"/>
-      <rect x="66.00" y="74.77" width="18.44" height="0.62"/>
-      <g transform="rotate(10 50.7 50.9)">
-        <rect x="41.65" y="65.42" width="18.10" height="0.62"/>
-        <rect x="41.65" y="73.36" width="18.10" height="0.62"/>
+      <rect x="15" y="64.6" width="19" height="1.9"/>
+      <rect x="15" y="72.9" width="19" height="1.9"/>
+      <rect x="66" y="64.6" width="19" height="1.9"/>
+      <rect x="66" y="72.9" width="19" height="1.9"/>
+      <g transform="rotate(-8 50 50)">
+        <rect x="40.5" y="64.6" width="19" height="1.9"/>
+        <rect x="40.5" y="72.9" width="19" height="1.9"/>
       </g>
     </g>
   </g>
