@@ -7,8 +7,8 @@
 | Tests | 329 across 32 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
-| Working tree | **the landing rebuild is uncommitted.** Items 4 to 8, 20 and 22 are committed |
-| Branch | `buki-pro`, **35 commits ahead of `main`, not merged** |
+| Working tree | clean. Everything through the landing rebuild is committed |
+| Branch | `buki-pro`, **37 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
@@ -334,7 +334,7 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
 - [ ] **16. Task 13, the options page holds a licence.** 4 steps.
 - [ ] **17. Task 14, the documents that are now false.** 4 steps. *(see §3 below)*
 - [ ] **18. Task 15, close the loop.** 4 steps.
-- [ ] **19. Merge `buki-pro` into `main`.** 35 commits and counting. Use
+- [ ] **19. Merge `buki-pro` into `main`.** 37 commits and counting. Use
       `superpowers:finishing-a-development-branch`.
 
 ---
