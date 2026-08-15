@@ -1,7 +1,7 @@
 # Product Marketing Context
 
-**Document version:** v3
-**Last updated:** 2026-08-13
+**Document version:** v5
+**Last updated:** 2026-08-15
 
 ## Product Overview
 
@@ -168,7 +168,24 @@ book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/
 
 ## Visual Identity
 
-Established 2026-08-11, extended through 2026-08-13. Full system in `docs/brand.md`.
+Established 2026-08-11, rebuilt 2026-08-15. Full system in `docs/brand.md`.
+
+**The landing is on a third generation as of 2026-08-15, and the extension is not.** This
+is scheduled drift, not neglect: landing first, extension second. Copy written against the
+old identity is still true about the product; only the look changed.
+
+**What changed and why it matters to positioning.** The landing was cream with a serif
+display, which is the single most common look in machine-generated design, and it read as
+old. The plates are the only genuinely distinctive asset here, so the type stopped
+competing with them: **Manrope, one family, no serif in the interface at all**, the plate
+full-bleed at 100svh, a floating glass pill for navigation, capsule controls with a real
+press, and a light/dark switch. Font payload fell from 121KB to 25KB.
+
+**The consequence for the brand story.** Maximo supplied his own mark on 2026-08-15 and it
+has **two** spines, not three. The three-spine story, "one pulled out and lit", was the
+argument that *catching* is what separates Buki from a reading list. That argument is not
+in the new drawing. The story needs rewriting and the favicon, store tile and extension
+icons still carry the old mark. Open work.
 
 **The world:** two duotone plates, both 18th-century architectural capricci, both public
 domain, duotoned from 4000px museum scans. Both are a threshold you look through, which is
@@ -233,6 +250,13 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v5 (2026-08-15). **Visual identity rebuilt on the landing only.** The cream-plus-serif
+  composition was the first of the three looks generated design defaults to, and it read as
+  old; the serif is gone, Manrope does display and body, the plate is full-bleed, and there
+  is a light/dark switch. Maximo's own two-spine mark replaces the redrawn three-spine one
+  on the landing. **Positioning, audience, pricing and objections are all unchanged**, so
+  copy built against v3 or v4 is still true. Two things are now open: the brand story still
+  says "three spines, one pulled out and lit", and the icon set still carries that mark.
 - v4 (2026-08-13). Export to Goodreads/StoryGraph **shipped and moved to Free**. It was
   advertised as a Pro feature while `docs/pricing.md` simultaneously said the paid tier
   gates one thing only and the shelf is never gated; the contradiction was resolved in

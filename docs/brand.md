@@ -10,12 +10,24 @@ here first, then in every surface that uses it, in the same commit.
 
 ## Read this before changing anything
 
-| Surface | State |
-| --- | --- |
-| `docs/index.html` | current: cobalt on cream, Petrona and Instrument Sans |
-| `popup.html`, `options.html` | current, realigned 2026-08-12 |
-| `src/extension/toolbar.ts` | current: a book board on Chrome's own toolbar. See below |
-| `src/extension/content.ts` | **previous generation:** the violet-black room with one warm lamp |
+**As of 2026-08-15 the landing moved ahead of the extension, deliberately.** There are now
+three generations live at once, and knowing which surface is on which one is the difference
+between a fix and a regression.
+
+| Surface | Generation | State |
+| --- | --- | --- |
+| `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch, the plate full-bleed. See *The third generation*. |
+| `popup.html`, `options.html` | **second** | Cobalt on cream, Petrona and Instrument. Realigned 2026-08-12, correct for its generation, now one behind the landing. |
+| `src/extension/toolbar.ts` | second | A book board on Chrome's own toolbar |
+| `src/extension/content.ts` | **first** | The violet-black room with one warm lamp |
+| `icons/*.png`, `docs/icon.svg`, `icons/mark.svg` | second | Still the **three-spine** mark. The landing carries Maximo's two-spine drawing. |
+
+**The drift is on purpose and it is scheduled.** Maximo chose "landing first, extension
+follows" on 2026-08-15 so each pass stays reviewable, rather than one enormous diff three
+days after the popup was last realigned. **Do not "fix" the popup by copying the landing's
+tokens across**, and do not restore Petrona to the landing to match the popup. The second
+pass is a real piece of work with its own decisions, and `src/extension/content.ts` has its
+own reason for lagging further still, recorded in OPENWORK item 21.
 
 ### The fifth surface: Chrome's toolbar
 
@@ -59,8 +71,13 @@ colour.
 
 ## The same room, at night
 
-Added 2026-08-13. `docs/index.html` only. Not a second design: the tokens swap roles and
+Added 2026-08-13, `docs/index.html` only. Not a second design: the tokens swap roles and
 everything downstream follows, because it was already written in tokens.
+
+> **The values below are still correct; the mechanism changed on 2026-08-15.** They shipped
+> as a duplicated `@media (prefers-color-scheme: dark)` palette. They are now single
+> `light-dark()` declarations, because adding a manual switch would have meant a third copy.
+> See *Two moods from one declaration*.
 
 | Token | Day | Night |
 | --- | --- | --- |
@@ -110,6 +127,36 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 ---
 
 ## The mark
+
+> **Two marks are live and they are different objects.** The landing carries Maximo's own
+> drawing, supplied 2026-08-15. Everything else still carries the redrawn three-spine mark
+> below. Read *The mark Maximo drew* first, then this, which is still the truth for the
+> extension, the favicon and the store tile.
+
+### The mark Maximo drew (landing, current)
+
+**Two spines, each crossed by two cords.** Supplied as `brand/logo-maximo.svg`, inlined in
+`docs/index.html`. It is a potrace trace of his drawing, so the edges carry his hand rather
+than being resampled geometry.
+
+Three things had to be fixed before it could ship, and the first is the one that matters:
+
+| Found | Why it would have broken | Fixed by |
+| --- | --- | --- |
+| `fill="#000000"` hardcoded on the group | Black on `#080d20` is invisible. **Every dark-mode visitor would have seen no logo**, which is exactly how the previous mark broke on a dark toolbar | `fill="var(--mark-spine)"` |
+| A 900×900 box holding art that is only 613×793 | 16% dead padding on every side, so the mark renders small and aligns badly against the wordmark | viewBox tightened to `148 55 613 793` |
+| potrace preamble: `<!DOCTYPE>`, `900pt` units | Will not inline cleanly | Stripped; the `translate(0,900) scale(.1,-.1)` transform **stays**, because the path data lives in that flipped tenth-scale space |
+
+It is sized by **height**, width auto, because it is taller than it is wide and pinning the
+width shrinks it against the wordmark beside it.
+
+**What this costs, and it is not nothing.** This mark has no caught spine. The three-spine
+mark's entire argument was that *catching* is the difference between a lit spine and a dark
+one, and that idea is not in the two-spine drawing. The story below is therefore no longer
+true of the landing. Rewriting the brand story, and reconciling the favicon, the store tile
+and `icons/mark.svg`, is open work rather than done.
+
+### The redrawn mark (extension, favicon, store tile)
 
 **Three spines. One pulled out and lit.**
 
@@ -222,49 +269,118 @@ because laid over the picture the mark sat on a column and vanished, and a logo 
 hunt for is not a logo. It also chose which plate carries the claim: the arcade's dye is far
 more saturated than the cypress's and swallowed type whole.
 
-### Type, and the webfont ban being lifted
+### Type on the landing: one family, and no serif at all
 
 | Role | Face |
 | --- | --- |
-| Display | **Petrona** variable at 800, `docs/petrona.woff2` + `petrona-italic.woff2`, 91KB |
-| Body and UI | **Instrument Sans** variable, `docs/instrument.woff2`, 30KB |
+| Display and body | **Manrope** variable 200–800, `docs/manrope.woff2`, **25KB** |
 | Book titles only | `ui-serif` stack, because that is what the product stamps on a board |
 
-**Self-hosted, 121KB, no third party.** The old ban existed because the page claimed nothing
-about you was collected, and a Google Fonts request would have made that a lie above the
-fold. A file served from our own domain never broke that promise, and the promise has
-changed anyway now that recognition is hosted. **The ban still stands for any third-party
-font host.**
+**One family, the way a phone does it.** Petrona (44KB) plus its italic (47KB) plus
+Instrument Sans (30KB) came to 121KB. Manrope is 25KB and does all of it, so the page
+carries a fifth of the type it used to.
 
-### Why Petrona, after two other faces
+#### Why the serif went, which is the important part
 
-The display face has changed twice, and each move was a correction rather than a taste
-swing. **Bricolage Grotesque** was not carrying enough weight. **Bodoni Moda** was bolder
-and elegant, but a didone is *sharp*, and the brief that followed was explicitly "bolder
-and rounder, still classic". A didone cannot become round.
+The landing was cream with a high-contrast serif display. That is, precisely, the most
+common look in machine-generated design right now: `frontend-design`'s own calibration
+names *"a warm cream background near #F4F1EA with a high-contrast serif display"* as the
+first of three defaults it warns about.
 
-Petrona is a warm, bookish, classical text serif with generous curves. At 800 it carries
-real weight without losing the period feeling that ties the page to the capricci. It is
-also not in the AI-default editorial serif cluster, which matters: that cluster is
-Fraunces, Instrument Serif and Playfair, and this page has spent real effort staying out
-of it.
+This page had carefully dodged the AI-default serif **faces** (Fraunces, Instrument Serif,
+Playfair) and never noticed it had walked into the default **composition**. The result read
+as tasteful editorial, which sits next to both "generated" and "old", and Maximo's word for
+it on 2026-08-15 was that the landing looked old.
 
-**Young Serif was the roundest candidate and was rejected on one fact: it ships no
-italic.** See the rule below for why that was disqualifying rather than a minor gap.
+**The fix was to stop competing.** The one genuinely distinctive asset here is the artwork:
+public-domain 18th-century capricci, duotoned from museum scans, that nobody else has. A
+vintage typeface next to a vintage engraving is two things saying the same thing. A crisp
+current sans next to a baroque etching is contrast, which is how a gallery brands an old
+master. **The plates carry the classical weight now, and the type is allowed to be
+current.**
 
-### The italic is not optional, and this is how to check
+So: Bricolage Grotesque (too light) → Bodoni Moda (a didone cannot be round) → Petrona
+(right for the second generation) → **Manrope**. Each move was a correction, not a taste
+swing, and this one corrected the whole premise rather than the face.
 
-`docs/index.html` loads the roman **and** the italic as two separate `@font-face` blocks.
-With only the roman, the browser fakes the slant by shearing the upright: circular bowls
-stay circular instead of becoming ovals, and the `f` never gains its descender. The one
-italic word in the headline is the most looked-at glyph run on the page.
+#### The italic, and how its absence is now enforced
 
-**To test any future face, set `font-synthesis: none` on a sample.** If the italic word
-renders fully upright, the family has no italic face and the page has been faking it. That
-is exactly how the fake was caught here, after it had already shipped.
+**Manrope ships no italic**, which used to be disqualifying. Young Serif was rejected for
+exactly that. It stopped mattering the moment emphasis stopped being a slant.
 
-The headline italic also needs `line-height: 1.06` plus a padding reserve, or the
-descender of *forgot* clips against the 0.94 leading.
+`h1 em` is no longer italic. `forgot` is set in `--ink-2` at the same weight, so **the word
+the sentence is about is the one that fades**: the type does what the line says, and the
+headline's mass is unbroken. Colour is the better answer in a geometric sans anyway, where
+italicising is not the idiom.
+
+`html { font-synthesis: none }` is set globally. That is not tidiness. A faked italic
+already reached production here once: the browser sheared the roman, circular bowls stayed
+circular, the `f` never gained its descender, and nobody saw it until a `font-synthesis`
+test caught it after shipping. With one family and no italic file, this makes that failure
+**impossible** rather than unlikely.
+
+### The third generation: pill, capsules, and a switch
+
+Added 2026-08-15, landing only.
+
+**The pill.** The masthead floats rather than sticking to the top edge, because the plate
+now fills the viewport and a full-width bar cuts a hard line across the painting. It is the
+page's one piece of glass, used once, where it does a job.
+
+It is also the page's **one authored moment**: at rest it spans the shell, and once the
+hero has gone past it contracts to a capsule, the way a phone's address bar collapses when
+you start reading. It transitions `max-width`, which is layout rather than compositor work,
+and that is a deliberate exception to the transform-and-opacity rule: it fires **once per
+direction** off the existing IntersectionObserver sentinel, never per frame. There is still
+no scroll listener anywhere on this page.
+
+**Capsules.** Every control is `border-radius: 999px` with `transform: scale(0.97)` on
+`:active`. The old buttons were 3px rectangles that changed colour on hover and did nothing
+on click, which on a touch screen is no feedback at all: hover is the one state a finger
+never produces. The press is small enough that nobody consciously sees it and large enough
+that the control feels like it heard you.
+
+**Secondary is a tint, not an outline.** The old ghost ring measured **1.38:1** against the
+paper, which is a boundary you cannot see and fails the 3:1 bar for a control edge. A
+filled surface needs no boundary to read as a control, and it is what a phone actually
+does. The options page reached the same conclusion from the opposite direction and had to
+keep its ring; see the note under the checklist.
+
+**Motion**, per `emil-design-eng`: `--ease-drawer: cubic-bezier(.32,.72,0,1)` is Ionic's
+port of the iOS sheet curve and is used for the one thing that travels a distance. Icons
+never animate from `scale(0)`; nothing in the world appears out of nothing.
+
+### Two moods from one declaration
+
+The palette is written with **`light-dark()`**, one declaration per token:
+
+```css
+--ink: light-dark(#0a0f33, #f5efde);
+```
+
+The alternative was a second copy of the palette inside `@media (prefers-color-scheme:
+dark)` and a **third** under `[data-theme="dark"]` for the manual switch. Three copies of
+one palette, in a repo whose recorded failure mode is *the copies drifted*, was not worth
+it. The switch changes exactly one property: `color-scheme`.
+
+Two things CSS cannot reach, so `index.html`'s script handles them:
+
+1. **The plates.** `<picture>` chooses its source from the OS preference and knows nothing
+   about a manual override, so a reader who overrode would have got the dark page under the
+   light painting. Flipping each dark `<source>` between `media="all"` and `"not all"`
+   re-runs the browser's own source selection, which keeps **one** plate downloaded rather
+   than shipping both and hiding one.
+2. **The `theme-color` metas**, by the same mechanism, so the phone's own chrome follows the
+   page rather than the system.
+
+The theme is decided by a small **blocking** script in `<head>`. Deferring it shows one mood
+and then swaps, which is the flash every theme toggle ships with unless it is done there. It
+always writes `data-theme`, even when the choice came from the OS, so the CSS only ever has
+to answer one question. **The choice is stored only when it is chosen**: writing it on load
+would freeze a reader's OS preference the first time they visited, so a machine that
+switched to dark at sunset would keep serving them daylight.
+
+**Veils go through `color-mix`, never raw numbers.** See the trap note above.
 
 ### Images, and the halftone that had to go
 
@@ -537,10 +653,13 @@ Write from the reader's side of the screen. Say what happens.
 ## Checklist before shipping a surface
 
 - [ ] Contrast: body text at least 7:1 on its background
+- [ ] **A control's boundary clears 3:1, or it has a filled surface instead of an edge**
 - [ ] Serif only on book titles
 - [ ] One `--lamp` accent, on the thing that is actually lit
 - [ ] Focus visible on every control, `2px solid var(--lamp)`
+- [ ] **A disabled control looks disabled.** An empty-shelf state lasts days, not 200ms
 - [ ] Hover effects gated behind `@media (hover: hover) and (pointer: fine)`
+- [ ] **Every pressable thing answers a press**, not only a hover. A finger never hovers
 - [ ] `prefers-reduced-motion` honoured
 - [ ] No em-dashes in any copy
 - [ ] Grid, not stack, for anything that is a list of peers
@@ -548,8 +667,17 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] Paper tokens changed in `popup.html` and `options.html` together
 - [ ] No gradient, and no colour laid over another colour with alpha
 - [ ] Anything that is not a book row or a form field sits on the axis
+- [ ] **Grep `rgba(` as well as `#` when relighting a token**
 - [ ] **Nothing full-bleed and `position: fixed` can take a click**
 - [ ] **A component still owns its own colours inside a scoped block**
+
+**On the alpha rule and the third generation.** The flat rule was written for the room and
+still governs the extension: no gradient, no colour over colour. The landing's third
+generation deliberately breaks it, because transparency is the brief: the pill is glass, the
+hero wash is the page ground at an alpha, and the tinted secondary button is `--ink` at 8%.
+Those are all **the page's own ground at an alpha**, which is the same reason a modal scrim
+was always allowed. It is not licence to tint arbitrary colours over each other, and it does
+not apply to `popup.html`, `options.html` or `content.ts`.
 
 That last one is not a style rule, and it is here because it shipped. `#sheet` at
 specificity (1,0,0) beat the browser's own `[hidden] { display: none }` at (0,1,0), so a

@@ -1,14 +1,14 @@
 # Open work
 
-**State as of 2026-08-13**, verified by running the commands, not from memory:
+**State as of 2026-08-15**, verified by running the commands, not from memory:
 
 | | |
 | --- | --- |
 | Tests | 329 across 32 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
-| Working tree | clean. Items 4, 5, 6, 7, 8, 20 and 22 are committed |
-| Branch | `buki-pro`, **34 commits ahead of `main`, not merged** |
+| Working tree | **the landing rebuild is uncommitted.** Items 4 to 8, 20 and 22 are committed |
+| Branch | `buki-pro`, **35 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
@@ -19,10 +19,16 @@ unblocks.
 
 ## Part 1. Maximo only. Nothing in Part 3 can start until 1 and 2 are done
 
-- [ ] **1. Create the Polar product.** Two products, one per billing interval: Buki Pro
-      Monthly $4 and Buki Pro Yearly $29. **Attach the License Key benefit to BOTH** or a
-      yearly subscriber pays and gets nothing to paste in. Activation limit 5 on both.
-      Also create the API key Polar asks for; that is `POLAR_ACCESS_TOKEN` below.
+- [ ] **1. Create the Polar product.** **Field by field, with the reasoning and a curl that
+      proves it before any code exists: `docs/superpowers/polar-setup.md`.**
+
+      The short version. Two products, one per billing interval: Buki Pro Monthly $4 and
+      Buki Pro Yearly $29. **Attach the License Key benefit to BOTH** or a yearly
+      subscriber pays and gets nothing to paste in. **Enable activations on the benefit**,
+      limit 5, and allow customer deactivation; `/license-keys/activate` is the call the
+      whole paid tier rests on and it cannot work on a benefit without activations. Create
+      an **organisation** access token with license-key read and write; that is
+      `POLAR_ACCESS_TOKEN`. `POLAR_ORGANIZATION_ID` is the **UUID**, not the slug.
       The webhook Polar recommends is **not needed**: the design validates on demand and
       stores no subscription state, which is why there is no database.
       *Unblocks: item 2, then Tasks 6, 7, 9.*
@@ -67,7 +73,8 @@ unblocks.
 ## Part 2. Unblocked. An agent can start any of these right now
 
 Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8 are all
-done. 9 is the next one an agent can take**, and it waits on item 3 being done by hand.
+done. 23 is the live one**: the landing rebuild is half finished, hero done and everything
+below it untouched. 9 waits on item 3 being done by hand, and 24 waits on a decision.
 
 **The product no longer advertises anything that does not exist except the hosted proxy
 and the ten free catches**, both of which are items 10 and 14 and both of which wait on
@@ -219,10 +226,83 @@ Maximo's items 1 and 2.
       I swept the rest of the stylesheet for the same trap: six candidate rules, five safe,
       and `.close-band` already handles its own components correctly (16.19:1 and 10.73:1).
 
+- [ ] **23. Finish the landing rebuild: everything below the hero.** *Started 2026-08-15,
+      hero done, the rest untouched.* This is the "clearer simpler layout" half of Maximo's
+      brief and it is the larger half.
+
+      **What is already rebuilt** (see §2.2 for the reasoning): the type, the palette
+      mechanism, the floating pill, the controls, the light/dark switch, the hero.
+
+      **What is still on the second generation:** the three step mockups, the shelf row,
+      the pricing plans, the answers block, the closing band. They inherit the new tokens
+      and the new font, so they are *coherent* rather than broken, but the layout is the
+      old one.
+
+      Two specific asks from Maximo not yet done:
+      - **"Use more artwork."** The hero is full-bleed; the second plate is still a small
+        band, and a third use behind pricing was discussed and not built.
+      - **Better CTA animation.** Press and hover are done. The scroll reveals still use
+        the old timings and have not been retuned against `emil-design-eng`'s table.
+
+- [ ] **24. Reconcile the mark, and rewrite the brand story around it.** *(Maximo's call on
+      the story; the icon work is an agent's.)*
+
+      Maximo supplied his own mark on 2026-08-15 and it is now on the landing. **It has two
+      spines. The old one had three, and the third was the whole idea:** "one pulled out
+      and lit" is what made the mark about *catching* rather than about books. `docs/brand.md`
+      and `.agents/product-marketing.md` both still tell the three-spine story, and both now
+      carry a note saying so.
+
+      Still on the old three-spine mark: `icons/icon16/32/48/128.png`, `icons/mark.svg`,
+      `icons/icon.svg`, `docs/icon.svg`, `docs/icon32.png`, `docs/icon180.png`, and the
+      store tile. **Do not regenerate them by dropping the new SVG into `tools/make-icons.mjs`
+      unthinkingly:** `brand.md` records why `icon.svg` carries a cream plate rather than a
+      transparent ground, and the two-spine mark on a dark toolbar has exactly the problem
+      that plate was added to solve.
+
 - [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Do 8 first**, and item 3,
       so they show the redesigned product doing catch-anywhere rather than the X-only one.
       Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
       *Unblocks item 15.*
+
+### 2.2 The landing rebuild, 2026-08-15: what was decided and why
+
+Kept because the diagnosis is reusable and the mechanism choices are not obvious.
+
+**Why it looked old.** Maximo's words were "idk why the landing looks old". The answer is
+specific: `frontend-design`'s own calibration names *"a warm cream background near #F4F1EA
+with a high-contrast serif display"* as the first of three looks machine-generated design
+defaults to. The landing was `#FBF7EC` with a high-contrast serif display. `brand.md` had
+carefully dodged the AI-default serif **faces** and never noticed it had walked into the
+default **composition**.
+
+**The fix was to stop competing with the artwork.** The plates are the one genuinely
+distinctive asset. A vintage face beside a vintage engraving is two things saying the same
+thing; a crisp current sans beside a baroque etching is contrast. Maximo chose "all modern
+sans, plates carry classical" over two softer options.
+
+**Decisions taken, with the numbers behind them:**
+
+| Decision | Why |
+| --- | --- |
+| **Manrope**, one family, display and body | Maximo chose it over Archivo and Onest from a real render of all four. 121KB of type became 25KB. |
+| Emphasis by **colour**, not italic | Manrope ships no italic, and `brand.md` records a faked slant reaching production once. `forgot` recedes in `--ink-2`, so the word the sentence is about is the one that fades. `font-synthesis: none` makes the fake impossible rather than unlikely. |
+| **`light-dark()`** for every token | The alternative was three copies of the palette: media query, `[data-theme="dark"]`, and light. In this repo, three copies of one palette is the recorded failure mode. |
+| Veils via **`color-mix`** | Replaced `--paper-rgb`. Same reasoning as the rgba trap, one layer up. |
+| Hero at **100svh**, wash moved off centre | The old radial sat at 46%/52%, directly on the architecture: it made the painting legible as a background and illegible as a painting. |
+| Secondary button is a **tint, not a ring** | The ring measured 1.38:1 on paper. A filled surface needs no boundary to read as a control. |
+| Theme init is a **blocking** head script | Deferring it flashes the wrong mood. It writes `data-theme` always, so CSS answers one question instead of two. |
+| The choice is stored **only when chosen** | Storing on load would freeze a reader's OS preference forever. |
+
+**Two things CSS could not do**, both handled in the page script: `<picture>` picks its
+source from the OS and ignores a manual override, and the `theme-color` metas do the same.
+Both flip via `media="all" / "not all"`, which keeps one plate downloaded rather than
+shipping both.
+
+**The trap that cost a wrong conclusion.** This machine renders dark by default. A plain
+screenshot is therefore **not** the light mode. Neutralise **all five**
+`(prefers-color-scheme: dark)` occurrences, not only the `@media` block, or you get the dark
+plate under light tokens and it looks like a regression that is not there.
 
 ### 2.1 Goodreads and StoryGraph export: shipped 2026-08-13, and free
 
@@ -254,7 +334,7 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
 - [ ] **16. Task 13, the options page holds a licence.** 4 steps.
 - [ ] **17. Task 14, the documents that are now false.** 4 steps. *(see §3 below)*
 - [ ] **18. Task 15, close the loop.** 4 steps.
-- [ ] **19. Merge `buki-pro` into `main`.** 28 commits and counting. Use
+- [ ] **19. Merge `buki-pro` into `main`.** 35 commits and counting. Use
       `superpowers:finishing-a-development-branch`.
 
 ---
@@ -318,9 +398,29 @@ That is item 17.
   Commons, credited in the page footer. The old ones came from X media ids with unknown
   rights and were an open legal risk for two sessions.
 - **Catch-anywhere.** Task 11 is built and committed. Only the manual check remains, item 3.
-- **The mark.** `icons/mark.svg` and `icons/icon.svg`. See `docs/brand.md` for why the
-  caught spine is a light blue and not the cobalt accent, and why the icon has a plate.
-- **The popup and options page** follow the landing as of 2026-08-12.
+- **The mark, three-spine version.** `icons/mark.svg` and `icons/icon.svg`. See
+  `docs/brand.md` for why the caught spine is a light blue and not the cobalt accent, and
+  why the icon has a plate. **Superseded on the landing only** by Maximo's own two-spine
+  drawing; see item 24. The icon set is still this one and that is not an oversight.
+- **The popup and options page** followed the landing as of 2026-08-12. **They no longer
+  do**, and that is scheduled rather than broken: Maximo chose landing-first on 2026-08-15.
+  Do not "fix" them by copying the landing's tokens across.
+- **Export.** Free on every tier, and the four contradictory statements in `docs/pricing.md`
+  are resolved. Do not re-gate it: see item 7.
+- **Dark mode.** Both moods, from one `light-dark()` declaration per token, plus a manual
+  switch. Do not add a `@media (prefers-color-scheme: dark)` palette block back; that is the
+  duplication `light-dark()` replaced.
+- **The landing's serif.** Petrona is gone from `docs/index.html` on purpose, and the
+  reasoning is in §2.2. Do not restore it to match the popup.
+
+  The font files were cleaned up with it, and the split matters: **`popup.html` and
+  `options.html` load from `fonts/`, not from `docs/`.** So `fonts/petrona.woff2` and
+  `fonts/instrument.woff2` stay, because the extension is still on the second generation.
+  `docs/petrona.woff2`, `docs/petrona-italic.woff2` and `docs/instrument.woff2` were only
+  ever the landing's copies and were being **served publicly for nothing** once the landing
+  stopped loading them, so they are deleted. `docs/type.html` and `docs/_type/` went too:
+  that page was the specimen for choosing a display face, it says in its own header to
+  delete it once one is chosen, and one is chosen. `docs/` fell from 4.3MB to 3.6MB.
 
 ---
 

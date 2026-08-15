@@ -9,14 +9,16 @@ that sold you on it, and files it under **Now / Next / Someday**. Mark a book fi
 you're done, and every saved book carries a quiet Buy link.
 
 > **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
-> 28 commits ahead as of 2026-08-13, carrying catch-anywhere, the redesigned landing, the
-> new mark, and the decision layer for the paid tier. **This file describes `buki-pro`,
-> because that is where the work is.** What is built, what is not, and what is blocked is
-> an ordered checklist in `OPENWORK.md`. Read that first.
+> 35 commits ahead as of 2026-08-15, carrying catch-anywhere, shelf export, a rebuilt
+> landing, the new mark, and the decision layer for the paid tier. **This file describes
+> `buki-pro`, because that is where the work is.** What is built, what is not, and what is
+> blocked is an ordered checklist in `OPENWORK.md`. Read that first.
 >
-> Three things the landing advertises do **not** exist yet: the hosted proxy, the ten free
-> catches, and export to Goodreads and StoryGraph. Today recognition needs the user's own
-> API key. See `OPENWORK.md` items 7 and 22.
+> **Two** things the landing advertises do not exist yet: the hosted proxy and the ten free
+> catches. Both wait on `OPENWORK.md` items 1 and 2, which are Maximo's, and both are
+> unblocked the moment a Polar product and five Vercel variables exist. Today recognition
+> needs the user's own API key. Export to Goodreads and StoryGraph **shipped on 2026-08-13**
+> and is free on every tier.
 
 ## Two ways to catch a book
 
@@ -140,15 +142,19 @@ lookup. A vision model reads the picture instead of the letters.
 
 ## What it doesn't do (yet)
 
-- Only runs on twitter.com / x.com. The right-click menu is scoped there deliberately:
-  elsewhere there's no content script, so a save would happen with no visible feedback.
-  **Lifting that is Task 11 on `buki-pro`**, and it needs only `scripting` plus `activeTab`,
-  not a broad host permission.
-- No sync, no export. A Goodreads-format CSV export is the planned bridge, because Goodreads
-  closed its write API in 2020, so importing a CSV is the only route into both Goodreads and
-  StoryGraph.
+- No sync. The shelf lives in one browser and stays there.
 - No keyless setup. Recognition needs your own key until there's a proxy that holds one.
   **That proxy is the point of `buki-pro`.**
+- The catch tray still renders on the first-generation design system. It is the only surface
+  that draws inside somebody else's page, so it has to hold up against an arbitrary
+  background, which is a different problem from choosing a background. `OPENWORK.md` item 21.
+
+**Two things on this list shipped and are worth not re-planning.** Catch-anywhere landed on
+2026-08-12: the right-click menu works on any image on any site, using `scripting` plus
+`activeTab` and an optional host permission asked for on first use, never a broad host
+permission at install. Export landed on 2026-08-13: a Goodreads-format CSV, which is the
+only route into both Goodreads and StoryGraph since Goodreads closed its write API in 2020,
+reachable from the options page and free on every tier.
 
 ## Privacy
 
@@ -191,7 +197,8 @@ project's production domain is public: always link the production domain.
 | What | Where |
 | --- | --- |
 | Landing page and privacy policy, served by Vercel from `/docs` | [`docs/index.html`](docs/index.html), [`docs/privacy.html`](docs/privacy.html) |
-| Design system, both surfaces | [`docs/brand.md`](docs/brand.md) |
+| Design system, all surfaces, and which generation each is on | [`docs/brand.md`](docs/brand.md) |
+| Polar setup, field by field, with a curl that proves it | [`docs/superpowers/polar-setup.md`](docs/superpowers/polar-setup.md) |
 | Positioning, voice, objections | [`.agents/product-marketing.md`](.agents/product-marketing.md) |
 | Competitor research | [`competitor-profiles/_summary.md`](competitor-profiles/_summary.md) |
 | Store listing copy, screenshot shot-list, promo tile | [`docs/store/listing.md`](docs/store/listing.md) |
