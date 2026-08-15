@@ -211,9 +211,11 @@ Maximo's items 1 and 2.
       page and that is the honest answer.
 
       **One trap for whoever verifies this:** the machine renders dark by default, so a
-      plain screenshot is NOT the light mode. Neutralise all five `(prefers-color-scheme:
-      dark)` occurrences, not just the `@media` block, or you get the dark plate under
-      light tokens and it looks like a regression that is not there.
+      plain screenshot is NOT the light mode. Neutralise **every** `(prefers-color-scheme:
+      dark)` occurrence, not just the `@media` block, or you get the dark plate under
+      light tokens and it looks like a regression that is not there. **Count them rather
+      than trusting a number written down**: it was five, and the pricing plate made it six
+      on 2026-08-15. The screenshot script asserts the count, which is how that was caught.
 
       **While doing the eyebrows I found and fixed a live defect on the same page**, so it
       is recorded here rather than left in a commit message. The masthead's primary call to
@@ -269,6 +271,33 @@ Maximo's items 1 and 2.
       so they show the redesigned product doing catch-anywhere rather than the X-only one.
       Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
       *Unblocks item 15.*
+
+### 2.4 The second pass, 2026-08-15: contrast, one axis, four plates
+
+Maximo reviewed the finished page and asked for six things at once: far more contrast and
+**no faded fonts**, more symmetry, **much** more artwork, clearer CTAs, more iOS, and light
+mode specifically. All six are done. The two that carry a rule worth keeping:
+
+**"No faded fonts" was structural, not a bad value.** `--ink-2` measured 8.24:1, which is
+AAA, and the page still read washed. The reason is that `--ink-2` carried `.sub`,
+`.step-body`, `.answers dd`, `.picker p`, `.fine`, `.plan-line`, `.aside` and the footer —
+**nearly every sentence on the page**. Body copy set two steps lighter than its own
+heading, in a different *hue*, reads faded however well it measures. Every sentence is
+`--ink` now (17.38:1 / 16.79:1) and **hierarchy comes from size and weight**. That is also
+the iOS answer: a phone sets near-black at every level and never fades a sentence to rank
+it. `--ink-2` was darkened as well, so the labels and fine print still wearing it are not
+faded either.
+
+**One axis.** Every section head sat hard left with 40% of the width empty beside it, above
+symmetric grids that had no axis to agree with — that, not the grids, is what read as
+lopsided. Heads, subs, step labels, step bodies, the plate quote and the whole closing band
+are centred. The hero stays left, because it sits on a painting whose architecture is on
+the left and whose sky is on the right.
+
+**Four uses of the artwork**, up from two. Hero, the Panini plate as a full second hero at
+`min(88svh, 820px)`, **pricing**, and the close. Pricing meant lifting `#costs` out of the
+shell so its plate could bleed, and turning the plan cards into glass — see the note in
+`docs/brand.md` about why `--surface` cannot be used over a painting.
 
 ### 2.3 Three colours that only broke at night, and the test that now catches them
 
@@ -339,9 +368,11 @@ Both flip via `media="all" / "not all"`, which keeps one plate downloaded rather
 shipping both.
 
 **The trap that cost a wrong conclusion.** This machine renders dark by default. A plain
-screenshot is therefore **not** the light mode. Neutralise **all five**
-`(prefers-color-scheme: dark)` occurrences, not only the `@media` block, or you get the dark
-plate under light tokens and it looks like a regression that is not there.
+screenshot is therefore **not** the light mode. Neutralise **every**
+`(prefers-color-scheme: dark)` occurrence, not only the `@media` block, or you get the dark
+plate under light tokens and it looks like a regression that is not there. **Count them, do
+not trust this document for the number**: it was five when this was written and the pricing
+plate made it six on 2026-08-15.
 
 ### 2.1 Goodreads and StoryGraph export: shipped 2026-08-13, and free
 
@@ -489,6 +520,21 @@ That is item 17.
 - **A colour bug can be a product bug.** `.plan`'s white veil did not merely fail contrast;
   it made the tier nobody is meant to take the loudest card in the section. When a defect
   is in a comparison, check what the defect is *saying*, not only what it measures.
+- **A media query outlives the layout it was written for, silently.** The plate quote used
+  to hug the right edge, so a `max-width: 860px` block pulled it back with
+  `justify-content: flex-start`. The moment the quote was centred, that block quietly
+  un-centred it **at every width below 860px** — most readers — and no desktop screenshot
+  could ever have shown it. **When you change an alignment, grep the media queries for the
+  property you changed.**
+- **A declaration can be a no-op and still look deliberate.** `.plate-band blockquote span`
+  said `font-style: italic`, but Manrope ships no italic and `font-synthesis: none` makes
+  the browser refuse to shear the roman. The emphasis had been doing nothing except going
+  lighter for as long as the family has been Manrope. `brand.md` warns about a *faked*
+  italic reaching production; this is the inverse and it is just as invisible.
+- **`--surface` is a tint of the PAGE and cannot be used over a picture.** It is `--ink` at
+  4%, so on a plate the painting shows straight through the card and takes the text with
+  it. Over artwork a panel has to be real glass, measured against the plate's own extreme
+  pixels — sample them out of the file, do not guess them.
 - **A whole-document `replace(..., 1)` hits the first match in the FILE, not in the
   section.** Two checkboxes were ticked in the wrong task that way. Scope to the section.
 - **Diacritics change a generated cover's dye.** `hashOf` runs over the raw string, so

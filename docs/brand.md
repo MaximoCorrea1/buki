@@ -16,7 +16,7 @@ between a fix and a regression.
 
 | Surface | Generation | State |
 | --- | --- | --- |
-| `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch, the plate full-bleed. **Complete top to bottom as of 2026-08-15**: one surface language, two radii, plates at the top, the middle and the close. See *The third generation* and *Surfaces*. |
+| `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom as of 2026-08-15**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. See *The third generation*, *Surfaces*, *Hierarchy is size and weight* and *One axis*. |
 | `popup.html`, `options.html` | **second** | Cobalt on cream, Petrona and Instrument. Realigned 2026-08-12, correct for its generation, now one behind the landing. |
 | `src/extension/toolbar.ts` | second | A book board on Chrome's own toolbar |
 | `src/extension/content.ts` | **first** | The violet-black room with one warm lamp |
@@ -379,6 +379,51 @@ the page to say it.
 `--shadow-deep` are `light-dark()` pairs that go black at night, and heavier, because there
 is less ground left to darken.
 
+**Glass, when a panel sits on a painting.** `--surface` is a tint of the *page*, so over a
+plate the picture shows straight through the card and takes the text with it. A panel on
+artwork is `color-mix(in srgb, var(--paper) 84%, transparent)` with a blur, and it is
+measured against **the plate's own extreme pixels, sampled out of the file** rather than
+estimated. Both plates, both moods, worst case: `--ink` clears 12.4:1 in daylight and
+15.5:1 at night. The secondary button does the same at 70% and clears 11.55:1.
+
+### Hierarchy is size and weight. It is never a fade
+
+Added 2026-08-15, after Maximo's note: *"WAY MORE CONTRAST! NO FADED FONTS!"*
+
+He was right and the measurement said otherwise, which is the interesting part. `--ink-2`
+was **8.24:1** — AAA, comfortably past every bar in this checklist — and the page still
+read washed. The cause was structural: `--ink-2` carried `.sub`, `.step-body`,
+`.answers dd`, `.picker p`, `.fine`, `.plan-line`, `.aside` and the footer. **Nearly every
+sentence on the page was secondary.**
+
+Two things make that read as faded even at 8:1. Body copy sits two steps below its own
+heading, so the eye reads the *relationship*, not the ratio. And `--ink-2` is a different
+**hue** — a blue-grey under a near-black heading, which the eye reads as ink that has run
+out rather than as ink chosen to recede.
+
+**The rule: every sentence gets `--ink`. Rank by size and weight instead.** This is also
+the iOS answer, and it is why a phone's settings screen never looks washed: it sets
+near-black at every level and separates a label from its value by size, weight and
+position. `--ink-2` survives for **labels and fine print only** — the tier name, the price
+qualifier, the plate credit, the step number's caption — and it was darkened to 12.37:1 so
+even those are not faded.
+
+**When something has to recede, use colour, not lightness.** `h1 em` fades *forgot* because
+the sentence is about forgetting. `.plate-band blockquote span` and `.hero-lede b` use the
+**accent**, which emphasises without lightening. That is the whole vocabulary; there is no
+third option, and "make it a bit lighter" is not one of them.
+
+### One axis
+
+Every section head used to sit hard left with 40% of the width empty beside it, above grids
+that were already symmetric. **That mismatch, not the grids, is what read as lopsided.**
+Section heads, subs, step labels and bodies, the plate quote and the closing band are all
+centred on one axis now.
+
+**The hero is the deliberate exception.** It sits on a painting whose architecture is on
+the left and whose sky is on the right, so its type goes where the picture has room. A rule
+that cannot survive one honest exception is a rule that will be broken quietly later.
+
 ### Two moods from one declaration
 
 The palette is written with **`light-dark()`**, one declaration per token:
@@ -715,6 +760,14 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] **Grep `rgba(` as well as `#` when relighting a token** — and remember a grep only
       finds the literal you grep for. On the landing, `landingTokens.test.ts` does it for you
 - [ ] **A surface separates by ring and shadow. Only a control owes 3:1**
+- [ ] **Every sentence is `--ink`.** Rank by size and weight; `--ink-2` is for labels and
+      fine print. A passing ratio does not mean it does not read as faded
+- [ ] **Emphasis is colour, never lightness.** And check the face actually has the style you
+      asked for: `font-style: italic` under `font-synthesis: none` is a silent no-op
+- [ ] **A panel over artwork is glass, measured against the plate's own extreme pixels**
+- [ ] **Changed an alignment? Grep the media queries for that property.** A block written
+      for the old alignment will keep applying below its breakpoint and no desktop
+      screenshot will show it
 - [ ] **At night a raised surface gets LIGHTER.** Darkening it further is how the emphasised
       pricing card reached 1.04:1 against the page
 - [ ] **An animation and a press do not write the same property.** A running animation beats
