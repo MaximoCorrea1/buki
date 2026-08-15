@@ -67,6 +67,20 @@
         /* The two inks a binding gets, and no more. Cream for the title, dimmed cream
            for the rules. Not --lamp: gilt on every cover would spend the one-accent
            rule a dozen times per shelf. */
+
+        /* THE MARK. Three spines: two shelved and one pulled out and lit.
+           The caught spine has to separate from TWO things at once — from the paper, so
+           you can see it, and from the shelved spines, so it reads as caught rather than
+           as a third book. Measured on this ground:
+             #7cc0fd  1.81:1 on the paper, 9.58:1 on the spines  -> invisible as a shape
+             #1231a8  9.66:1 on the paper, 1.80:1 on the spines  -> nothing looks caught
+             #2f7fd6  3.83:1 on the paper, 4.54:1 on the spines  -> the only one that clears both
+           The old value was #7cc0fd, hardcoded, directly under a comment explaining that a
+           light value on this ground measures 1.6:1 and cannot be used. The comment was
+           right and the code did it anyway. */
+        --mark-spine: var(--ink);
+        --mark-caught: #2f7fd6;
+
         --stamp: #faf7f2;
         --stamp-dim: #d6cec2;
 
@@ -525,18 +539,23 @@
   <body>
     <header>
       <div class="brand">
-        <!-- Four spines, one caught in the lamp. See docs/brand.md, "The mark".
-             Paper values, not room values: #FFC24D on white is 1.6:1, so the caught spine
-             is --accent, the same hue at a readable value. The material inverts the
-             metaphor and it still holds, the caught book is the one in ink and the rest
-             are pale. -->
-        <svg width="22" height="22" viewBox="14 4 72 92" aria-hidden="true">
-          <g fill="var(--ink)">
-            <rect x="16.44" y="6.22" width="18.44" height="87.89" rx="9.22"/>
-            <rect x="66.00" y="6.22" width="18.44" height="87.89" rx="9.22"/>
+        <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true">
+          <!-- Redrawn as geometry from Maximo's drawing. The two cord rules are cut with a
+               MASK rather than painted in the paper colour, so the gaps are transparent and
+               the mark carries no background with it. The mask is applied inside the rotated
+               group as well, so the caught spine's cords lean with it. -->
+          <mask id="bk-cords">
+            <rect x="-25" y="-25" width="150" height="150" fill="#fff" />
+            <rect x="-25" y="64.6" width="150" height="1.9" fill="#000" />
+            <rect x="-25" y="72.9" width="150" height="1.9" fill="#000" />
+          </mask>
+          <g mask="url(#bk-cords)" fill="var(--mark-spine)">
+            <rect x="15" y="6" width="19" height="88" rx="9.5" />
+            <rect x="66" y="6" width="19" height="88" rx="9.5" />
           </g>
-          <rect x="41.65" y="10.80" width="18.10" height="80.20" rx="9.05"
-                fill="#7cc0fd" transform="rotate(10 50.7 50.9)"/>
+          <g transform="rotate(-8 50 50)" mask="url(#bk-cords)">
+            <rect x="40.5" y="7" width="19" height="86" rx="9.5" fill="var(--mark-caught)" />
+          </g>
         </svg>
         <h1>Buki</h1>
       </div>

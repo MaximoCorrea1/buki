@@ -15,3 +15,8 @@ dist/
 
 # Scratch, including tools/popup-harness.mjs output.
 zzz-*
+
+# Design sources. Not shipped: the extension package is this folder, so a 264KB
+# reference PNG would ride along into every install. The mark itself is GEOMETRY in
+# docs/index.html, popup.html and options.html; docs/brand.md records the coordinates.
+design/

@@ -3,12 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Buki: catch a book from any picture</title>
+    <title>Buki: catch a book from any picture | Chrome extension</title>
     <meta
       name="description"
       content="Right-click any book cover on the web. Buki reads the photograph, confirms the book, and files it on a shelf in your browser. Ten catches free, no account, no setup."
     />
     <link rel="canonical" href="https://get-buki.vercel.app/" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://get-buki.vercel.app/" />
@@ -59,7 +63,12 @@
         "@type": "SoftwareApplication",
         "name": "Buki",
         "applicationCategory": "BrowserApplication",
+        "applicationSubCategory": "Chrome Extension",
         "operatingSystem": "Chrome",
+        "browserRequirements": "Requires Chrome 116 or later",
+        "softwareVersion": "1.0.0",
+        "screenshot": "https://get-buki.vercel.app/og.jpg",
+        "isAccessibleForFree": true,
         "url": "https://get-buki.vercel.app/",
         "description": "Recognises a book from its cover photograph anywhere on the web and files it on a shelf stored in the browser.",
         "featureList": [
@@ -244,6 +253,32 @@
            7.60:1 by day, against the 2.93:1 the old rgba(255,255,255,0.4) produced. */
         --surface: color-mix(in srgb, var(--ink) 4%, transparent);
         --ring: color-mix(in srgb, var(--ink) 11%, transparent);
+
+        /* THE SECONDARY CONTROL, and it needs a value per mood rather than one veil.
+           By day, page-paper at 92% over the plate is a clean white capsule. At night the
+           same rule gives the page's own navy, which is the colour of the plate behind it,
+           so the button went dark-on-dark. Lifting the fill does not fix it either: every
+           navy that separates from the page (#080d20) moves TOWARDS the plate's brightest
+           pixel (#34457a), and there is no value that clears both. Measured, all four
+           candidates: best case 1.45:1 against the page and 1.44:1 against the plate.
+
+           So the FILL cannot carry it and the RING has to, which is what docs/brand.md
+           already says a control owes: a 3:1 boundary. A 42% cream ring on the lifted navy
+           measures 4.4:1 and reads at every point of the painting. */
+        --glass: light-dark(
+          color-mix(in srgb, #fbf7ec 92%, transparent),
+          color-mix(in srgb, #232d55 90%, transparent)
+        );
+        --glass-ring: light-dark(
+          color-mix(in srgb, #0a0f33 22%, transparent),
+          color-mix(in srgb, #f5efde 42%, transparent)
+        );
+        /* The opaque pair: the @supports fallback where there is no blur to rely on, and
+           the hover. Named rather than inlined at the rules, because landingTokens.test.ts
+           refuses a literal on page chrome and it was right to — these are exactly the
+           values a future relight would otherwise miss. */
+        --glass-solid: light-dark(#fbf7ec, #232d55);
+        --glass-hover: light-dark(#ffffff, #2c3868);
         /* The recommended plan. Dark UI lifts a surface to raise it; darkening it further
            is what made this card 1.04:1 against the page and therefore not a card at all. */
         --navy-card: light-dark(#0a0f33, #16204a);
@@ -374,7 +409,10 @@
       }
       .top {
         pointer-events: auto;
-        width: 100%; max-width: var(--shell);
+        /* NOT the full shell. At 1220px the pill spanned the whole page and stopped
+           reading as a floating control at all: it read as a bar that happened to have
+           round ends. A capsule has to be narrower than the thing it floats over. */
+        width: 100%; max-width: 940px;
         height: 58px; padding: 0 8px 0 20px;
         display: flex; align-items: center; gap: 10px;
         border-radius: 999px;
@@ -462,28 +500,27 @@
         display: block; width: 100%; height: 100%;
         object-fit: cover; object-position: 50% 46%;
       }
-      /* The headline sits in the open sky, left of centre where the plate is brightest.
-         The wash is a soft cream radial, not a box: it lifts the sky the last few percent
-         so navy type clears 15:1 there without putting a panel over the painting. */
       .hero-type {
         position: absolute; inset: 0;
         display: flex; align-items: center;
         pointer-events: none;
       }
-      /* A wash from the reading side, not a spotlight on the middle.
-         The old radial sat at 46% 52% and lifted the centre of the plate, which is where
-         the architecture actually is: it made the painting legible as a background and
-         illegible as a painting. Running the wash off the left edge instead puts the type
-         on a calm ground and leaves the right two thirds of the picture untouched, so the
-         arch, the bridge and the town all read. It also stops before the edge, so the
-         plate is never framed by a band of flat colour. */
+      /* CENTRED, 2026-08-15. The hero was the last thing on the page still anchored
+         left, sitting under a pill and above six centred bands. That mismatch is what read
+         as lopsided, and it is the whole of Maximo's "not even centered nor symmetrical".
+
+         A centred radial rather than a raking gradient, and its strength is measured
+         against BOTH plates' extreme pixels sampled out of the files rather than guessed:
+         at 78% in the core, --ink clears 12.4:1 over the darkest pixel in daylight and
+         13.4:1 over the brightest at night. It reaches the edges as nothing, so the arch on
+         the left and the town on the right are never framed by a band of flat colour. */
       .hero-type::before {
         content: ""; position: absolute; inset: 0;
-        background: linear-gradient(
-          97deg,
-          var(--scrim-1) 0%,
-          var(--scrim-2) 34%,
-          transparent 68%
+        background: radial-gradient(
+          64% 60% at 50% 48%,
+          color-mix(in srgb, var(--paper) 78%, transparent) 0%,
+          color-mix(in srgb, var(--paper) 46%, transparent) 48%,
+          transparent 80%
         );
       }
       .hero-type .inner {
@@ -492,7 +529,7 @@
         width: 100%;
         /* The hero carries the pitch now, not just the headline, so the children need
            their own rhythm rather than inheriting the old single-element layout. */
-        display: flex; flex-direction: column; align-items: flex-start; gap: 22px;
+        display: flex; flex-direction: column; align-items: center; gap: 24px;
       }
       /* pointer-events is off on .hero-type so the plate stays selectable behind it; the
          controls have to opt back in or the primary CTA is not clickable. That is the
@@ -502,8 +539,8 @@
       .hero-lede {
         font-size: clamp(1.15rem, 1.85vw, 1.45rem);
         line-height: 1.42; color: var(--ink);
-        max-width: 32ch; margin: 0;
-        font-weight: 600;
+        max-width: 42ch; margin: 0;
+        font-weight: 600; text-align: center; text-wrap: pretty;
       }
       .hero-lede b { color: var(--blue); font-weight: 800; }
 
@@ -536,7 +573,8 @@
       @media (prefers-reduced-motion: reduce) { .cue { animation: none; } }
       /* The arch occupies the left edge of the plate and it is the darkest thing in the
          picture. Start the headline clear of it rather than fighting it with more wash. */
-      @media (min-width: 861px) { .hero-type h1 { margin-left: 4.5%; } }
+      /* The old rule here nudged the headline clear of the arch on the plate's left
+         edge. The headline is centred now, so there is nothing to clear. */
       h1 {
         font-family: var(--display);
         font-weight: 800;
@@ -547,15 +585,17 @@
         max-width: 15ch;
         text-wrap: balance;
       }
-      /* "forgot" recedes rather than leans.
-         Manrope has no italic, so the old treatment could only have been a sheared
-         counterfeit. Colour is the better answer anyway: the word the sentence is about
-         is the one that fades, so the type does what the line says. It stays at 800 so
-         the headline's mass is unbroken, and --ink-2 is 8.2:1, comfortably readable
-         rather than decorative. */
+      /* "forgot" takes the ACCENT. It is not a fade.
+         It was --ink-2, on the theory that the word the sentence is about should be the one
+         that recedes. Nice idea; it lost to the reader. On the plate it read as type that
+         had gone thin, and it is the single thing Maximo flagged twice. The accent carries
+         the same emphasis while GAINING contrast — 9.66:1 against --ink-2's 8.24:1 — and it
+         now agrees with .hero-lede b and the plate quote, which emphasise the same way.
+         Manrope has no italic and font-synthesis: none forbids a sheared counterfeit, so
+         colour was always going to have to carry this. */
       h1 em {
         font-style: normal;
-        color: var(--ink-2);
+        color: var(--blue);
       }
       @media (max-width: 860px) {
         .hero img { object-position: 32% 44%; }
@@ -587,7 +627,7 @@
         letter-spacing: -0.008em;
         padding: 16px 30px; border-radius: 999px;
         text-decoration: none; border: 0; cursor: pointer;
-        box-shadow: 0 6px 18px -9px var(--shadow-deep);
+        box-shadow: 0 10px 26px -10px var(--shadow-deep);
         transition: transform 160ms var(--ease), background-color 200ms var(--ease),
                     box-shadow 200ms var(--ease);
       }
@@ -606,18 +646,23 @@
          blurs rather than from the ground it assumes. Measured against both plates'
          extreme pixels, sampled rather than guessed: --ink on paper-at-70% clears 11.55:1
          over the darkest pixel in daylight and 12.50:1 over the brightest at night. */
+      /* 70% was still see-through enough that the painting read THROUGH the label and the
+         capsule lost its edge over a busy part of the plate. 92% is a surface that happens
+         to be slightly alive, which is what a phone actually ships, and the ring is doubled
+         in weight so the control has an outline at every point of the picture. */
       .btn.ghost {
-        background: color-mix(in srgb, var(--paper) 70%, transparent);
-        backdrop-filter: blur(18px) saturate(180%);
-        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        background: var(--glass);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
         color: var(--ink);
-        box-shadow: inset 0 0 0 1px var(--ring), 0 6px 18px -10px var(--shadow-deep);
+        box-shadow: inset 0 0 0 1.5px var(--glass-ring),
+                    0 8px 22px -10px var(--shadow-deep);
       }
       @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-        .btn.ghost { background: color-mix(in srgb, var(--paper) 92%, transparent); }
+        .btn.ghost { background: var(--glass-solid); }
       }
       @media (hover: hover) and (pointer: fine) {
-        .btn.ghost:hover { background: color-mix(in srgb, var(--paper) 88%, transparent); }
+        .btn.ghost:hover { background: var(--glass-hover); }
       }
       .btn.cream { background: var(--cream); color: var(--navy); }
       @media (hover: hover) and (pointer: fine) {
@@ -657,7 +702,10 @@
       }
 
       .aside { font-size: 15px; color: var(--ink); }
-      .aside b { color: var(--ink); font-weight: 600; }
+      .aside b { color: var(--ink); font-weight: 700; }
+      /* In the hero it lands lowest, where the radial is weakest and the painting is
+         busiest, and it carries the price objection rather than decorating. */
+      .hero-type .aside { font-size: 15.5px; font-weight: 500; }
 
       /* ---------- sections ---------- */
       .band { padding: 108px 0 0; }
@@ -894,12 +942,18 @@
         margin-top: 48px;
       }
       @media (max-width: 900px) { .wall { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+      /* A board, with a spine. The inset highlight down the left edge is the one thing
+         that turns a filled rectangle into a book seen face-on, and it is the same move
+         the real covers get from their own photography. */
       .cover {
-        position: relative; aspect-ratio: 2 / 3; border-radius: 2px; overflow: hidden;
+        position: relative; aspect-ratio: 2 / 3; border-radius: 2px 3px 3px 2px;
+        overflow: hidden;
         background: var(--binding, #1b2570);
-        box-shadow: 0 2px 5px var(--shadow), 0 16px 30px -20px var(--shadow-deep);
+        box-shadow: 0 2px 5px var(--shadow), 0 16px 30px -20px var(--shadow-deep),
+                    inset 3px 0 0 rgba(255, 255, 255, 0.13),
+                    inset 5px 0 0 rgba(0, 0, 0, 0.16);
         display: flex; flex-direction: column; justify-content: flex-end;
-        padding: 12% 11%;
+        padding: 12% 11% 12% 14%;
         transition: transform 220ms var(--ease);
       }
       @media (hover: hover) and (pointer: fine) { .cover:hover { transform: translateY(-6px); } }
@@ -910,15 +964,19 @@
         color: rgba(255, 255, 255, 0.11);
         white-space: pre; overflow: hidden; pointer-events: none;
       }
-      .rules { position: absolute; left: 9%; right: 9%; top: 8%; height: 1px; background: var(--stamp-dim); opacity: 0.55; }
-      .rules::after { content: ""; position: absolute; left: 0; right: 0; top: 3px; height: 1px; background: var(--stamp-dim); opacity: 0.55; }
+      /* The two stamped cords, and they were at 0.55 of a dim cream on a dark dye: about
+         2:1, which is a rule you cannot see. They are the mark's own signature and the one
+         thing that says "binding" rather than "coloured rectangle", so they get to be
+         visible. Same two-cord geometry as the spine in the logo. */
+      .rules { position: absolute; left: 9%; right: 9%; top: 8%; height: 1px; background: var(--stamp-dim); opacity: 0.9; }
+      .rules::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 1px; background: var(--stamp-dim); opacity: 0.9; }
       .cover .title {
         position: relative; font-family: var(--book); color: var(--stamp);
         line-height: 1.12; letter-spacing: 0.005em;
       }
-      .cover .title.large { font-size: clamp(15px, 2.1vw, 21px); }
-      .cover .title.medium { font-size: clamp(13px, 1.8vw, 18px); }
-      .cover .title.small { font-size: clamp(11px, 1.5vw, 15px); }
+      .cover .title.large { font-size: clamp(17px, 2.5vw, 25px); }
+      .cover .title.medium { font-size: clamp(15px, 2.1vw, 21px); }
+      .cover .title.small { font-size: clamp(12.5px, 1.7vw, 17px); }
       .cover .by { position: relative; font-family: var(--book); font-size: clamp(9px, 1.15vw, 11.5px); color: var(--stamp-dim); margin-top: 7px; }
 
       /* ---------- pricing sits on the plate ----------
@@ -1028,8 +1086,8 @@
       }
       /* Fixed-height price and promise blocks keep the two feature lists starting on the
          same baseline, which is the thing that makes a two-plan table read as a table. */
-      .amount { margin: 0 0 6px; display: flex; align-items: baseline; gap: 10px; min-height: 62px; }
-      .amount b { font-family: var(--display); font-size: 58px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+      .amount { margin: 0 0 6px; display: flex; align-items: baseline; gap: 10px; min-height: 70px; }
+      .amount b { font-family: var(--display); font-size: 66px; font-weight: 800; line-height: 1; letter-spacing: -0.028em; }
       .amount span { font-size: 14.5px; color: var(--ink-2); }
       .plan.pro .amount span { color: var(--cream-2); }
       .plan-line { margin: 0 0 22px; font-size: 16px; color: var(--ink); min-height: 48px; }
@@ -1247,30 +1305,29 @@
     <div id="top-sentinel" aria-hidden="true"></div>
     <div class="top-wrap" id="top-wrap">
       <header class="top">
-        <svg class="mark" viewBox="148 55 613 793" aria-hidden="true">
-            <!-- Maximo's drawing, traced. The 900x900 box it arrived in was 16% empty on
-                 every side, so the viewBox is tightened to the ink; the potrace transform
-                 stays because the path data is in its flipped tenth-scale space. The fill
-                 is a TOKEN, not #000: black on navy is invisible, which is exactly how the
-                 previous mark broke. See docs/brand.md. -->
-          <g transform="translate(0,900) scale(0.1,-0.1)" fill="var(--mark-spine)">
-            <path d="M2245 8439 c-182 -6 -237 -19 -362 -82 -207 -105 -362 -329 -393
--567 -6 -47 -9 -952 -10 -2392 l0 -2318 835 0 835 0 -2 2378 -3 2377 -23 73
-c-76 245 -250 425 -485 502 -90 29 -186 36 -392 29z" />
-            <path d="M6590 8440 c-335 -44 -601 -318 -640 -657 -6 -57 -10 -918 -10 -2395
-l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
-165 -33 69 -59 102 -132 176 -75 74 -107 99 -183 136 -52 26 -124 53 -165 62
--83 17 -365 27 -448 16z" />
-            <path d="M1480 2660 l0 -360 835 0 835 0 0 360 0 360 -835 0 -835 0 0 -360z" />
-            <path d="M5940 2660 l0 -360 834 0 835 0 0 360 0 360 -835 0 -834 0 0 -360z" />
-            <path d="M1480 1743 c0 -274 5 -531 10 -570 33 -251 184 -463 412 -578 134
--67 198 -77 450 -73 208 3 215 4 299 34 226 80 406 275 471 511 21 75 22 101
-26 626 l3 547 -835 0 -836 0 0 -497z" />
-            <path d="M5940 1751 c0 -528 5 -598 49 -729 41 -118 84 -185 186 -288 96 -96
-167 -140 300 -185 66 -23 84 -24 310 -24 235 0 242 1 321 28 136 45 285 158
-366 275 43 62 85 156 109 247 21 77 22 98 23 620 l1 540 -832 3 -833 2 0 -489z" />
-            </g>
-          </svg>
+        <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+          <!-- Maximo's drawing, redrawn as geometry rather than traced. THREE spines: two
+               shelved and one pulled out and lit, which is what makes the mark about
+               CATCHING rather than about books. The two cord rules cut across all three,
+               and they are cut with a MASK rather than painted in the page colour, so the
+               gaps are genuinely transparent and the mark sits on glass, on a plate or on
+               flat paper without carrying a background with it.
+               The mask is applied inside the rotated group too, so the caught spine's
+               cords lean with it. Fills are tokens: black on navy is invisible, which is
+               exactly how the first mark broke. See docs/brand.md. -->
+          <mask id="bk-cords">
+            <rect x="-25" y="-25" width="150" height="150" fill="#fff" />
+            <rect x="-25" y="64.6" width="150" height="1.9" fill="#000" />
+            <rect x="-25" y="72.9" width="150" height="1.9" fill="#000" />
+          </mask>
+          <g mask="url(#bk-cords)" fill="var(--mark-spine)">
+            <rect x="15" y="6" width="19" height="88" rx="9.5" />
+            <rect x="66" y="6" width="19" height="88" rx="9.5" />
+          </g>
+          <g transform="rotate(-8 50 50)" mask="url(#bk-cords)">
+            <rect x="40.5" y="7" width="19" height="86" rx="9.5" fill="var(--mark-caught)" />
+          </g>
+        </svg>
         <span class="word">Buki</span>
         <nav>
           <a class="hide-sm" href="#how">How it works</a>
@@ -1321,8 +1378,8 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
           <div class="inner">
             <h1 class="rise">You saw a book. Then you <em>forgot</em> it.</h1>
             <p class="hero-lede rise">
-              Buki reads the <b>cover</b>, not the caption, and files it on a shelf that
-              is yours.
+              A Chrome extension that reads the <b>cover</b>, not the caption, and files
+              the book on a shelf that is yours.
             </p>
             <div class="cta-row rise">
               <a class="btn lg" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
@@ -1342,13 +1399,14 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
         <section class="band" id="how">
           <h2>Right-click a cover. That is the whole thing.</h2>
           <p class="sub">
-            No tab to open, no title to type, no app to switch to. Three seconds from
-            seeing a book to owning it.
+            You see a book on X, on Reddit, in a newsletter, in someone's photo of their
+            desk. Anywhere there is a picture, it is one right-click and about three
+            seconds. No tab to open and no title to type.
           </p>
 
           <div class="seq">
             <div class="step">
-              <p class="step-label"><span>01</span> You right-click the picture</p>
+              <p class="step-label"><span>01</span> You right-click the cover</p>
               <div class="frame">
                 <div class="shot">
                   <img src="covers/ddia.webp" width="381" height="500" loading="lazy"
@@ -1362,13 +1420,13 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
                 </div>
               </div>
               <p class="step-body">
-                The cover and the words around it go to a vision model together, because
-                the text beside a cover is often what makes a hard one legible.
+                On X or anywhere else on the web. One menu item, <b>Save book to shelf</b>,
+                on any picture of a book.
               </p>
             </div>
 
             <div class="step">
-              <p class="step-label"><span>02</span> Buki says what it found</p>
+              <p class="step-label"><span>02</span> Buki reads the photograph</p>
               <div class="frame">
                 <p class="card-hd">Caught</p>
                 <div class="found">
@@ -1384,8 +1442,8 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
                 </div>
               </div>
               <p class="step-body">
-                The guess is confirmed against OpenLibrary rather than trusted. One photo
-                can hold several books, and each one it can read gets its own decision.
+                The cover and the words around it go to a vision model together, then the
+                answer is checked against OpenLibrary before you ever see it.
               </p>
             </div>
 
@@ -1402,7 +1460,7 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
                 <p class="shelf-stat">4 books in Now &middot; 87% kept</p>
               </div>
               <p class="step-body">
-                Now, Next, Someday. Nothing reaches the shelf until you say so, and every
+                Now, Next, Someday. <b>Nothing is saved until you pick a pile</b>, and every
                 book keeps the page you caught it from.
               </p>
             </div>
@@ -1542,7 +1600,8 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
                 <li>One person pays for the model instead of you holding a key</li>
               </ul>
               <p class="plan-foot">
-                Cancel whenever you like. Every book you caught stays on your shelf.
+                Install free, add the licence when you run out of catches. Cancel whenever
+                you like, and every book you caught stays on your shelf.
               </p>
               <a class="btn cream" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             </div>
@@ -1673,38 +1732,26 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
     </main>
 
     <script>
-      /* Motion. IntersectionObserver only: a scroll listener fires on every frame and is
-         the classic source of jank, and nothing here needs per-frame precision. */
+      /* THE LIGHT/DARK SWITCH, and it gets its own scope on purpose.
+         It used to live inside the motion IIFE below, which opens by returning early when
+         the reader prefers reduced motion. The button therefore rendered, focused, and did
+         NOTHING for anyone with that accessibility setting on — measured 2026-08-15:
+         data-theme stayed "dark" through a click and the body stayed #080d20. Reported as
+         "there is no light mode", which is exactly what it was.
+
+         Nothing about choosing a colour scheme depends on whether the reader wants
+         animation. The two only shared a function because they shared a <script>, and
+         src/shared/landingTheme.test.ts now fails the build if they are put back together.
+
+         The head script already decided the mood and wrote data-theme, so this only has to
+         flip it, remember it, and bring along the two things CSS cannot reach.
+
+         THE PLATES ARE ONE OF THEM. <picture> chooses its source from the OS preference and
+         knows nothing about a manual override, so a reader who overrides would get the dark
+         page under the light painting. Setting each dark source's media to all / not all
+         re-runs the browser's own source selection, which keeps ONE plate downloaded rather
+         than shipping both and hiding one. The theme-color metas are the other. */
       (function () {
-        var root = document.documentElement;
-        var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (still || !("IntersectionObserver" in window)) return;
-
-        /* Only now does anything become hidden. Setting this class is what arms the CSS
-           above, so a failure before this line leaves the page fully visible. */
-        root.className += " js";
-
-        /* The header gains its hairline when a sentinel at the top of the document
-           leaves the viewport, which is the exact moment it starts overlapping content. */
-        var bar = document.getElementById("top-wrap");
-        var sentinel = document.getElementById("top-sentinel");
-        if (bar && sentinel) {
-          new IntersectionObserver(function (entries) {
-            bar.setAttribute("data-stuck", String(!entries[0].isIntersecting));
-          }).observe(sentinel);
-        }
-
-        /* The light/dark switch.
-           The head script already decided the mood and wrote data-theme, so this only has
-           to flip it, remember it, and bring along the two things CSS cannot reach.
-
-           THE PLATES ARE ONE OF THEM. <picture> chooses its source from the OS preference
-           and knows nothing about a manual override, so a reader who overrides would get
-           the dark page under the light painting. Setting each dark source's media to
-           all / not all re-runs the browser's own source selection, which keeps ONE plate
-           downloaded rather than shipping both and hiding one.
-           The theme-color metas are the other: same mechanism, so the phone's own chrome
-           follows the page instead of the system. */
         var root = document.documentElement;
         var themeBtn = document.getElementById("theme");
 
@@ -1734,6 +1781,28 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
             try { localStorage.setItem("buki-theme", next); } catch (e) {}
           });
         }
+      })();
+
+      /* Motion. IntersectionObserver only: a scroll listener fires on every frame and is
+         the classic source of jank, and nothing here needs per-frame precision. */
+      (function () {
+        var root = document.documentElement;
+        var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (still || !("IntersectionObserver" in window)) return;
+
+        /* Only now does anything become hidden. Setting this class is what arms the CSS
+           above, so a failure before this line leaves the page fully visible. */
+        root.className += " js";
+
+        /* The header gains its hairline when a sentinel at the top of the document
+           leaves the viewport, which is the exact moment it starts overlapping content. */
+        var bar = document.getElementById("top-wrap");
+        var sentinel = document.getElementById("top-sentinel");
+        if (bar && sentinel) {
+          new IntersectionObserver(function (entries) {
+            bar.setAttribute("data-stuck", String(!entries[0].isIntersecting));
+          }).observe(sentinel);
+        }
 
         /* Groups reveal their children in sequence. The index is set here rather than in
            markup so the stagger survives any reordering of the HTML. */
@@ -1754,7 +1823,7 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
            the one section the page exists to get read. `.close-band` is not a `.band`, so
            it is still reached once, by its own inner, and never revealed twice. */
         var SINGLES =
-          ".band h2, .band .sub, .band .fine, .wall, .shelf-wide, .answer, .picker, .close-band .inner";
+          ".band h2, .band .sub, .band .fine, .shelf-wide, .answer, .picker, .close-band .inner";
         var solo = document.querySelectorAll(SINGLES);
         for (var j = 0; j < solo.length; j++) solo[j].setAttribute("data-reveal", "");
 
