@@ -10,24 +10,36 @@ here first, then in every surface that uses it, in the same commit.
 
 ## Read this before changing anything
 
-**As of 2026-08-15 the landing moved ahead of the extension, deliberately.** There are now
-three generations live at once, and knowing which surface is on which one is the difference
-between a fix and a regression.
+**The landing moved ahead on 2026-08-15 and the extension caught up the same day.** Knowing
+which surface is on which generation is the difference between a fix and a regression.
 
 | Surface | Generation | State |
 | --- | --- | --- |
-| `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom as of 2026-08-15**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. See *The third generation*, *Surfaces*, *Hierarchy is size and weight* and *One axis*. |
-| `popup.html`, `options.html` | **second** | Cobalt on cream, Petrona and Instrument. Realigned 2026-08-12, correct for its generation, now one behind the landing. |
-| `src/extension/toolbar.ts` | second | A book board on Chrome's own toolbar |
+| `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. |
+| `popup.html`, `options.html` | **third** | Caught up 2026-08-15. Manrope, sentences at `--ink`, capsules, an iOS segmented control, two radii. **Still a light-only surface with its own paper palette, and that is not drift** — see *Two materials, one identity*. |
+| `src/extension/toolbar.ts` | third | A book board on Chrome's own toolbar. Unaffected by the pass: it is a 16px bitmap, not a stylesheet. |
 | `src/extension/content.ts` | **first** | The violet-black room with one warm lamp |
 | `icons/*.png`, `docs/icon.svg`, `icons/mark.svg` | second | Still the **three-spine** mark. The landing carries Maximo's two-spine drawing. |
 
-**The drift is on purpose and it is scheduled.** Maximo chose "landing first, extension
-follows" on 2026-08-15 so each pass stays reviewable, rather than one enormous diff three
-days after the popup was last realigned. **Do not "fix" the popup by copying the landing's
-tokens across**, and do not restore Petrona to the landing to match the popup. The second
-pass is a real piece of work with its own decisions, and `src/extension/content.ts` has its
-own reason for lagging further still, recorded in OPENWORK item 21.
+**One surface is deliberately behind and one is undecided.** `content.ts` draws inside
+*somebody else's page*, so it has to hold up against an arbitrary background rather than one
+we chose — a different problem, recorded in OPENWORK item 21. **Do not retheme it by copying
+tokens across without solving that first.** The mark is OPENWORK item 24 and waits on Maximo.
+
+### Two materials, one identity
+
+The popup and options page are **light only** and keep their own `--paper` palette. This is
+not a surface that missed the `light-dark()` pass.
+
+The landing is the moment of *catching*: a lit shelf in the dark, and a page you meet at any
+hour on any machine, so it answers to the reader's own preference. The popup is the moment
+of *reading your list*, and a list is read on paper. They are different jobs, so they are
+different materials, and the bindings carry the identity across both — which is why the five
+dyes are identical everywhere and never respond to a mood.
+
+What the two materials now **share**, after 2026-08-15: one type family, one contrast rule,
+capsules with a press, gated hovers, and two radii plus the capsule. What they do not share
+is the ground.
 
 ### The fifth surface: Chrome's toolbar
 
@@ -413,6 +425,27 @@ the sentence is about forgetting. `.plate-band blockquote span` and `.hero-lede 
 **accent**, which emphasises without lightening. That is the whole vocabulary; there is no
 third option, and "make it a bit lighter" is not one of them.
 
+**The extension took the same rule on the same day.** `--muted` was the identical `#3d477a`
+and carried the identical job: every author name, the empty state, the sheet's byline and
+the affiliate disclosure. That last one is the one that mattered — Chrome Web Store policy
+permits affiliate links **only when they are disclosed**, and 10.5px of 8.24:1 grey barely
+is. A contrast rule was doing compliance work nobody had noticed it was doing.
+
+### Mono is for data that lines up
+
+Monospace survives in exactly three places: the **shelf count**, the **per-pile counts**,
+and the **cloth**, which is a character grid and could not be anything else. Lining figures
+are the reason — the header must not shift by a pixel when 9 becomes 10.
+
+Everything else moved off it on 2026-08-15. `Settings`, the recognition record and the pile
+tag were tracked uppercase mono, which **renders a word as if it were a machine value**. The
+segmented control was the worst of them: tracked uppercase mono is a *label* treatment, and
+it said "here is a category" when the control's whole argument is that a pile is a place you
+stand in. `PILE_LABEL` in `shelfView.ts` has always been sentence case — only the CSS was
+shouting, so that fix touched no TypeScript at all.
+
+An API key stays monospace. It is data.
+
 ### One axis
 
 Every section head used to sit hard left with 40% of the width empty beside it, above grids
@@ -765,6 +798,11 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] **Emphasis is colour, never lightness.** And check the face actually has the style you
       asked for: `font-style: italic` under `font-synthesis: none` is a silent no-op
 - [ ] **A panel over artwork is glass, measured against the plate's own extreme pixels**
+- [ ] **Mono is data that lines up.** A word set in tracked uppercase mono reads as a
+      machine value. Check the casing is in the CSS before changing it in the TypeScript
+- [ ] **Deleted a font? `src/shared/fonts.test.ts` is the only thing that will notice.** A
+      dangling `@font-face` 404s and falls silently through to `system-ui`, which looks like
+      a design decision rather than a bug
 - [ ] **Changed an alignment? Grep the media queries for that property.** A block written
       for the old alignment will keep applying below its breakpoint and no desktop
       screenshot will show it

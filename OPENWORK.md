@@ -4,11 +4,11 @@
 
 | | |
 | --- | --- |
-| Tests | 331 across 33 files, all passing |
+| Tests | 334 across 34 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
-| Working tree | clean. Everything through the landing rebuild is committed |
-| Branch | `buki-pro`, **39 commits ahead of `main`, not merged** |
+| Working tree | clean. The landing and the extension are both on the third generation |
+| Branch | `buki-pro`, **43 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
@@ -272,6 +272,31 @@ Maximo's items 1 and 2.
       Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
       *Unblocks item 15.*
 
+### 2.5 The extension caught up, 2026-08-15
+
+`docs/brand.md` had recorded since that morning that three generations were live at once and
+that the extension would follow the landing. It has followed. **`popup.html` and
+`options.html` are third generation**; the only surface still behind is `content.ts`, which
+is item 21 and behind for a reason.
+
+| What | Why it mattered |
+| --- | --- |
+| **One family.** Instrument 30KB + Petrona 44KB → Manrope **25KB** | An extension pays for fonts worse than a website does: a website serves what is asked for, an extension ships the whole folder into **every install**. `--serif` survives for book titles only and is the *system* serif, so it costs nothing. |
+| **Sentences at `--ink`** | `--muted` was the identical `#3d477a` doing the identical job. The one that mattered: the affiliate disclosure was 10.5px of 8.24:1 grey, and store policy permits affiliate links **only when disclosed**. |
+| **The segmented control drawn as one** | Tracked uppercase mono is a *label* treatment. `PILE_LABEL` was always sentence case — only the CSS was shouting, so `shelfView.ts` was untouched. |
+| **Mono narrowed to data that lines up** | The counts and the cloth. `Settings`, the record and the pile tag are words. |
+| Two radii and a capsule, replacing six | 14/9, not the landing's 22/14: a 560px panel is not a page. |
+
+**A new guard, and it earned itself immediately.** `src/shared/fonts.test.ts`. A dangling
+`@font-face` is the quietest failure this repo can ship — the browser 404s, falls silently
+through to `system-ui`, and every surface renders in a face nobody chose. It looks *fine*.
+The test also catches the reverse, a font in `fonts/` nothing loads, which `docs/` carried
+for two days. **Use it by deleting the old fonts first and letting it name what to fix.**
+
+**Two more ungated hovers**, found by looking rather than by trusting the note that said the
+sweep was done: `summary:hover` on the options page, and `.drop` had a hover and nothing for
+a finger.
+
 ### 2.4 The second pass, 2026-08-15: contrast, one axis, four plates
 
 Maximo reviewed the finished page and asked for six things at once: far more contrast and
@@ -419,13 +444,16 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
       1440px and at 390px. **Do not reintroduce one**; `index.html` says so where the rule
       used to be.
 
-- [ ] **21. The catch tray is the last surface on the old design system.**
+- [ ] **21. The catch tray is now the ONLY surface on the old design system.**
       `src/extension/content.ts` is still the violet-black room with one warm lamp. The
-      popup and options page were realigned on 2026-08-12; the tray was deliberately left,
-      because it is the only surface that renders **inside somebody else's page**. That is
-      a different problem: it has to hold up against an arbitrary background rather than
-      one we chose. **Do not retheme it by copying tokens across without solving that
-      first.**
+      popup and options page were realigned on 2026-08-12 and reached the **third**
+      generation on 2026-08-15; the tray was deliberately left both times, because it is
+      the only surface that renders **inside somebody else's page**. That is a different
+      problem: it has to hold up against an arbitrary background rather than one we chose.
+      **Do not retheme it by copying tokens across without solving that first.**
+
+      The gap is now two generations wide rather than one, so this is more visible than it
+      was — but it is still the same open question, and answering it is the work.
 
 - [x] **22. Ship free-first, or wait for the paid tier? DECIDED 2026-08-13 by Maximo:
       wait.** The landing copy therefore stays as written and stays true on the day it
@@ -535,6 +563,15 @@ That is item 17.
   4%, so on a plate the painting shows straight through the card and takes the text with
   it. Over artwork a panel has to be real glass, measured against the plate's own extreme
   pixels — sample them out of the file, do not guess them.
+- **A dangling `@font-face` fails silently and looks like a decision.** The browser 404s,
+  falls through the stack, and renders in `system-ui`. No console error a screenshot shows,
+  no test that would have caught it before `src/shared/fonts.test.ts` existed.
+- **A comment saying a sweep was done is not evidence the sweep was done.**
+  `options.html` carried a note claiming every hover was gated. `summary:hover` was not.
+  Grep for the thing, do not read the claim.
+- **A child element restating its parent's radius will be clamped and read as pinched.**
+  The options page's 11px spine given the card's 14px radius had both corners clamped to
+  5.5px. Let the parent clip it with `overflow: hidden` instead: one radius, one edit.
 - **A whole-document `replace(..., 1)` hits the first match in the FILE, not in the
   section.** Two checkboxes were ticked in the wrong task that way. Scope to the section.
 - **Diacritics change a generated cover's dye.** `hashOf` runs over the raw string, so
