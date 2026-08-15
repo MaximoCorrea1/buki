@@ -220,6 +220,32 @@
         --cream: #f5efde;
         --cream-2: #bcc4e0;
         --navy: #0a0f33;
+        /* Fixed rather than conditional, and named so a relight can find them. Both sit on
+           a surface that is navy in BOTH moods, so a light-dark() pair would be wrong:
+           --blue by day is #1231a8, which on the navy card is dark on dark. That is why
+           the tick used to be a bare #7f9bea, and naming it is what stops the next literal. */
+        --on-navy-accent: #7f9bea;
+        --cream-hi: #ffffff;
+
+        /* SURFACES. A card is not a control, so it does not owe the 3:1 boundary that
+           docs/brand.md asks of one: it separates by ring and shadow, the way the pill
+           does. Measured on the quiet fill, both moods: body text 10.36:1 at night and
+           7.60:1 by day, against the 2.93:1 the old rgba(255,255,255,0.4) produced. */
+        --surface: color-mix(in srgb, var(--ink) 4%, transparent);
+        --ring: color-mix(in srgb, var(--ink) 11%, transparent);
+        /* The recommended plan. Dark UI lifts a surface to raise it; darkening it further
+           is what made this card 1.04:1 against the page and therefore not a card at all. */
+        --navy-card: light-dark(#0a0f33, #16204a);
+        --on-blue: light-dark(#ffffff, #0a0f33);
+
+        /* Shadows were navy at every depth, which is a shadow that does nothing on a navy
+           page. Black at night, and heavier, because there is less ground to darken. */
+        --shadow: light-dark(rgba(10, 15, 51, 0.2), rgba(0, 0, 0, 0.55));
+        --shadow-deep: light-dark(rgba(10, 15, 51, 0.6), rgba(0, 0, 0, 0.8));
+
+        /* Two radii and a capsule, where there used to be 2, 4, 6, 7, 8 and 20px. */
+        --r-lg: 22px;
+        --r-md: 14px;
 
         /* The dyes the extension draws with. Unchanged from generatedCover.ts, because a
            board on this page has to be the board on your shelf. */
@@ -259,10 +285,10 @@
         --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E");
       }
 
-      /* The closing block was a dark punctuation on a cream page. At night that contrast
-         is gone, so it earns its edges back with hairlines. A conditional COLOUR rather
-         than a conditional rule, so it lives with everything else light-dark() owns. */
-      .close-band { border-block: 1px solid light-dark(transparent, #262e4d); }
+      /* The closing block used to earn its edges back at night with a conditional hairline,
+         because a navy block on a navy page has no contrast to separate it. It carries the
+         hero's plate now, so a painting meets flat paper at both edges and the boundary is
+         the picture itself in either mood. The hairline would only draw a line across it. */
 
       /* The toggle. Everything above is already both moods, so a manual choice only has
          to say which half of every light-dark() wins. One property. */
@@ -482,12 +508,19 @@
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         animation: breathe 2600ms var(--ease) infinite;
+        transition: transform 160ms var(--ease);
       }
+      /* The cue is a link and it had no press state, which on a touch screen is no
+         feedback at all. The breathe animation moves it with the `translate` PROPERTY
+         rather than a transform, precisely so `transform` stays free for the press: a
+         running animation wins over a transition on the same property, so writing both to
+         `transform` would have made :active silently do nothing. */
+      .cue:active { transform: scale(0.92); }
       .cue svg { width: 15px; height: 15px; fill: none; stroke: currentColor;
                  stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
       @keyframes breathe {
-        0%, 100% { transform: translateY(0); }
-        50%      { transform: translateY(3px); }
+        0%, 100% { translate: -50% 0; }
+        50%      { translate: -50% 3px; }
       }
       @media (prefers-reduced-motion: reduce) { .cue { animation: none; } }
       /* The arch occupies the left edge of the plate and it is the darkest thing in the
@@ -580,7 +613,7 @@
       }
       .btn.cream { background: var(--cream); color: var(--navy); }
       @media (hover: hover) and (pointer: fine) {
-        .btn.cream:hover { background: #fff; }
+        .btn.cream:hover { background: var(--cream-hi); }
       }
 
       /* ---------- the light/dark switch ----------
@@ -658,13 +691,17 @@
       .step-label span {
         font-family: var(--display); font-size: 17px; color: var(--blue); font-weight: 600;
       }
+      /* A captured surface, not a card. The hairline that used to be here was
+         `1px solid var(--rule)` — a PAGE token drawn around a picture of the PRODUCT,
+         which is the one place the page's own vocabulary does not belong. It also read as
+         a faint rectangle rather than as a screenshot. Elevation says "this is a thing
+         that was photographed" without borrowing a colour from the page to say it. */
       .frame {
         background: #faf7f2;
-        border: 1px solid var(--rule);
-        border-radius: 7px;
+        border-radius: var(--r-md);
         padding: 14px;
         flex: 1;
-        box-shadow: 0 1px 0 rgba(10, 15, 51, 0.05), 0 10px 26px -18px rgba(10, 15, 51, 0.4);
+        box-shadow: 0 1px 2px var(--shadow), 0 18px 40px -24px var(--shadow-deep);
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       }
 
@@ -724,23 +761,42 @@
       .row img {
         width: 100%; height: auto; display: block;
         border-radius: 2px;
-        box-shadow: 0 2px 5px rgba(10, 15, 51, 0.2), 0 16px 30px -20px rgba(10, 15, 51, 0.6);
+        box-shadow: 0 2px 5px var(--shadow), 0 16px 30px -20px var(--shadow-deep);
         transition: transform 220ms var(--ease);
       }
       @media (hover: hover) and (pointer: fine) {
         .row img:hover { transform: translateY(-6px); }
       }
+      /* The section promises a shelf that looks like a shelf, and this was a 6px hairline
+         gradient: the promise was made in the heading and not kept in the picture. A board
+         has a lit front edge, a body and a shadow it casts on what is under it. Still three
+         declarations, still no image. */
       .plank {
-        height: 6px; margin-top: 12px; border-radius: 2px;
-        background: linear-gradient(180deg, var(--rule) 0%, var(--plank-edge) 100%);
-        box-shadow: 0 3px 8px -3px rgba(10, 15, 51, 0.35);
+        height: 11px; margin-top: 13px;
+        border-radius: 0 0 4px 4px;
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--rule) 72%, var(--paper)) 0%,
+          var(--rule) 36%,
+          var(--plank-edge) 100%
+        );
+        box-shadow: 0 9px 18px -9px var(--shadow-deep),
+                    inset 0 1px 0 color-mix(in srgb, var(--paper) 55%, transparent);
       }
       @media (max-width: 860px) { .row { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
       @media (max-width: 460px) { .row { grid-template-columns: repeat(3, 1fr); gap: 12px; } }
 
       /* ---------- plate band ---------- */
+      /* The second plate was letterboxed to 460px, which made the page's other genuinely
+         distinctive asset a decorated strip. Given a real share of the screen it reads as
+         a painting again, and the quote sits in the Forum's open sky rather than on top of
+         a band. svh, not vh, for the same reason the hero uses it. */
       .plate-band { position: relative; margin: 104px 0 0; }
-      .plate-band img { display: block; width: 100%; height: auto; max-height: 460px; object-fit: cover; object-position: 50% 46%; }
+      .plate-band img {
+        display: block; width: 100%;
+        height: min(72svh, 660px);
+        object-fit: cover; object-position: 50% 46%;
+      }
       .plate-band figcaption {
         position: absolute; inset: 0;
         display: flex; align-items: center; justify-content: flex-end;
@@ -763,7 +819,7 @@
         font-size: 1.14rem; color: var(--ink);
       }
       @media (max-width: 860px) {
-        .plate-band img { max-height: 320px; }
+        .plate-band img { height: min(56svh, 420px); }
         .plate-band .q { padding: 0 20px; justify-content: flex-start; }
         .plate-band blockquote { max-width: 11ch; }
         .answer { padding: 0 20px; }
@@ -777,7 +833,7 @@
       .cover {
         position: relative; aspect-ratio: 2 / 3; border-radius: 2px; overflow: hidden;
         background: var(--binding, #1b2570);
-        box-shadow: 0 2px 5px rgba(10, 15, 51, 0.22), 0 16px 30px -20px rgba(10, 15, 51, 0.6);
+        box-shadow: 0 2px 5px var(--shadow), 0 16px 30px -20px var(--shadow-deep);
         display: flex; flex-direction: column; justify-content: flex-end;
         padding: 12% 11%;
         transition: transform 220ms var(--ease);
@@ -802,23 +858,47 @@
       .cover .by { position: relative; font-family: var(--book); font-size: clamp(9px, 1.15vw, 11.5px); color: var(--stamp-dim); margin-top: 7px; }
 
       /* ---------- pricing ---------- */
+      /* THREE MEASURED FAILURES LIVED HERE, all of them dark-mode only, all of them from
+         a literal that did not move when the token under it did.
+
+           background: rgba(255,255,255,0.4)  a 40% WHITE veil. Invisible over the light
+             paper; over the dark paper it composites to #6b6e79, a mid-grey slab. Body
+             text measured 2.93:1 and the price 4.43:1 on a page whose every other pair is
+             AAA. It also inverted the hierarchy: the loudest card was the one nobody is
+             meant to take.
+           .plan.pro background: var(--navy)  #0a0f33 against a #080d20 page is 1.04:1.
+             The recommended plan had no edge at all. Dark UI raises a surface by LIFTING
+             it, so --navy-card is a lighter navy at night: 13.65:1 for cream on it.
+           .flag color: #fff on var(--blue)  10.34:1 by day, 2.70:1 by night.
+
+         The ring and the fills are tokens now, and src/shared/landingTokens.test.ts fails
+         the build if a literal comes back. */
       .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 40px; align-items: stretch; }
       .plan {
-        border: 1.5px solid var(--rule); border-radius: 8px; padding: 34px 32px;
+        position: relative;
+        border-radius: var(--r-lg); padding: 34px 32px;
         display: flex; flex-direction: column;
-        background: rgba(255, 255, 255, 0.4);
+        background: var(--surface);
+        box-shadow: inset 0 0 0 1px var(--ring);
       }
-      .plan.pro { background: var(--navy); border-color: var(--navy); color: var(--cream); position: relative; }
+      .plan.pro {
+        background: var(--navy-card); color: var(--cream);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cream) 15%, transparent),
+                    0 24px 60px -34px var(--shadow-deep);
+      }
       .plan-name {
         font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
         margin: 0 0 16px; color: var(--ink-2);
       }
       .plan.pro .plan-name { color: var(--cream-2); }
+      /* A capsule inside the card, level with the tier name, rather than a squared tab
+         notched into the top edge. The old one hung off a border that no longer exists,
+         and a ribbon with two square corners is the one shape nothing else here has. */
       .flag {
-        position: absolute; top: -1.5px; right: 26px;
-        background: var(--blue); color: #fff;
-        font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-        padding: 6px 12px; border-radius: 0 0 4px 4px;
+        position: absolute; top: 30px; right: 30px;
+        background: var(--blue); color: var(--on-blue);
+        font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+        padding: 6px 13px; border-radius: 999px;
       }
       /* Fixed-height price and promise blocks keep the two feature lists starting on the
          same baseline, which is the thing that makes a two-plan table read as a table. */
@@ -835,20 +915,33 @@
         width: 9px; height: 5px; border-left: 2px solid var(--blue); border-bottom: 2px solid var(--blue);
         transform: rotate(-45deg);
       }
-      .plan.pro li::before { border-color: #7f9bea; }
+      .plan.pro li::before { border-color: var(--on-navy-accent); }
       /* `.plan li.off` lived here to strike out a feature a tier did not get. Its only
          user was the export bullet in Free, and export is free on both tiers as of
          2026-08-13, so the rule went with it rather than sitting unused. */
       .plan-foot { font-size: 13.5px; color: var(--ink-2); margin: 14px 0 0; }
       .plan.pro .plan-foot { color: var(--cream-2); }
+      /* BOTH plan buttons are solid, and that is not a hierarchy mistake. They are the same
+         action with the same label going to the same place — the tier is chosen by the card
+         you read, not by the control you press. A ghost here was worse than weak: on the
+         Free card's own 4% tint it composited to a grey pill with dark text, which is what
+         a DISABLED control looks like, on the one button the free tier exists to offer. */
       .plan .btn { text-align: center; }
       @media (max-width: 860px) { .plans { grid-template-columns: 1fr; } .amount, .plan-line { min-height: 0; } }
 
+      /* Two panels rather than a hairline and a grid. These are the "which one am I"
+         paragraphs, so they are a pair of things to choose between and should look like
+         one: the rule above them said "a new section", which is not what they are. */
       .picker {
-        margin-top: 26px; border-top: 1.5px solid var(--rule); padding-top: 22px;
-        display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px;
+        margin-top: 22px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
       }
-      .picker p { margin: 0; font-size: 15.5px; color: var(--ink-2); }
+      .picker p {
+        margin: 0; font-size: 15.5px; color: var(--ink-2);
+        background: var(--surface); border-radius: var(--r-md);
+        padding: 22px 24px;
+        box-shadow: inset 0 0 0 1px var(--ring);
+      }
       .picker b { color: var(--ink); font-weight: 600; }
       @media (max-width: 860px) { .picker { grid-template-columns: 1fr; } }
 
@@ -858,17 +951,77 @@
       .answers dd { margin: 0; color: var(--ink-2); font-size: 0.99rem; }
       @media (max-width: 860px) { .answers { grid-template-columns: 1fr; gap: 26px; } }
 
-      /* ---------- close ---------- */
+      /* ---------- close ----------
+         THE PAGE CLOSES WHERE IT OPENED. This was a flat navy rectangle, which is the one
+         shape on the page with nothing in it, sitting directly under the argument it is
+         supposed to land. It carries the hero's own plate now, so the last thing a reader
+         sees is the first thing they saw, and the structure says "that was the whole
+         thing" without a word being added.
+
+         THE DARK PLATE IN BOTH MOODS, deliberately. The band is navy either way, so the
+         light plate would need its own scrim and its own measurement for a surface that is
+         not actually lighter. It also costs a dark reader NOTHING: the hero already
+         downloaded that exact file, so it is a cache hit. A light reader pays 125KB,
+         lazily, at the bottom of the page — the dark plates are less than half the size of
+         the light ones because a compressed tonal range gives the encoder less to keep. */
       .close-band {
+        position: relative; isolation: isolate; overflow: hidden;
         margin-top: 108px; background: var(--navy); color: var(--cream);
-        padding: 88px 0;
+        padding: 116px 0 112px;
+        /* The plate needs a share of the screen to read as a painting rather than as a
+           texture. Padding alone gave it about 500px, which is a strip again. */
+        min-height: 620px;
+        display: flex; align-items: center;
       }
-      .close-band .inner { max-width: var(--shell); margin: 0 auto; padding: 0 32px; }
+      .close-plate { position: absolute; inset: 0; z-index: -2; }
+      .close-plate img {
+        width: 100%; height: 100%; display: block;
+        object-fit: cover;
+        /* Framed on the BRIDGE AND THE TOWN, not on the arch. The arch is the darkest mass
+           in the picture and it is on the left, which is exactly where the type goes; the
+           hero already gives it the room it needs. Here the open right half carries the
+           painting and the type sits on quiet sky. */
+        object-position: 72% 44%;
+      }
+      /* The first attempt put 94% navy over the left and 34% over the right, and a DARK
+         plate under a heavy navy scrim is mud: it hid the painting and lit nothing.
+         Measured against the plate's brightest region, the sky at #35457f, cream clears
+         7.92:1 with NO scrim at all, because tools/plates-dark.sh was built to that
+         constraint. So the scrim only has to calm the reading side, and it can reach the
+         right edge as nothing.
+
+         Where the type actually sits, 10% to 40% of the width at 1440:
+           cream  15.33:1 at the left edge, 12.08:1 at 40%
+           cream-2 10.15:1 at the left edge,  8.00:1 at 40%
+         Both AAA across the whole run, with the painting visible the entire time. */
+      .close-band::before {
+        content: ""; position: absolute; inset: 0; z-index: -1;
+        background: linear-gradient(
+          96deg,
+          color-mix(in srgb, var(--navy) 88%, transparent) 0%,
+          color-mix(in srgb, var(--navy) 46%, transparent) 46%,
+          transparent 100%
+        );
+      }
+      /* width: 100% is load-bearing now that the band is a flex container: without it the
+         inner sizes to its own content, `margin: 0 auto` centres that, and the left edge of
+         the closing argument stops lining up with every other section on the page. */
+      .close-band .inner { width: 100%; max-width: var(--shell); margin: 0 auto; padding: 0 32px; position: relative; }
       .close-band h2 { color: var(--cream); max-width: 17ch; }
       .close-band .sub { color: var(--cream-2); }
       .close-band .aside { color: var(--cream-2); }
       .close-band .aside b { color: var(--cream); }
-      @media (max-width: 700px) { .close-band { padding: 62px 0; } .close-band .inner { padding: 0 20px; } }
+      @media (max-width: 700px) {
+        .close-band { padding: 76px 0 72px; min-height: 0; }
+        .close-band .inner { padding: 0 20px; }
+        /* Portrait leaves no width for a raking gradient to cross, so the type would sit
+           at every scrim strength at once. A flat veil instead, and the plate reads as
+           texture rather than as a picture, which is the honest thing at this size. */
+        .close-band::before {
+          background: color-mix(in srgb, var(--navy) 82%, transparent);
+        }
+        .close-plate img { object-position: 62% 44%; }
+      }
 
       footer {
         max-width: var(--shell); margin: 0 auto;
@@ -876,8 +1029,13 @@
         display: flex; gap: 26px; align-items: center; flex-wrap: wrap;
         font-size: 14.5px;
       }
-      footer a { color: var(--ink-2); text-decoration: none; }
-      footer a:hover { color: var(--blue); text-decoration: underline; }
+      /* Gated, like every other hover on this page and for the same reason: an ungated
+         :hover is triggered by a tap and then sticks, so on a phone the last link you
+         touched stays lit. This was the only ungated one left on the landing. */
+      footer a { color: var(--ink-2); text-decoration: none; transition: color 160ms var(--ease); }
+      @media (hover: hover) and (pointer: fine) {
+        footer a:hover { color: var(--blue); text-decoration: underline; }
+      }
       footer .made { margin: 0 0 0 auto; color: var(--ink-2); }
       .credit {
         max-width: var(--shell); margin: 0 auto; padding: 0 32px 44px;
@@ -908,11 +1066,22 @@
           to { opacity: 1; transform: none; }
         }
 
+        /* RETUNED 2026-08-15. It was 620ms of travel over 18px on a 70ms stagger, which
+           put the last card in a six-item row 1.04s behind the first: by the time the row
+           finished settling the reader had already read it, so the motion was describing
+           an arrival that had happened. 460ms over 14px on 55ms lands the same row in
+           735ms and still paces the argument.
+
+           The TRAVEL moves on the drawer curve and the FADE stays on --ease, because they
+           are doing different jobs: the drawer curve front-loads the distance so the
+           element is where it belongs early and only the last few pixels are slow, while
+           opacity wants to be even. Splitting them is what stops a reveal reading as a
+           slide with a fade stapled to it. */
         html.js [data-reveal] {
           opacity: 0;
-          transform: translateY(18px);
-          transition: opacity 620ms var(--ease), transform 620ms var(--ease);
-          transition-delay: calc(var(--i, 0) * 70ms);
+          transform: translateY(14px);
+          transition: opacity 460ms var(--ease), transform 460ms var(--ease-drawer);
+          transition-delay: calc(var(--i, 0) * 55ms);
         }
         html.js [data-reveal][data-shown] { opacity: 1; transform: none; }
 
@@ -1197,7 +1366,7 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
                 <li>Export to Goodreads and StoryGraph</li>
               </ul>
               <p class="plan-foot">No account. Nothing to cancel.</p>
-              <a class="btn ghost" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
+              <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             </div>
 
             <div class="plan pro">
@@ -1301,6 +1470,19 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
       </div>
 
       <div class="close-band">
+        <!-- The hero's own plate, and the DARK one in both moods, because the band is navy
+             either way. alt is empty on purpose: the same painting is described in full in
+             the hero, and repeating that sentence here would make a screen reader listen to
+             a picture it has already been told about. This use is decorative; the hero's is
+             not. -->
+        <picture class="close-plate">
+          <img
+            src="arch-1400-dark.webp"
+            srcset="arch-1400-dark.webp 1400w, arch-2800-dark.webp 2800w"
+            sizes="100vw"
+            width="1400" height="773" loading="lazy" alt=""
+          />
+        </picture>
         <div class="inner">
           <h2>The next book you see is the one you will forget.</h2>
           <p class="sub">
