@@ -28,8 +28,27 @@
       content="Every book scanner assumes the book is in your hands. Buki is for the ones you will never hold."
     />
     <meta name="twitter:image" content="https://get-buki.vercel.app/og.jpg" />
-    <meta name="theme-color" content="#fbf7ec" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#080d20" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" id="tc-light" content="#fbf7ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" id="tc-dark" content="#080d20" media="(prefers-color-scheme: dark)" />
+
+    <!-- Runs before the first paint, on purpose, and it is the only blocking script here.
+         Deferring it would show one mood and then swap to the other, which is the flash
+         every theme toggle ships with unless it is done in the head. It always writes
+         data-theme, even when the choice came from the OS, so the CSS below only ever has
+         to answer one question instead of two. -->
+    <script>
+      (function () {
+        var stored = null;
+        try { stored = localStorage.getItem("buki-theme"); } catch (e) {}
+        var t =
+          stored === "light" || stored === "dark"
+            ? stored
+            : window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="alternate icon" href="icon32.png" sizes="32x32" />
     <link rel="apple-touch-icon" href="icon180.png" />
@@ -99,9 +118,7 @@
       }
     </script>
 
-    <link rel="preload" href="petrona.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="petrona-italic.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="instrument.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="manrope.woff2" as="font" type="font/woff2" crossorigin />
     <!-- Two preloads with complementary media, so the hero plate is still fetched at
          highest priority and the browser still downloads only one of them. A single
          unconditional preload would pull the light plate on a dark machine and then
@@ -149,57 +166,55 @@
          never runs, so content can never be stranded invisible.
          ------------------------------------------------------------------------------ */
 
+      /* ONE family, the way a phone does it, and it replaced two.
+         Petrona 91KB plus Instrument 30KB became Manrope 25KB, so the page carries a
+         quarter of the type it used to and has no serif in its interface at all.
+
+         The serif went on purpose. A cream ground under a high-contrast serif display is
+         the single most common look in generated design right now, and it is what made
+         this page read as old: the one genuinely distinctive thing here is the artwork,
+         and a vintage face was competing with it instead of setting it off. The plates
+         carry the classical weight now and the type is allowed to be current.
+
+         MANROPE SHIPS NO ITALIC, and that is handled rather than faked. `font-synthesis:
+         none` below makes the browser refuse to shear the roman instead of quietly
+         producing the sheared counterfeit docs/brand.md warns about. Emphasis in the
+         headline is carried by colour instead; see `h1 em`. */
       @font-face {
-        font-family: "Petrona";
-        src: url("petrona.woff2") format("woff2-variations");
-        font-weight: 100 900;
+        font-family: "Manrope";
+        src: url("manrope.woff2") format("woff2-variations");
+        font-weight: 200 800;
         font-style: normal;
         font-display: swap;
       }
-      /* The real italic, and it is not optional. Without this file the browser fakes the
-         slant by shearing the roman: circular bowls stay circular instead of becoming
-         ovals, and the f never gains its descender. The one italic word in the headline
-         is the most looked-at glyph run on the page. Proved with font-synthesis:none,
-         which renders fully upright when a family has no italic face. */
-      @font-face {
-        font-family: "Petrona";
-        src: url("petrona-italic.woff2") format("woff2-variations");
-        font-weight: 100 900;
-        font-style: italic;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: "Instrument";
-        src: url("instrument.woff2") format("woff2-variations");
-        font-weight: 400 700;
-        font-display: swap;
-      }
 
+      /* ONE declaration per token, both moods, via light-dark().
+         The alternative is a second copy of the palette inside a media query and a THIRD
+         copy under [data-theme="dark"] for the manual toggle. Three copies of one palette
+         in a repo whose recorded failure mode is exactly "the copies drifted" was not
+         worth it. color-scheme below is the only thing the toggle changes. */
       :root {
-        color-scheme: light;
+        color-scheme: light dark;
 
-        --paper: #fbf7ec;
-        --paper-2: #f3ecd9;
-        --ink: #0a0f33;
-        --ink-2: #3d477a;
-        --blue: #1231a8;
-        --rule: #ded4b4;
-        --rule-soft: #ebe3ca;
-        /* The page ground again, as a triplet, because three things need it at an alpha:
-           the masthead's glass, the hero scrim that carries the reading, and the band
-           quote's halo. Written with the cream's own numbers those are cream VEILS, and a
-           cream veil survives into dark mode as a cream bar across a navy page. That is
-           the retokening trap in docs/brand.md one step removed: relighting --paper would
-           not have touched them, because they never mentioned it. */
-        --paper-rgb: 251, 247, 236;
-        /* The shelf board's lower edge, which pairs with --rule. Hardcoded it would go
-           tan against a navy rule the moment the page relights. */
-        --plank-edge: #cbbf98;
+        --paper:     light-dark(#fbf7ec, #080d20);
+        --paper-2:   light-dark(#f3ecd9, #111832);
+        --ink:       light-dark(#0a0f33, #f5efde);
+        --ink-2:     light-dark(#3d477a, #bcc4e0);
+        --blue:      light-dark(#1231a8, #7f9bea);
+        --rule:      light-dark(#ded4b4, #262e4d);
+        --rule-soft: light-dark(#ebe3ca, #1a2138);
+        --plank-edge: light-dark(#cbbf98, #161c33);
+
+        /* Measured, both ways:
+             --ink on --paper    17.4:1 day, 16.8:1 night
+             --ink-2 on --paper   8.2:1 day, 11.1:1 night
+             --blue on --paper    9.7:1 day,  7.1:1 night */
 
         /* The mark, by the names docs/brand.md already gives them. The caught spine has
-           to separate from the OTHER spines, not from the page: 9.58:1 here. */
-        --mark-spine: #0a0f33;
-        --mark-caught: #7cc0fd;
+           to separate from the OTHER spines, not from the page: 9.58:1 by day and 9.00:1
+           by night. Lightening both together would measure 1.69:1 and say nothing. */
+        --mark-spine:  light-dark(#0a0f33, #f5efde);
+        --mark-caught: light-dark(#7cc0fd, #1231a8);
 
         /* On the navy block. */
         --cream: #f5efde;
@@ -216,57 +231,52 @@
         --stamp: #f5f0e6;
         --stamp-dim: #cec4b4;
 
-        --display: "Petrona", "Iowan Old Style", Georgia, serif;
-        --body: "Instrument", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
         --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 
+        /* The wash under the hero type, as tokens, because its STRENGTH has to differ by
+           mood and light-dark() only switches colours. By day it is cream over a bright
+           plate; by night it is the page's own navy over a dark one, and it has to be far
+           weaker there or it flattens the painting into a black panel. Both are the page
+           ground at an alpha, so the plate still meets the page with no seam. */
+        --scrim-1: light-dark(
+          color-mix(in srgb, #fbf7ec 93%, transparent),
+          color-mix(in srgb, #080d20 78%, transparent)
+        );
+        --scrim-2: light-dark(
+          color-mix(in srgb, #fbf7ec 72%, transparent),
+          color-mix(in srgb, #080d20 42%, transparent)
+        );
+
         --ease: cubic-bezier(0.23, 1, 0.32, 1);
+        /* Ionic's drawer curve, which is what iOS sheets actually move on. Used for the
+           one thing on this page that travels a distance rather than just appearing. */
+        --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
         --shell: 1220px;
 
         /* Print tooth. Random, so it never beats against a scaled image. */
         --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E");
       }
 
-      /* ---------- the same room, at night ----------
-         Not a second design. The plates are re-duotoned onto a dark pair by
-         tools/plates-dark.sh, the tokens swap roles, and everything downstream follows
-         because it was already written in tokens. Measured, not eyeballed:
-           --ink on --paper   16.79:1        --ink-2 on --paper  11.12:1
-           --blue on --paper   7.14:1        cream on the plate   7.92:1
-         The dyes are deliberately absent below. A binding is a dye, not a status colour,
-         and a book keeps its cloth in any light. */
-      @media (prefers-color-scheme: dark) {
-        :root {
-          /* Themes the caret, the scrollbars and the form controls we did not draw. */
-          color-scheme: dark;
+      /* The closing block was a dark punctuation on a cream page. At night that contrast
+         is gone, so it earns its edges back with hairlines. A conditional COLOUR rather
+         than a conditional rule, so it lives with everything else light-dark() owns. */
+      .close-band { border-block: 1px solid light-dark(transparent, #262e4d); }
 
-          --paper: #080d20;
-          --paper-rgb: 8, 13, 32;
-          --paper-2: #111832;
-          --ink: #f5efde;
-          --ink-2: #bcc4e0;
-          --blue: #7f9bea;
-          --rule: #262e4d;
-          --rule-soft: #1a2138;
-          --plank-edge: #161c33;
-
-          /* Mirrored, for the reason brand.md gives: the caught spine separates from the
-             other SPINES. Cream spines with a cobalt catch is 9.00:1, against 9.58:1 in
-             daylight. Leaving the light blue here would measure 1.69:1 and say nothing. */
-          --mark-spine: #f5efde;
-          --mark-caught: #1231a8;
-        }
-
-        /* The closing block was a dark punctuation on a cream page. On a dark page that
-           contrast is gone, so it earns its edges back with hairlines rather than being
-           repainted a colour no other section uses. */
-        .close-band {
-          border-top: 1px solid var(--rule);
-          border-bottom: 1px solid var(--rule);
-        }
-      }
+      /* The toggle. Everything above is already both moods, so a manual choice only has
+         to say which half of every light-dark() wins. One property. */
+      :root[data-theme="light"] { color-scheme: light; }
+      :root[data-theme="dark"]  { color-scheme: dark; }
 
       * { box-sizing: border-box; }
+
+      /* Refuse a synthesised face rather than shipping one. docs/brand.md records how a
+         faked italic reached production once: the browser sheared the roman, circular
+         bowls stayed circular, and nobody saw it until a font-synthesis test. With one
+         family and no italic file, this makes that failure impossible instead of
+         unlikely. */
+      html { font-synthesis: none; }
 
       html { scroll-behavior: smooth; }
       @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -307,40 +317,70 @@
          page has scrolled, so the header sits flush on the plate at rest and separates
          itself the moment it starts overlapping content. That state is toggled by an
          IntersectionObserver on a sentinel, never by a scroll listener. */
+      /* ---------- the pill ----------
+         Floating, not stuck to the top edge. The plate fills the viewport now, and a
+         full-width bar would cut a hard line across the painting. This is the page's one
+         piece of glass, used once, where it does a job: the artwork scrolls under it and
+         still has to be legible.
+
+         THE ONE AUTHORED MOMENT. At rest the pill spans the shell. Once the hero has gone
+         past, it contracts to a capsule, the way a phone's address bar collapses when you
+         start reading. It transitions max-width, which is layout rather than compositor
+         work, and that is a deliberate exception to the transform-and-opacity rule: it
+         fires ONCE per direction off an IntersectionObserver sentinel, never per frame.
+         There is still no scroll listener anywhere on this page. */
       .top-wrap {
-        position: sticky; top: 0; z-index: 40;
-        background: rgba(var(--paper-rgb), 0.72);
-        backdrop-filter: blur(14px) saturate(140%);
-        -webkit-backdrop-filter: blur(14px) saturate(140%);
-        border-bottom: 1px solid transparent;
-        transition: background-color 240ms var(--ease), border-color 240ms var(--ease),
-                    box-shadow 240ms var(--ease);
+        position: fixed; top: 12px; left: 0; right: 0; z-index: 40;
+        display: flex; justify-content: center;
+        padding: 0 16px;
+        pointer-events: none;
       }
-      .top-wrap[data-stuck="true"] {
-        background: rgba(var(--paper-rgb), 0.88);
-        border-bottom-color: var(--rule-soft);
-        box-shadow: 0 10px 30px -24px rgba(10, 15, 51, 0.7);
+      .top {
+        pointer-events: auto;
+        width: 100%; max-width: var(--shell);
+        height: 58px; padding: 0 8px 0 20px;
+        display: flex; align-items: center; gap: 10px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--paper) 60%, transparent);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        /* An inset ring rather than a border, so the pill's height never shifts by a
+           pixel when the ring changes weight on scroll. */
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent),
+                    0 8px 30px -16px color-mix(in srgb, var(--ink) 34%, transparent);
+        transition: max-width 520ms var(--ease-drawer),
+                    background-color 260ms var(--ease),
+                    box-shadow 260ms var(--ease);
       }
-      /* backdrop-filter is a progressive enhancement. Without it the bar must still be
-         opaque enough to read against the plate, so raise the alpha rather than relying
-         on a blur that is not there. */
+      .top-wrap[data-stuck="true"] .top {
+        max-width: 640px;
+        background: color-mix(in srgb, var(--paper) 82%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent),
+                    0 14px 36px -18px color-mix(in srgb, var(--ink) 50%, transparent);
+      }
+      /* backdrop-filter is a progressive enhancement. Without it the pill must still be
+         opaque enough to read against the plate, so raise the alpha rather than relying on
+         a blur that is not there. */
       @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-        .top-wrap { background: rgba(var(--paper-rgb), 0.96); }
+        .top { background: color-mix(in srgb, var(--paper) 94%, transparent); }
       }
       @media (prefers-reduced-transparency: reduce) {
-        .top-wrap { background: var(--paper); backdrop-filter: none; -webkit-backdrop-filter: none; }
+        .top {
+          background: var(--paper);
+          backdrop-filter: none; -webkit-backdrop-filter: none;
+        }
       }
-
-      .top {
-        max-width: var(--shell); margin: 0 auto;
-        height: 68px; padding: 0 32px;
-        display: flex; align-items: center; gap: 11px;
+      @media (prefers-reduced-motion: reduce) {
+        .top { transition-duration: 1ms; }
       }
+      /* Sized by HEIGHT, width auto, because the mark is taller than it is wide (613x793)
+         and pinning the width would shrink it against the wordmark beside it. */
+      .top .mark { height: 25px; width: auto; flex: none; display: block; }
       .top .word {
         font-family: var(--display);
         font-weight: 800;
-        font-size: 27px;
-        letter-spacing: 0.005em;
+        font-size: 22px;
+        letter-spacing: -0.02em;
         margin-right: auto;
       }
       .top nav { display: flex; gap: 24px; align-items: center; }
@@ -369,10 +409,21 @@
       }
 
       /* ---------- hero ---------- */
-      .hero { position: relative; margin-top: 4px; }
+      /* The plate gets the whole first screen. It was letterboxed at 74vh under a bar,
+         which made the most distinctive thing on the page a decorated strip; the cream
+         took the screen and the painting took a band. Inverted now: the artwork is the
+         first thing and the only thing, and the reading starts below it.
+         100svh rather than 100vh so a phone's collapsing URL bar does not shove the CTA
+         off screen and then pull it back. */
+      .hero {
+        position: relative;
+        height: 100svh; min-height: 560px;
+        overflow: hidden;
+      }
       .hero img {
-        display: block; width: 100%; height: auto;
-        max-height: 74vh; object-fit: cover; object-position: 50% 42%;
+        position: absolute; inset: 0;
+        display: block; width: 100%; height: 100%;
+        object-fit: cover; object-position: 50% 46%;
       }
       /* The headline sits in the open sky, left of centre where the plate is brightest.
          The wash is a soft cream radial, not a box: it lifts the sky the last few percent
@@ -382,21 +433,63 @@
         display: flex; align-items: center;
         pointer-events: none;
       }
+      /* A wash from the reading side, not a spotlight on the middle.
+         The old radial sat at 46% 52% and lifted the centre of the plate, which is where
+         the architecture actually is: it made the painting legible as a background and
+         illegible as a painting. Running the wash off the left edge instead puts the type
+         on a calm ground and leaves the right two thirds of the picture untouched, so the
+         arch, the bridge and the town all read. It also stops before the edge, so the
+         plate is never framed by a band of flat colour. */
       .hero-type::before {
         content: ""; position: absolute; inset: 0;
-        background: radial-gradient(
-          62% 78% at 46% 52%,
-          rgba(var(--paper-rgb), 0.96) 0%,
-          rgba(var(--paper-rgb), 0.88) 34%,
-          rgba(var(--paper-rgb), 0.55) 62%,
-          rgba(var(--paper-rgb), 0) 84%
+        background: linear-gradient(
+          97deg,
+          var(--scrim-1) 0%,
+          var(--scrim-2) 34%,
+          transparent 68%
         );
       }
       .hero-type .inner {
         position: relative;
         max-width: var(--shell); margin: 0 auto; padding: 0 32px;
         width: 100%;
+        /* The hero carries the pitch now, not just the headline, so the children need
+           their own rhythm rather than inheriting the old single-element layout. */
+        display: flex; flex-direction: column; align-items: flex-start; gap: 22px;
       }
+      /* pointer-events is off on .hero-type so the plate stays selectable behind it; the
+         controls have to opt back in or the primary CTA is not clickable. That is the
+         full-bleed-fixed-layer trap docs/brand.md records from the popup, in miniature. */
+      .hero-type .inner .cta-row,
+      .hero-type .inner a { pointer-events: auto; }
+      .hero-lede {
+        font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+        line-height: 1.45; color: var(--ink-2);
+        max-width: 34ch; margin: 0;
+        font-weight: 500;
+      }
+      .hero-lede b { color: var(--ink); font-weight: 700; }
+
+      /* A cue, because a full-screen picture with no edge visible gives no reason to
+         scroll. Drawn, not a glyph. It breathes rather than bounces: 3px of travel on a
+         long ease, which reads as alive without asking to be watched. */
+      .cue {
+        position: absolute; left: 50%; bottom: 26px;
+        translate: -50% 0;
+        width: 34px; height: 34px; display: grid; place-items: center;
+        border-radius: 999px; color: var(--ink-2);
+        background: color-mix(in srgb, var(--paper) 55%, transparent);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        animation: breathe 2600ms var(--ease) infinite;
+      }
+      .cue svg { width: 15px; height: 15px; fill: none; stroke: currentColor;
+                 stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      @keyframes breathe {
+        0%, 100% { transform: translateY(0); }
+        50%      { transform: translateY(3px); }
+      }
+      @media (prefers-reduced-motion: reduce) { .cue { animation: none; } }
       /* The arch occupies the left edge of the plate and it is the darkest thing in the
          picture. Start the headline clear of it rather than fighting it with more wash. */
       @media (min-width: 861px) { .hero-type h1 { margin-left: 4.5%; } }
@@ -410,19 +503,21 @@
         max-width: 15ch;
         text-wrap: balance;
       }
+      /* "forgot" recedes rather than leans.
+         Manrope has no italic, so the old treatment could only have been a sheared
+         counterfeit. Colour is the better answer anyway: the word the sentence is about
+         is the one that fades, so the type does what the line says. It stays at 800 so
+         the headline's mass is unbroken, and --ink-2 is 8.2:1, comfortably readable
+         rather than decorative. */
       h1 em {
-        font-style: italic;
-        font-weight: 600;
-        /* Didone italic descenders clip against a 0.94 leading. Give the f and g room. */
-        line-height: 1.06;
-        padding-bottom: 0.06em;
-        display: inline-block;
+        font-style: normal;
+        color: var(--ink-2);
       }
       @media (max-width: 860px) {
-        .hero img { max-height: 56vh; object-position: 28% 42%; }
+        .hero img { object-position: 32% 44%; }
         .hero-type::before {
           background: linear-gradient(
-            90deg, rgba(var(--paper-rgb), 0.95) 0%, rgba(var(--paper-rgb), 0.86) 55%, rgba(var(--paper-rgb), 0.2) 100%);
+            90deg, color-mix(in srgb, var(--paper) 95%, transparent) 0%, color-mix(in srgb, var(--paper) 86%, transparent) 55%, color-mix(in srgb, var(--paper) 20%, transparent) 100%);
         }
         .hero-type .inner { padding: 0 20px; }
         h1 { max-width: 12ch; }
@@ -450,25 +545,75 @@
         .lede { max-width: 36ch; }
       }
 
+      /* ---------- controls ----------
+         Capsules, and a press that answers. The old buttons were 3px rectangles that
+         changed colour on hover and did nothing on click, so on a touch screen they gave
+         no feedback at all: hover is the one state a finger never produces.
+
+         scale(0.97) on :active is the whole trick. It is small enough that nobody
+         consciously sees it and large enough that the control feels like it heard you. */
       .btn {
-        display: inline-block;
+        display: inline-flex; align-items: center; justify-content: center;
         background: var(--ink); color: var(--paper);
         font-family: var(--body); font-size: 16px; font-weight: 600;
-        letter-spacing: 0.005em;
-        padding: 15px 30px; border-radius: 3px;
-        text-decoration: none;
-        transition: transform 160ms var(--ease), background-color 160ms var(--ease);
+        letter-spacing: -0.006em;
+        padding: 15px 28px; border-radius: 999px;
+        text-decoration: none; border: 0; cursor: pointer;
+        transition: transform 160ms var(--ease), background-color 200ms var(--ease),
+                    box-shadow 200ms var(--ease);
       }
-      .btn:hover { background: var(--blue); }
-      .btn:active { transform: scale(0.975); }
+      .btn:active { transform: scale(0.97); }
+      /* Gated, per the checklist in docs/brand.md: an ungated :hover sticks after a tap. */
+      @media (hover: hover) and (pointer: fine) {
+        .btn:hover { background: var(--blue); }
+      }
+      /* Secondary is a TINT, not an outline. The old hairline ring measured 1.38:1 against
+         the paper, which is a boundary you cannot see; a filled surface needs no boundary
+         to read as a control, and it is what a phone actually does. */
       .btn.ghost {
-        background: transparent; color: var(--ink);
-        box-shadow: inset 0 0 0 1.5px var(--rule);
+        background: color-mix(in srgb, var(--ink) 8%, transparent);
+        color: var(--ink);
         padding: 15px 26px;
       }
-      .btn.ghost:hover { box-shadow: inset 0 0 0 1.5px var(--ink); background: transparent; color: var(--ink); }
+      @media (hover: hover) and (pointer: fine) {
+        .btn.ghost:hover { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+      }
       .btn.cream { background: var(--cream); color: var(--navy); }
-      .btn.cream:hover { background: #fff; }
+      @media (hover: hover) and (pointer: fine) {
+        .btn.cream:hover { background: #fff; }
+      }
+
+      /* ---------- the light/dark switch ----------
+         The icon shows what you will GET, not what you have, which is the convention a
+         phone uses: a moon while it is day. Both icons are drawn, one stroke weight, per
+         docs/brand.md, because a glyph is not an icon system. */
+      .theme {
+        position: relative; flex: none;
+        width: 40px; height: 40px; padding: 0; border: 0;
+        border-radius: 999px; cursor: pointer;
+        background: color-mix(in srgb, var(--ink) 8%, transparent);
+        color: var(--ink);
+        display: grid; place-items: center;
+        transition: transform 160ms var(--ease), background-color 200ms var(--ease);
+      }
+      .theme:active { transform: scale(0.94); }
+      @media (hover: hover) and (pointer: fine) {
+        .theme:hover { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+      }
+      .theme svg {
+        position: absolute; width: 19px; height: 19px;
+        fill: none; stroke: currentColor; stroke-width: 1.7;
+        stroke-linecap: round; stroke-linejoin: round;
+        transition: opacity 200ms var(--ease), transform 340ms var(--ease-drawer);
+      }
+      /* Never from scale(0): nothing in the world appears out of nothing. */
+      .theme .sun  { opacity: 0; transform: rotate(-70deg) scale(0.7); }
+      .theme .moon { opacity: 1; transform: rotate(0deg) scale(1); }
+      :root[data-theme="dark"] .theme .sun  { opacity: 1; transform: rotate(0deg) scale(1); }
+      :root[data-theme="dark"] .theme .moon { opacity: 0; transform: rotate(70deg) scale(0.7); }
+      @media (prefers-reduced-motion: reduce) {
+        .theme svg { transition-duration: 1ms, 1ms; }
+      }
 
       .aside { font-size: 14.5px; color: var(--ink-2); }
       .aside b { color: var(--ink); font-weight: 600; }
@@ -610,7 +755,7 @@
         font-size: clamp(1.7rem, 3.4vw, 2.9rem);
         line-height: 1.06; letter-spacing: -0.018em;
         color: var(--ink);
-        text-shadow: 0 1px 22px rgba(var(--paper-rgb), 0.95), 0 1px 5px rgba(var(--paper-rgb), 1);
+        text-shadow: 0 1px 22px color-mix(in srgb, var(--paper) 95%, transparent), 0 1px 5px var(--paper);
       }
       .plate-band blockquote span { font-style: italic; font-weight: 500; }
       .answer {
@@ -787,19 +932,48 @@
     <div id="top-sentinel" aria-hidden="true"></div>
     <div class="top-wrap" id="top-wrap">
       <header class="top">
-        <svg width="26" height="26" viewBox="14 4 72 92" aria-hidden="true">
-          <g fill="var(--mark-spine)">
-            <rect x="16.44" y="6.22" width="18.44" height="87.89" rx="9.22"/>
-            <rect x="66.00" y="6.22" width="18.44" height="87.89" rx="9.22"/>
-          </g>
-          <rect x="41.65" y="10.80" width="18.10" height="80.20" rx="9.05"
-                fill="var(--mark-caught)" transform="rotate(10 50.7 50.9)"/>
-        </svg>
+        <svg class="mark" viewBox="148 55 613 793" aria-hidden="true">
+            <!-- Maximo's drawing, traced. The 900x900 box it arrived in was 16% empty on
+                 every side, so the viewBox is tightened to the ink; the potrace transform
+                 stays because the path data is in its flipped tenth-scale space. The fill
+                 is a TOKEN, not #000: black on navy is invisible, which is exactly how the
+                 previous mark broke. See docs/brand.md. -->
+          <g transform="translate(0,900) scale(0.1,-0.1)" fill="var(--mark-spine)">
+            <path d="M2245 8439 c-182 -6 -237 -19 -362 -82 -207 -105 -362 -329 -393
+-567 -6 -47 -9 -952 -10 -2392 l0 -2318 835 0 835 0 -2 2378 -3 2377 -23 73
+c-76 245 -250 425 -485 502 -90 29 -186 36 -392 29z" />
+            <path d="M6590 8440 c-335 -44 -601 -318 -640 -657 -6 -57 -10 -918 -10 -2395
+l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
+165 -33 69 -59 102 -132 176 -75 74 -107 99 -183 136 -52 26 -124 53 -165 62
+-83 17 -365 27 -448 16z" />
+            <path d="M1480 2660 l0 -360 835 0 835 0 0 360 0 360 -835 0 -835 0 0 -360z" />
+            <path d="M5940 2660 l0 -360 834 0 835 0 0 360 0 360 -835 0 -834 0 0 -360z" />
+            <path d="M1480 1743 c0 -274 5 -531 10 -570 33 -251 184 -463 412 -578 134
+-67 198 -77 450 -73 208 3 215 4 299 34 226 80 406 275 471 511 21 75 22 101
+26 626 l3 547 -835 0 -836 0 0 -497z" />
+            <path d="M5940 1751 c0 -528 5 -598 49 -729 41 -118 84 -185 186 -288 96 -96
+167 -140 300 -185 66 -23 84 -24 310 -24 235 0 242 1 321 28 136 45 285 158
+366 275 43 62 85 156 109 247 21 77 22 98 23 620 l1 540 -832 3 -833 2 0 -489z" />
+            </g>
+          </svg>
         <span class="word">Buki</span>
         <nav>
           <a class="hide-sm" href="#how">How it works</a>
           <a class="hide-xs" href="#costs">Pricing</a>
           <a class="hide-sm" href="https://github.com/MaximoCorrea1/buki">Source</a>
+          <!-- Both icons are drawn and both ship; only their opacity differs, so the
+               switch never waits on a request to change state. The label says what will
+               happen, not what is showing, because that is the thing a screen reader user
+               needs to decide whether to press it. -->
+          <button class="theme" id="theme" type="button" aria-label="Switch to dark">
+            <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.1" />
+              <path d="M12 2.6v2.2M12 19.2v2.2M4.35 4.35l1.56 1.56M18.09 18.09l1.56 1.56M2.6 12h2.2M19.2 12h2.2M4.35 19.65l1.56-1.56M18.09 5.91l1.56-1.56" />
+            </svg>
+            <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1Z" />
+            </svg>
+          </button>
           <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
         </nav>
       </header>
@@ -815,6 +989,7 @@
         <picture>
           <source
             media="(prefers-color-scheme: dark)"
+            data-dark
             srcset="arch-1400-dark.webp 1400w, arch-2800-dark.webp 2800w"
             sizes="100vw"
           />
@@ -830,25 +1005,22 @@
         <div class="hero-type">
           <div class="inner">
             <h1 class="rise">You saw a book. Then you <em>forgot</em> it.</h1>
+            <p class="hero-lede rise">
+              Buki reads the <b>cover</b>, not the caption, and files it on a shelf that
+              is yours.
+            </p>
+            <div class="cta-row rise">
+              <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
+              <a class="btn ghost" href="#how">See it catch a book</a>
+            </div>
+            <!-- The honest disclosure, and a qualifier on the action rather than a boast:
+                 there is no Web Store listing yet, so the link goes to the source. -->
+            <p class="aside rise"><b>Ten catches free.</b> No account, no card.</p>
           </div>
         </div>
-      </div>
-
-      <div class="hero-below">
-        <p class="lede rise">
-          Buki reads the <b>cover</b>, not the caption, and files it on a shelf that is
-          yours. Any picture, anywhere on the web.
-        </p>
-        <div class="actions rise">
-          <div class="cta-row">
-            <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
-            <a class="btn ghost" href="#how">See it catch a book</a>
-            <!-- Inline with the buttons, not stacked under them. It is a qualifier on the
-                 action, and it is also the honest disclosure: there is no Web Store
-                 listing yet, so the link goes to the source. Swap both when it ships. -->
-            <p class="aside"><b>Ten catches free.</b> No account, no card.</p>
-          </div>
-        </div>
+        <a class="cue" href="#how" aria-label="See how it works">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
+        </a>
       </div>
 
       <div class="wrap">
@@ -962,6 +1134,7 @@
         <picture>
           <source
             media="(prefers-color-scheme: dark)"
+            data-dark
             srcset="forum-1300-dark.webp 1300w, forum-2200-dark.webp 2200w"
             sizes="100vw"
           />
@@ -1175,6 +1348,47 @@
           new IntersectionObserver(function (entries) {
             bar.setAttribute("data-stuck", String(!entries[0].isIntersecting));
           }).observe(sentinel);
+        }
+
+        /* The light/dark switch.
+           The head script already decided the mood and wrote data-theme, so this only has
+           to flip it, remember it, and bring along the two things CSS cannot reach.
+
+           THE PLATES ARE ONE OF THEM. <picture> chooses its source from the OS preference
+           and knows nothing about a manual override, so a reader who overrides would get
+           the dark page under the light painting. Setting each dark source's media to
+           all / not all re-runs the browser's own source selection, which keeps ONE plate
+           downloaded rather than shipping both and hiding one.
+           The theme-color metas are the other: same mechanism, so the phone's own chrome
+           follows the page instead of the system. */
+        var root = document.documentElement;
+        var themeBtn = document.getElementById("theme");
+
+        function applyTheme(t) {
+          root.setAttribute("data-theme", t);
+          var dark = t === "dark";
+          var srcs = document.querySelectorAll("picture > source[data-dark]");
+          for (var i = 0; i < srcs.length; i++) srcs[i].media = dark ? "all" : "not all";
+          var tcl = document.getElementById("tc-light");
+          var tcd = document.getElementById("tc-dark");
+          if (tcl) tcl.media = dark ? "not all" : "all";
+          if (tcd) tcd.media = dark ? "all" : "not all";
+          if (themeBtn) {
+            themeBtn.setAttribute("aria-label", dark ? "Switch to light" : "Switch to dark");
+          }
+        }
+
+        applyTheme(root.getAttribute("data-theme") === "dark" ? "dark" : "light");
+
+        if (themeBtn) {
+          themeBtn.addEventListener("click", function () {
+            var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            applyTheme(next);
+            /* Remembered only once it is CHOSEN. Writing it on load would freeze the
+               reader's OS preference the first time they opened the page, so a machine
+               that later switched to dark at sunset would keep serving them daylight. */
+            try { localStorage.setItem("buki-theme", next); } catch (e) {}
+          });
         }
 
         /* Groups reveal their children in sequence. The index is set here rather than in
