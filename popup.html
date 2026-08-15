@@ -15,16 +15,24 @@
          The piles are places, not headings. One scroll containing four
          groups made them a typographic convention; you could not be IN Now.
          ------------------------------------------------------------------ */
+      /* ONE family, and it replaced two. Instrument 30KB plus Petrona 44KB became Manrope
+         25KB, so the extension carries a third of the type it used to and ships it in
+         every install rather than serving it on demand.
+
+         The serif went for the same reason it went from the landing on 2026-08-15: a
+         bookish display serif beside real book covers is two things saying the same thing.
+         `--serif` below is untouched and still sets book titles, but it is the SYSTEM
+         serif and costs nothing to ship. See docs/brand.md, "Type on the landing".
+
+         MANROPE SHIPS NO ITALIC. `font-synthesis: none` on <html> makes the browser refuse
+         to shear the roman rather than quietly producing the counterfeit brand.md records
+         reaching production once. Nothing here asks for an italic; this makes it
+         impossible rather than unlikely. */
       @font-face {
-        font-family: "Instrument";
-        src: url("fonts/instrument.woff2") format("woff2-variations");
-        font-weight: 400 700;
-        font-display: block;
-      }
-      @font-face {
-        font-family: "Petrona";
-        src: url("fonts/petrona.woff2") format("woff2-variations");
-        font-weight: 100 900;
+        font-family: "Manrope";
+        src: url("fonts/manrope.woff2") format("woff2-variations");
+        font-weight: 200 800;
+        font-style: normal;
         font-display: block;
       }
       :root {
@@ -39,9 +47,22 @@
         --board: #e6dcc2;
         --board-lo: #d9cca8;
         --ink: #0a0f33;
-        --muted: #3d477a;
+        /* DARKENED 2026-08-15, and most of what wore it was promoted to --ink.
+           It was #3d477a: 8.24:1, AAA, and the panel still read faded, because --muted
+           carried every author name, the empty state, the footer and the card's byline —
+           nearly every SENTENCE in a 560px panel. Body copy two steps below its heading in
+           a different hue reads as ink that ran out. Same finding as the landing, same
+           fix: sentences take --ink and hierarchy comes from size and weight.
+           #232c5c measures 12.37:1, so what still wears it is not faded either. */
+        --muted: #232c5c;
         --accent: #1231a8;
         --sunk: #f3ecd9;
+
+        /* Two radii and a capsule, where there were 2, 3, 7, 8, 9 and 13px. Smaller than
+           the landing's 22/14 on purpose: a 560px panel is not a page, and a radius that
+           reads as generous at 1220px reads as bloated here. */
+        --r-lg: 14px;
+        --r-md: 9px;
 
         /* The two inks a binding gets, and no more. Cream for the title, dimmed cream
            for the rules. Not --lamp: gilt on every cover would spend the one-accent
@@ -55,9 +76,16 @@
         --buy-bg-hi: #d8efe3;
         --buy-ink: #0f6b4a;
 
-        --ui: "Instrument", system-ui, -apple-system, "Segoe UI", sans-serif;
-        --display: "Petrona", "Iowan Old Style", Georgia, serif;
+        --ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+        /* The system serif, and the only serif left. It sets BOOK TITLES and nothing else,
+           which is the rule in docs/brand.md, and it ships no bytes. */
         --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        /* Mono survives for DATA THAT LINES UP and nothing else: the shelf count, the
+           per-pile counts, and the cloth, which is a character grid and could not be
+           anything else. It used to set Settings, the recognition record and the pile tag
+           as well — those are words, and tracked uppercase mono renders a word as if it
+           were a machine value. */
         --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
@@ -71,6 +99,9 @@
       }
 
       * { box-sizing: border-box; }
+      /* Refuse a synthesised face rather than shipping one. With one family and no italic
+         file this makes the sheared counterfeit impossible instead of unlikely. */
+      html { font-synthesis: none; }
 
       /* Surfaces the browser hands us with defaults belonging to no design system. */
       ::selection { background: #d5ddf5; color: var(--ink); }
@@ -127,23 +158,24 @@
          it out of the flow so the mark and the count stay on the axis. */
       header .settings {
         position: absolute; top: 13px; right: 14px;
-        font: 600 11px/1 var(--mono); letter-spacing: 0.02em;
+        font: 600 12px/1 var(--ui); letter-spacing: -0.002em;
         color: var(--muted); background: none; border: 0;
         padding: 4px; cursor: pointer;
       }
       @media (hover: hover) and (pointer: fine) {
         header .settings:hover { color: var(--accent); }
       }
-      /* The wordmark, and the only place display type belongs in a 560px panel. Petrona
-         is a text serif, so it holds together at this size where the landing's larger
-         setting would not survive being shrunk to fit here. */
+      /* The wordmark. Manrope 800 at the landing's own tracking, so the shelf and the page
+         say the name the same way — which they did not while one was a serif. */
       h1 {
         margin: 0;
         font-family: var(--display);
-        font-size: 18px;
+        font-size: 19px;
         font-weight: 800;
-        letter-spacing: -0.005em;
+        letter-spacing: -0.02em;
       }
+      /* Mono earns its keep here: this is a COUNT, it changes as you save, and lining
+         figures stop the header shifting by a pixel when 9 becomes 10. */
       .count {
         font: 600 11px/1 var(--mono);
         color: var(--muted);
@@ -153,33 +185,47 @@
       /* --- the piles ------------------------------------------------------
          A segmented control, on the page's axis. The same component appears in
          the sheet as the move control, so there is one idea to learn. */
+      /* A segmented control, and now it is drawn like one. It was tracked uppercase mono,
+         which is a LABEL treatment: it said "here is a category" where the control's whole
+         argument is that a pile is a place you stand in. `PILE_LABEL` has always been
+         sentence case ("Now", "Next"); only the CSS was shouting, so this is a stylesheet
+         change and shelfView.ts is untouched.
+
+         Capsules inside a capsule, per the third generation, and the selected segment is a
+         raised white surface rather than a differently-coloured one. */
       .piles {
         display: flex;
         gap: 2px;
         width: fit-content;
         margin: 12px auto 0;
-        padding: 2px;
+        padding: 3px;
         background: var(--sunk);
-        border: 1px solid var(--board);
-        border-radius: 9px;
+        box-shadow: inset 0 0 0 1px var(--board);
+        border-radius: 999px;
       }
       .pile {
         display: flex;
         align-items: baseline;
-        gap: 5px;
-        padding: 6px 13px;
+        gap: 6px;
+        padding: 7px 15px;
         border: 0;
-        border-radius: 7px;
+        border-radius: 999px;
         background: transparent;
         color: var(--muted);
         cursor: pointer;
-        font: 700 10.5px/1 var(--mono);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        transition: background-color 140ms ease, color 140ms ease;
+        font: 600 12.5px/1 var(--ui);
+        letter-spacing: -0.004em;
+        transition: background-color 140ms ease, color 140ms ease,
+                    box-shadow 140ms ease, transform 140ms var(--ease-out);
       }
-      .pile .n { font-size: 9.5px; letter-spacing: 0.02em; color: var(--muted); }
-      .pile[aria-selected="true"] { background: var(--card); color: var(--ink); }
+      .pile:active { transform: scale(0.96); }
+      .pile .n { font: 600 11px/1 var(--mono); letter-spacing: 0.02em; color: var(--muted); }
+      .pile[aria-selected="true"] {
+        background: var(--card);
+        color: var(--ink);
+        box-shadow: 0 1px 3px rgba(10, 15, 51, 0.14);
+      }
+      .pile[aria-selected="true"] .n { color: var(--ink); }
       .pile:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
       .pile:disabled { cursor: default; opacity: 0.5; }
       @media (hover: hover) and (pointer: fine) {
@@ -194,7 +240,7 @@
         background: var(--sunk);
         color: var(--ink);
         border: 1px solid var(--board);
-        border-radius: 8px;
+        border-radius: var(--r-md);
         font: 13px/1.3 var(--ui);
       }
       #find::placeholder { color: var(--muted); }
@@ -207,9 +253,8 @@
       .record {
         margin: 16px 20px 0;
         text-align: center;
-        font: 700 10.5px/1 var(--mono);
-        letter-spacing: 0.13em;
-        text-transform: uppercase;
+        font: 600 12px/1 var(--ui);
+        letter-spacing: -0.002em;
         color: var(--muted);
       }
 
@@ -321,17 +366,16 @@
          labels, and the cloth, which is a character grid and could not be anything else. */
       .cap .a {
         margin-top: 2px;
-        font: 10.5px/1.3 var(--ui);
-        color: var(--muted);
+        font: 11px/1.3 var(--ui);
+        color: var(--ink);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .cap .from {
         margin-top: 4px;
-        font: 700 8.5px/1 var(--mono);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
+        font: 600 10.5px/1 var(--ui);
+        letter-spacing: -0.002em;
         color: var(--muted);
       }
 
@@ -364,7 +408,7 @@
         padding: 20px;
         background: var(--card);
         border: 1px solid var(--board);
-        border-radius: 13px;
+        border-radius: var(--r-lg);
         /* A modal is not anchored to a trigger, so it scales from its own centre. */
         transform-origin: center;
         transition: transform 180ms var(--ease-out), opacity 180ms var(--ease-out);
@@ -376,7 +420,7 @@
       .card .held { width: 96px; flex: none; }
       .card .about { min-width: 0; padding-top: 2px; }
       .card h3 { margin: 0; font: 700 17px/1.2 var(--serif); letter-spacing: -0.015em; }
-      .card .by { margin-top: 3px; font-size: 12.5px; color: var(--muted); }
+      .card .by { margin-top: 3px; font-size: 13px; color: var(--ink); }
       .card .links {
         display: flex;
         flex-direction: column;
@@ -398,6 +442,9 @@
         transition: transform 140ms var(--ease-out), background-color 140ms ease;
       }
       .buy:active { transform: scale(0.95); }
+      /* A press on the button that leaves the extension. It had a hover and nothing for
+         a finger, which is the one state a finger never produces. */
+      .drop:active { transform: scale(0.97); }
       @media (hover: hover) and (pointer: fine) {
         .src:hover { color: var(--accent); text-decoration: underline; }
         .buy:hover { background: var(--buy-bg-hi); }
@@ -413,7 +460,7 @@
         display: grid;
         place-items: center;
         border: 0;
-        border-radius: 8px;
+        border-radius: 999px;
         background: transparent;
         color: var(--muted);
         font-size: 15px;
@@ -434,11 +481,11 @@
         margin: 16px auto 0;
         padding: 7px 14px;
         border: 1px solid var(--board);
-        border-radius: 8px;
+        border-radius: 999px;
         background: transparent;
         color: var(--muted);
         cursor: pointer;
-        font: 600 11.5px/1 var(--ui);
+        font: 600 12px/1 var(--ui);
         transition: color 140ms ease, border-color 140ms ease;
       }
       .drop:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
@@ -448,7 +495,7 @@
       }
 
       /* --- empty ---------------------------------------------------------- */
-      .empty { margin: 24px 20px; color: var(--muted); line-height: 1.6; text-align: center; }
+      .empty { margin: 24px 20px; color: var(--ink); line-height: 1.6; text-align: center; }
       .empty b { display: block; margin-bottom: 3px; color: var(--ink); font-size: 15px; }
 
       /* --- footer --------------------------------------------------------- */
@@ -456,9 +503,9 @@
         margin: 18px 20px 0;
         padding-top: 10px;
         border-top: 1px solid var(--board);
-        font-size: 10.5px;
+        font-size: 11.5px;
         line-height: 1.5;
-        color: var(--muted);
+        color: var(--ink);
         text-align: center;
       }
 

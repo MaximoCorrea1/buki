@@ -6,16 +6,14 @@
     <style>
       /* Tokens match popup.html exactly: --paper is the ground, --ink is the type.
          (This page used to have them the other way round.) */
+      /* One family, matching popup.html and the landing. Instrument 30KB plus Petrona
+         44KB became Manrope 25KB. No serif here at all: this page shows no book titles,
+         which is the only place docs/brand.md allows one. */
       @font-face {
-        font-family: "Instrument";
-        src: url("fonts/instrument.woff2") format("woff2-variations");
-        font-weight: 400 700;
-        font-display: block;
-      }
-      @font-face {
-        font-family: "Petrona";
-        src: url("fonts/petrona.woff2") format("woff2-variations");
-        font-weight: 100 900;
+        font-family: "Manrope";
+        src: url("fonts/manrope.woff2") format("woff2-variations");
+        font-weight: 200 800;
+        font-style: normal;
         font-display: block;
       }
       :root {
@@ -32,11 +30,19 @@
         --card: #ffffff;
         --board: #e6dcc2;
         --ink: #0a0f33;
-        --muted: #3d477a;
+        /* Darkened with popup.html on 2026-08-15, and the sentences that wore it went to
+           --ink. It was #3d477a: AAA at 8.24:1 and still reading faded, because it carried
+           the lede, the why block, every hint and the log status. See docs/brand.md,
+           "Hierarchy is size and weight". 12.37:1 now. */
+        --muted: #232c5c;
         --accent: #1231a8;
-        --ui: "Instrument", system-ui, -apple-system, "Segoe UI", sans-serif;
-        --display: "Petrona", "Iowan Old Style", Georgia, serif;
+        --ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
         --sunk: #f3ecd9;
+
+        /* Two radii and a capsule, matching popup.html. */
+        --r-lg: 14px;
+        --r-md: 9px;
 
         /* The buy pill. Green rather than the accent, so it reads as its own kind of
            action and never competes with a focus ring. */
@@ -51,6 +57,7 @@
       }
 
       * { box-sizing: border-box; }
+      html { font-synthesis: none; }
 
       ::selection { background: #d5ddf5; color: var(--ink); }
       :root { accent-color: var(--accent); caret-color: var(--accent); }
@@ -71,14 +78,13 @@
 
       .brand { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
       .brand svg { display: block; flex: none; }
-      h1 { margin: 0; font-family: var(--display); font-size: 22px; font-weight: 800; letter-spacing: -0.005em; }
-      .lede { margin: 0 0 30px; color: var(--muted); }
+      h1 { margin: 0; font-family: var(--display); font-size: 23px; font-weight: 800; letter-spacing: -0.02em; }
+      .lede { margin: 0 0 30px; color: var(--ink); }
 
       h2 {
         margin: 36px 0 8px;
-        font: 700 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
+        font: 700 12px/1 var(--ui);
+        letter-spacing: -0.002em;
         color: var(--muted);
       }
 
@@ -86,12 +92,17 @@
          says exactly what it is and what it costs before asking for anything. */
       .why {
         position: relative;
+        /* The card clips the spine, rather than the spine restating the card's radius.
+           An 11px-wide element given a 14px radius has both corners clamped to 5.5px and
+           reads as pinched in the middle, which is what the restated value produced. This
+           way there is one radius, and it can change without a second edit here. */
+        overflow: hidden;
         margin: 0 0 28px;
         padding: 15px 17px 16px 24px;
         background: var(--sunk);
         border: 1px solid var(--board);
-        border-radius: 9px;
-        font-size: 13.5px;
+        border-radius: var(--r-lg);
+        font-size: 14px;
         line-height: 1.6;
       }
       .why::before {
@@ -99,7 +110,6 @@
         position: absolute;
         left: 0; top: 0; bottom: 0;
         width: 11px;
-        border-radius: 8px 0 0 8px;
         /* One of the five dyes generatedCover.ts actually binds books in, not a green
            chosen to look like one. The old #2fb88a was a mint that appeared nowhere else
            in the product and read as a decorative accent bar rather than a spine. */
@@ -121,9 +131,8 @@
       label {
         display: block;
         margin: 0 0 6px;
-        font: 700 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
-        letter-spacing: 0.13em;
-        text-transform: uppercase;
+        font: 700 12px/1 var(--ui);
+        letter-spacing: -0.002em;
         color: var(--muted);
       }
       input, select {
@@ -133,35 +142,40 @@
         background: var(--sunk);
         color: var(--ink);
         border: 1px solid var(--board);
-        border-radius: 7px;
+        border-radius: var(--r-md);
         font: 13.5px/1.4 var(--ui);
       }
       input {
         font-family: ui-monospace, "SF Mono", Menlo, monospace;
       }
       input:focus-visible, select:focus-visible { border-color: transparent; }
-      .hint { margin: 0 0 22px; font-size: 12.5px; color: var(--muted); }
+      .hint { margin: 0 0 22px; font-size: 13px; color: var(--ink); }
       .hint a { color: var(--accent); }
 
       details { margin: 0 0 26px; }
       summary {
         cursor: pointer;
-        font: 700 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
-        letter-spacing: 0.13em;
-        text-transform: uppercase;
+        font: 700 12px/1 var(--ui);
+        letter-spacing: -0.002em;
         color: var(--muted);
         padding: 6px 0;
       }
-      summary:hover { color: var(--ink); }
+      /* GATED. The note further down claims this page carried no hover gate and that it
+         was fixed; this one was missed, so on a touch screen the last <summary> you tapped
+         stayed lit. It is the third ungated hover found by looking rather than by trusting
+         a comment that says the sweep was done. */
+      @media (hover: hover) and (pointer: fine) {
+        summary:hover { color: var(--ink); }
+      }
       details > div { padding-top: 14px; }
 
       .actions { display: flex; align-items: center; gap: 12px; }
       button {
         cursor: pointer;
         border: 0;
-        border-radius: 7px;
-        padding: 9px 16px;
-        font: 700 13px/1 var(--ui);
+        border-radius: 999px;
+        padding: 11px 20px;
+        font: 700 13.5px/1 var(--ui);
         transition: transform 140ms var(--ease-out), background-color 140ms ease,
                     box-shadow 140ms ease, color 140ms ease;
       }
@@ -201,7 +215,7 @@
 
       #status, #logStatus {
         font-size: 13px;
-        color: var(--muted);
+        color: var(--ink);
       }
       #status {
         color: var(--accent);

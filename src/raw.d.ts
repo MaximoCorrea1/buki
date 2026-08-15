@@ -19,4 +19,12 @@ interface ImportMeta {
     patterns: string | string[],
     options: { query: '?raw'; import: 'default'; eager: true },
   ): Record<string, string>;
+
+  /**
+   * Keys only. The font guard wants the NAMES of the files in `fonts/`, not their
+   * contents, and `?raw` on a woff2 would decode 25KB of binary into a UTF-8 string for
+   * the sole purpose of counting how many there are. Without options vite still resolves
+   * the matches statically; the values are lazy loaders nothing here ever calls.
+   */
+  glob(patterns: string | string[]): Record<string, () => Promise<unknown>>;
 }
