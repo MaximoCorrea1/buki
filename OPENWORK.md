@@ -4,11 +4,11 @@
 
 | | |
 | --- | --- |
-| Tests | 329 across 32 files, all passing |
+| Tests | 331 across 33 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean. Everything through the landing rebuild is committed |
-| Branch | `buki-pro`, **37 commits ahead of `main`, not merged** |
+| Branch | `buki-pro`, **39 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
@@ -72,9 +72,9 @@ unblocks.
 
 ## Part 2. Unblocked. An agent can start any of these right now
 
-Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8 are all
-done. 23 is the live one**: the landing rebuild is half finished, hero done and everything
-below it untouched. 9 waits on item 3 being done by hand, and 24 waits on a decision.
+Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8 and 23 are
+all done: the landing is finished, top to bottom.** 9 waits on item 3 being done by hand,
+and **24 is the live one**, waiting on Maximo's call about the brand story.
 
 **The product no longer advertises anything that does not exist except the hosted proxy
 and the ten free catches**, both of which are items 10 and 14 and both of which wait on
@@ -226,23 +226,28 @@ Maximo's items 1 and 2.
       I swept the rest of the stylesheet for the same trap: six candidate rules, five safe,
       and `.close-band` already handles its own components correctly (16.19:1 and 10.73:1).
 
-- [ ] **23. Finish the landing rebuild: everything below the hero.** *Started 2026-08-15,
-      hero done, the rest untouched.* This is the "clearer simpler layout" half of Maximo's
-      brief and it is the larger half.
+- [x] **23. Finish the landing rebuild: everything below the hero.** Done 2026-08-15.
+      *(§2.3 below is the record of what it found, because the interesting part was not
+      the layout.)*
 
-      **What is already rebuilt** (see §2.2 for the reasoning): the type, the palette
-      mechanism, the floating pill, the controls, the light/dark switch, the hero.
+      Both of Maximo's outstanding asks are now done. **"Use more artwork"**: the Panini
+      plate went from a letterboxed 460px strip to `min(72svh, 660px)`, and the closing
+      band carries the hero's own plate, so **the page closes where it opened**. **Better
+      CTA animation**: the scroll reveals were retuned against `emil-design-eng`'s table,
+      and two motion defects were fixed on the way (below).
 
-      **What is still on the second generation:** the three step mockups, the shelf row,
-      the pricing plans, the answers block, the closing band. They inherit the new tokens
-      and the new font, so they are *coherent* rather than broken, but the layout is the
-      old one.
+      **One surface language replaced five.** Radii of 2, 4, 6, 7, 8 and 20px became
+      `--r-lg`, `--r-md` and the capsule. The step frames lost a `1px solid var(--rule)`
+      hairline — a *page* token drawn around a picture of the *product*, which is the one
+      place the page's vocabulary does not belong — and gained elevation instead. The
+      picker lost its rule-and-grid for two panels. Shadows were navy at every depth,
+      which is a shadow that does nothing on a navy page; they are tokens now.
 
-      Two specific asks from Maximo not yet done:
-      - **"Use more artwork."** The hero is full-bleed; the second plate is still a small
-        band, and a third use behind pricing was discussed and not built.
-      - **Better CTA animation.** Press and hover are done. The scroll reveals still use
-        the old timings and have not been retuned against `emil-design-eng`'s table.
+      **Both plan buttons are solid**, and that is not a hierarchy mistake. A ghost on the
+      Free card's own 4% tint composited to a grey pill with dark text, which is what a
+      **disabled** control looks like, on the one button the free tier exists to offer.
+      Same label, same action, same destination: the card carries the tier, not the
+      control.
 
 - [ ] **24. Reconcile the mark, and rewrite the brand story around it.** *(Maximo's call on
       the story; the icon work is an agent's.)*
@@ -264,6 +269,40 @@ Maximo's items 1 and 2.
       so they show the redesigned product doing catch-anywhere rather than the X-only one.
       Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
       *Unblocks item 15.*
+
+### 2.3 Three colours that only broke at night, and the test that now catches them
+
+Kept because the *class* of defect is the reusable part, not the three instances.
+
+Finishing the page below the hero found three live contrast failures, **all dark-mode
+only, and every one of them a literal that did not move when the token under it did.**
+
+| Where | The literal | What it measured |
+| --- | --- | --- |
+| `.plan` background | `rgba(255, 255, 255, 0.4)` | A 40% **white** veil. Invisible over the light paper; over the dark paper it composites to `#6b6e79`, a mid-grey slab. Body text **2.93:1**, price **4.43:1** |
+| `.plan.pro` background | `var(--navy)` | `#0a0f33` on an `#080d20` page is **1.04:1**. The recommended plan had no edge at all |
+| `.flag` text | `#fff` on `var(--blue)` | 10.34:1 by day, **2.70:1** by night |
+
+**Why the item 8 sweep missed all three.** That sweep grepped for the cream at an alpha
+and found thirteen. None of these three are cream. A grep for one literal only ever finds
+that literal, which is why this is now a test.
+
+**The two real lessons.** First, `.plan` inverted the pricing *hierarchy*, not just the
+contrast: the loudest card on the page was the one nobody is meant to take. A colour bug
+can be a product bug. Second, **dark UI raises a surface by lifting it, not by darkening
+it.** `--navy-card` is `light-dark(#0a0f33, #16204a)`: the same idea in both moods, drawn
+the way each mood draws elevation. Cream on it is 13.65:1.
+
+**`src/shared/landingTokens.test.ts` fails the build if a literal colour appears on page
+chrome.** It allows two families by name, and the allowlist is itself asserted so an
+exemption cannot quietly protect a selector that no longer exists:
+
+- **the three step mockups**, which depict the *extension's* light surface and must not be
+  dimmed to suit the page (item 8's recorded decision), and
+- **the generated covers**, which carry `generatedCover.ts`'s own five dyes.
+
+It caught a fourth offender by itself that no screenshot would have shown:
+`.btn.cream:hover { background: #fff }`.
 
 ### 2.2 The landing rebuild, 2026-08-15: what was decided and why
 
@@ -410,6 +449,15 @@ That is item 17.
 - **Dark mode.** Both moods, from one `light-dark()` declaration per token, plus a manual
   switch. Do not add a `@media (prefers-color-scheme: dark)` palette block back; that is the
   duplication `light-dark()` replaced.
+- **The landing, top to bottom.** Finished 2026-08-15. It has **one** surface language:
+  `--surface` and `--ring` for a quiet panel, `--navy-card` for the emphasised one, two
+  radii and a capsule. Do not reintroduce a hairline `border` to separate a card — a card
+  separates by ring and shadow, and the 3:1 boundary bar in `docs/brand.md` is for a
+  *control*, not a surface. Do not add a third radius.
+- **The closing band carries the hero's plate**, the dark one in both moods. It is not an
+  oversight that a light reader gets a dark plate there: the band is navy either way, and
+  the alternative is a second scrim and a second measurement for a surface that is not
+  actually lighter. A dark reader pays nothing, because the hero already fetched that file.
 - **The landing's serif.** Petrona is gone from `docs/index.html` on purpose, and the
   reasoning is in §2.2. Do not restore it to match the popup.
 
@@ -433,6 +481,14 @@ That is item 17.
 - **`str.replace` does not fail when it matches nothing.** Three font swaps silently did
   nothing because the real declaration was `15px/1.55` and the search string said
   `15px/1.5`. Assert the match or diff the result.
+- **A running animation beats a transition on the same property, silently.** The scroll
+  cue's `breathe` keyframes wrote `transform`, so adding `:active { transform: scale(...) }`
+  produced no press at all and no error. Moving the animation to the `translate` property
+  freed `transform` for the press. Whenever a pressable element also animates, check that
+  the two are not writing the same property.
+- **A colour bug can be a product bug.** `.plan`'s white veil did not merely fail contrast;
+  it made the tier nobody is meant to take the loudest card in the section. When a defect
+  is in a comparison, check what the defect is *saying*, not only what it measures.
 - **A whole-document `replace(..., 1)` hits the first match in the FILE, not in the
   section.** Two checkboxes were ticked in the wrong task that way. Scope to the section.
 - **Diacritics change a generated cover's dye.** `hashOf` runs over the raw string, so

@@ -16,7 +16,7 @@ between a fix and a regression.
 
 | Surface | Generation | State |
 | --- | --- | --- |
-| `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch, the plate full-bleed. See *The third generation*. |
+| `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch, the plate full-bleed. **Complete top to bottom as of 2026-08-15**: one surface language, two radii, plates at the top, the middle and the close. See *The third generation* and *Surfaces*. |
 | `popup.html`, `options.html` | **second** | Cobalt on cream, Petrona and Instrument. Realigned 2026-08-12, correct for its generation, now one behind the landing. |
 | `src/extension/toolbar.ts` | second | A book board on Chrome's own toolbar |
 | `src/extension/content.ts` | **first** | The violet-black room with one warm lamp |
@@ -350,6 +350,35 @@ keep its ring; see the note under the checklist.
 port of the iOS sheet curve and is used for the one thing that travels a distance. Icons
 never animate from `scale(0)`; nothing in the world appears out of nothing.
 
+### Surfaces: a card is not a control
+
+Added 2026-08-15, when the page below the hero was rebuilt. It had **five** radii — 2, 4,
+6, 7, 8 and 20px — and three unrelated ways of drawing a panel. It now has two radii and
+the capsule:
+
+| Token | Value | For |
+| --- | --- | --- |
+| `--surface` | `color-mix(in srgb, var(--ink) 4%, transparent)` | a quiet panel: the Free plan, the picker |
+| `--ring` | `color-mix(in srgb, var(--ink) 11%, transparent)` | its only boundary, drawn as an **inset** shadow |
+| `--navy-card` | `light-dark(#0a0f33, #16204a)` | the one emphasised panel |
+| `--r-lg` / `--r-md` | 22px / 14px | a card / a panel or a captured surface |
+
+**A card separates by ring and shadow, not by a 3:1 fill.** The 3:1 boundary bar in this
+document is for a **control** — something you press, whose edge tells you where to press.
+A surface is not making that promise, and demanding 3:1 of a card fill is what produces a
+page of boxes shouting at each other. The pill has always worked this way: a 9%-ink inset
+ring plus blur and a shadow.
+
+**Do not draw a page token around a picture of the product.** The three step mockups used
+to carry `border: 1px solid var(--rule)`. `--rule` is the *page's* hairline; the frame
+contains a screenshot of the *extension*. It also read as a faint rectangle rather than as
+a captured thing. Elevation says "this was photographed" without borrowing a colour from
+the page to say it.
+
+**Shadows are tokens, because a navy shadow does nothing on a navy page.** `--shadow` and
+`--shadow-deep` are `light-dark()` pairs that go black at night, and heavier, because there
+is less ground left to darken.
+
 ### Two moods from one declaration
 
 The palette is written with **`light-dark()`**, one declaration per token:
@@ -381,6 +410,22 @@ would freeze a reader's OS preference the first time they visited, so a machine 
 switched to dark at sunset would keep serving them daylight.
 
 **Veils go through `color-mix`, never raw numbers.** See the trap note above.
+
+**Dark UI raises a surface by LIFTING it, never by darkening it further.** `.plan.pro` was
+a flat `var(--navy)`, which reads as a strong dark card on cream and measures **1.04:1**
+against the night page: the emphasised plan simply had no edge. `--navy-card` is the same
+idea drawn the way each mood draws elevation. This is the one place where "the same token
+in both moods" is the wrong instinct.
+
+**A literal is a bug waiting for a retokening, and a grep only ever finds the literal you
+grep for.** Dark mode's first pass swept for the cream at an alpha and found thirteen. A
+later pass found three more that the sweep could not have caught because none of them were
+cream: a 40% **white** veil, a `#fff` sitting on `var(--blue)` (10.34:1 by day, **2.70:1**
+by night, because the token flipped and the literal did not), and the `.plan.pro` fill
+above. `src/shared/landingTokens.test.ts` now fails the build on a literal colour anywhere
+in the landing's page chrome, and allows by name the only two families that are correct:
+the step mockups, which depict the extension's own light surface, and the generated covers,
+which carry `generatedCover.ts`'s five dyes.
 
 ### Images, and the halftone that had to go
 
@@ -667,7 +712,14 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] Paper tokens changed in `popup.html` and `options.html` together
 - [ ] No gradient, and no colour laid over another colour with alpha
 - [ ] Anything that is not a book row or a form field sits on the axis
-- [ ] **Grep `rgba(` as well as `#` when relighting a token**
+- [ ] **Grep `rgba(` as well as `#` when relighting a token** — and remember a grep only
+      finds the literal you grep for. On the landing, `landingTokens.test.ts` does it for you
+- [ ] **A surface separates by ring and shadow. Only a control owes 3:1**
+- [ ] **At night a raised surface gets LIGHTER.** Darkening it further is how the emphasised
+      pricing card reached 1.04:1 against the page
+- [ ] **An animation and a press do not write the same property.** A running animation beats
+      a transition, silently, so `:active { transform: … }` under a `transform` keyframe does
+      nothing at all and reports no error
 - [ ] **Nothing full-bleed and `position: fixed` can take a click**
 - [ ] **A component still owns its own colours inside a scoped block**
 
