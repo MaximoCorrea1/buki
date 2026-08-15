@@ -4,11 +4,11 @@
 
 | | |
 | --- | --- |
-| Tests | 334 across 34 files, all passing |
+| Tests | 336 across 35 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean. The landing and the extension are both on the third generation |
-| Branch | `buki-pro`, **43 commits ahead of `main`, not merged** |
+| Branch | `buki-pro`, **45 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
@@ -72,9 +72,12 @@ unblocks.
 
 ## Part 2. Unblocked. An agent can start any of these right now
 
-Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8 and 23 are
-all done: the landing is finished, top to bottom.** 9 waits on item 3 being done by hand,
-and **24 is the live one**, waiting on Maximo's call about the brand story.
+Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8, 23 and 24
+are all done.** The landing is finished top to bottom, the extension has caught up to it,
+and the mark is one drawing everywhere. 9 waits on item 3 being done by hand.
+
+**The live agent item is now 21**, the catch tray — the last surface on the first
+generation, and an open design question rather than a chore.
 
 **The product no longer advertises anything that does not exist except the hosted proxy
 and the ten free catches**, both of which are items 10 and 14 and both of which wait on
@@ -251,26 +254,63 @@ Maximo's items 1 and 2.
       Same label, same action, same destination: the card carries the tier, not the
       control.
 
-- [ ] **24. Reconcile the mark, and rewrite the brand story around it.** *(Maximo's call on
-      the story; the icon work is an agent's.)*
+- [x] **24. Reconcile the mark. RESOLVED 2026-08-15, and in the best available way.**
 
-      Maximo supplied his own mark on 2026-08-15 and it is now on the landing. **It has two
-      spines. The old one had three, and the third was the whole idea:** "one pulled out
-      and lit" is what made the mark about *catching* rather than about books. `docs/brand.md`
-      and `.agents/product-marketing.md` both still tell the three-spine story, and both now
-      carry a note saying so.
+      Maximo supplied `design/mark-source.png`: **three spines, two shelved and one pulled
+      out and lit, with the cord rules across all three.** That is the original idea drawn
+      properly, so **the brand story never needed rewriting and the icon set was never
+      stale** — the two-spine drawing that briefly sat on the landing was the outlier, and
+      it is gone.
 
-      Still on the old three-spine mark: `icons/icon16/32/48/128.png`, `icons/mark.svg`,
-      `icons/icon.svg`, `docs/icon.svg`, `docs/icon32.png`, `docs/icon180.png`, and the
-      store tile. **Do not regenerate them by dropping the new SVG into `tools/make-icons.mjs`
-      unthinkingly:** `brand.md` records why `icon.svg` carries a cream plate rather than a
-      transparent ground, and the two-spine mark on a dark toolbar has exactly the problem
-      that plate was added to solve.
+      Redrawn as geometry (three rounded rects, two masked bands) rather than traced, so it
+      tokenises for both moods and stays sharp at 16px. Now identical on the landing, the
+      popup and the options page. `docs/brand.md` carries the coordinates and the measured
+      values.
+
+      **A real defect fell out of it:** the popup's caught spine was a hardcoded `#7cc0fd`,
+      **1.81:1 on its own cream paper**, sitting directly beneath a comment explaining that
+      a light value on that ground measures 1.6:1 and cannot be used.
+
+      *Still open, and small:* `icons/*.png`, `icons/mark.svg`, `docs/icon.svg` and the
+      store tile are the older three-spine drawing — right idea, slightly different
+      geometry, and no longer carrying the cord rules. **Do not regenerate them by dropping
+      the new SVG into `tools/make-icons.mjs` unthinkingly:** `brand.md` records why
+      `icon.svg` carries a cream plate rather than a transparent ground.
 
 - [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Do 8 first**, and item 3,
       so they show the redesigned product doing catch-anywhere rather than the X-only one.
       Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
       *Unblocks item 15.*
+
+### 2.6 There was no light mode, and it was a coupling bug
+
+Kept because the SHAPE is the reusable part: a control whose wiring sat behind a guard that
+had nothing to do with it.
+
+`docs/index.html` ran one IIFE that opens
+
+```js
+var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (still || !("IntersectionObserver" in window)) return;
+```
+
+and then, forty lines later, attached the theme button's click handler. **For any reader
+with reduced motion turned on, the button rendered, focused, and did nothing.** Measured by
+forcing the query true and clicking it: `data-theme` stayed `dark` and the body stayed
+`#080d20`. After the fix, the same test reports `dark -> light`, body `rgb(251,247,236)`.
+
+**Three things are worth carrying forward.**
+
+1. **Nothing about choosing a colour scheme depends on wanting animation.** The two only
+   shared a function because they shared a `<script>`. `src/shared/landingTheme.test.ts`
+   parses the page's top-level IIFEs and fails the build if they are put back together.
+2. **No screenshot could ever have found this.** The button is present, correctly labelled
+   and focusable in every render. It needed an *interaction* under a *specific media query*,
+   which is why the diagnostic overrode `matchMedia` and clicked the button rather than
+   looking at a picture.
+3. **The reveal must not hide a container that a later script fills.** `.wall` was in the
+   reveal list; the observer saw it as an empty grid with zero height and the six boards
+   were appended by a different IIFE afterwards. Removed.
 
 ### 2.5 The extension caught up, 2026-08-15
 
@@ -563,6 +603,16 @@ That is item 17.
   4%, so on a plate the painting shows straight through the card and takes the text with
   it. Over artwork a panel has to be real glass, measured against the plate's own extreme
   pixels — sample them out of the file, do not guess them.
+- **A comment can be right while the code beneath it is wrong.** The popup's caught spine
+  was `#7cc0fd`, hardcoded, directly under a comment explaining that a light value on that
+  ground measures 1.6:1 and cannot be used. Read the value, not the paragraph about it.
+- **A guard at the top of a script owns everything below it.** Before adding anything to an
+  existing IIFE, check what it returns early for. The theme switch spent two days inside a
+  `prefers-reduced-motion` guard.
+- **Headless Chrome will not hold a scroll position for a screenshot**, and
+  `--virtual-time-budget` ends the page before a `load` handler fires when images are lazy.
+  Report diagnostics **synchronously at the end of `<body>`**, into a `position: fixed`
+  element at the TOP of the viewport. Three attempts were wasted learning this.
 - **A dangling `@font-face` fails silently and looks like a decision.** The browser 404s,
   falls through the stack, and renders in `system-ui`. No console error a screenshot shows,
   no test that would have caught it before `src/shared/fonts.test.ts` existed.

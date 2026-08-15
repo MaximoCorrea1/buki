@@ -145,28 +145,59 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 > below. Read *The mark Maximo drew* first, then this, which is still the truth for the
 > extension, the favicon and the store tile.
 
-### The mark Maximo drew (landing, current)
+### The mark: three spines, everywhere, as of 2026-08-15
 
-**Two spines, each crossed by two cords.** Supplied as `brand/logo-maximo.svg`, inlined in
-`docs/index.html`. It is a potrace trace of his drawing, so the edges carry his hand rather
-than being resampled geometry.
+**Two shelved spines and one pulled out and lit, all three crossed by two cords.** One
+drawing, on the landing, the popup, the options page and the icon set.
 
-Three things had to be fixed before it could ship, and the first is the one that matters:
+For two days the landing carried a **two-spine** version, and the cost was recorded here at
+the time: the three-spine mark's whole argument is that *catching* is the difference between
+a lit spine and a dark one, and that idea is simply not in a two-spine drawing. Maximo
+supplied `design/mark-source.png` and it is the original idea drawn properly — the third
+spine, tilted and lit, with the cords running across all three. **Nothing about the brand
+story needed rewriting, and the icon set was never stale.**
 
-| Found | Why it would have broken | Fixed by |
-| --- | --- | --- |
-| `fill="#000000"` hardcoded on the group | Black on `#080d20` is invisible. **Every dark-mode visitor would have seen no logo**, which is exactly how the previous mark broke on a dark toolbar | `fill="var(--mark-spine)"` |
-| A 900×900 box holding art that is only 613×793 | 16% dead padding on every side, so the mark renders small and aligns badly against the wordmark | viewBox tightened to `148 55 613 793` |
-| potrace preamble: `<!DOCTYPE>`, `900pt` units | Will not inline cleanly | Stripped; the `translate(0,900) scale(.1,-.1)` transform **stays**, because the path data lives in that flipped tenth-scale space |
+**It is geometry, not a trace.** The earlier landing mark was a potrace of a raster, which
+meant a `translate(0,900) scale(.1,-.1)` transform, a tightened viewBox to strip 16% dead
+padding, and path data nobody could edit. Three rounded rects and two masked bands are
+smaller, sharp at 16px, and can be re-proportioned in a text editor.
 
-It is sized by **height**, width auto, because it is taller than it is wide and pinning the
-width shrinks it against the wordmark beside it.
+```
+viewBox 0 0 100 100
+  shelved   x=15  y=6  w=19 h=88 rx=9.5      fill var(--mark-spine)
+  shelved   x=66  y=6  w=19 h=88 rx=9.5      fill var(--mark-spine)
+  caught    x=40.5 y=7 w=19 h=86 rx=9.5      fill var(--mark-caught)
+            rotate(-8 50 50)
+  cords     y=64.6 and y=72.9, height 1.9, cut with a mask
+```
 
-**What this costs, and it is not nothing.** This mark has no caught spine. The three-spine
-mark's entire argument was that *catching* is the difference between a lit spine and a dark
-one, and that idea is not in the two-spine drawing. The story below is therefore no longer
-true of the landing. Rewriting the brand story, and reconciling the favicon, the store tile
-and `icons/mark.svg`, is open work rather than done.
+**The cords are cut with a `<mask>`, not painted in the page colour.** A cord drawn as a
+cream bar is a cream bar: it carries a background with it, and the mark then only works on
+the one surface that background matches. Masked, the gaps are genuinely transparent, so the
+same mark sits on the glass pill, on a plate, and on flat paper. The mask is applied
+**inside the rotated group as well**, so the caught spine's cords lean with it.
+
+**The tilt is negative.** SVG's positive rotation is clockwise, so `rotate(-8)` is what puts
+the spine's top to the left and its foot to the right, which is how the drawing leans. The
+earlier extension mark used `rotate(10)` and leaned the other way.
+
+#### The caught spine is a different value on paper than on the page
+
+It has to separate from **two** things at once: from the ground, so you can see it, and from
+the shelved spines, so it reads as *caught* rather than as a third book. Those pull in
+opposite directions, and the ground differs by surface. Measured:
+
+| Value | On the extension's paper | Against the shelved spines | |
+| --- | --- | --- | --- |
+| `#7cc0fd` | **1.81:1** | 9.58:1 | invisible as a shape |
+| `#1231a8` | 9.66:1 | **1.80:1** | nothing looks caught |
+| `#2f7fd6` | 3.83:1 | 4.54:1 | **the only one that clears both** |
+
+So `--mark-caught` is `#2f7fd6` on the extension's cream and `#1231a8` on the landing at
+night, where the spines are cream and the relationship inverts. **The popup shipped
+`#7cc0fd` hardcoded, directly beneath a comment explaining that a light value on that ground
+measures 1.6:1 and cannot be used.** The comment was right and the code did it anyway; that
+is why both values are named tokens now.
 
 ### The redrawn mark (extension, favicon, store tile)
 
@@ -420,10 +451,16 @@ position. `--ink-2` survives for **labels and fine print only** — the tier nam
 qualifier, the plate credit, the step number's caption — and it was darkened to 12.37:1 so
 even those are not faded.
 
-**When something has to recede, use colour, not lightness.** `h1 em` fades *forgot* because
-the sentence is about forgetting. `.plate-band blockquote span` and `.hero-lede b` use the
-**accent**, which emphasises without lightening. That is the whole vocabulary; there is no
-third option, and "make it a bit lighter" is not one of them.
+**Emphasis is the accent. Never lightness — not even once, and not even cleverly.**
+`h1 em` used to fade *forgot* to `--ink-2`, on the reasoning that the word the sentence is
+about should be the one that recedes. It is a nice idea and it lost to the reader: Maximo
+flagged that exact word, by name, twice. On a plate a faded word does not read as *meaning*,
+it reads as type that has gone thin.
+
+The accent carries the same emphasis and **gains** contrast doing it: 9.66:1 against
+`--ink-2`'s 8.24:1. `h1 em`, `.hero-lede b` and the plate quote's `span` all emphasise the
+same way now, so the page has one gesture for it instead of two. "Make it a bit lighter" is
+not in the vocabulary.
 
 **The extension took the same rule on the same day.** `--muted` was the identical `#3d477a`
 and carried the identical job: every author name, the empty state, the sheet's byline and
@@ -798,6 +835,11 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] **Emphasis is colour, never lightness.** And check the face actually has the style you
       asked for: `font-style: italic` under `font-synthesis: none` is a silent no-op
 - [ ] **A panel over artwork is glass, measured against the plate's own extreme pixels**
+- [ ] **A control's wiring does not sit behind an unrelated guard.** The theme switch lived
+      inside the motion script, which returns early on `prefers-reduced-motion`, so the
+      button did nothing at all for anyone with that setting on
+- [ ] **A control over artwork needs a value per MOOD, and the ring may have to carry it.**
+      A veil of the page ground is the plate's own colour at night
 - [ ] **Mono is data that lines up.** A word set in tracked uppercase mono reads as a
       machine value. Check the casing is in the CSS before changing it in the TypeScript
 - [ ] **Deleted a font? `src/shared/fonts.test.ts` is the only thing that will notice.** A
