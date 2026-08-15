@@ -199,7 +199,18 @@
         --paper:     light-dark(#fbf7ec, #080d20);
         --paper-2:   light-dark(#f3ecd9, #111832);
         --ink:       light-dark(#0a0f33, #f5efde);
-        --ink-2:     light-dark(#3d477a, #bcc4e0);
+        /* DARKENED 2026-08-15, and most of what used to wear it was promoted to --ink.
+           The page read as faded and the reason was structural rather than a bad value:
+           --ink-2 at 8.24:1 carried .sub, .step-body, .answers dd, .picker p, .fine,
+           .plan-line, .aside and the footer — nearly every sentence on the page. Body copy
+           set two steps lighter than its own heading, in a different HUE, reads washed
+           however well it measures.
+
+           Body copy is --ink now (17.38:1 day, 16.79:1 night) and hierarchy comes from
+           SIZE AND WEIGHT, which is how a phone does it: iOS sets near-black at every
+           level and never fades a sentence to rank it. --ink-2 is darkened as well, so
+           the few genuinely secondary things left wearing it are not faded either. */
+        --ink-2:     light-dark(#232c5c, #d5dbf0);
         --blue:      light-dark(#1231a8, #7f9bea);
         --rule:      light-dark(#ded4b4, #262e4d);
         --rule-soft: light-dark(#ebe3ca, #1a2138);
@@ -489,12 +500,12 @@
       .hero-type .inner .cta-row,
       .hero-type .inner a { pointer-events: auto; }
       .hero-lede {
-        font-size: clamp(1.05rem, 1.5vw, 1.25rem);
-        line-height: 1.45; color: var(--ink-2);
-        max-width: 34ch; margin: 0;
-        font-weight: 500;
+        font-size: clamp(1.15rem, 1.85vw, 1.45rem);
+        line-height: 1.42; color: var(--ink);
+        max-width: 32ch; margin: 0;
+        font-weight: 600;
       }
-      .hero-lede b { color: var(--ink); font-weight: 700; }
+      .hero-lede b { color: var(--blue); font-weight: 800; }
 
       /* A cue, because a full-screen picture with no edge visible gives no reason to
          scroll. Drawn, not a glyph. It breathes rather than bounces: 3px of travel on a
@@ -556,27 +567,11 @@
         h1 { max-width: 12ch; }
       }
 
-      /* ---------- the ask, directly under the picture ---------- */
-      .hero-below {
-        max-width: var(--shell); margin: 0 auto;
-        padding: 44px 32px 0;
-        display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-        gap: 40px; align-items: start;
-      }
-      .lede {
-        font-size: clamp(1.22rem, 2.1vw, 1.62rem);
-        line-height: 1.42;
-        margin: 0;
-        max-width: 30ch;
-        letter-spacing: -0.011em;
-      }
-      .lede b { font-weight: 600; }
-      .actions { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; padding-top: 4px; }
+      /* `.hero-below`, `.lede` and `.actions` lived here and were dead: the rebuild on
+         2026-08-15 moved the pitch INTO the hero and nothing has carried those classes
+         since. Deleted rather than left as a comment, because dead CSS is the thing that
+         makes the next reader wonder which of two layouts is the real one. */
       .cta-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-      @media (max-width: 860px) {
-        .hero-below { grid-template-columns: 1fr; gap: 26px; padding: 32px 20px 0; }
-        .lede { max-width: 36ch; }
-      }
 
       /* ---------- controls ----------
          Capsules, and a press that answers. The old buttons were 3px rectangles that
@@ -588,28 +583,41 @@
       .btn {
         display: inline-flex; align-items: center; justify-content: center;
         background: var(--ink); color: var(--paper);
-        font-family: var(--body); font-size: 16px; font-weight: 600;
-        letter-spacing: -0.006em;
-        padding: 15px 28px; border-radius: 999px;
+        font-family: var(--body); font-size: 16.5px; font-weight: 700;
+        letter-spacing: -0.008em;
+        padding: 16px 30px; border-radius: 999px;
         text-decoration: none; border: 0; cursor: pointer;
+        box-shadow: 0 6px 18px -9px var(--shadow-deep);
         transition: transform 160ms var(--ease), background-color 200ms var(--ease),
                     box-shadow 200ms var(--ease);
       }
+      /* The two moments the page is actually asking for the install. Everywhere else the
+         standard size is right; making every button large is how none of them read as the
+         one to press. */
+      .btn.lg { font-size: 18px; padding: 19px 38px; }
       .btn:active { transform: scale(0.97); }
       /* Gated, per the checklist in docs/brand.md: an ungated :hover sticks after a tap. */
       @media (hover: hover) and (pointer: fine) {
         .btn:hover { background: var(--blue); }
       }
-      /* Secondary is a TINT, not an outline. The old hairline ring measured 1.38:1 against
-         the paper, which is a boundary you cannot see; a filled surface needs no boundary
-         to read as a control, and it is what a phone actually does. */
+      /* SECONDARY IS GLASS, and it earned the upgrade. It was `--ink` at 8%, which is a
+         tint of the PAGE laid over a PAINTING: on the bright sky it nearly vanished and on
+         the dark arch it inverted. Real glass takes its legibility from the backdrop it
+         blurs rather than from the ground it assumes. Measured against both plates'
+         extreme pixels, sampled rather than guessed: --ink on paper-at-70% clears 11.55:1
+         over the darkest pixel in daylight and 12.50:1 over the brightest at night. */
       .btn.ghost {
-        background: color-mix(in srgb, var(--ink) 8%, transparent);
+        background: color-mix(in srgb, var(--paper) 70%, transparent);
+        backdrop-filter: blur(18px) saturate(180%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
         color: var(--ink);
-        padding: 15px 26px;
+        box-shadow: inset 0 0 0 1px var(--ring), 0 6px 18px -10px var(--shadow-deep);
+      }
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .btn.ghost { background: color-mix(in srgb, var(--paper) 92%, transparent); }
       }
       @media (hover: hover) and (pointer: fine) {
-        .btn.ghost:hover { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+        .btn.ghost:hover { background: color-mix(in srgb, var(--paper) 88%, transparent); }
       }
       .btn.cream { background: var(--cream); color: var(--navy); }
       @media (hover: hover) and (pointer: fine) {
@@ -648,7 +656,7 @@
         .theme svg { transition-duration: 1ms, 1ms; }
       }
 
-      .aside { font-size: 14.5px; color: var(--ink-2); }
+      .aside { font-size: 15px; color: var(--ink); }
       .aside b { color: var(--ink); font-weight: 600; }
 
       /* ---------- sections ---------- */
@@ -660,22 +668,34 @@
          uppercase label above a heading was deleted from all three bands on 2026-08-13:
          the headline is set in Petrona 800 at up to 3.3rem and does not need a label
          announcing what it is about to say. Do not reintroduce one. */
+      /* CENTRED, 2026-08-15. Every section head used to sit hard left with 40% of the
+         width empty beside it, which is what made the page read as lopsided: a symmetric
+         grid underneath a left-anchored heading has no axis to agree with. Centring the
+         head gives every band one axis from top to bottom, and it is what a phone's own
+         product pages do. The hero stays left, because it sits on a painting whose
+         architecture is on the left and whose sky is on the right. */
       h2 {
         font-family: var(--display);
         font-weight: 800;
-        font-size: clamp(2rem, 4.1vw, 3.3rem);
+        font-size: clamp(2.1rem, 4.4vw, 3.5rem);
         line-height: 1.02;
-        letter-spacing: -0.019em;
-        margin: 0 0 18px;
-        max-width: 20ch;
+        letter-spacing: -0.021em;
+        margin: 0 auto 18px;
+        max-width: 18ch;
         text-wrap: balance;
+        text-align: center;
       }
       .sub {
-        font-size: 1.075rem; color: var(--ink-2);
-        max-width: 62ch; margin: 0 0 8px;
+        font-size: 1.14rem; color: var(--ink);
+        max-width: 56ch; margin: 0 auto 8px;
+        text-align: center; text-wrap: pretty;
       }
-      .sub a { color: var(--blue); text-underline-offset: 3px; }
-      .fine { font-size: 14.5px; color: var(--ink-2); max-width: 62ch; }
+      .sub a { color: var(--blue); text-underline-offset: 3px; font-weight: 600; }
+      .fine {
+        font-size: 15px; color: var(--ink);
+        max-width: 58ch; margin: 14px auto 0;
+        text-align: center; text-wrap: pretty;
+      }
 
       /* ---------- the sequence: what actually happens on screen ---------- */
       .seq {
@@ -684,12 +704,15 @@
         align-items: stretch;
       }
       .step { display: flex; flex-direction: column; gap: 12px; }
+      /* Centred inside its own column, so each step agrees with the axis the heading above
+         it sits on. The numbers stay: this content really is a sequence, and the order is
+         information the reader needs rather than a decorative marker. */
       .step-label {
-        font-size: 13px; font-weight: 600; color: var(--ink-2);
-        display: flex; gap: 9px; align-items: baseline;
+        font-size: 14px; font-weight: 600; color: var(--ink-2);
+        display: flex; gap: 9px; align-items: baseline; justify-content: center;
       }
       .step-label span {
-        font-family: var(--display); font-size: 17px; color: var(--blue); font-weight: 600;
+        font-family: var(--display); font-size: 17px; color: var(--blue); font-weight: 700;
       }
       /* A captured surface, not a card. The hairline that used to be here was
          `1px solid var(--rule)` — a PAGE token drawn around a picture of the PRODUCT,
@@ -747,7 +770,10 @@
       .board-line { height: 3px; background: #d5cbbf; border-radius: 2px; margin: 9px 0 11px; }
       .shelf-stat { font-size: 11.5px; color: #5c5349; }
 
-      .step-body { margin: 2px 0 0; font-size: 0.965rem; color: var(--ink-2); }
+      .step-body {
+        margin: 2px auto 0; font-size: 1rem; color: var(--ink);
+        text-align: center; text-wrap: pretty; max-width: 34ch;
+      }
       @media (max-width: 860px) { .seq { grid-template-columns: 1fr; gap: 30px; } }
 
       /* ---------- the real shelf ---------- */
@@ -794,42 +820,80 @@
       .plate-band { position: relative; margin: 104px 0 0; }
       .plate-band img {
         display: block; width: 100%;
-        height: min(72svh, 660px);
+        height: min(88svh, 820px);
         object-fit: cover; object-position: 50% 46%;
       }
       .plate-band figcaption {
         position: absolute; inset: 0;
-        display: flex; align-items: center; justify-content: flex-end;
+        display: flex; align-items: center; justify-content: center;
+      }
+      /* A CENTRED RADIAL, not a raking gradient, because the quote is centred now and the
+         band should be symmetric on both axes. It is the page ground at an alpha, so the
+         plate still meets the page with no seam.
+
+         The strength is measured against both plates' actual extreme pixels rather than
+         the hero's tokens, whose geometry is different: --scrim-1 is a 93% veil, and a 93%
+         disc dropped on the middle of a painting is exactly the mistake the hero fixed
+         when its wash moved off centre. At 80% in the core, --ink clears 12.76:1 over the
+         darkest pixel in daylight and 13.35:1 over the brightest at night; where the type
+         runs out at roughly 48%, still 8.20:1 and 10.40:1. */
+      .plate-band figcaption::before {
+        content: ""; position: absolute; inset: 0;
+        background: radial-gradient(
+          58% 52% at 50% 50%,
+          color-mix(in srgb, var(--paper) 80%, transparent) 0%,
+          color-mix(in srgb, var(--paper) 48%, transparent) 46%,
+          transparent 76%
+        );
       }
       .plate-band .q {
+        position: relative;
         max-width: var(--shell); margin: 0 auto; padding: 0 32px; width: 100%;
-        display: flex; justify-content: flex-end;
+        display: flex; justify-content: center;
       }
       .plate-band blockquote {
-        margin: 0; max-width: 15ch;
-        font-family: var(--display); font-weight: 700;
-        font-size: clamp(1.7rem, 3.4vw, 2.9rem);
-        line-height: 1.06; letter-spacing: -0.018em;
+        margin: 0; max-width: 17ch; text-align: center;
+        font-family: var(--display); font-weight: 800;
+        font-size: clamp(2rem, 4.6vw, 4rem);
+        line-height: 1.03; letter-spacing: -0.024em;
         color: var(--ink);
-        text-shadow: 0 1px 22px color-mix(in srgb, var(--paper) 95%, transparent), 0 1px 5px var(--paper);
       }
-      .plate-band blockquote span { font-style: italic; font-weight: 500; }
+      /* This was `font-style: italic; font-weight: 500`, and the italic half was a NO-OP:
+         Manrope ships no italic and `font-synthesis: none` makes the browser refuse to
+         shear the roman rather than quietly counterfeiting it. So the emphasis was doing
+         nothing but going lighter, which is the opposite of emphasis. Colour instead, the
+         same answer `h1 em` takes, and the accent rather than a fade: 9.66:1 on the
+         scrimmed plate. */
+      .plate-band blockquote span { color: var(--blue); }
       .answer {
-        max-width: 62ch; margin: 34px auto 0; padding: 0 32px;
-        font-size: 1.14rem; color: var(--ink);
+        max-width: 54ch; margin: 40px auto 0; padding: 0 32px;
+        font-size: 1.22rem; color: var(--ink);
+        text-align: center; text-wrap: pretty;
       }
       @media (max-width: 860px) {
-        .plate-band img { height: min(56svh, 420px); }
-        .plate-band .q { padding: 0 20px; justify-content: flex-start; }
-        .plate-band blockquote { max-width: 11ch; }
+        .plate-band img { height: min(62svh, 480px); }
+        /* `justify-content: flex-start` and `max-width: 11ch` lived here and were left
+           over from the version where the quote hugged the right edge on desktop and had
+           to be pulled back on a phone. Once the quote was centred they quietly un-centred
+           it at every width below 860px, which is most readers. A desktop-only screenshot
+           would never have shown it. */
+        .plate-band .q { padding: 0 20px; }
+        .plate-band blockquote { max-width: 14ch; }
         .answer { padding: 0 20px; }
       }
 
-      /* ---------- generated covers ---------- */
-      .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 56px; align-items: center; }
-      @media (max-width: 900px) { .duo { grid-template-columns: 1fr; gap: 34px; } }
-
-      .wall { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      /* ---------- generated covers ----------
+         `.duo` was a 1fr / 1.05fr split with the words on the left and a 3x2 block of
+         boards on the right. Two near-equal columns that are not equal is the least
+         symmetric arrangement available, and it fought the centred heading above it. The
+         boards run six across now, on the same axis and at the same rhythm as the two real
+         shelves further up the page — which is the point being made: a drawn board sits on
+         the shelf beside a photographed one and does not look like a substitute. */
+      .wall {
+        display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px;
+        margin-top: 48px;
+      }
+      @media (max-width: 900px) { .wall { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
       .cover {
         position: relative; aspect-ratio: 2 / 3; border-radius: 2px; overflow: hidden;
         background: var(--binding, #1b2570);
@@ -856,6 +920,68 @@
       .cover .title.medium { font-size: clamp(13px, 1.8vw, 18px); }
       .cover .title.small { font-size: clamp(11px, 1.5vw, 15px); }
       .cover .by { position: relative; font-family: var(--book); font-size: clamp(9px, 1.15vw, 11.5px); color: var(--stamp-dim); margin-top: 7px; }
+
+      /* ---------- pricing sits on the plate ----------
+         THE THIRD USE OF THE ARTWORK, and the section that most needs to hold attention:
+         it is where the reader decides. The plate is not a takeover here, it is a ground.
+         It fades to the page at both ends, so the band has no edges to defend and the
+         architecture reads as texture behind the decision rather than as a picture
+         competing with it. A vertical gradient, identical at top and bottom, because the
+         whole page is on one axis now.
+
+         THE CARDS BECOME GLASS. `--surface` is a 4% tint of --ink, which over a painting
+         is a tint of the PAGE laid on something that is not the page: the plate would show
+         straight through the card and take the text with it. Real glass instead, the same
+         idiom as the pill, and measured against both plates' extreme pixels sampled from
+         the files: --ink on paper-at-84% clears 12.4:1 over the darkest pixel in daylight
+         and 15.5:1 at night. */
+      .costs-band {
+        position: relative; isolation: isolate; overflow: hidden;
+        padding: 108px 0 104px; margin-top: 4px;
+      }
+      .band-plate { position: absolute; inset: 0; z-index: -2; }
+      .band-plate img {
+        width: 100%; height: 100%; display: block;
+        object-fit: cover; object-position: 50% 54%;
+      }
+      .costs-band::before {
+        content: ""; position: absolute; inset: 0; z-index: -1;
+        background: linear-gradient(
+          180deg,
+          var(--paper) 0%,
+          color-mix(in srgb, var(--paper) 66%, transparent) 26%,
+          color-mix(in srgb, var(--paper) 66%, transparent) 74%,
+          var(--paper) 100%
+        );
+      }
+      .costs-band .plan {
+        background: color-mix(in srgb, var(--paper) 84%, transparent);
+        backdrop-filter: blur(22px) saturate(170%);
+        -webkit-backdrop-filter: blur(22px) saturate(170%);
+      }
+      /* Pro stays OPAQUE. Two glass cards side by side have nothing to say to each other;
+         one glass and one solid is the difference the section is about. */
+      .costs-band .plan.pro {
+        background: var(--navy-card);
+        backdrop-filter: none; -webkit-backdrop-filter: none;
+      }
+      .costs-band .picker p {
+        background: color-mix(in srgb, var(--paper) 84%, transparent);
+        backdrop-filter: blur(22px) saturate(170%);
+        -webkit-backdrop-filter: blur(22px) saturate(170%);
+      }
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .costs-band .plan,
+        .costs-band .picker p { background: color-mix(in srgb, var(--paper) 96%, transparent); }
+      }
+      @media (prefers-reduced-transparency: reduce) {
+        .costs-band .plan,
+        .costs-band .picker p {
+          background: var(--paper);
+          backdrop-filter: none; -webkit-backdrop-filter: none;
+        }
+        .costs-band .plan.pro { background: var(--navy-card); }
+      }
 
       /* ---------- pricing ---------- */
       /* THREE MEASURED FAILURES LIVED HERE, all of them dark-mode only, all of them from
@@ -906,8 +1032,8 @@
       .amount b { font-family: var(--display); font-size: 58px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
       .amount span { font-size: 14.5px; color: var(--ink-2); }
       .plan.pro .amount span { color: var(--cream-2); }
-      .plan-line { margin: 0 0 22px; font-size: 15.5px; color: var(--ink-2); min-height: 48px; }
-      .plan.pro .plan-line { color: var(--cream-2); }
+      .plan-line { margin: 0 0 22px; font-size: 16px; color: var(--ink); min-height: 48px; }
+      .plan.pro .plan-line { color: var(--cream); }
       .plan ul { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-direction: column; gap: 11px; flex: 1; }
       .plan li { position: relative; padding-left: 26px; font-size: 15.5px; }
       .plan li::before {
@@ -937,7 +1063,7 @@
         display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
       }
       .picker p {
-        margin: 0; font-size: 15.5px; color: var(--ink-2);
+        margin: 0; font-size: 16px; color: var(--ink);
         background: var(--surface); border-radius: var(--r-md);
         padding: 22px 24px;
         box-shadow: inset 0 0 0 1px var(--ring);
@@ -946,10 +1072,20 @@
       @media (max-width: 860px) { .picker { grid-template-columns: 1fr; } }
 
       /* ---------- FAQ ---------- */
-      .answers { margin: 40px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 34px 56px; }
-      .answers dt { font-weight: 600; font-size: 1.04rem; margin-bottom: 7px; }
-      .answers dd { margin: 0; color: var(--ink-2); font-size: 0.99rem; }
-      @media (max-width: 860px) { .answers { grid-template-columns: 1fr; gap: 26px; } }
+      /* Panels rather than six paragraphs floating in a two-column gap. Under a centred
+         heading, loose text in columns is the one block left with no shape, and six equal
+         panels are a shape the rest of the page already speaks. The text inside stays LEFT
+         aligned: a centred heading is a signpost, but a centred answer is harder to read,
+         and the panel is what carries the symmetry. */
+      .answers { margin: 44px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .answers > div {
+        background: var(--surface); border-radius: var(--r-md);
+        padding: 24px 26px;
+        box-shadow: inset 0 0 0 1px var(--ring);
+      }
+      .answers dt { font-weight: 700; font-size: 1.08rem; margin-bottom: 8px; }
+      .answers dd { margin: 0; color: var(--ink); font-size: 1.03rem; }
+      @media (max-width: 860px) { .answers { grid-template-columns: 1fr; gap: 14px; } }
 
       /* ---------- close ----------
          THE PAGE CLOSES WHERE IT OPENED. This was a flat navy rectangle, which is the one
@@ -981,7 +1117,7 @@
            in the picture and it is on the left, which is exactly where the type goes; the
            hero already gives it the room it needs. Here the open right half carries the
            painting and the type sits on quiet sky. */
-        object-position: 72% 44%;
+        object-position: 50% 42%;
       }
       /* The first attempt put 94% navy over the left and 34% over the right, and a DARK
          plate under a heavy navy scrim is mud: it hid the painting and lit nothing.
@@ -996,20 +1132,30 @@
          Both AAA across the whole run, with the painting visible the entire time. */
       .close-band::before {
         content: ""; position: absolute; inset: 0; z-index: -1;
-        background: linear-gradient(
-          96deg,
-          color-mix(in srgb, var(--navy) 88%, transparent) 0%,
-          color-mix(in srgb, var(--navy) 46%, transparent) 46%,
-          transparent 100%
+        background: radial-gradient(
+          64% 58% at 50% 50%,
+          color-mix(in srgb, var(--navy) 84%, transparent) 0%,
+          color-mix(in srgb, var(--navy) 58%, transparent) 48%,
+          color-mix(in srgb, var(--navy) 26%, transparent) 100%
         );
       }
       /* width: 100% is load-bearing now that the band is a flex container: without it the
          inner sizes to its own content, `margin: 0 auto` centres that, and the left edge of
          the closing argument stops lining up with every other section on the page. */
-      .close-band .inner { width: 100%; max-width: var(--shell); margin: 0 auto; padding: 0 32px; position: relative; }
+      .close-band .inner {
+        width: 100%; max-width: var(--shell); margin: 0 auto; padding: 0 32px;
+        position: relative; text-align: center;
+      }
       .close-band h2 { color: var(--cream); max-width: 17ch; }
-      .close-band .sub { color: var(--cream-2); }
-      .close-band .aside { color: var(--cream-2); }
+      /* The last thing on the page is one control on the page's own axis. It was a row
+         pinned left with the price note beside it, which put the final call to action off
+         the axis every other band now shares. */
+      .close-band .cta-row {
+        justify-content: center; flex-direction: column; gap: 18px;
+        margin-top: 32px;
+      }
+      .close-band .sub { color: var(--cream); }
+      .close-band .aside { color: var(--cream); }
       .close-band .aside b { color: var(--cream); }
       @media (max-width: 700px) {
         .close-band { padding: 76px 0 72px; min-height: 0; }
@@ -1020,7 +1166,7 @@
         .close-band::before {
           background: color-mix(in srgb, var(--navy) 82%, transparent);
         }
-        .close-plate img { object-position: 62% 44%; }
+        .close-plate img { object-position: 50% 44%; }
       }
 
       footer {
@@ -1032,7 +1178,7 @@
       /* Gated, like every other hover on this page and for the same reason: an ungated
          :hover is triggered by a tap and then sticks, so on a phone the last link you
          touched stays lit. This was the only ungated one left on the landing. */
-      footer a { color: var(--ink-2); text-decoration: none; transition: color 160ms var(--ease); }
+      footer a { color: var(--ink); text-decoration: none; transition: color 160ms var(--ease); }
       @media (hover: hover) and (pointer: fine) {
         footer a:hover { color: var(--blue); text-decoration: underline; }
       }
@@ -1179,8 +1325,8 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
               is yours.
             </p>
             <div class="cta-row rise">
-              <a class="btn" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
-              <a class="btn ghost" href="#how">See it catch a book</a>
+              <a class="btn lg" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
+              <a class="btn ghost lg" href="#how">See it catch a book</a>
             </div>
             <!-- The honest disclosure, and a qualifier on the action rather than a boast:
                  there is no Web Store listing yet, so the link goes to the source. -->
@@ -1329,24 +1475,38 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
 
       <div class="wrap">
         <section class="band">
-          <div class="duo">
-            <div>
-                  <h2>A book with no cover art still gets a cover.</h2>
-              <p class="sub">
-                Catalogues have no art for a great many books, so Buki draws the rest: a dyed
-                board, two stamped rules, and a weave hashed from the book itself. The same
-                book always gets the same binding, and no two books get the same one.
-              </p>
-              <p class="fine">
-                These six are drawn right now, in your browser, by the same code that ships
-                in the extension.
-              </p>
-            </div>
-            <div class="wall" id="wall" aria-hidden="true"></div>
-          </div>
+          <h2>A book with no cover art still gets a cover.</h2>
+          <p class="sub">
+            Catalogues have no art for a great many books, so Buki draws the rest: a dyed
+            board, two stamped rules, and a weave hashed from the book itself. The same
+            book always gets the same binding, and no two books get the same one.
+          </p>
+          <p class="fine">
+            These six are drawn right now, in your browser, by the same code that ships
+            in the extension.
+          </p>
+          <div class="wall" id="wall" aria-hidden="true"></div>
         </section>
+      </div>
 
-        <section class="band" id="costs">
+      <!-- Pricing steps OUT of the shell so its plate can bleed. The third use of the
+           artwork, and the section that most needs to hold attention. -->
+      <section class="band costs-band" id="costs">
+        <picture class="band-plate">
+          <source
+            media="(prefers-color-scheme: dark)"
+            data-dark
+            srcset="forum-1300-dark.webp 1300w, forum-2200-dark.webp 2200w"
+            sizes="100vw"
+          />
+          <img
+            src="forum-1300.webp"
+            srcset="forum-1300.webp 1300w, forum-2200.webp 2200w"
+            sizes="100vw"
+            width="1300" height="500" loading="lazy" alt=""
+          />
+        </picture>
+        <div class="wrap">
           <h2>Ten catches to find out. Then four dollars.</h2>
           <p class="sub">
             Reading a cover from a photograph is the one thing that costs real money to run.
@@ -1400,8 +1560,10 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
               cheapest reading tracker, and there is no account to make.
             </p>
           </div>
-        </section>
+        </div>
+      </section>
 
+      <div class="wrap">
         <section class="band">
           <h2>Your shelf never leaves your computer.</h2>
           <p class="sub">
@@ -1489,8 +1651,8 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
             Unless it is on a shelf. Ten catches, no card, no account, about four seconds to
             install.
           </p>
-          <div class="cta-row" style="margin-top: 26px">
-            <a class="btn cream" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
+          <div class="cta-row">
+            <a class="btn cream lg" href="https://github.com/MaximoCorrea1/buki">Get Buki free</a>
             <p class="aside" style="margin: 0"><b>Free.</b> Then $4 a month if you keep using it.</p>
           </div>
         </div>
@@ -1587,7 +1749,12 @@ l0 -2308 834 0 834 0 -4 2363 c-3 2341 -3 2363 -23 2442 -12 44 -40 118 -63
             kids[i].style.setProperty("--i", String(i % 6));
           }
         });
-        var SINGLES = ".band > h2, .band > .sub, .shelf-wide, .answer, .picker, .close-band .inner";
+        /* Descendant, not child. Pricing moved OUT of the shell so its plate could bleed,
+           which put its heading one level deeper: `.band > h2` silently stopped matching
+           the one section the page exists to get read. `.close-band` is not a `.band`, so
+           it is still reached once, by its own inner, and never revealed twice. */
+        var SINGLES =
+          ".band h2, .band .sub, .band .fine, .wall, .shelf-wide, .answer, .picker, .close-band .inner";
         var solo = document.querySelectorAll(SINGLES);
         for (var j = 0; j < solo.length; j++) solo[j].setAttribute("data-reveal", "");
 
