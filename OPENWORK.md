@@ -4,11 +4,11 @@
 
 | | |
 | --- | --- |
-| Tests | 336 across 35 files, all passing |
+| Tests | 344 across 38 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean. The landing and the extension are both on the third generation |
-| Branch | `buki-pro`, **45 commits ahead of `main`, not merged** |
+| Branch | `buki-pro`, **48 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
@@ -484,16 +484,26 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
       1440px and at 390px. **Do not reintroduce one**; `index.html` says so where the rule
       used to be.
 
-- [ ] **21. The catch tray is now the ONLY surface on the old design system.**
-      `src/extension/content.ts` is still the violet-black room with one warm lamp. The
-      popup and options page were realigned on 2026-08-12 and reached the **third**
-      generation on 2026-08-15; the tray was deliberately left both times, because it is
-      the only surface that renders **inside somebody else's page**. That is a different
-      problem: it has to hold up against an arbitrary background rather than one we chose.
-      **Do not retheme it by copying tokens across without solving that first.**
+- [x] **21. The catch tray. DONE 2026-08-15, and it was the last surface.**
+      `src/extension/content.ts` was the violet-black room with one warm lamp, held back
+      through two generations because it is the only surface that renders **inside
+      somebody else's page**.
 
-      The gap is now two generations wide rather than one, so this is more visible than it
-      was — but it is still the same open question, and answering it is the work.
+      **The design question it was waiting on has an answer: two thirds of the third
+      generation arrives and one third must not.** The transparency stops at this surface,
+      because the landing's glass works only where the page owns what is behind it and
+      here the backdrop might be a photograph. The card owns its ground instead - the same
+      argument `icons/icon.svg` makes for its cream plate. **The webfont stops here too:**
+      Manrope would need `web_accessible_resources` matching `<all_urls>`, which is the
+      trade item 7 refused for the `downloads` permission, right before store review. See
+      `docs/brand.md`, *The one surface with no ground of its own*.
+
+      What arrived: the landing's night palette, capsules with a press, sentences at full
+      contrast, two radii, and the mark's spine and cords down the card's edge as a
+      **gradient**, so they hold the mark's own fractions however tall the card is.
+
+      `src/extension/contentChrome.test.ts` guards what a screenshot cannot: the rule is
+      about every page, not the one you happened to look at.
 
 - [x] **22. Ship free-first, or wait for the paid tier? DECIDED 2026-08-13 by Maximo:
       wait.** The landing copy therefore stays as written and stays true on the day it

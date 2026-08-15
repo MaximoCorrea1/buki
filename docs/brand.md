@@ -18,13 +18,44 @@ which surface is on which generation is the difference between a fix and a regre
 | `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. |
 | `popup.html`, `options.html` | **third** | Caught up 2026-08-15. Manrope, sentences at `--ink`, capsules, an iOS segmented control, two radii. **Still a light-only surface with its own paper palette, and that is not drift** — see *Two materials, one identity*. |
 | `src/extension/toolbar.ts` | third | A book board on Chrome's own toolbar. Unaffected by the pass: it is a 16px bitmap, not a stylesheet. |
-| `src/extension/content.ts` | **first** | The violet-black room with one warm lamp |
-| `icons/*.png`, `docs/icon.svg`, `icons/mark.svg` | second | Still the **three-spine** mark. The landing carries Maximo's two-spine drawing. |
+| `src/extension/content.ts` | **third** | Caught up 2026-08-15, last and on purpose. The landing's night palette, capsules, sentences at full contrast, the mark's spine and cords down the card's edge. **Opaque, and with no webfont** - see *The one surface with no ground of its own*. |
+| `icons/*.png`, `icons/icon.svg`, `icons/mark.svg`, `docs/icon*` | **third** | Regenerated 2026-08-15 from `tools/mark.mjs`, the single definition. `make-icons.mjs` had still been drawing the FIRST-generation mark, so the toolbar icon was a different logo from every other surface. |
 
-**One surface is deliberately behind and one is undecided.** `content.ts` draws inside
-*somebody else's page*, so it has to hold up against an arbitrary background rather than one
-we chose — a different problem, recorded in OPENWORK item 21. **Do not retheme it by copying
-tokens across without solving that first.** The mark is OPENWORK item 24 and waits on Maximo.
+**Every surface is now on the third generation.** The mark is one drawing everywhere,
+defined once in `tools/mark.mjs`. What differs between surfaces is the *material*, and every
+difference is a decision with a reason: see *Two materials, one identity* and *The one
+surface with no ground of its own*.
+
+### The one surface with no ground of its own
+
+`src/extension/content.ts` renders inside **somebody else's page**: X in daylight, X at
+night, Reddit, a newsletter, a black photo essay, a white documentation site. Every other
+Buki surface chooses its own background. This one is handed one, and it was held back
+through two design generations for exactly that reason.
+
+**So two thirds of the third generation arrives and one third does not.**
+
+**The transparency stops here.** The landing's glass works because the page owns what is
+behind it and every value was measured against it. Here the backdrop might be a photograph,
+so a translucent card is a card whose contrast is decided by something we have never seen.
+The card owns its ground instead - the same argument `icons/icon.svg` makes for its cream
+plate: *where the ground is not ours, we bring one.*
+`src/extension/contentChrome.test.ts` fails the build if any surface carrying text becomes
+see-through, and it also holds the two checklist rules easiest to lose in a restyle: every
+hover gated, every control answering a press.
+
+**The webfont stops here too.** Manrope would need a `web_accessible_resources` entry
+matching `<all_urls>`, because catch-anywhere injects this script into any tab. Widening the
+extension's exposed surface immediately before store review, to change the face on a 340px
+card, is the same trade `OPENWORK.md` item 7 refused for the `downloads` permission. The
+system stack is the honest choice anyway: on a Mac it resolves to SF, which is what Manrope
+is reaching for.
+
+**What does arrive:** the landing's night palette in place of the violet-black room and its
+amber lamp, capsules with a press on every control, sentences at full contrast (`--dim` was
+`#b4a6c8` and carried every author line), two radii, and the mark's own spine and two cords
+down the card's edge - drawn as a **gradient**, so they stay at the fractions
+`tools/mark.mjs` puts them at however tall the card turns out to be.
 
 ### Two materials, one identity
 
@@ -62,10 +93,9 @@ actually differed was the accent, gold against the landing's cobalt, plus warm n
 against cool. So the ink, the muted tone and the accent moved and the paper metaphor
 stayed, because a list is read on paper and the landing is paper too.
 
-**The catch tray in `content.ts` has not been touched and is the last surface still on the
-old system.** It is also the only one that renders inside somebody else's page, which is a
-different problem: it has to hold up against an arbitrary background rather than one we
-chose. Do not retheme it by copying tokens across without solving that first.
+**The catch tray in `content.ts` was the last surface on the old system and caught up on
+2026-08-15.** It is still the only one that renders inside somebody else's page, and the
+answer to that is above: *The one surface with no ground of its own*.
 
 **One trap, learned the expensive way.** A retokening that changes an accent's LIGHTNESS
 invalidates every hardcoded colour sitting on it. Moving `--accent` from a light amber to

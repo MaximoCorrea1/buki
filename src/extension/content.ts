@@ -36,14 +36,33 @@ const trace = (...args: unknown[]): void => {
 /**
  * One stylesheet rather than inline cssText: :active press feedback, hover gating and
  * prefers-reduced-motion cannot be expressed inline, and those are the parts that decide
- * whether this reads as part of X or bolted onto it.
+ * whether this reads as part of the page or bolted onto it.
  *
- * The palette is the landing page's, variable for variable - a library at night, one warm
- * lamp. The extension is the same room seen from inside X, so a catch should look like a
- * shelf row that drifted into the feed rather than a notification from another product.
+ * THE THIRD GENERATION, and this surface reaches it last on purpose. It is the only Buki
+ * surface that renders inside SOMEBODY ELSE'S page: X in daylight, X at night, Reddit, a
+ * newsletter, a black photo essay, a white docs site. Every other surface chooses its own
+ * background; this one is handed one.
+ *
+ * SO THE TRANSPARENCY HALF OF THE THIRD GENERATION STOPS HERE, deliberately.
+ * The landing's glass works because the page owns what is behind it and the contrast was
+ * measured against it. Here the backdrop might be a photograph. The card owns its ground
+ * instead — the same argument icons/icon.svg makes for its cream plate: where the ground
+ * is not ours, we bring one. src/extension/contentChrome.test.ts fails the build if a
+ * surface that carries text ever becomes see-through.
+ *
+ * AND THE WEBFONT STOPS HERE TOO. Manrope would need a web_accessible_resources entry
+ * matching <all_urls>, because catch-anywhere injects this script into any tab. Widening
+ * the extension's exposed surface immediately before store review, to change the face on
+ * a 332px card, is the same trade OPENWORK item 7 refused for the downloads permission.
+ * The system stack is also the honest choice here: on a Mac it resolves to SF, which is
+ * the thing Manrope is reaching for in the first place.
+ *
+ * WHAT DOES ARRIVE: the palette, which is now the landing's night rather than the old
+ * violet-black room with an amber lamp; capsules with a press on every control; sentences
+ * at full contrast; two radii; and the mark's own spine and two cords down the edge.
  *
  * Motion is rationed by how often a surface is seen. The button is hit dozens of times a
- * day, so it only ever presses - no entrance animation. A card appears once per catch, so
+ * day, so it only ever presses — no entrance animation. A card appears once per catch, so
  * it can afford one.
  */
 const STYLE = `
@@ -54,9 +73,9 @@ const STYLE = `
     transform 140ms cubic-bezier(.23,1,.32,1), background-color 140ms ease;
 }
 .buki-btn:active { transform: scale(.9); }
-.buki-btn:focus-visible { outline: 2px solid #ffcf8a; outline-offset: 1px; opacity: 1; }
+.buki-btn:focus-visible { outline: 2px solid #7f9bea; outline-offset: 1px; opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-btn:hover { opacity: 1; background: rgba(255,207,138,.16); }
+  .buki-btn:hover { opacity: 1; background: rgba(127,155,234,.18); }
 }
 
 /* ------------------------------------------------------------------ the tray
@@ -65,24 +84,29 @@ const STYLE = `
    only by the screen: catching six books in a row should show six cards, and the stack
    that used to cap at three quietly dropped the rest of your afternoon. */
 .buki-tray {
-  /* docs/brand.md is the source. A content script cannot share a stylesheet with the
-     landing page, so these are a copy: change them there and here in the same commit. */
-  --night: #0f0d10; --sunk: #1b1424; --line: #3a2e4d;
-  --paper: #ffffff; --chalk: #ede7f4; --dim: #b4a6c8; --glow: #ffc24d;
-  /* The shelf marker's jade is lightened for text; the binding jade lives in cloth.ts. */
-  --jade: #6fe0b6;
+  /* docs/brand.md is the source, and these are the LANDING AT NIGHT, variable for
+     variable. A content script cannot share a stylesheet with the landing, so this is a
+     copy: change them there and here in the same commit.
+     Measured on --bg: --ink 16.79:1, --ink-2 13.98:1, --accent 7.14:1. All AAA, and the
+     old --dim was #b4a6c8, which carried every author line and every eyebrow. */
+  --bg: #080d20; --lift: #16204a; --ring: rgba(245,239,222,.16);
+  --ink: #f5efde; --ink-2: #d5dbf0; --accent: #7f9bea;
+  /* The one status colour. It appears nowhere else in that role, which is how it earns
+     being a colour rather than a word. */
+  --jade: #6fe0b6; --jade-bg: #10352a;
+
   --ease: cubic-bezier(.23,1,.32,1);
   --drawer: cubic-bezier(.32,.72,0,1);
+  --r-lg: 16px;
   --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --tag: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   position: fixed; right: 18px; bottom: 18px; z-index: 2147483000;
-  display: flex; flex-direction: column; gap: 9px;
-  width: 332px; max-width: calc(100vw - 36px); max-height: calc(100vh - 36px);
+  display: flex; flex-direction: column; gap: 10px;
+  width: 340px; max-width: calc(100vw - 36px); max-height: calc(100vh - 36px);
   overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; scrollbar-color: #332a45 transparent;
-  /* The column is transparent to clicks so it never swallows one meant for the feed.
+  scrollbar-width: thin; scrollbar-color: #26304f transparent;
+  /* The column is transparent to clicks so it never swallows one meant for the page.
      Each card opts back in. */
   pointer-events: none;
 }
@@ -94,15 +118,17 @@ const STYLE = `
 
 .buki-card {
   position: relative; width: 100%;
-  padding: 11px 30px 12px 19px; /* left inset for the spine, right for the dismiss */
-  background: var(--night); color: var(--chalk);
-  border: 1px solid var(--line); border-radius: 12px;
-  box-shadow: 0 16px 38px -14px rgba(0,0,0,.8);
-  font: 13.5px/1.45 var(--ui);
+  padding: 13px 32px 14px 21px; /* left inset for the spine, right for the dismiss */
+  background: var(--bg); color: var(--ink);
+  border-radius: var(--r-lg);
+  /* A ring rather than a border, so the card's height never shifts by a pixel, and a
+     shadow deep enough to lift off a white page as well as a black one. */
+  box-shadow: inset 0 0 0 1px var(--ring), 0 18px 44px -16px rgba(0,0,0,.85);
+  font: 14px/1.45 var(--ui);
   opacity: 0; transform: translateY(10px) scale(.985);
   /* Transitions, not keyframes: catches arrive in bursts, and a keyframe restarts from
      zero when interrupted where a transition retargets from wherever it got to. */
-  transition: opacity 180ms var(--ease), transform 180ms var(--ease), filter 120ms ease;
+  transition: opacity 180ms var(--ease), transform 180ms var(--drawer), filter 120ms ease;
 }
 .buki-card.buki-in { opacity: 1; transform: none; }
 /* Exit is faster than entrance: the system responding should never be slower than the
@@ -113,109 +139,126 @@ const STYLE = `
    changing rather than two cards crossfading through each other. */
 .buki-card.buki-swap { filter: blur(3px); opacity: .45; }
 
-/* The signature: a cloth spine down the edge, as on the shelf and in the popup. */
+/* THE SIGNATURE: the mark's own spine, down the edge of the card, with the mark's own two
+   cords stamped across it. The card and the logo are the same object at two sizes, which
+   is the same claim the generated covers make. */
 .buki-card::before {
-  content: ''; position: absolute; left: 7px; top: 12px; bottom: 12px; width: 4px;
-  border-radius: 2px; background: var(--cloth, var(--line));
+  content: ''; position: absolute; left: 8px; top: 13px; bottom: 13px; width: 5px;
+  border-radius: 999px; background: var(--cloth, var(--accent));
 }
-.buki-card[data-book]::after {
-  /* Cords as a highlight over a shadow, never flat gilt - a gold line vanishes on
-     marigold cloth, which is how this detail once shipped invisible. */
-  content: ''; position: absolute; left: 7px; top: 20px; width: 4px; height: 1px;
-  background: #ffffff; box-shadow: 0 13px 0 #ffffff;
+/* THE CORDS ARE IN THE SPINE'S OWN GRADIENT, at the fractions tools/mark.mjs puts them
+   at: 0.646 and 0.729 of the height. They used to be a pseudo-element pinned 22px from
+   the top with the second faked by a box-shadow offset, and both of those are ABSOLUTE.
+   A card holding two books is three times the height of one holding a message, so the
+   cords bunched at the collar instead of sitting in the lower third where a binding's
+   cords actually are. A gradient scales with whatever the card turns out to be. */
+.buki-card[data-book]::before {
+  background: linear-gradient(
+    180deg,
+    var(--cloth, var(--accent)) 0 64.6%,
+    #ffffff 64.6% 66.5%,
+    var(--cloth, var(--accent)) 66.5% 72.9%,
+    #ffffff 72.9% 74.8%,
+    var(--cloth, var(--accent)) 74.8% 100%
+  );
 }
 
-.buki-head { display: flex; gap: 11px; align-items: flex-start; }
+.buki-head { display: flex; gap: 12px; align-items: flex-start; }
 /* A found card's head is the card's own masthead: where the answer came from, and how
    many books are in it. Both sit on the axis. The rows below stay left-aligned, because
    a title is read from its first letter. */
 .buki-card[data-book] .buki-head { display: block; text-align: center; }
-.buki-count { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
+.buki-count { margin-top: 3px; font-size: 13px; color: var(--ink-2); }
 .buki-thumb {
-  position: relative; width: 30px; height: 44px; flex: none; border-radius: 2px;
+  position: relative; width: 32px; height: 47px; flex: none; border-radius: 2px 3px 3px 2px;
   overflow: hidden; box-shadow: 0 1px 6px -1px #000;
-  /* Flat cloth, not a gradient. It is also the floor rather than a placeholder: X's own
-     CSP can refuse an OpenLibrary cover, and a broken-image glyph would read as the
+  /* Flat cloth, not a gradient. It is also the floor rather than a placeholder: a page's
+     own CSP can refuse an OpenLibrary cover, and a broken-image glyph would read as the
      extension being broken rather than as a picture that did not load. */
-  background: var(--cloth, #3a2e4d);
+  background: var(--cloth, #26304f);
 }
 .buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .buki-who { flex: 1; min-width: 0; }
 
 /* The eyebrow carries WHERE the answer came from. It is the audit trail: a shelf you
-   cannot question is a shelf you stop trusting. */
-.buki-eyebrow {
-  font: 10px/1.5 var(--tag); text-transform: uppercase; letter-spacing: .1em;
-  color: var(--dim);
-}
+   cannot question is a shelf you stop trusting. It was tracked uppercase mono, which
+   renders a sentence as if it were a machine value; mono is for data that lines up. */
+.buki-eyebrow { font: 600 11.5px/1.5 var(--ui); color: var(--ink-2); }
 .buki-eyebrow[data-shelf] { color: var(--jade); }
 .buki-t {
-  margin-top: 1px; font: 15.5px/1.25 var(--book); overflow-wrap: anywhere;
-  color: var(--paper);
+  margin-top: 2px; font: 16px/1.25 var(--book); overflow-wrap: anywhere;
+  color: var(--ink);
 }
-/* A message is the interface talking, not a book title - so it stays in the UI face. */
-.buki-t.buki-plain { font: 13.5px/1.45 var(--ui); margin-top: 0; color: var(--chalk); }
-.buki-a { margin-top: 2px; font-size: 12.5px; color: var(--dim); }
+/* A message is the interface talking, not a book title — so it stays in the UI face. */
+.buki-t.buki-plain { font: 14px/1.45 var(--ui); margin-top: 0; color: var(--ink); }
+.buki-a { margin-top: 3px; font-size: 13px; color: var(--ink-2); }
 
 .buki-x {
   /* Out of the flow, so a centred head is actually centred on the card rather than on
      whatever space is left over beside a button. */
-  position: absolute; top: 9px; right: 8px; z-index: 1;
-  cursor: pointer; border: 0; border-radius: 7px; padding: 1px 6px 3px;
-  background: transparent; color: var(--chalk); opacity: .45; font: 16px/1 var(--ui);
-  transition: opacity 140ms ease, background-color 140ms ease,
+  position: absolute; top: 9px; right: 9px; z-index: 1;
+  cursor: pointer; border: 0; border-radius: 999px;
+  width: 24px; height: 24px; display: grid; place-items: center;
+  background: transparent; color: var(--ink-2); font: 16px/1 var(--ui);
+  transition: color 140ms ease, background-color 140ms ease,
     transform 140ms var(--ease);
 }
 .buki-x:active { transform: scale(.9); }
-.buki-x:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; opacity: 1; }
+.buki-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-x:hover { opacity: 1; background: #2a2135; }
+  .buki-x:hover { color: var(--ink); background: var(--lift); }
 }
 
-/* Still working. Constant motion, so linear - an eased sweep looks like it is being
+/* Still working. Constant motion, so linear — an eased sweep looks like it is being
    pushed rather than running. */
 .buki-wait {
-  margin: 9px 0 1px; height: 2px; border-radius: 1px; overflow: hidden;
-  background: var(--line);
+  margin: 10px 0 1px; height: 3px; border-radius: 999px; overflow: hidden;
+  background: var(--lift);
 }
 .buki-wait::after {
-  content: ''; display: block; height: 100%; width: 38%; border-radius: 1px;
-  background: var(--glow);
+  content: ''; display: block; height: 100%; width: 38%; border-radius: 999px;
+  background: var(--accent);
   animation: buki-sweep 1.15s linear infinite;
 }
 @keyframes buki-sweep { from { transform: translateX(-105%); } to { transform: translateX(370%); } }
 
-.buki-row { display: flex; gap: 5px; margin: 11px 0 0; }
+/* The piles. Capsules in sentence case, the same control the popup's segmented row is
+   built from. They were tracked uppercase mono at 10.5px, which is a label treatment on
+   three things that are actually the card's whole purpose. */
+.buki-row { display: flex; gap: 6px; margin: 13px 0 0; }
 .buki-intent {
-  flex: 1; cursor: pointer; border: 1px solid transparent; border-radius: 7px;
-  padding: 6px 0 7px; background: var(--sunk); color: var(--chalk);
-  font: 600 10.5px/1 var(--tag); letter-spacing: .1em; text-transform: uppercase;
-  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease,
-    transform 140ms var(--ease);
+  flex: 1; cursor: pointer; border: 0; border-radius: 999px;
+  padding: 9px 0 10px; background: var(--lift); color: var(--ink);
+  font: 600 13px/1 var(--ui); letter-spacing: -.004em;
+  box-shadow: inset 0 0 0 1px var(--ring);
+  transition: background-color 140ms ease, color 140ms ease,
+    box-shadow 140ms ease, transform 140ms var(--ease);
 }
 .buki-intent:active { transform: scale(.96); }
-.buki-intent:disabled { cursor: default; }
-.buki-intent:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
+.buki-intent:disabled { cursor: default; opacity: .5; }
+.buki-intent:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-intent:not(:disabled):hover { background: var(--glow); color: #241705; }
+  .buki-intent:not(:disabled):hover { background: var(--accent); color: #0a0f33; }
 }
 /* The pile it is already in. Stated rather than greyed out: the point is that clicking
    it would change nothing, which is information, not a disabled control. */
 .buki-intent[data-here] {
-  background: transparent; border-color: var(--line); color: var(--dim);
+  background: transparent; color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--ring);
 }
 
 .buki-act {
-  margin: 11px 0 0; cursor: pointer; border: 1px solid var(--line); border-radius: 7px;
-  padding: 6px 11px 7px; background: transparent; color: var(--chalk);
-  font: 600 10.5px/1 var(--tag); letter-spacing: .1em; text-transform: uppercase;
-  transition: border-color 140ms ease, background-color 140ms ease,
+  margin: 13px 0 0; cursor: pointer; border: 0; border-radius: 999px;
+  padding: 9px 16px 10px; background: transparent; color: var(--ink);
+  font: 600 13px/1 var(--ui); letter-spacing: -.004em;
+  box-shadow: inset 0 0 0 1px var(--ring);
+  transition: background-color 140ms ease, box-shadow 140ms ease,
     transform 140ms var(--ease);
 }
 .buki-act:active { transform: scale(.97); }
-.buki-act:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
+.buki-act:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-act:hover { border-color: var(--glow); background: #2a2135; }
+  .buki-act:hover { background: var(--lift); box-shadow: inset 0 0 0 1px var(--accent); }
 }
 
 
@@ -224,21 +267,21 @@ const STYLE = `
    The hairline between rows is what makes four decisions read as four rather than as one
    long form: the card is a short list, and a list needs its items separated or it is a
    paragraph. */
-.buki-find { display: flex; gap: 11px; align-items: flex-start; margin-top: 12px; }
-.buki-find + .buki-find { padding-top: 12px; border-top: 1px solid var(--line); }
+.buki-find { display: flex; gap: 12px; align-items: flex-start; margin-top: 13px; }
+.buki-find + .buki-find { padding-top: 13px; border-top: 1px solid var(--ring); }
 /* Per book, not per card: a photographed stack can be half yours already. */
 .buki-shelf {
-  display: inline-block; margin-left: 3px; padding: 1px 6px 2px; border-radius: 999px;
-  vertical-align: 1px; background: #10352a; color: var(--jade);
-  font: 600 9.5px/1.6 var(--tag); letter-spacing: .06em; text-transform: uppercase;
+  display: inline-block; margin-left: 4px; padding: 2px 8px 3px; border-radius: 999px;
+  vertical-align: 1px; background: var(--jade-bg); color: var(--jade);
+  font: 600 11px/1.5 var(--ui); letter-spacing: -.002em;
 }
-.buki-act.buki-wide { width: 100%; margin-top: 12px; }
+.buki-act.buki-wide { width: 100%; margin-top: 13px; }
 
 /* Pressing a post that is already on screen. Nothing new happens by design, so the card
    that already exists has to be the thing that answers. */
 @keyframes buki-nudge {
-  35% { border-color: var(--glow); box-shadow: 0 0 0 3px rgba(255,207,138,.15),
-    0 16px 38px -14px rgba(0,0,0,.8); }
+  35% { box-shadow: inset 0 0 0 1px var(--accent),
+    0 0 0 3px rgba(127,155,234,.22), 0 18px 44px -16px rgba(0,0,0,.85); }
 }
 .buki-card.buki-nudge { animation: buki-nudge 620ms var(--ease); }
 
