@@ -90,6 +90,15 @@ Only reading a cover from a photo needs one.
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run icons` | Regenerates `icons/*.png` |
 
+Three tools for looking at surfaces no browser will show you directly. All three write a
+gitignored `zzz-*.html`; regenerate rather than commit.
+
+| Command | What it shows |
+| --- | --- |
+| `node tools/popup-harness.mjs` | The shelf, with a stubbed `chrome` and a believable set of books. `popup.html` is `<main id="app">` and draws nothing outside an extension host |
+| `node tools/tray-harness.mjs` | The catch tray, on the five grounds it actually has to survive: a white docs site, X in daylight, X at night, a black photo essay, a photograph. Chrome stable refuses `--load-extension`, so this is the only way to see it |
+| `node tools/mark-sizes.mjs` | The mark at every size it ships at, on every ground in `tools/mark.mjs`. Pass `--extra "#hex"` to try a candidate. Written because a caught-spine value was argued about twice from a contrast ratio without anyone rendering it |
+
 The build typechecks first and refuses to bundle on a type error, because esbuild only
 strips types, it never checks them.
 

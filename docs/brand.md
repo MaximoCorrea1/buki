@@ -44,6 +44,21 @@ plate: *where the ground is not ours, we bring one.*
 see-through, and it also holds the two checklist rules easiest to lose in a restyle: every
 hover gated, every control answering a press.
 
+**And now you can look at it.** `node tools/tray-harness.mjs` draws every card state on all
+five of those grounds at once. It was the only Buki surface nobody could see: the popup has
+a harness, the landing is a page you can open, and the tray needed a real X post inside a
+real extension host that Chrome stable will not give you. It was styled blind through three
+generations. The stylesheet is read out of `content.ts` so it cannot drift; the markup is a
+fixture, because `content.ts` registers a `chrome.runtime` listener at module scope and
+therefore cannot be imported at all.
+
+**Reviewed on all five grounds on 2026-08-16, and it needed nothing.** The card lifts off
+white and off black on the same shadow, the spine's cord gaps read at every card height, the
+jade shelf tag and the disabled pile hold, and the empty state is still an invitation. When
+the popup and the setup page gained a second mood that day, the tray was deliberately left
+alone: it owns its ground in every mood by design, and retouching the newest surface to look
+busy is how a pass undoes itself.
+
 **The webfont stops here too.** Manrope would need a `web_accessible_resources` entry
 matching `<all_urls>`, because catch-anywhere injects this script into any tab. Widening the
 extension's exposed surface immediately before store review, to change the face on a 340px
