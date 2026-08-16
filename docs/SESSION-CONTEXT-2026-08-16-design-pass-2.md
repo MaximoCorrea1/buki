@@ -102,6 +102,47 @@ Both are outside `docs/store/`, so item 17 as written does not cover them:
   system … `OPENWORK.md` item 21." Item 21 closed 2026-08-15.
 - `README.md:13` — "**48 commits ahead**". Measured 49.
 
+### I was wrong about WHY the mark value had to change, and the shape of the error is the reusable part
+
+**Believed, and written into a commit message, `docs/brand.md` and `OPENWORK.md`:** that
+`#7cc0fd` at 25px "reads as the gap between two dark spines rather than as a third book",
+because it measures 1.81:1 against the cream.
+
+**Measured:** rendered at 16, 24, 25, 28, 40 and 120px on the real ground, it is a pale blue
+spine between two near-black ones, clearly, every time. The claim was false.
+
+**Root cause:** 1.81:1 is the caught spine against the *page*. The spine is flanked, so what
+the eye uses is its contrast against its *neighbours*, which is 9.58:1. **The 2026-08-15
+session had already established exactly this** and threw out a caught-versus-ground bar for
+scoring the working night mark below the broken cream one. I re-derived the discarded metric
+from a ratio a day later, without rendering it. Twice now, in two sessions.
+
+**What survives:** the change itself was right for a reason that was always sufficient.
+`tools/mark.mjs` is the single definition, it declares `#2f7fd6` for every cream ground, and
+three of the four already agreed. The test gap it exposed is real and is closed.
+
+**What it produced:** `tools/mark-sizes.mjs`, so the next argument about a value starts by
+looking at it. And a checklist line in `brand.md`: *a contrast ratio only answers about the
+pair you chose to compare.*
+
+### The switch was inert when first wired, and the test I had just written could not see it
+
+**Believed:** `color-scheme: light dark` plus `light-dark()` per token plus a button that
+writes `data-theme` is a working theme switch.
+**Measured**, with a synchronous probe in the popup harness: `data-theme=light`,
+`stored=light`, body background `rgb(8, 13, 32)` — the **night** value.
+**Root cause:** `color-scheme: light dark` says the surface *understands* both moods;
+`light-dark()` then follows the operating system and nothing else. Without
+`:root[data-theme="light"|"dark"] { color-scheme: … }`, `data-theme` is an attribute nobody
+reads. The button flipped it, the label updated, and the panel did not move.
+**Why the test missed it:** it asserted the mechanism was **available**, never that it was
+**wired**. That is the same gap as the mark test's, one layer up: a guard that checks a
+capability exists rather than that it is connected. Both are now asserted.
+
 ## Instruments that lied
 
-_(none yet this session)_
+| Instrument | How it lied | What to do instead |
+| --- | --- | --- |
+| **A `file://` screenshot of the popup harness** | Chrome disables `localStorage` on a file origin. `theme.ts` correctly catches the throw and falls through to the OS, which is dark here, so BOTH moods photographed identically and the seed never existed. The two PNGs differed by 80 bytes | Serve it: `python -m http.server`, then a real origin has a real store |
+| **A contrast ratio, for a flanked element** | 1.81:1 against the ground reads as a failure and is the wrong pair. Against its neighbours it is 9.58:1, and the neighbours are what the eye uses | `node tools/mark-sizes.mjs`. Render it, then argue |
+| **My own probe, on the first pass** | Reported `label="Switch to dark"` under `data-theme=dark`, which looked like a bug. It was the probe running at parse time, before `theme.ts` wires the button on `DOMContentLoaded` | Print both readings. It corrects to "Switch to light" after ready |

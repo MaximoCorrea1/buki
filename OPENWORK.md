@@ -101,6 +101,15 @@ unblocks.
       This is unit-tested against a fake `chrome.action` and has **never been seen in a
       real browser**, for the same reason as everything else in this item.
 
+      **A ninth, added 2026-08-16 with the extension's second mood.** On a machine set to
+      dark, open the popup: it should be dark. Press the switch in the **top left**. It
+      should go cream and stay cream when the popup is closed and reopened, and the setup
+      page should agree, because both are extension-origin pages sharing one
+      `localStorage`. **No unit test can prove this.** The harness proves it over http,
+      which is a different kind of origin from `chrome-extension://`, and the first attempt
+      at that harness proved nothing at all because Chrome disables `localStorage` on
+      `file://` and both moods photographed identically.
+
       **An eighth, added with item 7.** Open the popup, press `Settings` in the top right,
       press `Export the shelf`. A `buki-shelf-<date>.csv` should download. Then actually
       feed it to Goodreads' importer at goodreads.com/review/import and check three things:
