@@ -239,15 +239,21 @@
              day    #2f7fd6 vs the spines 4.54:1, spines vs the paper 17.38:1
              night  #1231a8 vs the spines 9.00:1, spines vs the paper 16.79:1
 
-           THE DAY VALUE WAS #7cc0fd UNTIL 2026-08-16, and it was the last copy of a
-           literal this repo removed from popup.html, options.html and both icon SVGs the
-           day before. On cream it is 1.81:1 against the paper: not a contrast-bar failure,
-           because 9.58:1 against the spines clears the bar above, but at the size the mark
-           actually renders — 25px in the pill, so 4.75px a spine — a caught spine that
-           close to the paper reads as the GAP between two dark spines rather than as a
-           third book, which is the two-spine drawing item 24 exists to have eliminated.
-           src/shared/mark.test.ts now reads this declaration and checks it against
-           tools/mark.mjs, which is what nothing did while the two disagreed. */
+           THE DAY VALUE WAS #7cc0fd UNTIL 2026-08-16, and the reason it changed is that
+           tools/mark.mjs is the single definition, it declares #2f7fd6 for this ground,
+           and popup.html, options.html and both icon SVGs were corrected to it the day
+           before. This was the fourth cream ground and the only one that did not follow.
+           src/shared/mark.test.ts now reads this declaration and compares it to mark.mjs,
+           which is what nothing did while the two disagreed.
+
+           IT WAS NOT A LEGIBILITY FAILURE, and the first version of this comment said it
+           was. #7cc0fd measures 1.81:1 against the cream, which looks alarming and is the
+           wrong axis: the spine is flanked by two near-black neighbours, so the eye reads
+           the LOCAL contrast, and rendered at 16, 24, 25, 28, 40 and 120px it is a pale
+           blue spine between two dark ones every time. The 2026-08-15 session had already
+           reached that conclusion and rejected a caught-versus-ground bar for it. Run
+           `node tools/mark-sizes.mjs --extra "#7cc0fd"` and look before arguing from a
+           ratio; that tool exists because this was got wrong from a number twice. */
         --mark-spine:  light-dark(#0a0f33, #f5efde);
         --mark-caught: light-dark(#2f7fd6, #1231a8);
 

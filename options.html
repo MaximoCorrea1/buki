@@ -3,6 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <title>Buki: setup</title>
+    <!-- Settles the mood before the first paint, and shares the reader's choice with the
+         popup: both are extension-origin pages, so both see one localStorage. External
+         rather than inline because MV3's default extension CSP is script-src 'self', which
+         blocks an inline block outright. See theme.ts. -->
+    <script src="dist/theme.js"></script>
     <style>
       /* Tokens match popup.html exactly: --paper is the ground, --ink is the type.
          (This page used to have them the other way round.) */
@@ -24,18 +29,34 @@
 
            Every value is flat. No gradient, no translucent layer over another colour:
            a spine is one solid ink, a rule is one solid hairline. */
-        color-scheme: light;
+        /* TWO MOODS, ONE DECLARATION PER TOKEN, as of 2026-08-16, matching popup.html.
+           The night values are the catch tray's, which the extension has had since
+           2026-08-15 and which were measured against their own ground. Nothing new was
+           invented here, so the tray, the panel and this page are one room at night.
 
-        --paper: #fbf7ec;
-        --card: #ffffff;
-        --board: #e6dcc2;
-        --ink: #0a0f33;
+           A binding dye is NOT in this list. --forest is the spine on the card below and
+           it is a dye: a book keeps its cloth in any light, so it has one value in both
+           moods and always will. That costs it contrast at night, 1.50:1 against the sunk
+           well, and the two white cords stamped across it are what make it read as a spine
+           anyway at 11.69:1. That is the whole reason docs/brand.md says a cord is white
+           rather than gilt. */
+        color-scheme: light dark;
+
+        --paper: light-dark(#fbf7ec, #080d20);
+        --board: light-dark(#e6dcc2, #262e4d);
+        --ink: light-dark(#0a0f33, #f5efde);
         /* Darkened with popup.html on 2026-08-15, and the sentences that wore it went to
            --ink. It was #3d477a: AAA at 8.24:1 and still reading faded, because it carried
            the lede, the why block, every hint and the log status. See docs/brand.md,
            "Hierarchy is size and weight". 12.37:1 now. */
-        --muted: #232c5c;
-        --accent: #1231a8;
+        --muted: light-dark(#232c5c, #d5dbf0);
+        /* The accent LIFTS at night rather than sinking, and the save button's label is
+           var(--paper), so it flips with it and stays legible without a second rule:
+           cream on cobalt is 9.66:1 by day, near-black on the light blue is 7.14:1 at
+           night. The hover moves the same direction as the mood in each case, darker on
+           paper and lighter in the dark, which is what stops a hover reading as the
+           control switching off. */
+        --accent: light-dark(#1231a8, #7f9bea);
         --ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
         --display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
 
@@ -50,30 +71,54 @@
            light value on this ground measures 1.6:1 and cannot be used. The comment was
            right and the code did it anyway. */
         --mark-spine: var(--ink);
-        --mark-caught: #2f7fd6;
+        --mark-caught: light-dark(#2f7fd6, #1231a8);
 
-        --sunk: #f3ecd9;
+        --sunk: light-dark(#f3ecd9, #111832);
+
+        /* THREE LITERALS LIVED HERE UNTIL 2026-08-16, and each fails differently on a dark
+           ground. ::selection was a pale blue: cream text on it is about 1.2:1, so
+           SELECTING text would hide it. The save button's hover DARKENED the cobalt, which
+           is correct on paper and inverted at night, where the accent lifts away from the
+           page rather than sinking into it. And its shadow was navy, which on a navy panel
+           does nothing at all. None of the three named a token, so relighting would not
+           have moved one. src/shared/extensionTokens.test.ts fails the build on a literal,
+           box-shadow included, because a shadow is a colour too. */
+        --select: light-dark(#d5ddf5, #1b2a5c);
+        --accent-hi: light-dark(#0e2989, #9db3f0);
+        --shadow-deep: light-dark(rgba(10, 15, 51, 0.5), rgba(0, 0, 0, 0.8));
 
         /* Two radii and a capsule, matching popup.html. */
         --r-lg: 14px;
         --r-md: 9px;
 
-        /* The buy pill. Green rather than the accent, so it reads as its own kind of
-           action and never competes with a focus ring. */
-        --buy-bg: #e7f5ee;
-        --buy-bg-hi: #d8efe3;
-        --buy-ink: #0f6b4a;
-
-        /* A binding dye, straight from generatedCover.ts. Used for the spine on .why. */
+        /* A binding dye, straight from generatedCover.ts. Used for the spine on .why, and
+           the one colour token on this page with a single value: see the note at the top. */
         --forest: #0c4033;
 
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        /* Ionic's port of the iOS sheet curve, for the switch's two icons trading places. */
+        --drawer: cubic-bezier(0.32, 0.72, 0, 1);
       }
+
+
+      /* THE SWITCH ACTUALLY SWITCHING, and this is separate from the line above it.
+         `color-scheme: light dark` only says the surface UNDERSTANDS both moods; on its
+         own, light-dark() follows the operating system and nothing else. Without these two
+         rules data-theme is an attribute nobody reads: the button flips it, the label
+         updates, and the panel does not move. Measured with a probe in the popup harness
+         before they existed - data-theme=light, stored=light, body background rgb(8, 13,
+         32), which is the night value. That is the landing's dead theme button in a
+         different costume, and docs/brand.md records it.
+
+         One property is all the switch changes, which is the whole argument for
+         light-dark() over three copies of the palette. */
+      :root[data-theme="light"] { color-scheme: light; }
+      :root[data-theme="dark"] { color-scheme: dark; }
 
       * { box-sizing: border-box; }
       html { font-synthesis: none; }
 
-      ::selection { background: #d5ddf5; color: var(--ink); }
+      ::selection { background: var(--select); color: var(--ink); }
       :root { accent-color: var(--accent); caret-color: var(--accent); }
       :where(button, a, input, select, textarea, [tabindex]):focus-visible {
         outline: 2.5px solid var(--accent);
@@ -220,7 +265,7 @@
          screen, so the control stays lit until something else is pressed. */
       @media (hover: hover) and (pointer: fine) {
         .save:not(:disabled):hover {
-          background: #0e2989; box-shadow: 0 3px 14px -4px rgba(10, 15, 51, 0.5);
+          background: var(--accent-hi); box-shadow: 0 3px 14px -4px var(--shadow-deep);
         }
         .ghost:not(:disabled):hover {
           color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink);
@@ -239,8 +284,41 @@
       }
       #status.shown { opacity: 1; transform: none; }
 
+      /* THE SWITCH. Fixed rather than absolute, because this page scrolls and a settings
+         control that scrolls away is one you have to go back up for. It is the only fixed
+         thing here and it is 28px, so it takes no click that was meant for anything else.
+
+         The icon shows what pressing it will GET you, which is the convention a phone
+         uses: a moon while it is day. Neither icon ever scales from 0. */
+      .theme {
+        position: fixed; top: 16px; right: 16px;
+        width: 32px; height: 32px;
+        display: grid; place-items: center;
+        padding: 0; border: 0; border-radius: 999px;
+        background: transparent; color: var(--muted);
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out), background-color 140ms ease,
+                    color 140ms ease;
+      }
+      .theme:active { transform: scale(0.92); }
+      @media (hover: hover) and (pointer: fine) {
+        .theme:hover { background: var(--sunk); color: var(--ink); }
+      }
+      .theme svg {
+        position: absolute; width: 17px; height: 17px;
+        fill: none; stroke: currentColor; stroke-width: 1.8;
+        stroke-linecap: round; stroke-linejoin: round;
+        transition: opacity 200ms var(--ease-out), transform 300ms var(--drawer);
+      }
+      .theme .sun  { opacity: 0; transform: rotate(-70deg) scale(0.7); }
+      .theme .moon { opacity: 1; transform: none; }
+      :root[data-theme="dark"] .theme .sun  { opacity: 1; transform: none; }
+      :root[data-theme="dark"] .theme .moon { opacity: 0; transform: rotate(70deg) scale(0.7); }
+
       @media (prefers-reduced-motion: reduce) {
-        button, #status { transition-duration: 1ms; }
+        button, #status, .theme, .theme svg { transition-duration: 1ms; }
+        /* Opacity stays and the movement goes, so the icons cross-fade in place. */
+        .theme .sun, .theme .moon { transform: none; }
       }
     
       /* --- centred ------------------------------------------------------
@@ -253,6 +331,19 @@
     </style>
   </head>
   <body>
+    <!-- theme.js keeps this in step. Nothing in options.js touches it, on purpose:
+         main() there opens by returning if any one form field is missing, and a control
+         wired behind an unrelated guard is exactly how the landing shipped a theme button
+         that rendered, focused and did nothing for two days. -->
+    <button class="theme" type="button" id="theme" aria-label="Switch to dark">
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.1" />
+        <path d="M12 2.6v2.2M12 19.2v2.2M4.35 4.35l1.56 1.56M18.09 18.09l1.56 1.56M2.6 12h2.2M19.2 12h2.2M4.35 19.65l1.56-1.56M18.09 5.91l1.56-1.56" />
+      </svg>
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1Z" />
+      </svg>
+    </button>
     <main>
       <div class="brand">
         <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true">

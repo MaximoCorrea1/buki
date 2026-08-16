@@ -84,8 +84,9 @@ describe('the mark', () => {
     const CAUGHT_ON: Record<string, string[]> = {
       // light-dark(), so it declares both moods in one line.
       'docs/index.html': ['landing, day', 'landing, night'],
-      'popup.html': ['extension paper'],
-      'options.html': ['extension paper'],
+      // Both moods since 2026-08-16, declared with one light-dark() like the landing.
+      'popup.html': ['extension paper', 'extension night'],
+      'options.html': ['extension paper', 'extension night'],
       // The bare mark takes its colour from the host page; its FALLBACK is the value for
       // a cream ground, which is the only ground it can assume.
       'icons/mark.svg': ['extension paper'],

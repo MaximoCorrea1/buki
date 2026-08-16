@@ -336,11 +336,19 @@ Maximo's items 1 and 2.
       that test fail: `light-dark()` on the landing, a plain hex in `popup.html`, an SVG
       `fill` in `icons/icon.svg`.
 
-      **It was never a contrast-bar failure**, which is why a green suite kept shipping it:
-      `#7cc0fd` clears both corrected bars (9.58:1 against the shelved spines, 17.38:1 for
-      those against the paper). It fails at 25px, the size the mark actually renders, where
-      a spine under 5px wide at 1.81:1 against the cream reads as the **gap** between two
-      dark spines rather than as a third book.
+      **It was a consistency failure and not a legibility one, and the first version of
+      this entry said otherwise.** It claimed `#7cc0fd` reads as the gap between two dark
+      spines at 25px. Rendered at 16, 24, 25, 28, 40 and 120px, it does not: it is a pale
+      blue spine between two near-black ones every time. The 1.81:1 is against the cream
+      *page*, which is the wrong axis for a flanked element, and the 2026-08-15 session had
+      already thrown out a caught-versus-ground bar for exactly that reason. **That
+      discarded metric was re-derived from a ratio a day later by someone who had not
+      rendered it.** `tools/mark-sizes.mjs` was written the same day so the next argument
+      about a value starts by looking at it.
+
+      The change still stands on the reason that was always sufficient: `tools/mark.mjs` is
+      the definition, it declares `#2f7fd6` for every cream ground, and three of the four
+      already agreed.
 
 - [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Do 8 first**, and item 3,
       so they show the redesigned product doing catch-anywhere rather than the X-only one.
@@ -705,9 +713,13 @@ That is the rest of item 17.
   *itself* for contrast. Neither read a colour out of a surface, so the definition and the
   landing disagreed for a day inside a green suite. When you write a "defined once" test,
   ask which axis it actually crosses.
-- **A value can clear every ratio in the brand and still be wrong at the size it renders.**
-  `#7cc0fd` passes both bars the mark owes and still collapses a three-spine mark to two at
-  25px. Measure the pair, then look at the shape.
+- **A contrast ratio only answers about the pair you chose to compare, and a flanked
+  element is read against its NEIGHBOURS, not its ground.** The mark's caught spine
+  measures 1.81:1 on cream and 1.86:1 at night, and both render perfectly, because two
+  near-black or two cream spines sit either side of it. This repo has now derived a wrong
+  conclusion from that number twice, on 2026-08-15 and again on 2026-08-16, each time by
+  reasoning from the ratio instead of rendering. `node tools/mark-sizes.mjs` exists for it.
+  **When a measurement surprises you, render the thing before you write the paragraph.**
 - **A guard at the top of a script owns everything below it.** Before adding anything to an
   existing IIFE, check what it returns early for. The theme switch spent two days inside a
   `prefers-reduced-motion` guard.

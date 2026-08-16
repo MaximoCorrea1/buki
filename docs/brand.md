@@ -16,14 +16,14 @@ which surface is on which generation is the difference between a fix and a regre
 | Surface | Generation | State |
 | --- | --- | --- |
 | `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. |
-| `popup.html`, `options.html` | **third** | Caught up 2026-08-15. Manrope, sentences at `--ink`, capsules, an iOS segmented control, two radii. **Still a light-only surface with its own paper palette, and that is not drift** — see *Two materials, one identity*. |
+| `popup.html`, `options.html` | **third** | Caught up 2026-08-15. Manrope, sentences at `--ink`, capsules, an iOS segmented control, two radii. **Both moods since 2026-08-16**, from one `light-dark()` per token, with a switch in the popup's left corner and the setup page's. They also gained a real board and books that cast a shadow — see *One room, two moods* and *A shelf has to look like a shelf*. |
 | `src/extension/toolbar.ts` | third | A book board on Chrome's own toolbar. Unaffected by the pass: it is a 16px bitmap, not a stylesheet. |
 | `src/extension/content.ts` | **third** | Caught up 2026-08-15, last and on purpose. The landing's night palette, capsules, sentences at full contrast, the mark's spine and cords down the card's edge. **Opaque, and with no webfont** - see *The one surface with no ground of its own*. |
 | `icons/*.png`, `icons/icon.svg`, `icons/mark.svg`, `docs/icon*` | **third** | Regenerated 2026-08-15 from `tools/mark.mjs`, the single definition. `make-icons.mjs` had still been drawing the FIRST-generation mark, so the toolbar icon was a different logo from every other surface. |
 
 **Every surface is now on the third generation.** The mark is one drawing everywhere,
 defined once in `tools/mark.mjs`. What differs between surfaces is the *material*, and every
-difference is a decision with a reason: see *Two materials, one identity* and *The one
+difference is a decision with a reason: see *One room, two moods* and *The one
 surface with no ground of its own*.
 
 ### The one surface with no ground of its own
@@ -57,20 +57,77 @@ amber lamp, capsules with a press on every control, sentences at full contrast (
 down the card's edge - drawn as a **gradient**, so they stay at the fractions
 `tools/mark.mjs` puts them at however tall the card turns out to be.
 
-### Two materials, one identity
+### One room, two moods
 
-The popup and options page are **light only** and keep their own `--paper` palette. This is
-not a surface that missed the `light-dark()` pass.
+> **This section said "Two materials, one identity" until 2026-08-16, and its premise is
+> gone.** The argument was: the landing is the moment of *catching*, a lit shelf in the
+> dark, while the popup is the moment of *reading your list*, and a list is read on paper,
+> so they are different jobs and therefore different materials. It is a good argument and
+> it is kept here because the half of it about the bindings is still the rule. Maximo
+> overturned the other half.
 
-The landing is the moment of *catching*: a lit shelf in the dark, and a page you meet at any
-hour on any machine, so it answers to the reader's own preference. The popup is the moment
-of *reading your list*, and a list is read on paper. They are different jobs, so they are
-different materials, and the bindings carry the identity across both — which is why the five
-dyes are identical everywhere and never respond to a mood.
+**The shelf gets night.** The counter-argument is plainer than the original: the popup is
+opened dozens of times a day, out of a browser that is already dark, and a 560px cream panel
+firing out of dark chrome is a flash rather than a material choice. The brand's own idea is
+*a library at night*, and the one surface that never got night was the shelf.
 
-What the two materials now **share**, after 2026-08-15: one type family, one contrast rule,
-capsules with a press, gated hovers, and two radii plus the capsule. What they do not share
-is the ground.
+**The night palette was not invented for it.** The extension has had one since 2026-08-15,
+in the catch tray, measured against its own ground: `--ink` 16.79:1, `--muted` 13.98:1,
+`--accent` 7.14:1 on `#080d20`. The popup and the setup page adopt that, so the tray, the
+panel and the landing at night are one room reached from three directions. `tools/mark.mjs`
+gained an `extension night` ground, listed separately from `landing, night` even though the
+three values are identical, because a ground is a surface rather than a palette and the next
+one has to be measured rather than assumed to land on an existing row.
+
+**What survives from the original argument, unchanged and still the rule:** the bindings
+carry the identity and never respond to a mood. The five dyes, the two inks stamped on them
+and `--forest` on the setup page's card are one value in both. A book keeps its cloth in any
+light. That costs the forest spine contrast at night, 1.50:1 against the sunk well, and the
+two white cords across it carry it at 11.69:1 — which is precisely why a cord is white and
+not gilt.
+
+**The mechanism is the landing's, exactly.** One `light-dark()` per token, never a second
+palette in a media query, and the switch changes one property. Two rules are needed and the
+second is easy to forget: `color-scheme: light dark` says the surface *understands* both
+moods, and `:root[data-theme="light"|"dark"] { color-scheme: … }` is what lets the switch
+*choose*. Without the second, `data-theme` is an attribute nobody reads — measured here with
+a probe: `data-theme=light`, `stored=light`, body background `rgb(8, 13, 32)`. The button
+flipped the attribute, the label updated, and the panel did not move. That is the landing's
+dead theme button in a different costume, and `src/shared/extensionTokens.test.ts` now fails
+the build without both rules.
+
+**The switch sits in the popup's LEFT corner**, opposite Settings. The header is a centred
+column with the mark and the count on the axis and Settings already pinned out of the flow
+on the right; a second control in the same corner would crowd it and push the axis around,
+which is what the catch card's dismiss control was lifted out of the flow to avoid. One at
+each corner makes the header symmetric rather than merely un-crowded.
+
+### A shelf has to look like a shelf
+
+Added 2026-08-16. The popup's board was `height: 3px` with a 1px underline, and its books
+cast no shadow at all — a grid of flat rectangles resting on a hairline.
+
+That is the same shape the landing threw out, with the note that *"the section promises a
+shelf that looks like a shelf, and this was a 6px hairline gradient: the promise was made in
+the heading and not kept in the picture."* **The popup is the shelf rather than a picture of
+one, so it owed that more than the landing did and had it less.**
+
+It is not solved the landing's way. `.plank` there is a gradient, and **the flat rule
+governs this surface**: no gradient, no colour laid over another colour. The third
+generation's alpha licence is the landing's and does not reach here. So a board is three
+**solid** bands and a cast shadow: a lit front edge (`--board-hi`, new), the body
+(`--board`), the edge in shadow (`--board-lo`), and the shadow it throws on what is under
+it. A shadow is depth rather than colour, which the flat rule has always allowed.
+
+The lit edge is also what carries the shelf at night, where the body measures 1.45:1 against
+the page and one band at that value reads as nothing. **A board is read as a sequence of
+values in the direction light falls, not as one value clearing a ratio.**
+
+Books now carry `0 1px 2px var(--shadow)` to seat them on the plank and
+`0 12px 22px -14px var(--shadow-deep)` to give the row depth, and lift 3px on hover. **The
+lift is on the cover and the press is on the button around it**, deliberately: a transition
+and a running transform on the same property of the same element is the silent no-op this
+document records from the landing's scroll cue.
 
 ### The fifth surface: Chrome's toolbar
 
@@ -251,13 +308,21 @@ now reads `--mark-caught` (and an SVG's `fill` on the caught rect) out of each s
 compares it to the ground that surface sits on. *A guard against drift has to compare the
 two things that can drift.*
 
-**It is not a contrast-bar failure, and that is why it survived a passing suite.** Against
-the corrected bars, `#7cc0fd` clears both: 9.58:1 against the shelved spines and 17.38:1 for
-those spines against the paper. It fails at the size the mark actually renders. At 25px in
-the pill a spine is about 4.75px wide, and a caught spine at 1.81:1 against the cream around
-it reads as the **gap** between two dark spines rather than as a third book — which is
-exactly the two-spine drawing item 24 exists to have eliminated. **A value can clear every
-ratio in this document and still say the wrong thing at the size it is used.**
+**It was a consistency failure, not a legibility one, and that distinction cost a wrong
+paragraph here.** The first version of this section said `#7cc0fd` "reads as the gap between
+two dark spines rather than as a third book" at 25px. **Rendered, it does not.** At 16, 24,
+25, 28, 40 and 120px it is a pale blue spine between two near-black ones, every time. The
+1.81:1 is against the cream *page*, which is the wrong axis: the spine is flanked, so what
+the eye uses is the local contrast against its neighbours, and that is 9.58:1.
+
+**The 2026-08-15 session had already established exactly this** when it threw out a
+caught-versus-ground bar for scoring the working night mark below the broken cream one. That
+metric was re-derived from a ratio a day later, by someone who did not render it. Twice now.
+
+So the reason `#2f7fd6` ships is the one that was always sufficient: **`tools/mark.mjs` is
+the definition, it declares `#2f7fd6` for every cream ground, and three of the four already
+agreed.** `node tools/mark-sizes.mjs --extra "#candidate"` draws every ground at every
+shipping size, and exists so that the next argument about a value starts with looking at it.
 
 ### The redrawn mark (SUPERSEDED 2026-08-16, kept for the reasoning)
 
@@ -299,11 +364,11 @@ and the mark would say nothing, while the page ground is already handled by the 
 spines framing it. **That rule survives unchanged and it is the reason the accent is not
 used here.**
 
-What the first two rows got wrong was treating it as a choice between the mirrors. A third
-constraint showed up later: the spine also has to be *visible as a shape* at 25px, where it
-is under 5px wide. `#7cc0fd` satisfies the neighbour rule and fails that one, so it reads
-as a gap. `#2f7fd6` is the only value measured that clears both, and it ships on every
-cream ground.
+`#2f7fd6` ships because it sits between the mirrors and satisfies the rule from both sides
+at once, and because `tools/mark.mjs` says so for every cream ground. **All three values
+are legible at every size the mark is used at** — that was checked by rendering, not
+assumed — so this is a choice about which relationship the mark should state, not a rescue
+from an illegible one.
 
 ### Two files, and using the wrong one breaks it
 
@@ -932,8 +997,10 @@ Write from the reader's side of the screen. Say what happens.
 - [ ] **A component still owns its own colours inside a scoped block**
 - [ ] **The mark's caught spine is `tools/mark.mjs`'s call, per ground, never a nearby
       value.** `mark.test.ts` reads it out of all six surfaces since 2026-08-16
-- [ ] **A value can clear every ratio in this file and still say the wrong thing at the
-      size it renders.** The mark is 25px in the pill; measure the shape, not only the pair
+- [ ] **Render it before arguing from a ratio.** A contrast number picks the pair YOU chose
+      to compare, and a flanked element is read against its neighbours rather than its
+      ground. `node tools/mark-sizes.mjs` draws the mark at every shipping size on every
+      ground; a wrong paragraph got into this file twice for want of running it
 
 **On the alpha rule and the third generation.** The flat rule was written for the room and
 still governs the extension: no gradient, no colour over colour. The landing's third

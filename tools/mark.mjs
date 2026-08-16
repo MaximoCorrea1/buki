@@ -66,6 +66,17 @@ export const MARK = {
     'landing, day': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
     'landing, night': { ground: '#080d20', spine: '#f5efde', caught: '#1231a8' },
     'extension paper': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
+    /**
+     * Added 2026-08-16, when the popup and the setup page gained a second mood.
+     *
+     * It is the same three values as `landing, night`, and that is the finding rather
+     * than a duplicate worth collapsing: the extension's night is the CATCH TRAY'S night,
+     * which the tray has carried since 2026-08-15, and the tray's night is the landing's.
+     * One room, reached from three directions. Listed separately because a ground is a
+     * surface rather than a palette, and the next surface to gain a mood must be measured
+     * rather than assumed to land on one of these.
+     */
+    'extension night': { ground: '#080d20', spine: '#f5efde', caught: '#1231a8' },
     'icon plate': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
   },
 };

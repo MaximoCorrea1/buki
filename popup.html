@@ -3,6 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <title>Buki</title>
+    <!-- Settles the mood before the first paint, and it is the only script in this head.
+         Deferring it paints one mood and swaps to the other, which is the flash every
+         theme toggle ships with. It is an external file rather than an inline block
+         because MV3's default extension CSP is script-src 'self', which blocks an inline
+         script outright: this is the only way to be synchronous here. See theme.ts. -->
+    <script src="dist/theme.js"></script>
     <style>
       /* ------------------------------------------------------------------
          Buki: the shelf.
@@ -36,17 +42,50 @@
         font-display: block;
       }
       :root {
-        /* PAPER. The room (docs/index.html, and the card in the feed) is the moment of
-           CATCHING: a lit shelf in the dark. This is the moment of READING your list, and
-           a list is read on paper. The two are different jobs, so they are different
-           materials, and the bindings carry the identity across both. */
-        color-scheme: light;
+        /* TWO MOODS, ONE DECLARATION PER TOKEN, as of 2026-08-16.
 
-        --paper: #fbf7ec;
-        --card: #ffffff;
-        --board: #e6dcc2;
-        --board-lo: #d9cca8;
-        --ink: #0a0f33;
+           This panel was light only for its whole life, and docs/brand.md argued for it:
+           the landing is the moment of CATCHING, a lit shelf in the dark, and this is the
+           moment of READING your list, and a list is read on paper. That argument lost to
+           a simpler one. The shelf is opened dozens of times a day, out of a browser that
+           is already dark, and a 560px cream panel firing out of dark chrome is a flash
+           rather than a material. The brand's own idea is a library AT NIGHT, and the one
+           surface that never got night was the shelf.
+
+           THE NIGHT PALETTE IS NOT NEW AND WAS NOT INVENTED HERE. The extension has had
+           one since 2026-08-15, in the catch tray, measured against its own ground:
+           --ink 16.79:1, --muted 13.98:1, --accent 7.14:1 on #080d20. The popup adopts it
+           rather than choosing a second dark, so the tray, the panel and the landing at
+           night are one room. Every value below was re-derived with tools/mark.mjs's
+           contrast(), not copied on faith.
+
+           light-dark() rather than a second palette in a media query: that would be a
+           third copy once the switch is added, and this repo's recorded failure mode is
+           that the copies drifted. src/shared/extensionTokens.test.ts fails the build on a
+           duplicated dark block, and on any colour token that declares only one mood.
+
+           THE DYES DO NOT APPEAR HERE, and that is the rule. A binding is a dye, not a
+           status colour, and a book keeps its cloth in any light. --stamp and --stamp-dim
+           are the two inks stamped on a binding and are identical in both moods. */
+        color-scheme: light dark;
+
+        --paper: light-dark(#fbf7ec, #080d20);
+        /* A raised surface. At night it gets LIGHTER, never darker: darkening it further
+           is how the landing's emphasised card reached 1.04:1 against its own page.
+           Cream on #16204a is 13.65:1. */
+        --card: light-dark(#ffffff, #16204a);
+        /* The board, in three solid bands: a lit front edge, the body, and the edge in
+           shadow. No gradient, because the flat rule in docs/brand.md governs this surface
+           and the landing's third-generation alpha licence explicitly does not reach it.
+           What makes a board read is the SEQUENCE of the three plus the shadow it casts,
+           not any one pair clearing a ratio: measured, the body is 1.28:1 on the paper by
+           day and 1.45:1 at night, and it is a surface rather than a control, so that is
+           the correct bar. --board-hi is the new one and it is what makes the shelf
+           visible at night. */
+        --board: light-dark(#e6dcc2, #262e4d);
+        --board-hi: light-dark(#f2ebd8, #3f4c7a);
+        --board-lo: light-dark(#d9cca8, #12182c);
+        --ink: light-dark(#0a0f33, #f5efde);
         /* DARKENED 2026-08-15, and most of what wore it was promoted to --ink.
            It was #3d477a: 8.24:1, AAA, and the panel still read faded, because --muted
            carried every author name, the empty state, the footer and the card's byline —
@@ -54,9 +93,36 @@
            a different hue reads as ink that ran out. Same finding as the landing, same
            fix: sentences take --ink and hierarchy comes from size and weight.
            #232c5c measures 12.37:1, so what still wears it is not faded either. */
-        --muted: #232c5c;
-        --accent: #1231a8;
-        --sunk: #f3ecd9;
+        --muted: light-dark(#232c5c, #d5dbf0);
+        --accent: light-dark(#1231a8, #7f9bea);
+        /* A sunk well goes the other way from a raised one: DARKER at night, because
+           it is the absence of lift. Cream on it is 15.23:1. */
+        --sunk: light-dark(#f3ecd9, #111832);
+
+        /* THREE LITERALS LIVED HERE UNTIL 2026-08-16, and every one of them was the trap
+           docs/brand.md calls "a colour written as three numbers is still a hardcoded
+           colour". None of them named a token, so relighting the panel would not have
+           touched one, and each fails in a different way on a dark ground:
+
+             ::selection  #d5ddf5   a pale blue. Cream text on it is about 1.2:1, so
+                                    SELECTING text would hide it. Nothing screenshots that.
+             .pile lift   rgba(10,15,51,.14)  a navy shadow, which on a navy panel does
+                                    nothing at all and the chosen segment loses its lift.
+             #scrim       rgba(20,16,14,.4)   a warm-black veil. Dark over dark stops
+                                    separating the sheet from the shelf underneath it.
+
+           src/shared/extensionTokens.test.ts fails the build if a literal comes back, and
+           it checks box-shadow as well as the fills, because a shadow is a colour too. */
+        --select: light-dark(#d5ddf5, #1b2a5c);
+        /* The scrim goes HARDER at night, not softer. A 40% warm black over a dark
+           panel barely separates the sheet from the shelf underneath it; the job of a
+           scrim is to say the sheet is in front, and there is less ground left to
+           darken. Cream on the selection ground is 11.93:1. */
+        --scrim: light-dark(rgba(20, 16, 14, 0.4), rgba(0, 0, 0, 0.66));
+        /* Navy shadows, which is a shadow that does nothing on a navy panel. Black at
+           night, and heavier, for the same reason as the scrim. */
+        --shadow: light-dark(rgba(10, 15, 51, 0.14), rgba(0, 0, 0, 0.55));
+        --shadow-deep: light-dark(rgba(10, 15, 51, 0.5), rgba(0, 0, 0, 0.8));
 
         /* Two radii and a capsule, where there were 2, 3, 7, 8, 9 and 13px. Smaller than
            the landing's 22/14 on purpose: a 560px panel is not a page, and a radius that
@@ -79,16 +145,22 @@
            light value on this ground measures 1.6:1 and cannot be used. The comment was
            right and the code did it anyway. */
         --mark-spine: var(--ink);
-        --mark-caught: #2f7fd6;
+        /* At night the paper and the spines swap, so the relationship inverts and the
+           caught spine takes the cobalt: 9.00:1 against cream neighbours, where #2f7fd6
+           would be 1.98:1 and nothing would look caught. tools/mark.mjs holds both
+           grounds and src/shared/mark.test.ts reads this line against them. */
+        --mark-caught: light-dark(#2f7fd6, #1231a8);
 
         --stamp: #faf7f2;
         --stamp-dim: #d6cec2;
 
         /* The buy pill. Green rather than the accent, so it reads as its own kind of
            action and never competes with a focus ring. */
-        --buy-bg: #e7f5ee;
-        --buy-bg-hi: #d8efe3;
-        --buy-ink: #0f6b4a;
+        /* The jade is the tray's own, so the buy pill is one object across the
+           extension. Jade on the night ground is 8.32:1, and 7.38:1 on the hover. */
+        --buy-bg: light-dark(#e7f5ee, #10352a);
+        --buy-bg-hi: light-dark(#d8efe3, #143e31);
+        --buy-ink: light-dark(#0f6b4a, #6fe0b6);
 
         --ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
         --display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -102,6 +174,9 @@
            were a machine value. */
         --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        /* Ionic's port of the iOS sheet curve, for the one thing here that travels
+           rather than merely appearing: the switch's two icons trading places. */
+        --drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
         /* The tooth of the paper. One inline SVG, tiled: no file to request, no script,
            and the browser rasterizes it once. It sits on the BACKGROUND rather than in a
@@ -112,13 +187,28 @@
         --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
       }
 
+
+      /* THE SWITCH ACTUALLY SWITCHING, and this is separate from the line above it.
+         `color-scheme: light dark` only says the surface UNDERSTANDS both moods; on its
+         own, light-dark() follows the operating system and nothing else. Without these two
+         rules data-theme is an attribute nobody reads: the button flips it, the label
+         updates, and the panel does not move. Measured with a probe in the popup harness
+         before they existed - data-theme=light, stored=light, body background rgb(8, 13,
+         32), which is the night value. That is the landing's dead theme button in a
+         different costume, and docs/brand.md records it.
+
+         One property is all the switch changes, which is the whole argument for
+         light-dark() over three copies of the palette. */
+      :root[data-theme="light"] { color-scheme: light; }
+      :root[data-theme="dark"] { color-scheme: dark; }
+
       * { box-sizing: border-box; }
       /* Refuse a synthesised face rather than shipping one. With one family and no italic
          file this makes the sheared counterfeit impossible instead of unlikely. */
       html { font-synthesis: none; }
 
       /* Surfaces the browser hands us with defaults belonging to no design system. */
-      ::selection { background: #d5ddf5; color: var(--ink); }
+      ::selection { background: var(--select); color: var(--ink); }
       :root { accent-color: var(--accent); caret-color: var(--accent); }
       :where(button, a, input, select, [tabindex]):focus-visible {
         outline: 2.5px solid var(--accent);
@@ -179,6 +269,43 @@
       @media (hover: hover) and (pointer: fine) {
         header .settings:hover { color: var(--accent); }
       }
+      /* THE SWITCH, in the LEFT corner, and the corner is the point.
+         Settings is already pinned right, out of the flow, so the mark and the count stay
+         on the page's axis. A second control pinned to the SAME corner would crowd it and
+         push the axis around, which is what the catch card's dismiss control was taken out
+         of the flow to avoid. One at each corner instead: the header becomes symmetric
+         rather than merely un-crowded, and the mark sits between them.
+
+         The icon shows what pressing it will GET you, not what you have, which is the
+         convention a phone uses: a moon while it is day. Both icons ship and only their
+         opacity and rotation differ, so the switch never waits on a request to change
+         state, and neither ever scales from 0, because nothing in the world appears out of
+         nothing. */
+      header .theme {
+        position: absolute; top: 12px; left: 13px;
+        width: 28px; height: 28px;
+        display: grid; place-items: center;
+        padding: 0; border: 0; border-radius: 999px;
+        background: transparent; color: var(--muted);
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out), background-color 140ms ease,
+                    color 140ms ease;
+      }
+      header .theme:active { transform: scale(0.92); }
+      header .theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      @media (hover: hover) and (pointer: fine) {
+        header .theme:hover { background: var(--sunk); color: var(--ink); }
+      }
+      header .theme svg {
+        position: absolute; width: 15px; height: 15px;
+        fill: none; stroke: currentColor; stroke-width: 1.8;
+        stroke-linecap: round; stroke-linejoin: round;
+        transition: opacity 200ms var(--ease-out), transform 300ms var(--drawer);
+      }
+      header .theme .sun  { opacity: 0; transform: rotate(-70deg) scale(0.7); }
+      header .theme .moon { opacity: 1; transform: none; }
+      :root[data-theme="dark"] header .theme .sun  { opacity: 1; transform: none; }
+      :root[data-theme="dark"] header .theme .moon { opacity: 0; transform: rotate(70deg) scale(0.7); }
       /* The wordmark. Manrope 800 at the landing's own tracking, so the shelf and the page
          say the name the same way — which they did not while one was a serif. */
       h1 {
@@ -237,7 +364,7 @@
       .pile[aria-selected="true"] {
         background: var(--card);
         color: var(--ink);
-        box-shadow: 0 1px 3px rgba(10, 15, 51, 0.14);
+        box-shadow: 0 1px 3px var(--shadow);
       }
       .pile[aria-selected="true"] .n { color: var(--ink); }
       .pile:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
@@ -284,13 +411,30 @@
         align-items: start;
         padding: 14px 20px 0;
       }
-      /* The board. Two solid rules: a shadow under a hairline is a blend, and the flat
-         rule forbids it. */
+      /* A BOARD, not a hairline.
+
+         This was `height: 3px` with a 1px underline, which is the same shape the landing
+         threw out with the note that "the section promises a shelf that looks like a shelf,
+         and this was a 6px hairline gradient: the promise was made in the heading and not
+         kept in the picture". This panel IS the shelf rather than a picture of one, so it
+         owed that more than the landing did and had it less.
+
+         Three SOLID bands and a cast shadow, never the landing's gradient: the flat rule in
+         docs/brand.md governs this surface and the third generation's alpha licence
+         explicitly does not reach it. A lit front edge, the body, the edge in shadow, and
+         the shadow the board throws on whatever is under it. A shadow is depth rather than
+         colour, which is the one thing the flat rule has always allowed.
+
+         The lit edge is also what makes the shelf survive the night: the body measures
+         1.45:1 against the page there, and one band at that value reads as nothing. */
       .plank {
-        height: 3px;
-        margin: 9px 20px 0;
+        height: 9px;
+        margin: 11px 20px 0;
+        border-radius: 0 0 3px 3px;
         background: var(--board);
-        border-bottom: 1px solid var(--board-lo);
+        border-top: 1px solid var(--board-hi);
+        border-bottom: 2px solid var(--board-lo);
+        box-shadow: 0 7px 14px -7px var(--shadow-deep);
       }
 
       .slot { min-width: 0; }
@@ -307,12 +451,28 @@
       .pick:active { transform: scale(0.97); }
       .pick:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
+      /* Books cast a shadow, because a book standing on a board does. They had none at
+         all, which is what made the shelf read as a grid of rectangles rather than as
+         furniture: the near shadow seats the book on the plank, the far one gives the row
+         depth. Both are tokens, so they go black and heavier at night, where there is less
+         ground left to darken.
+
+         The lift is on the COVER and the press is on the button around it, deliberately. A
+         running transform and a transition on the same property of the same element is the
+         silent no-op docs/brand.md records from the landing's scroll cue. These are
+         different elements, so the press scales a book that is already lifted. */
       .board,
       .art {
         width: 100%;
         aspect-ratio: 2 / 3;
         border-radius: 2px 3px 3px 2px;
         overflow: hidden;
+        box-shadow: 0 1px 2px var(--shadow), 0 12px 22px -14px var(--shadow-deep);
+        transition: transform 200ms var(--ease-out);
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .pick:hover .art,
+        .pick:hover .board { transform: translateY(-3px); }
       }
       .art { display: block; object-fit: cover; background: var(--sunk); }
       .board {
@@ -413,7 +573,7 @@
       #scrim {
         position: fixed;
         inset: 0;
-        background: rgba(20, 16, 14, 0.4);
+        background: var(--scrim);
         transition: opacity 180ms var(--ease-out);
       }
       .card {
@@ -530,9 +690,19 @@
         .pile,
         .buy,
         .shut,
-        .drop {
+        .drop,
+        .art,
+        .board,
+        header .theme,
+        header .theme svg {
           transition-duration: 1ms;
         }
+        /* Opacity stays, because it aids comprehension and causes no motion sickness. What
+           goes is the position change, so the two icons cross-fade in place. */
+        header .theme .sun,
+        header .theme .moon { transform: none; }
+        .pick:hover .art,
+        .pick:hover .board { transform: none; }
       }
     </style>
   </head>
@@ -564,6 +734,20 @@
            export the landing advertises is reachable only by right-clicking the toolbar
            icon, which nobody does. -->
       <button class="settings" type="button" id="settings">Settings</button>
+      <!-- The label says what pressing it will DO, not what is showing, because that is
+           what someone on a screen reader needs in order to decide whether to press it.
+           theme.js keeps it in step, and nothing in popup.js touches this control, so no
+           unrelated early return can bury it the way one buried the landing's for two
+           days. -->
+      <button class="theme" type="button" id="theme" aria-label="Switch to dark">
+        <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.1" />
+          <path d="M12 2.6v2.2M12 19.2v2.2M4.35 4.35l1.56 1.56M18.09 18.09l1.56 1.56M2.6 12h2.2M19.2 12h2.2M4.35 19.65l1.56-1.56M18.09 5.91l1.56-1.56" />
+        </svg>
+        <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1Z" />
+        </svg>
+      </button>
     </header>
     <main id="app"></main>
     <div id="sheet" hidden data-in="false"></div>

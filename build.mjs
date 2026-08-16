@@ -22,6 +22,10 @@ await build({
     popup: 'src/extension/popup.ts',
     background: 'src/extension/background.ts',
     options: 'src/extension/options.ts',
+    // Its own bundle because it has to run in <head>, before the first paint, and MV3's
+    // default extension CSP (script-src 'self') blocks an inline block outright. See the
+    // header of theme.ts.
+    theme: 'src/extension/theme.ts',
   },
   outdir: 'dist',
   bundle: true,
@@ -31,4 +35,4 @@ await build({
   logLevel: 'info',
 });
 
-console.log('Built dist/{content,popup,background,options}.js');
+console.log('Built dist/{content,popup,background,options,theme}.js');
