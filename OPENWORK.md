@@ -4,12 +4,47 @@
 
 | | |
 | --- | --- |
-| Tests | 344 across 38 files, all passing |
+| Tests | 344 across 37 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean. The landing and the extension are both on the third generation |
 | Branch | `buki-pro`, **48 commits ahead of `main`, not merged** |
 | Plan | 37 steps done, 49 left |
+
+## 0. Which doc owns which fact
+
+The `maintaining-project-docs` skill names a generic contract set. This repo's filenames
+differ, and hunting for a file that does not exist wastes the same time as reading one that
+lies. **Put a fact in ONE of these; a fact in two places is a fact that will disagree.**
+
+| The fact | Lives in | Not in |
+| --- | --- | --- |
+| What is open, who owns it, what it unblocks | **this file** | any handoff |
+| The visual contract: tokens, generations, the mark, the checklist | `docs/brand.md` | `DESIGN.md` |
+| The mark's geometry and its measured colour values | `tools/mark.mjs` | anywhere else — six surfaces are asserted against it |
+| Positioning, ICP, objections, voice | `.agents/product-marketing.md` | the landing copy |
+| What the product does today | `README.md` | `DESIGN.md` |
+| Tier boundaries, machine-readable | `docs/pricing.md` | the landing |
+| Store copy and permission justifications | `docs/store/` | — |
+| The paid-tier implementation, step by step | `docs/superpowers/plans/2026-08-09-buki-pro.md` | — |
+| Polar setup, field by field | `docs/superpowers/polar-setup.md` | — |
+| The competitive landscape | `competitor-profiles/_summary.md` | — |
+| This session's reasoning and what was measured | `docs/SESSION-CONTEXT-<date>-<label>.md` | — |
+| This session's forget-nothing ledger | `docs/SESSION-TODO-<date>-<label>.md` | — |
+
+**`DESIGN.md` is a dated record, not a contract.** It is the 2026-07-20 design session,
+kept because the reasoning explains the product's shape, and it carries its own
+`PARTLY SUPERSEDED` banner naming what stopped being true. Do not update it; supersede it.
+
+**Files this repo does NOT have, so stop looking:** `CONTEXT.md`, `CLAUDE.md`,
+`ARCHITECTURE.md`, `SEO.md`, `CRO.md`, `MARKETING.md`, `COMPETITORS.md`,
+`DB-REFERENCE.md`, `docs/adr/`, `docs/solutions/`, `docs/handoffs/`, `docs/retros/`.
+Handoffs are written to the OS temp directory, not the repo.
+
+**`docs/` is served publicly by Vercel.** Anything added there that is not a page must go
+in `.vercelignore` in the same commit. The session ledgers are already there.
+
+---
 
 **This file is an ordered checklist. Work it top to bottom.** Items are numbered across the
 whole document so "do 7 next" is unambiguous. Each one says who can do it and what it
@@ -76,8 +111,9 @@ Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8, 2
 are all done.** The landing is finished top to bottom, the extension has caught up to it,
 and the mark is one drawing everywhere. 9 waits on item 3 being done by hand.
 
-**The live agent item is now 21**, the catch tray — the last surface on the first
-generation, and an open design question rather than a chore.
+**There is no live agent item left in Part 2.** 21 closed on 2026-08-15 and it was the
+last surface. Everything remaining is either Maximo's (1, 2, 3), waiting on those, or the
+one half of 17 that can be written now — see below.
 
 **The product no longer advertises anything that does not exist except the hosted proxy
 and the ten free catches**, both of which are items 10 and 14 and both of which wait on
@@ -548,8 +584,10 @@ That is item 17.
 - **Catch-anywhere.** Task 11 is built and committed. Only the manual check remains, item 3.
 - **The mark, three-spine version.** `icons/mark.svg` and `icons/icon.svg`. See
   `docs/brand.md` for why the caught spine is a light blue and not the cobalt accent, and
-  why the icon has a plate. **Superseded on the landing only** by Maximo's own two-spine
-  drawing; see item 24. The icon set is still this one and that is not an oversight.
+  why the icon has a plate. **The two-spine drawing that briefly superseded it on the
+  landing is gone**: Maximo supplied the three-spine mark on 2026-08-15 and it is now the
+  only mark, defined once in `tools/mark.mjs` and asserted across six surfaces by
+  `src/shared/mark.test.ts`. See item 24.
 - **The popup and options page** followed the landing as of 2026-08-12. **They no longer
   do**, and that is scheduled rather than broken: Maximo chose landing-first on 2026-08-15.
   Do not "fix" them by copying the landing's tokens across.

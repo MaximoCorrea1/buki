@@ -9,8 +9,9 @@ that sold you on it, and files it under **Now / Next / Someday**. Mark a book fi
 you're done, and every saved book carries a quiet Buy link.
 
 > **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
-> 35 commits ahead as of 2026-08-15, carrying catch-anywhere, shelf export, a rebuilt
-> landing, the new mark, and the decision layer for the paid tier. **This file describes
+> **48 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-15), carrying
+> catch-anywhere, shelf export, a landing and an extension both rebuilt to the third
+> design generation, the three-spine mark, and the decision layer for the paid tier. **This file describes
 > `buki-pro`, because that is where the work is.** What is built, what is not, and what is
 > blocked is an ordered checklist in `OPENWORK.md`. Read that first.
 >

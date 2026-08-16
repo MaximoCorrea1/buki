@@ -253,7 +253,7 @@ before building sync.
 - v5 (2026-08-15). **Visual identity rebuilt on the landing only.** The cream-plus-serif
   composition was the first of the three looks generated design defaults to, and it read as
   old; the serif is gone, Manrope does display and body, the plate is full-bleed, and there
-  is a light/dark switch. Maximo's own two-spine mark replaces the redrawn three-spine one
+  is a light/dark switch. The mark is the three-spine one, redrawn as geometry
   on the landing. **Positioning, audience, pricing and objections are all unchanged**, so
   copy built against v3 or v4 is still true. Two things are now open: the brand story still
   says "three spines, one pulled out and lit", and the icon set still carries that mark.

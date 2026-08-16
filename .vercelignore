@@ -13,3 +13,8 @@ docs/brand.md
 
 # The type specimen and its candidate faces lived here. Manrope was chosen on 2026-08-15
 # and both were deleted, as this note always said they would be.
+
+# Session ledgers (maintaining-project-docs). Working documents, not pages: they name
+# open blockers and internal reasoning, and docs/ is the public site root.
+docs/SESSION-CONTEXT-*
+docs/SESSION-TODO-*
