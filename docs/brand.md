@@ -170,10 +170,15 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 
 ## The mark
 
-> **Two marks are live and they are different objects.** The landing carries Maximo's own
-> drawing, supplied 2026-08-15. Everything else still carries the redrawn three-spine mark
-> below. Read *The mark Maximo drew* first, then this, which is still the truth for the
-> extension, the favicon and the store tile.
+> **One mark, defined once in `tools/mark.mjs`.** Six surfaces are asserted against it by
+> `src/shared/mark.test.ts`: geometry, and since 2026-08-16 the caught spine's colour too.
+> Read *The mark: three spines* below. The section after it, *The redrawn mark*, is a dated
+> record of the first drawing and is **superseded** — it is kept for the reasoning, not for
+> its values.
+>
+> *(This banner said "two marks are live and they are different objects" until 2026-08-16.
+> Its premise expired on 2026-08-15 when Maximo supplied the three-spine source and the
+> two-spine landing drawing was removed. See `OPENWORK.md` item 24.)*
 
 ### The mark: three spines, everywhere, as of 2026-08-15
 
@@ -223,13 +228,44 @@ opposite directions, and the ground differs by surface. Measured:
 | `#1231a8` | 9.66:1 | **1.80:1** | nothing looks caught |
 | `#2f7fd6` | 3.83:1 | 4.54:1 | **the only one that clears both** |
 
-So `--mark-caught` is `#2f7fd6` on the extension's cream and `#1231a8` on the landing at
-night, where the spines are cream and the relationship inverts. **The popup shipped
-`#7cc0fd` hardcoded, directly beneath a comment explaining that a light value on that ground
-measures 1.6:1 and cannot be used.** The comment was right and the code did it anyway; that
-is why both values are named tokens now.
+So `--mark-caught` is **`#2f7fd6` on every cream ground** — the popup, the options page,
+both icon plates, and the landing in daylight — and `#1231a8` on the landing at night,
+where the spines are cream and the relationship inverts. `tools/mark.mjs` lists all four
+grounds; add a surface by measuring it, not by picking the nearest value.
 
-### The redrawn mark (extension, favicon, store tile)
+**This has now shipped wrong twice, in the same literal.** First the popup carried
+`#7cc0fd` hardcoded, directly beneath a comment explaining that a light value on that
+ground measures 1.6:1 and cannot be used: the comment was right and the code did it anyway.
+Corrected 2026-08-15 in `popup.html`, `options.html`, `icons/icon.svg` and `docs/icon.svg`.
+Then **the landing kept it in daylight for a day longer**, because
+`grounds['landing, day']` was written into `tools/mark.mjs` as `#2f7fd6` and the stylesheet
+was never changed to agree. Corrected 2026-08-16.
+
+**Why the guard did not catch the second one, which is the part worth keeping.**
+`mark.test.ts` asserted two things that never met: its contrast checks looped over
+`MARK.grounds` — data *inside* `mark.mjs`, so they proved the table was self-consistent and
+never opened a stylesheet — while its "same coordinates everywhere" check grepped the six
+surfaces for `x=`, `rotate(` and the cord `y=`, **and no colour was in that array**. Shape
+was asserted across surfaces, the table was asserted internally, and nothing joined them. It
+now reads `--mark-caught` (and an SVG's `fill` on the caught rect) out of each surface and
+compares it to the ground that surface sits on. *A guard against drift has to compare the
+two things that can drift.*
+
+**It is not a contrast-bar failure, and that is why it survived a passing suite.** Against
+the corrected bars, `#7cc0fd` clears both: 9.58:1 against the shelved spines and 17.38:1 for
+those spines against the paper. It fails at the size the mark actually renders. At 25px in
+the pill a spine is about 4.75px wide, and a caught spine at 1.81:1 against the cream around
+it reads as the **gap** between two dark spines rather than as a third book — which is
+exactly the two-spine drawing item 24 exists to have eliminated. **A value can clear every
+ratio in this document and still say the wrong thing at the size it is used.**
+
+### The redrawn mark (SUPERSEDED 2026-08-16, kept for the reasoning)
+
+> **The values in this section are the first drawing's and no longer ship.** The geometry
+> was replaced on 2026-08-15 by `tools/mark.mjs` (tilt `-8`, not `10`), and the caught
+> spine's `#7cc0fd` was replaced everywhere by `#2f7fd6` — see above. It is kept because
+> the argument for *why* the caught spine is a light blue rather than the cobalt accent is
+> still the argument, and because the table below is the record of what it used to be.
 
 **Three spines. One pulled out and lit.**
 
@@ -246,19 +282,28 @@ and the covers are the same object at two sizes.
 | The cords | `#fbf7ec` | The same two rules stamped on every generated board |
 | The tilt | `10°` | A shelf nobody has straightened. Upright spines read as a UI element, not as books |
 
-### Why the caught spine is a light blue and not the cobalt accent
+### Why the caught spine is a blue and not the cobalt accent
 
-This looks like a palette violation and is not. The two candidates are exact mirrors:
+This looks like a palette violation and is not. The two obvious candidates are exact
+mirrors, which is what makes the third value necessary:
 
 | | against the cream page | against the ink spines |
 | --- | --- | --- |
 | `#7cc0fd` | 1.81 | **9.58** |
 | `--blue` `#1231a8` | 9.66 | **1.80** |
+| `#2f7fd6` **(ships)** | 3.83 | 4.54 |
 
 **The caught spine has to separate from the other spines, not from the page.** That
 separation is the entire meaning of the mark. In cobalt it would sink into its neighbours
 and the mark would say nothing, while the page ground is already handled by the two ink
-spines framing it.
+spines framing it. **That rule survives unchanged and it is the reason the accent is not
+used here.**
+
+What the first two rows got wrong was treating it as a choice between the mirrors. A third
+constraint showed up later: the spine also has to be *visible as a shape* at 25px, where it
+is under 5px wide. `#7cc0fd` satisfies the neighbour rule and fails that one, so it reads
+as a gap. `#2f7fd6` is the only value measured that clears both, and it ships on every
+cream ground.
 
 ### Two files, and using the wrong one breaks it
 
@@ -885,6 +930,10 @@ Write from the reader's side of the screen. Say what happens.
       nothing at all and reports no error
 - [ ] **Nothing full-bleed and `position: fixed` can take a click**
 - [ ] **A component still owns its own colours inside a scoped block**
+- [ ] **The mark's caught spine is `tools/mark.mjs`'s call, per ground, never a nearby
+      value.** `mark.test.ts` reads it out of all six surfaces since 2026-08-16
+- [ ] **A value can clear every ratio in this file and still say the wrong thing at the
+      size it renders.** The mark is 25px in the pill; measure the shape, not only the pair
 
 **On the alpha rule and the third generation.** The flat rule was written for the room and
 still governs the extension: no gradient, no colour over colour. The landing's third

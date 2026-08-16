@@ -68,6 +68,79 @@ describe('the mark', () => {
     }
   });
 
+  it('paints the caught spine the value its own ground was measured for', () => {
+    // THE HOLE THIS CLOSES. Until now this file asserted two things that never met.
+    // The contrast checks above loop over MARK.grounds — data inside mark.mjs — so they
+    // prove the declared table is self-consistent and never open a stylesheet. The
+    // geometry check below greps six surfaces for `x=`, `rotate(` and the cord `y=`, and
+    // NO COLOUR IS IN THAT ARRAY. Shape was asserted across surfaces, the table was
+    // asserted internally, and nothing joined them.
+    //
+    // So `landing, day` could be added to the table as #2f7fd6 while docs/index.html kept
+    // shipping the #7cc0fd that measures 1.81:1 on cream — the exact literal this repo
+    // has now removed from three other files. It did, for a day.
+
+    /** Which row of MARK.grounds each surface actually sits on. */
+    const CAUGHT_ON: Record<string, string[]> = {
+      // light-dark(), so it declares both moods in one line.
+      'docs/index.html': ['landing, day', 'landing, night'],
+      'popup.html': ['extension paper'],
+      'options.html': ['extension paper'],
+      // The bare mark takes its colour from the host page; its FALLBACK is the value for
+      // a cream ground, which is the only ground it can assume.
+      'icons/mark.svg': ['extension paper'],
+      'icons/icon.svg': ['icon plate'],
+      'docs/icon.svg': ['icon plate'],
+    };
+
+    /**
+     * Every caught-spine colour a surface actually declares. Two shapes carry one:
+     * the CSS custom property, and the caught rect's own `fill` where a standalone SVG
+     * paints it or gives it a fallback. Comments are not matched, only declarations.
+     */
+    const hexes = (s: string | undefined): string[] =>
+      (s?.match(/#[0-9a-f]{6}/gi) ?? []).map((h) => h.toLowerCase());
+
+    const caughtColours = (body: string): string[] => {
+      const x = String(MARK.caught.x).replace('.', '\\.');
+      const found = [
+        ...hexes(body.match(/--mark-caught:\s*([^;]+);/)?.[1]),
+        ...hexes(
+          body.match(new RegExp(`<rect[^>]*x="${x}"[\\s\\S]*?fill="([^"]+)"`, 'i'))?.[1],
+        ),
+      ];
+      return [...new Set(found)].sort();
+    };
+
+    const grounds = MARK.grounds as Record<string, { caught: string } | undefined>;
+    const wrong: string[] = [];
+    for (const [name, sits] of Object.entries(CAUGHT_ON)) {
+      const declared = caughtColours(SURFACES[name] ?? '');
+      // Guard the vacuous pass: a surface that declares no colour at all, or a ground key
+      // that no longer exists in mark.mjs, would otherwise compare empty-to-empty and
+      // report clean. Both are named rather than skipped.
+      if (declared.length === 0) {
+        wrong.push(`${name} declares no caught-spine colour at all`);
+        continue;
+      }
+      const missing = sits.filter((g) => !grounds[g]);
+      if (missing.length > 0) {
+        wrong.push(`${name} names ground(s) mark.mjs does not define: ${missing.join(', ')}`);
+        continue;
+      }
+      const expected = [
+        ...new Set(sits.map((g) => grounds[g]!.caught.toLowerCase())),
+      ].sort();
+      if (declared.join(',') !== expected.join(',')) {
+        wrong.push(
+          `${name} paints the caught spine ${declared.join(', ')} ` +
+            `but ${sits.join(' + ')} was measured for ${expected.join(', ')}`,
+        );
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
   it('is drawn with the same coordinates everywhere it appears', () => {
     // Guard the vacuous pass: a renamed file would match nothing and report clean.
     expect(Object.keys(SURFACES).length).toBe(6);

@@ -313,6 +313,30 @@ Maximo's items 1 and 2.
       the new SVG into `tools/make-icons.mjs` unthinkingly:** `brand.md` records why
       `icon.svg` carries a cream plate rather than a transparent ground.
 
+      **A second copy of the same defect was found on 2026-08-16 and closed.** "Defined
+      once" was true of the mark's *geometry* and not of its *colour*.
+      `tools/mark.mjs` declared `grounds['landing, day'].caught = '#2f7fd6'` while
+      `docs/index.html` shipped `light-dark(#7cc0fd, #1231a8)` — the same literal removed
+      from the other three cream grounds the day before, measuring **1.81:1** on the paper.
+      The night value was correct throughout.
+
+      **`mark.test.ts` could not see it, and the shape of that blindness is the reusable
+      part.** It asserted two things that never met: the contrast checks looped over
+      `MARK.grounds`, which is data inside `mark.mjs`, so they proved the table was
+      internally sound and never opened a stylesheet; the "same coordinates everywhere"
+      check grepped the six surfaces for `x=`, `rotate(` and the cord `y=`, and **no colour
+      was in that array**. It now reads `--mark-caught` and the caught rect's `fill` out of
+      each surface and compares them to the ground that surface sits on. Proved to
+      discriminate on all three declaration shapes by breaking each one and watching only
+      that test fail: `light-dark()` on the landing, a plain hex in `popup.html`, an SVG
+      `fill` in `icons/icon.svg`.
+
+      **It was never a contrast-bar failure**, which is why a green suite kept shipping it:
+      `#7cc0fd` clears both corrected bars (9.58:1 against the shelved spines, 17.38:1 for
+      those against the paper). It fails at 25px, the size the mark actually renders, where
+      a spine under 5px wide at 1.81:1 against the cream reads as the **gap** between two
+      dark spines rather than as a third book.
+
 - [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Do 8 first**, and item 3,
       so they show the redesigned product doing catch-anywhere rather than the X-only one.
       Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
@@ -654,6 +678,14 @@ That is item 17.
 - **A comment can be right while the code beneath it is wrong.** The popup's caught spine
   was `#7cc0fd`, hardcoded, directly under a comment explaining that a light value on that
   ground measures 1.6:1 and cannot be used. Read the value, not the paragraph about it.
+- **A guard against drift has to compare the two things that can drift.** `mark.test.ts`
+  checked six surfaces against each other for *shape*, and checked `MARK.grounds` against
+  *itself* for contrast. Neither read a colour out of a surface, so the definition and the
+  landing disagreed for a day inside a green suite. When you write a "defined once" test,
+  ask which axis it actually crosses.
+- **A value can clear every ratio in the brand and still be wrong at the size it renders.**
+  `#7cc0fd` passes both bars the mark owes and still collapses a three-spine mark to two at
+  25px. Measure the pair, then look at the shape.
 - **A guard at the top of a script owns everything below it.** Before adding anything to an
   existing IIFE, check what it returns early for. The theme switch spent two days inside a
   `prefers-reduced-motion` guard.

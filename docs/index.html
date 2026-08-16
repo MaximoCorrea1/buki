@@ -230,11 +230,26 @@
              --ink-2 on --paper   8.2:1 day, 11.1:1 night
              --blue on --paper    9.7:1 day,  7.1:1 night */
 
-        /* The mark, by the names docs/brand.md already gives them. The caught spine has
-           to separate from the OTHER spines, not from the page: 9.58:1 by day and 9.00:1
-           by night. Lightening both together would measure 1.69:1 and say nothing. */
+        /* The mark, by the names docs/brand.md already gives them, and the values
+           tools/mark.mjs measured for each ground. What carries the caught spine is its
+           NEIGHBOURS, not the page: it is flanked on both sides, the 8-degree tilt never
+           takes it past them, and the two cord gaps prove it is a solid object. So the
+           bars are caught-vs-shelved and shelved-vs-ground, both measured here:
+
+             day    #2f7fd6 vs the spines 4.54:1, spines vs the paper 17.38:1
+             night  #1231a8 vs the spines 9.00:1, spines vs the paper 16.79:1
+
+           THE DAY VALUE WAS #7cc0fd UNTIL 2026-08-16, and it was the last copy of a
+           literal this repo removed from popup.html, options.html and both icon SVGs the
+           day before. On cream it is 1.81:1 against the paper: not a contrast-bar failure,
+           because 9.58:1 against the spines clears the bar above, but at the size the mark
+           actually renders — 25px in the pill, so 4.75px a spine — a caught spine that
+           close to the paper reads as the GAP between two dark spines rather than as a
+           third book, which is the two-spine drawing item 24 exists to have eliminated.
+           src/shared/mark.test.ts now reads this declaration and checks it against
+           tools/mark.mjs, which is what nothing did while the two disagreed. */
         --mark-spine:  light-dark(#0a0f33, #f5efde);
-        --mark-caught: light-dark(#7cc0fd, #1231a8);
+        --mark-caught: light-dark(#2f7fd6, #1231a8);
 
         /* On the navy block. */
         --cream: #f5efde;
