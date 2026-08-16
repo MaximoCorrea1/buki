@@ -41,6 +41,24 @@ survive this session is folded into `OPENWORK.md`.
 - [x] **`tools/tray-harness.mjs` and `tools/mark-sizes.mjs` committed**, and README gained
       a table for all three harnesses
 
+## The iOS turn, second half of the session
+
+- [x] **Apple's neutrals top to bottom, true black at night.** Cobalt accent and the five
+      dyes kept; the landing untouched. `a40e335`
+- [x] **Departed from Apple on one value and said so:** iOS secondaryLabel is 4.30:1 on the
+      light fill, which loses to "NO FADED FONTS". `--muted` clears 7:1 on its worst ground
+- [x] **The selected pile never read as chosen** — 1.18:1 by day, 1.12:1 at night. Its own
+      `--thumb` token now, carried by two shadows
+- [x] **The sheet had two axes.** Rebuilt as one centred column; Buy is full width and names
+      its destination; the pile control comes first
+- [x] **A drawn cover broke mid-word** at 96px: *Fountainhe / ad*. `.stamp` is `cqw` now
+- [x] **Transparency in exactly two places**, both real layers: the masthead and the scrim.
+      Never the tray
+- [x] `--mark-caught` collapsed to one value in both moods, measured and asserted twice
+- [x] The tray's neutrals followed, on an elevated grey rather than true black
+- [x] The popup harness can open the sheet (`#sheet`). It could not before, which is why
+      none of this had been seen
+
 ## Open
 
 - [ ] **A ninth check for item 3, added by this session.** Open the popup on a machine set
