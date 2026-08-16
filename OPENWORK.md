@@ -532,7 +532,9 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
 - [ ] **14. Task 10, the worker gates a catch.** 6 steps. Needs items 12 and 13.
 - [ ] **15. Task 12, the wall.** 9 steps. The paywall UI.
 - [ ] **16. Task 13, the options page holds a licence.** 4 steps.
-- [ ] **17. Task 14, the documents that are now false.** 4 steps. *(see §3 below)*
+- [~] **17. Task 14, the documents that are now false.** 4 steps. **Half done 2026-08-16**
+      — the permission justifications are written; the data-usage declaration and the
+      listing still wait on the proxy. *(see §3 below)*
 - [ ] **18. Task 15, close the loop.** 4 steps.
 - [ ] **19. Merge `buki-pro` into `main`.** 37 commits and counting. Use
       `superpowers:finishing-a-development-branch`.
@@ -579,27 +581,42 @@ code. Tasks 1 to 5 are done and tested; these are the wiring.
 
 ---
 
-## 3. The store documents are stale and one of them fails review
+## 3. The store documents: permissions are done, the listing is not
 
-Both carry banners saying so. `docs/store/listing.md` describes the X-only,
+**`docs/store/permissions.md` was the one that failed review, and its permission half is
+now written (2026-08-16).** `scripting`, `activeTab` and the optional host permission are
+all justified, each naming the feature that needs it and what breaks without it, and the
+narrowest-honest framing is stated at the top where a reviewer comparing the manifest
+against the file will meet it first: **`activeTab` plus one optional host permission
+requested on first use, not a broad host permission at install.**
+
+Three facts went in that were read out of the code rather than assumed, and they are the
+ones that make the ask defensible:
+
+- `originPatternFor` derives the request from the image's **own URL**, so what is actually
+  requested is a single host. A hostname carrying a wildcard is refused rather than passed
+  to `permissions.request`, so the declared `https://*/*` can never itself be granted.
+- Covers live in the **Cache API**, not `chrome.storage.local`, specifically so the shelf
+  does not eat the quota and so `unlimitedStorage` never has to be asked for.
+- `covers.openlibrary.org` redirects to `archive.org`, which no permission covers and none
+  is needed for, because every hop answers with permissive CORS.
+
+**What is still open in that file:** the Data usage section and the
+`generativelanguage.googleapis.com` block, both carrying their own DO-NOT-SUBMIT banners.
+They describe the picture going straight to the provider the user configured, and
+`/api/vision` makes that false. Rewrite them, `docs/privacy.html` and the landing's data
+section **in the same commit as the proxy**.
+
+**`docs/store/listing.md` is untouched and still fails.** It describes the X-only,
 bring-your-own-key, no-server product: the name, the short description and the whole
-detailed description are the narrow version.
+detailed description are the narrow version. **Its `Single purpose` field is the one to
+fix first** — it says Buki "identifies books shown in posts on x.com", and a single-purpose
+statement scoped to one site sitting next to a manifest that asks for `scripting`,
+`activeTab` and an optional `https://*/*` is a contradiction a reviewer is specifically
+looking for. The manifest and `package.json` descriptions were corrected on 2026-08-16;
+this file is the last place the narrow pitch survives.
 
-**`docs/store/permissions.md` is the one that fails review.** It says *"Nothing is
-transmitted"*, which stops being true the day the proxy ships, and it does not justify the
-three permissions now in the manifest:
-
-| Permission | Why it is needed |
-| --- | --- |
-| `scripting` | Inject the catch tray into a tab that has no content script |
-| `activeTab` | The grant a context-menu click gives, which makes that injection legal without host access at install |
-| `https://*/*` optional | Fetch a cover from a CDN that is not the tab's own origin |
-
-The narrowest honest framing is the one to use: `activeTab` plus an optional host permission
-requested on first use, **not** a broad host permission at install. Say that explicitly,
-because a reviewer comparing the manifest against this file is exactly who it is for.
-
-That is item 17.
+That is the rest of item 17.
 
 ---
 
