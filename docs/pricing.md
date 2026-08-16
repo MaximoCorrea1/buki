@@ -1,6 +1,7 @@
 # Pricing: Buki
 
-Last updated: 2026-08-11. Currency: USD. No account required for any tier.
+Last updated: 2026-08-13, when export moved to Free on both tiers. Currency: USD. No
+account required for any tier.
 
 ## Free
 

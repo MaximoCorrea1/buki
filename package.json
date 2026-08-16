@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Catch books you see on X into your own shelf, before they get lost in your bookmarks.",
+  "description": "Catch a book from any picture on the web into your own shelf, before it gets lost in your bookmarks.",
   "scripts": {
     "build": "node build.mjs",
     "icons": "node tools/make-icons.mjs",

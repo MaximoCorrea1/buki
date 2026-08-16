@@ -128,9 +128,22 @@ Three things, and only the third is hard to copy.
 - **Buki's recognition is worse than Lens and always will be.** Competing on accuracy is a
   losing line. Competing on what happens *after* the answer is not.
 
-## The opportunity this research turned up
+## The opportunity this research turned up, and it was taken
 
-Buki is currently scoped to twitter.com and x.com. Every product above is either
-everywhere (Lens, TBR) or nowhere near a browser (Category C). **Scoping to one site is
-the single largest self-inflicted limit on the product**, and the right-click flow already
-works on any image; only the feedback surface is missing.
+**As written on 2026-08-09:** Buki was scoped to twitter.com and x.com. Every product above
+is either everywhere (Lens, TBR) or nowhere near a browser (Category C). **Scoping to one
+site is the single largest self-inflicted limit on the product**, and the right-click flow
+already works on any image; only the feedback surface is missing.
+
+**Shipped 2026-08-12**, and the diagnosis was right: the missing piece was the feedback
+surface, not the recognition. The tray is now injected on demand under `activeTab`, so the
+right-click menu works on any image on any site, with an optional host permission asked for
+the first time a cover sits on a CDN that is not the tab's own origin. No `<all_urls>`
+content script and no broad host permission at install.
+
+**What that changes about this landscape.** Buki has left the row it shared with Category A:
+TBR Bookmarker and BookFinder are still page-bound and still read text. The top-right
+quadrant in the diagram above is no longer "empty until now" as an aspiration, it is
+occupied. **The threat list below is unchanged and is now the whole competitive question** —
+particularly *TBR Bookmarker adds image recognition*, which remains the most likely move and
+is not defended by being everywhere, only by the shelf, the piles and the provenance.

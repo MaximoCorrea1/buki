@@ -1,7 +1,7 @@
 # Product Marketing Context
 
-**Document version:** v5
-**Last updated:** 2026-08-15
+**Document version:** v6
+**Last updated:** 2026-08-16
 
 ## Product Overview
 
@@ -168,44 +168,59 @@ book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/
 
 ## Visual Identity
 
-Established 2026-08-11, rebuilt 2026-08-15. Full system in `docs/brand.md`.
+Established 2026-08-11, rebuilt 2026-08-15. **Full system in `docs/brand.md`, which owns
+this. Everything here is a pointer; if the two disagree, `brand.md` wins.**
 
-**The landing is on a third generation as of 2026-08-15, and the extension is not.** This
-is scheduled drift, not neglect: landing first, extension second. Copy written against the
-old identity is still true about the product; only the look changed.
+**Every surface is on the third generation as of 2026-08-15.** The landing went first and
+the popup, the setup page and the in-page catch tray followed the same day. There is no
+scheduled drift left. Copy written against the older identity is still true about the
+*product*; only the look changed.
 
 **What changed and why it matters to positioning.** The landing was cream with a serif
 display, which is the single most common look in machine-generated design, and it read as
 old. The plates are the only genuinely distinctive asset here, so the type stopped
 competing with them: **Manrope, one family, no serif in the interface at all**, the plate
 full-bleed at 100svh, a floating glass pill for navigation, capsule controls with a real
-press, and a light/dark switch. Font payload fell from 121KB to 25KB.
-
-**The consequence for the brand story.** Maximo supplied his own mark on 2026-08-15 and it
-has **two** spines, not three. The three-spine story, "one pulled out and lit", was the
-argument that *catching* is what separates Buki from a reading list. That argument is not
-in the new drawing. The story needs rewriting and the favicon, store tile and extension
-icons still carry the old mark. Open work.
+press, and a light/dark switch. Font payload fell from 121KB to 25KB on the landing and
+49KB on the extension.
 
 **The world:** two duotone plates, both 18th-century architectural capricci, both public
 domain, duotoned from 4000px museum scans. Both are a threshold you look through, which is
 the product's gesture. The palette is sampled from the artwork and then pushed apart until
 every text pair clears AAA.
 
-**Type:** Petrona at 800 for display, Instrument Sans for text, self-hosted, no third
-party. Roman and real italic both loaded, because a faked slant is visible at headline size.
+**Type:** **Manrope**, one variable family, 25KB, self-hosted, doing display and body on
+every surface. No third party, because a Google Fonts request would log the visitor's IP on
+a page whose whole claim is that nothing about them is collected. It ships no italic and
+`font-synthesis: none` forbids a faked one, so **emphasis is the accent colour, never a
+slant and never a fade**. The only serif left is the system serif, and it sets book titles
+and nothing else, because that is what a real book stamps on a board.
 
-**The mark:** three spines, one pulled out and lit. Drawn by Maximo and redrawn as
-geometry. The caught spine is a light blue rather than the cobalt accent, and that is
-deliberate: it has to separate from the other spines, not from the page.
+**The mark: three spines, two shelved and one pulled out and lit, crossed by two cords.**
+Drawn by Maximo, redrawn as geometry, and **defined once in `tools/mark.mjs`** with six
+surfaces asserted against it. The third spine is the entire argument: *catching* is the
+difference between a lit spine and a dark one, which is what separates Buki from a reading
+list. It must never become a book glyph, an open book, a bookmark ribbon, or a letter B.
+
+The caught spine is a blue rather than the cobalt accent, deliberately: it has to separate
+from the *other spines*, not from the page. On every cream ground it is `#2f7fd6`; on the
+landing at night, where the spines are cream and the relationship inverts, `#1231a8`.
 
 **The rule that governs every layout:** a plate carries a statement, the cream carries the
 reading. Anything a person has to read more than once belongs on the page, never on the
 picture.
 
-**Surface consistency:** the landing, the popup and the setup page are one system as of
-2026-08-13. The in-page catch tray is not, deliberately: it renders inside somebody else's
-page and has to hold up against an arbitrary background.
+**Hierarchy is size and weight, never a fade.** Every sentence is set at full contrast on
+every surface. This is a compliance matter as well as a taste one: the affiliate disclosure
+used to be small grey text, and Chrome Web Store policy permits affiliate links **only when
+they are disclosed**.
+
+**Surface consistency:** one system, four surfaces. The in-page catch tray takes two thirds
+of it and refuses one third, and the refusal is a decision rather than drift: it renders
+inside somebody else's page, so it stays **opaque** (a translucent card over an unknown
+photograph has a contrast nobody chose) and ships **no webfont** (Manrope would need
+`web_accessible_resources` matching `<all_urls>`, which is a wider exposed surface than a
+340px card is worth immediately before store review).
 
 ## Brand Voice
 
@@ -250,6 +265,17 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v6 (2026-08-16). **Visual Identity only, and it was four expired claims, not a
+  repositioning.** v5 was written mid-session and outlived its premises within hours: it
+  said the mark has *two* spines and the brand story needed rewriting (resolved the same
+  day, it is three, and the story never needed rewriting), that the type is *Petrona and
+  Instrument Sans* (contradicting its own paragraph four lines above naming Manrope), that
+  the extension had not reached the third generation (it did, that day), and that the catch
+  tray is not part of the system (it is, minus two named exceptions). **Positioning,
+  audience, pricing, objections and customer language are all unchanged**, so copy built
+  against v1–v5 is still true about the product. The section is now a pointer to
+  `docs/brand.md` rather than a second copy of it, which is what let it drift. Also records
+  the caught spine's per-ground values after the 2026-08-16 fix.
 - v5 (2026-08-15). **Visual identity rebuilt on the landing only.** The cream-plus-serif
   composition was the first of the three looks generated design defaults to, and it read as
   old; the serif is gone, Manrope does display and body, the plate is full-bleed, and there

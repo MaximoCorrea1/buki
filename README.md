@@ -9,7 +9,7 @@ that sold you on it, and files it under **Now / Next / Someday**. Mark a book fi
 you're done, and every saved book carries a quiet Buy link.
 
 > **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
-> **48 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-15), carrying
+> **49 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-16), carrying
 > catch-anywhere, shelf export, a landing and an extension both rebuilt to the third
 > design generation, the three-spine mark, and the decision layer for the paid tier. **This file describes
 > `buki-pro`, because that is where the work is.** What is built, what is not, and what is
@@ -146,16 +146,17 @@ lookup. A vision model reads the picture instead of the letters.
 - No sync. The shelf lives in one browser and stays there.
 - No keyless setup. Recognition needs your own key until there's a proxy that holds one.
   **That proxy is the point of `buki-pro`.**
-- The catch tray still renders on the first-generation design system. It is the only surface
-  that draws inside somebody else's page, so it has to hold up against an arbitrary
-  background, which is a different problem from choosing a background. `OPENWORK.md` item 21.
 
-**Two things on this list shipped and are worth not re-planning.** Catch-anywhere landed on
-2026-08-12: the right-click menu works on any image on any site, using `scripting` plus
-`activeTab` and an optional host permission asked for on first use, never a broad host
-permission at install. Export landed on 2026-08-13: a Goodreads-format CSV, which is the
-only route into both Goodreads and StoryGraph since Goodreads closed its write API in 2020,
-reachable from the options page and free on every tier.
+**Three things that were on this list shipped, and are worth not re-planning.**
+Catch-anywhere landed on 2026-08-12: the right-click menu works on any image on any site,
+using `scripting` plus `activeTab` and an optional host permission asked for on first use,
+never a broad host permission at install. Export landed on 2026-08-13: a Goodreads-format
+CSV, which is the only route into both Goodreads and StoryGraph since Goodreads closed its
+write API in 2020, reachable from the options page and free on every tier. And the catch
+tray reached the current design system on 2026-08-15, last and on purpose: it is the only
+surface that draws inside somebody else's page, so it takes the palette, the capsules and
+the contrast rule and deliberately refuses the transparency and the webfont. `docs/brand.md`,
+*The one surface with no ground of its own*.
 
 ## Privacy
 

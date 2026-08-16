@@ -1,15 +1,20 @@
 # Open work
 
-**State as of 2026-08-15**, verified by running the commands, not from memory:
+**State as of 2026-08-16**, verified by running the commands, not from memory:
 
 | | |
 | --- | --- |
-| Tests | 344 across 37 files, all passing |
+| Tests | 345 across 37 files, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean. The landing and the extension are both on the third generation |
-| Branch | `buki-pro`, **48 commits ahead of `main`, not merged** |
-| Plan | 37 steps done, 49 left |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **50** as this line was written, so the commit carrying it makes 51 |
+| Plan | `grep -c` on `2026-08-09-buki-pro.md`: 37 steps done, **48** left |
+
+*(The 2026-08-15 header said 48 commits and 49 plan steps left; both were re-derived here
+rather than carried. **A commit count written into a commit is wrong by one the moment it
+lands**, which is how this number has drifted twice, so the probe is given beside it. Run
+the probe; do not trust the figure.)*
 
 ## 0. Which doc owns which fact
 
