@@ -125,6 +125,11 @@
 
         /* Three radii now. The sheet is a sheet and wants the larger iOS corner; the old
            14px on a 500px card read as a dialog rather than as a card you picked up. */
+        /* The window itself. Chrome hands an extension popup square corners, which is
+           the one thing on screen that still looks like a 2015 dialog. 16px is the shape
+           a rounded window has on both platforms this ships to, and it sits between the
+           sheet's 20 and the panel's 14 so nothing nests badly inside it. */
+        --r-win: 16px;
         --r-xl: 20px;
         --r-lg: 14px;
         --r-md: 10px;
@@ -198,7 +203,14 @@
       .count, .shelf-stat, time { font-variant-numeric: tabular-nums; }
 
 
+      /* ROUNDED, both of them. The radius has to be on <html> as well: the popup's
+         canvas is painted from the root element, so rounding only <body> leaves square
+         corners of root background showing through. `color-scheme` on :root is what makes
+         the corners outside the radius follow the mood rather than flashing white at
+         night. */
+      html { border-radius: var(--r-win); }
       body {
+        border-radius: var(--r-win);
         /* 560 gives a 118px cover four across, which is the smallest a title reads at.
            Chrome allows up to 800. One declaration, so this is a one-line change. */
         width: 560px;
@@ -371,19 +383,38 @@
       }
 
       /* --- search --------------------------------------------------------- */
-      /* A filled field, not an outlined one. iOS fields have no border: the fill IS
-         the affordance, which is also what docs/brand.md concluded for the landing's
-         secondary button when its 1.38:1 ring turned out to be a boundary you cannot see. */
+      /* A SEARCH FIELD, which is a shape people already know.
+         The placeholder used to be "Find among 45 books", which is a sentence where a
+         label belongs: it reports a number nobody asked for, it changes width as the shelf
+         grows, and it makes the reader parse a clause to learn that this box searches.
+         A magnifier and the word Search say it at a glance, and the count is already in
+         the masthead.
+
+         A filled field, not an outlined one. iOS fields have no border: the fill IS the
+         affordance, which is what docs/brand.md concluded for the landing's secondary
+         button when its 1.38:1 ring turned out to be a boundary you cannot see. */
+      .search { position: relative; margin: 12px 20px 0; }
+      .search svg {
+        position: absolute; left: 11px; top: 50%;
+        translate: 0 -50%;
+        width: 15px; height: 15px;
+        fill: none; stroke: var(--muted); stroke-width: 2;
+        stroke-linecap: round; stroke-linejoin: round;
+        /* The glyph must never take the click that was meant for the field. */
+        pointer-events: none;
+      }
       #find {
-        width: calc(100% - 40px);
-        margin: 12px 20px 0;
-        padding: 9px 12px;
+        width: 100%;
+        margin: 0;
+        padding: 9px 12px 9px 34px;
         background: var(--sunk);
         color: var(--ink);
         border: 0;
         border-radius: var(--r-md);
         font: 13.5px/1.3 var(--ui);
       }
+      /* Chrome draws its own clear button on a search input and it is not ours. */
+      #find::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
       #find::placeholder { color: var(--muted); }
       #find:focus {
         outline: 2px solid var(--ink);

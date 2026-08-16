@@ -1,11 +1,31 @@
 import type { Book, BooksDb, GroundedBook } from './types';
+// Across the folder boundary on purpose, exactly as recognizer.ts does it: what makes two
+// books the same book is defined once, and duplicating it here is how `clothFor` once gave
+// one book two colours.
+import { sameBook } from '../extension/bookIdentity';
 
 /**
- * Most queries a single image may fire. OCR of a dense image (a photographed page, a
- * code screenshot) yields dozens of lines; without a cap each one became its own
- * sequential request - tens of seconds and a burst that could trip rate limiting.
+ * Most queries one text may fire.
+ *
+ * Raised from 6 on 2026-08-16. Six was chosen when this function's job was to find THE
+ * book on a cover, where six lines is plenty. It is also a hard ceiling on how many books
+ * a post can yield, and a thread listing twenty titles is one line each - so six lines
+ * meant six books, whatever the post actually said.
+ *
+ * They are fired concurrently, so this is one round trip of latency and a burst of up to
+ * twenty-four requests. That burst is the real cost, and it is accepted rather than
+ * unnoticed: `breaker.ts` stops asking OpenLibrary at all after three consecutive
+ * failures, so a rate limit degrades to unverified readings rather than to a hang.
  */
-export const MAX_QUERIES = 6;
+export const MAX_QUERIES = 24;
+
+/**
+ * Most books one text may produce.
+ *
+ * A card offering fifty decisions is not a card, and the ordering below puts the
+ * best-read line first, so the cut falls on the lines least likely to be right.
+ */
+export const MAX_GROUNDED = 20;
 
 /** Strip OCR punctuation noise, collapse whitespace. Keeps letters, numbers, spaces. */
 function cleanLine(line: string): string {
@@ -121,17 +141,18 @@ export function rank(query: string, results: Book[]): GroundedBook[] {
  */
 export async function groundText(text: string, books: BooksDb): Promise<GroundedBook[]> {
   const lines = text.split('\n').map(cleanLine).filter((l) => l.length >= 4);
+  const whole = lines.join(' ');
 
-  // Each line first, then the whole thing as a last resort (catches a title that OCR
-  // split across lines). Deduped so a single-line cover costs exactly one request.
-  const queries = [...new Set([...lines, lines.join(' ')])]
-    .filter(Boolean)
-    .slice(0, MAX_QUERIES);
+  const lineQueries = [...new Set(lines)].filter(Boolean);
+  // The whole text is a LAST RESORT, not a peer: it exists to catch a title OCR split
+  // across two lines. On a single-line cover it IS the line, so it costs nothing extra.
+  const wholeIsOwnQuery = Boolean(whole) && !lineQueries.includes(whole);
+  const queries = [...lineQueries, ...(wholeIsOwnQuery ? [whole] : [])].slice(0, MAX_QUERIES);
+  const wholeAt = wholeIsOwnQuery ? queries.indexOf(whole) : -1;
 
   // Fired together, judged in order. Awaiting them one at a time cost up to MAX_QUERIES
   // round trips (10s each by openLibrary's own timeout) against a 6s end-to-end budget;
-  // concurrently the whole step costs about one. The winner is still the earliest line
-  // that grounds, because the results are read back in the original order.
+  // concurrently the whole step costs about one.
   const settled = await Promise.all(
     queries.map(async (q) => {
       try {
@@ -144,8 +165,43 @@ export async function groundText(text: string, books: BooksDb): Promise<Grounded
     }),
   );
 
-  for (const ranked of settled) {
-    if (ranked.length) return ranked.slice(0, 3);
+  const fromLines = settled.filter((_, i) => i !== wholeAt);
+  // Only fall back to the blob when no individual line said anything. Letting it ground
+  // alongside the lines adds a book nobody pointed at, which on a post that lists ten
+  // titles is a near-guaranteed false positive.
+  const chosen = fromLines.some((ranked) => ranked.length)
+    ? fromLines
+    : wholeAt === -1
+      ? []
+      : [settled[wholeAt] ?? []];
+
+  /**
+   * ONE BOOK PER LINE FIRST, in document order, THEN every line's runners-up.
+   *
+   * This used to return `ranked.slice(0, 3)` from the first query that grounded and stop,
+   * which is a single-book finder with alternates. That is the right shape for OCR of one
+   * cover, where the lines are title / subtitle / author / blurb, and the wrong shape for
+   * a post that lists ten books, where every line is a different one. Reported as "some
+   * post words findings dont work".
+   *
+   * The ORDER is what makes it work for both. A card shows this list in order and the
+   * caller slices it, so putting line one's runners-up ahead of line two's best is how a
+   * list of twenty gets truncated into the first few titles and their near-misses. Bests
+   * first means a list yields a list; the alternates are still there underneath, which is
+   * what a single cover needs.
+   */
+  const ordered = [
+    ...chosen.map((ranked) => ranked[0]).filter((b): b is GroundedBook => Boolean(b)),
+    ...chosen.flatMap((ranked) => ranked.slice(1)),
+  ];
+
+  // Two lines can name one book - "Dune" and "Dune, Frank Herbert" - and it is one book.
+  // Same rule as the vision path, from the one module that defines it.
+  const kept: GroundedBook[] = [];
+  for (const scored of ordered) {
+    if (kept.some((held) => sameBook(held.book, scored.book))) continue;
+    kept.push(scored);
+    if (kept.length === MAX_GROUNDED) break;
   }
-  return [];
+  return kept;
 }

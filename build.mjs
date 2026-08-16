@@ -29,6 +29,15 @@ await build({
   },
   outdir: 'dist',
   bundle: true,
+  // The catch tray's typeface, inlined as a data URL at build time.
+  //
+  // It renders inside somebody else's page, so it cannot reference an extension file
+  // without a `web_accessible_resources` entry matching <all_urls> - the exposure
+  // docs/brand.md refused immediately before store review. Inlining removes the question
+  // entirely: nothing is exposed, the manifest does not change, and the bytes are already
+  // in the package. It costs about 34KB in content.js, which is a local read rather than
+  // a request.
+  loader: { '.woff2': 'dataurl' },
   format: 'iife',
   platform: 'browser',
   target: 'chrome110',

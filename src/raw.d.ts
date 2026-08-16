@@ -28,3 +28,13 @@ interface ImportMeta {
    */
   glob(patterns: string | string[]): Record<string, () => Promise<unknown>>;
 }
+
+/**
+ * esbuild inlines a `.woff2` as a data URL (`loader: { '.woff2': 'dataurl' }`), so the
+ * catch tray can carry its own typeface into a page it does not own. Declared here
+ * because this repo deliberately ships no bundler types.
+ */
+declare module '*.woff2' {
+  const dataUrl: string;
+  export default dataUrl;
+}

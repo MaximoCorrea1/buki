@@ -20,7 +20,7 @@ and a regression.
 | `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. |
 | `popup.html`, `options.html` | **fourth** | **iOS system neutrals, 2026-08-16.** Apple's greys top to bottom, true black at night, materials on the masthead and the scrim, a segmented control with a thumb that lifts, and a detail sheet rebuilt as one centred column. Both moods from one `light-dark()` per token, with a switch. See *The iOS turn*. |
 | `src/extension/toolbar.ts` | third | A book board on Chrome's own toolbar. Unaffected by the pass: it is a 16px bitmap, not a stylesheet. |
-| `src/extension/content.ts` | **fourth** | Neutrals brought in line 2026-08-16 so the extension is one product; it was a navy card floating over a neutral panel. **Still opaque and still no webfont**, which is the one part of the iOS turn it does not take - see *The one surface with no ground of its own*. |
+| `src/extension/content.ts` | **fourth** | Neutrals brought in line 2026-08-16 so the extension is one product, and Manrope with them, inlined rather than exposed. **Still opaque**, which is now the only part of the iOS turn it does not take - see *The one surface with no ground of its own*. |
 | `icons/*.png`, `icons/icon.svg`, `icons/mark.svg`, `docs/icon*` | **third** | Regenerated 2026-08-15 from `tools/mark.mjs`, the single definition. `make-icons.mjs` had still been drawing the FIRST-generation mark, so the toolbar icon was a different logo from every other surface. |
 
 **The mark is one drawing everywhere**, defined once in `tools/mark.mjs`, and the five dyes
@@ -65,12 +65,20 @@ panel read as two different apps. The palette is the one thing a surface cannot 
 itself. What it kept is everything the section above argues for: opaque, no webfont, and its
 own ground.
 
-**The webfont stops here too.** Manrope would need a `web_accessible_resources` entry
-matching `<all_urls>`, because catch-anywhere injects this script into any tab. Widening the
-extension's exposed surface immediately before store review, to change the face on a 340px
-card, is the same trade `OPENWORK.md` item 7 refused for the `downloads` permission. The
-system stack is the honest choice anyway: on a Mac it resolves to SF, which is what Manrope
-is reaching for.
+**The webfont used to stop here, and the reason was REMOVED rather than overruled**
+(2026-08-16). Referencing an extension file from a content script's CSS needs a
+`web_accessible_resources` entry matching `<all_urls>`, and widening the exposed surface
+immediately before store review was the same trade `OPENWORK.md` item 7 refused for the
+`downloads` permission. So the font is **inlined as a data URL at build time**
+(`loader: { '.woff2': 'dataurl' }`) and registered on the page's font set with the
+`FontFace` API when a tray is first created. Nothing is exposed, the manifest is untouched,
+and the bytes were already in the package. It costs about 34KB in `content.js`, and a tab
+that never catches a book never registers it.
+
+It is named **`Buki Manrope`**, so it cannot shadow a face the host page defines. A page
+whose own CSP refuses a `data:` font falls through to the system stack, which is exactly
+what shipped before. *When a constraint blocks something worth having, check whether the
+constraint can be removed before accepting the loss.*
 
 **What does arrive:** capsules with a press on every control, sentences at full contrast
 (`--dim` was `#b4a6c8` and carried every author line), two radii, and the mark's own spine

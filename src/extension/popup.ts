@@ -72,6 +72,23 @@ const EMPTY_PILE: Record<Intent, string> = {
   read: "You haven't finished a book yet. Mark one as read and it becomes a record here.",
 };
 
+/** The one drawn glyph in the popup. Stroked in currentColor's stead by CSS, so it
+ *  follows the mood without a second copy. */
+function magnifier(): SVGSVGElement {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const lens = document.createElementNS(NS, 'circle');
+  lens.setAttribute('cx', '10.5');
+  lens.setAttribute('cy', '10.5');
+  lens.setAttribute('r', '6.4');
+  const handle = document.createElementNS(NS, 'path');
+  handle.setAttribute('d', 'M15.4 15.4 20.5 20.5');
+  svg.append(lens, handle);
+  return svg;
+}
+
 function link(href: string, text: string, className: string): HTMLAnchorElement {
   const a = document.createElement('a');
   a.href = href;
@@ -454,16 +471,25 @@ function paint(): void {
   app.replaceChildren();
   renderPiles(app);
 
+  const search = document.createElement('div');
+  search.className = 'search';
+  search.appendChild(magnifier());
+
   const find = document.createElement('input');
   find.id = 'find';
   find.type = 'search';
-  find.placeholder = `Find among ${shelf.length} book${shelf.length === 1 ? '' : 's'}`;
+  // "Find among 45 books" reported a number nobody asked for, changed width as the shelf
+  // grew, and made you read a clause to learn that the box searches. The count is in the
+  // masthead already; a magnifier and one word say it at a glance.
+  find.placeholder = 'Search';
+  find.setAttribute('aria-label', `Search your ${shelf.length} books`);
   find.value = query;
   find.addEventListener('input', () => {
     query = find.value;
     paint(); // synchronous: no storage read, no await, no render race
   });
-  app.appendChild(find);
+  search.appendChild(find);
+  app.appendChild(search);
 
   // Searching leaves the pile you were in and crosses all of them; clearing the box puts
   // you back where you were. Finding a book is a different job from browsing a pile.

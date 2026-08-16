@@ -105,11 +105,19 @@ const INSTRUCTION = [
 /**
  * Most books to take from one picture.
  *
- * A photographed bookshelf can hold fifty spines, and a card offering fifty decisions is
- * not a card. Ordered clearest-first by the prompt, so the cut falls on the ones least
- * likely to be read correctly anyway.
+ * RAISED FROM 8 on 2026-08-16. Eight was chosen against a photographed bookshelf holding
+ * fifty spines, on the reasoning that a card offering fifty decisions is not a card. The
+ * cost of that was reported directly: a picture listing about twenty titles came back
+ * with seven, because eight were taken and grounding dropped one. The cap was not
+ * protecting the reader from a wall of choices, it was silently losing most of what they
+ * had pointed at, with nothing on screen to say so.
+ *
+ * Twenty, matching MAX_GROUNDED, because a list of books is a real thing to photograph
+ * and the tray column scrolls. Still ordered clearest-first by the prompt, so the cut
+ * falls on the ones least likely to be read correctly anyway, and `Save all to Someday`
+ * exists precisely so a long card does not mean twenty decisions.
  */
-export const MAX_BOOKS = 8;
+export const MAX_BOOKS = 20;
 
 interface ChatReply {
   choices?: { message?: { content?: string } }[];

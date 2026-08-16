@@ -6,6 +6,7 @@ import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
 import { shotFor } from './coverSource';
 import { shiftOf, travelFrom } from './slotTravel';
+import manrope from '../../fonts/manrope.woff2';
 import { createCatchTray, type Candidate, type Card } from './catchTray';
 import { postKey } from './lookupMemo';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
@@ -19,6 +20,46 @@ import type {
 } from './messages';
 
 const BTN_CLASS = 'buki-save-btn';
+
+/**
+ * THE TRAY GETS THE PRODUCT'S TYPEFACE, as of 2026-08-16.
+ *
+ * It was the one surface still on the system stack while the popup, the setup page and
+ * the landing all ran Manrope - which on Windows means Segoe UI, and reads exactly as
+ * dated as it was reported to be.
+ *
+ * The reason it was held back has been removed rather than overruled. A content script
+ * cannot reference an extension file from CSS without a `web_accessible_resources` entry
+ * matching <all_urls>, and widening the exposed surface immediately before store review
+ * was the trade docs/brand.md refused. Inlining the font as a data URL at build time
+ * needs no such entry: nothing is exposed, the manifest is untouched, and the bytes were
+ * already shipping in the package.
+ *
+ * Registered on the PAGE's font set, under a name no page will have, and only when a tray
+ * is actually created - so a tab that never catches a book never pays for it. A page whose
+ * own CSP refuses a data: font simply falls through to the stack below, which is precisely
+ * what shipped before this existed.
+ */
+const FONT_FAMILY = 'Buki Manrope';
+let fontAsked = false;
+
+function ensureFont(): void {
+  if (fontAsked) return;
+  fontAsked = true;
+  if (typeof FontFace === 'undefined' || !document.fonts) return;
+  try {
+    const face = new FontFace(FONT_FAMILY, `url(${manrope}) format("woff2")`, {
+      // A variable face: one file covers the whole range the tray uses.
+      weight: '200 800',
+    });
+    void face
+      .load()
+      .then((loaded) => document.fonts.add(loaded))
+      .catch(() => undefined);
+  } catch {
+    // Refused by the page. The system stack is the fallback and always was.
+  }
+}
 
 /**
  * Boundary tracing. This extension coordinates three isolated contexts, so a failure
@@ -113,7 +154,7 @@ const STYLE = `
   --drawer: cubic-bezier(.32,.72,0,1);
   --r-lg: 16px;
   --book: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui: "Buki Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   position: fixed; right: 18px; bottom: 18px; z-index: 2147483000;
   display: flex; flex-direction: column; gap: 10px;
@@ -262,9 +303,14 @@ const STYLE = `
   box-shadow: inset 0 0 0 1px var(--ring);
 }
 
+/* FULL WIDTH, so its label sits on the card's own axis.
+   It was an inline-block button, which left "Try the post's words" hard against the left
+   edge underneath a centred head - two axes on a 340px card, the same defect the popup's
+   detail sheet had. A card's action is the width of the card. */
 .buki-act {
+  display: block; width: 100%; text-align: center;
   margin: 13px 0 0; cursor: pointer; border: 0; border-radius: 999px;
-  padding: 9px 16px 10px; background: transparent; color: var(--ink);
+  padding: 11px 16px 12px; background: transparent; color: var(--ink);
   font: 600 13px/1 var(--ui); letter-spacing: -.004em;
   box-shadow: inset 0 0 0 1px var(--ring);
   transition: background-color 140ms ease, box-shadow 140ms ease,
@@ -290,13 +336,13 @@ const STYLE = `
   vertical-align: 1px; background: var(--jade-bg); color: var(--jade);
   font: 600 11px/1.5 var(--ui); letter-spacing: -.002em;
 }
-.buki-act.buki-wide { width: 100%; margin-top: 13px; }
 
 /* Pressing a post that is already on screen. Nothing new happens by design, so the card
    that already exists has to be the thing that answers. */
 @keyframes buki-nudge {
   35% { box-shadow: inset 0 0 0 1px var(--accent),
-    0 0 0 3px rgba(127,155,234,.22), 0 18px 44px -16px rgba(0,0,0,.85); }
+    0 0 0 3px rgba(127,155,234,.28), 0 2px 6px rgba(0,0,0,.28),
+    0 18px 44px -16px rgba(0,0,0,.85); }
 }
 .buki-card.buki-nudge { animation: buki-nudge 620ms var(--ease); }
 
@@ -525,6 +571,7 @@ const motion = (): boolean => !window.matchMedia('(prefers-reduced-motion: reduc
 
 function trayHost(): HTMLElement {
   if (!trayEl) {
+    ensureFont();
     trayEl = document.createElement('div');
     trayEl.className = 'buki-tray';
     trayEl.setAttribute('aria-live', 'polite');
@@ -844,7 +891,7 @@ function coverThumb(book: Book): HTMLElement {
 /** Everything at once, at the pile you reach for least. The batch case is a batch. */
 function saveAllButton(card: Card): HTMLButtonElement {
   const b = document.createElement('button');
-  b.className = 'buki-act buki-wide';
+  b.className = 'buki-act';
   b.textContent = 'Save all to Someday';
   b.addEventListener('click', () => void saveAll(card, b));
   return b;

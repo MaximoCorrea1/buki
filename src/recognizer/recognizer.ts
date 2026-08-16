@@ -112,7 +112,11 @@ export async function recognizeBook(
     const grounded = await groundText(tweet.text, deps.books);
     if (grounded.length) {
       return {
-        candidates: grounded.slice(0, 3).map((scored) => scored.book),
+        // No slice here any more. This used to take three, which capped a post listing
+        // twenty books at three however many `groundText` found. The cap belongs in one
+        // place and `groundText` owns it (MAX_GROUNDED), ordered so the best-read line
+        // comes first.
+        candidates: grounded.map((scored) => scored.book),
         // Text alone never reaches `high`, however well it scores. A post listing ten
         // books can ground the wrong line to a real book, and that failure is invisible:
         // you never learn to distrust a shelf entry you had no reason to doubt.

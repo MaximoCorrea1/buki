@@ -151,6 +151,17 @@ writeFileSync(
   'zzz-tray-harness.html',
   `<!doctype html><meta charset="utf-8"><title>the catch tray, on five grounds</title>
 <style>
+  /* The tray registers this at RUNTIME with the FontFace API, from a data URL esbuild
+     inlines into content.js - it cannot reference an extension file from a page it does
+     not own. None of that happens here, because this harness renders the stylesheet and
+     never runs the script. Loading the same file from disk is what keeps the preview
+     honest; without it this page shows the system fallback and reads as a regression
+     that is not there. */
+  @font-face {
+    font-family: "Buki Manrope";
+    src: url("fonts/manrope.woff2") format("woff2-variations");
+    font-weight: 200 800;
+  }
   body { margin: 0 }
   /* The real tray is position: fixed and bounded by the viewport. Here each panel hosts
      its own and is bounded by the PANEL, so five grounds fit on one page. That swap is the

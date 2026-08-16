@@ -78,6 +78,82 @@ describe('groundText', () => {
     expect(result[0]?.book.title).toBe('Economics in One Lesson');
   });
 
+  it('returns a book for EVERY line that grounds, not just the first', async () => {
+    // The bug, reported 2026-08-16: "some post words findings dont work", and an image
+    // listing about twenty titles produced seven.
+    //
+    // groundText returned `ranked.slice(0, 3)` from the FIRST query that grounded and
+    // stopped. That is a single-book finder with alternates - right for OCR of one cover,
+    // where the lines are title / subtitle / author / blurb - and simply the wrong shape
+    // for a post that lists ten books, where every line is a different one.
+    const { books } = fakeBooks({
+      Dune: [{ title: 'Dune', author: 'Frank Herbert' }],
+      Ficciones: [{ title: 'Ficciones', author: 'Jorge Luis Borges' }],
+      Solaris: [{ title: 'Solaris', author: 'Stanislaw Lem' }],
+    });
+
+    const result = await groundText('Dune\nFicciones\nSolaris', books);
+
+    expect(result.map((r) => r.book.title)).toEqual(['Dune', 'Ficciones', 'Solaris']);
+  });
+
+  it('puts one book per line before any line’s runners-up', async () => {
+    // Ordering is the whole difference between "twenty books" and "seven books and
+    // thirteen near-misses of the first three". The card shows this list in order and the
+    // recognizer slices it, so alternates crowding the front is how a list gets truncated
+    // into itself.
+    const { books } = fakeBooks({
+      Dune: [
+        { title: 'Dune', author: 'Frank Herbert' },
+        { title: 'Dune Messiah', author: 'Frank Herbert' },
+      ],
+      Ficciones: [{ title: 'Ficciones', author: 'Jorge Luis Borges' }],
+    });
+
+    const result = await groundText('Dune\nFicciones', books);
+
+    // Ficciones is line two's best and comes before Dune Messiah, line one's second.
+    expect(result.map((r) => r.book.title)).toEqual(['Dune', 'Ficciones', 'Dune Messiah']);
+  });
+
+  it('never lets the same book arrive twice from two different lines', async () => {
+    const { books } = fakeBooks({
+      Dune: [{ title: 'Dune', author: 'Frank Herbert' }],
+      'Dune Frank Herbert': [{ title: 'Dune', author: 'Frank Herbert' }],
+    });
+
+    const result = await groundText('Dune\nDune Frank Herbert', books);
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('uses the whole-text query only when no single line grounded', async () => {
+    // The whole-text join is a LAST RESORT: it catches a title OCR split across two
+    // lines. Once a line has grounded, letting the blob ground too adds a book nobody
+    // pointed at - which on a list post is a near-guaranteed false positive.
+    const { books } = fakeBooks({
+      Ficciones: [{ title: 'Ficciones', author: 'Jorge Luis Borges' }],
+      'Ficciones qqqq': [{ title: 'Something Else Entirely', author: 'Nobody' }],
+    });
+
+    const result = await groundText('Ficciones\nqqqq', books);
+
+    expect(result.map((r) => r.book.title)).toEqual(['Ficciones']);
+  });
+
+  it('still falls back to the whole text when the lines alone ground nothing', async () => {
+    const { books } = fakeBooks({
+      'Structure and Interpretation': [
+        { title: 'Structure and Interpretation', author: 'Abelson' },
+      ],
+    });
+
+    // The title is split across two lines, so neither line grounds on its own.
+    const result = await groundText('Structure and\nInterpretation', books);
+
+    expect(result[0]?.book.title).toBe('Structure and Interpretation');
+  });
+
   it('fires its queries together, not one after another', async () => {
     // Serially this cost up to MAX_QUERIES round trips against a 6s end-to-end budget.
     // Asserting elapsed time beats asserting call order: a regression to `await` inside
