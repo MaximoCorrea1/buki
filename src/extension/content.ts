@@ -4,6 +4,8 @@
 import type { Book, RecognitionSource, Tweet } from '../recognizer/types';
 import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
+import { shotFor } from './coverSource';
+import { shiftOf, travelFrom } from './slotTravel';
 import { createCatchTray, type Candidate, type Card } from './catchTray';
 import { postKey } from './lookupMemo';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
@@ -544,8 +546,24 @@ function reflow(mutate: () => void): void {
     mutate();
     return;
   }
+  /**
+   * The transform each slot is carrying RIGHT NOW, captured before anything is measured.
+   *
+   * This is what the old version was missing and it is why one card could land on
+   * another. `getBoundingClientRect()` includes the transform, including one still
+   * animating, so a slot interrupted mid-travel measures somewhere it is not laid out.
+   * Writing a fresh `translateY` then discarded the remaining travel and snapped the slot
+   * by that much - over a hundred pixels for a card that had just become a book.
+   *
+   * Re-entry is the normal path, not a rare race: `swapCard` schedules a reflow at 115ms
+   * and a leaving card schedules one at 200ms, both inside the 280ms travel.
+   */
+  const shift = new Map<HTMLElement, number>();
   const before = new Map<HTMLElement, number>();
-  for (const { slot } of drawn.values()) before.set(slot, slot.getBoundingClientRect().top);
+  for (const { slot } of drawn.values()) {
+    shift.set(slot, shiftOf(getComputedStyle(slot).transform));
+    before.set(slot, slot.getBoundingClientRect().top);
+  }
 
   mutate();
 
@@ -553,10 +571,12 @@ function reflow(mutate: () => void): void {
   for (const { slot } of drawn.values()) {
     const was = before.get(slot);
     if (was === undefined) continue; // brand new: it fades in, it does not travel
-    const delta = was - slot.getBoundingClientRect().top;
-    if (!delta) continue;
+    const travel = travelFrom(was, slot.getBoundingClientRect().top, shift.get(slot) ?? 0);
+    // Sub-pixel travel is not worth a transition, and rounding to zero also stops a slot
+    // that is already home from being re-armed on every repaint.
+    if (Math.abs(travel) < 0.5) continue;
     slot.style.transition = 'none';
-    slot.style.transform = `translateY(${delta}px)`;
+    slot.style.transform = `translateY(${travel}px)`;
     moved.push(slot);
   }
   if (!moved.length) return;
@@ -897,7 +917,15 @@ async function choose(
   // Disable the whole row: a second click would re-enter the save and race the write.
   row.querySelectorAll('button').forEach((b) => (b.disabled = true));
   try {
-    const saved = await saveBook(cand.book, intent, contexts.get(card.job)?.source, card.image);
+    const saved = await saveBook(
+      cand.book,
+      intent,
+      contexts.get(card.job)?.source,
+      // Only when this picture depicts only this book. See shotFor: one photograph was
+      // being written to every book a stack contained, so five books arrived on the
+      // shelf wearing the same photograph instead of their own covers.
+      shotFor(card.image, card.candidates.length),
+    );
     settle(card.job, { outcome: 'confirmed', savedId: saved.id });
     tray.savedOne(card.job, index, intent);
     // Filing one book out of four must not take the other three away with it, so the
@@ -925,7 +953,7 @@ async function saveAll(card: Card, button: HTMLButtonElement): Promise<void> {
     // only queues them somewhere nobody can see.
     for (const [i, cand] of card.candidates.entries()) {
       if (cand.savedTo) continue;
-      const saved = await saveBook(cand.book, 'someday', source, card.image);
+      const saved = await saveBook(cand.book, 'someday', source, shotFor(card.image, card.candidates.length));
       firstId ||= saved.id;
       tray.savedOne(card.job, i, 'someday');
     }
