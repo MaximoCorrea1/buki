@@ -101,6 +101,22 @@ unblocks.
       This is unit-tested against a fake `chrome.action` and has **never been seen in a
       real browser**, for the same reason as everything else in this item.
 
+      **A tenth to a thirteenth, added 2026-08-16 with the bug pass. None of these can be
+      unit-tested, and three of them are the fixes themselves.**
+
+      - **Right-click a photo holding SEVERAL books.** Save two of them. Each must arrive
+        on the shelf with **its own** cover. Until today they all wore the photograph.
+      - **Catch two books in quick succession**, so the second card arrives while the
+        first is still settling. No card may overlap another. The travel is 280ms and the
+        interrupting reflows fire at 115ms and 200ms, so this reproduces easily.
+      - **The popup's rounded corners.** No harness can show this: the corners belong to
+        the popup window, and every harness renders in an ordinary page. Check both moods
+        — a white corner at night would mean the root's `color-scheme` is not reaching the
+        canvas.
+      - **The tray's typeface on a strict-CSP page** (GitHub, or a bank). The font is a
+        `data:` URL registered with `FontFace`, and a page's own `font-src` may refuse it.
+        Refusal is meant to fall through to the system stack, not to break the card.
+
       **A ninth, added 2026-08-16 with the extension's second mood.** On a machine set to
       dark, open the popup: it should be dark. Press the switch in the **top left**. It
       should go cream and stay cream when the popup is closed and reopened, and the setup

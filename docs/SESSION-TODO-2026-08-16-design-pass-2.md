@@ -59,6 +59,32 @@ survive this session is folded into `OPENWORK.md`.
 - [x] The popup harness can open the sheet (`#sheet`). It could not before, which is why
       none of this had been seen
 
+## The bug pass, third stretch
+
+Six reported. Root cause found for every one before any fix, per `systematic-debugging`.
+
+- [x] **2. One photograph became five covers.** `choose`/`saveAll` passed `card.image` as
+      `shot` for every candidate; `coverSources` prefers `shot`. Fixed at the write with
+      `shotFor`, not repaired at the read. `f386fa9`
+- [x] **5. A toast overlapped a previous one.** `reflow` discarded the in-flight
+      `translateY` on re-entry and snapped by that amount. Re-entry is the NORMAL path:
+      `SWAP_MS` 115 and `LEAVE_MS` 200 both fire inside `TRAVEL_MS` 280. `travelFrom` adds
+      it back. **Verified not introduced by the iOS pass** — `git log -p` over `content.ts`
+      showed only colour changes. `f386fa9`
+- [x] **3. Seven books out of twenty.** `MAX_BOOKS` 8 → 20, and `groundText` rewritten:
+      it returned the first grounding line's results and stopped, which is a single-book
+      finder. Now collects across lines, bests-first so a list stays a list. `MAX_QUERIES`
+      6 → 24; `recognizer`'s own `slice(0,3)` removed. `3c56521`
+- [x] **4. The tray.** Manrope, inlined as a data URL at build time so the
+      `web_accessible_resources` objection is removed rather than overruled. The action
+      button was inline-block and sat hard left; full width now. `3c56521`
+- [x] **6. Rounded corners and a real search field.** Radius on `<html>` as well as
+      `<body>`, or the canvas shows square corners through it. `3c56521`
+- [?] **1. "Some books are not saved with their actual covers."** The multi-book instances
+      are fixed by item 2. For a SINGLE-book catch, `coverSources` still prefers the
+      photograph over the catalogue's art, by a documented decision. **Needs Maximo's
+      call** — see the question in the session log.
+
 ## Open
 
 - [ ] **A ninth check for item 3, added by this session.** Open the popup on a machine set
