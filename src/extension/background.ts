@@ -439,9 +439,10 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     library
       .add(msg.book, msg.intent, msg.source, msg.shot)
       .then((saved) => {
-        // Both, and the picture first: it is what the shelf draws. Keeping the bytes
-        // also means the shelf survives the post being deleted, which is the whole
-        // point of having caught it.
+        // Both. The catalogue's art is what the shelf draws first as of 2026-08-16;
+        // the picture is kept anyway, because it is what a book gets when OpenLibrary
+        // holds no art, and because keeping the bytes means the shelf survives the post
+        // being deleted - which is the whole point of having caught it.
         void rememberCover(saved.shot, liveCoverDeps());
         void rememberCover(msg.book.coverUrl, liveCoverDeps());
         sendResponse({ ok: true, saved } satisfies ShelfResponse);

@@ -86,8 +86,8 @@ export function drawnCover(saved: SavedBook): HTMLElement {
 }
 
 /**
- * The cover for one book: the picture it was caught from, then the catalogue's art, then
- * the board we draw.
+ * The cover for one book: the catalogue's art, then the picture it was caught from, then
+ * the board we draw. See coverSource.ts for why that order flipped on 2026-08-16.
  *
  * Each source falls through to the next ON ERROR rather than being chosen once up front,
  * because a URL that resolves today can 404 tomorrow - a deleted post takes its picture

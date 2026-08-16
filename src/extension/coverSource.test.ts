@@ -14,12 +14,22 @@ const SHOT = 'https://pbs.twimg.com/media/abc?format=jpg&name=medium';
 const ART = 'https://covers.openlibrary.org/b/id/12345-M.jpg';
 
 describe('coverSources', () => {
-  it('shows the picture you caught before the catalogue art', () => {
-    // The catalogue's art is whatever edition its relevance index ranked first, and it
-    // measurably is not always the book in the photo: on 2026-08-06 the top three hits
-    // for "Dune Frank Herbert" were Children of Dune, God Emperor and Heretics. The
-    // picture cannot be the wrong book, because it IS the book that was read.
-    expect(coverSources(saved({ shot: SHOT, coverUrl: ART }))).toEqual([SHOT, ART]);
+  it('shows the book’s own cover before the picture it was caught from', () => {
+    // REVERSED 2026-08-16, and the reason it used to be the other way round had expired.
+    //
+    // The picture came first because "the catalogue's art is whatever edition its
+    // relevance index ranked first, and it measurably is not always the book in the
+    // photo": on 2026-08-06 the top three hits for "Dune Frank Herbert" were Children of
+    // Dune, God Emperor and Heretics.
+    //
+    // But that was the MATCH being wrong, and `rank` plus `strayWords` was written
+    // precisely to fix it. `coverUrl` is not a fresh relevance search - it belongs to the
+    // record that WON that ranking. So the old objection now argues for a bug that has
+    // been closed, while the cost of the old order was reported directly: books arriving
+    // on the shelf wearing the photograph instead of their cover.
+    //
+    // The photograph is still kept and still used when the catalogue has no art.
+    expect(coverSources(saved({ shot: SHOT, coverUrl: ART }))).toEqual([ART, SHOT]);
   });
 
   it('falls back to catalogue art for a book saved before pictures were kept', () => {

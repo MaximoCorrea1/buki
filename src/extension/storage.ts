@@ -20,7 +20,12 @@ export interface SavedBook {
   intent: Intent;
   source?: SavedSource;
   /**
-   * The picture this book was caught from, which is what the shelf shows as its cover.
+   * The picture this book was caught from, and the shelf's fallback cover when the
+   * catalogue holds no art for the book. See coverSource.ts.
+   *
+   * Stored ONLY when the catch found exactly one book: a photograph of five books is not
+   * a cover for any of them, and writing it to all five is how a stack once arrived on
+   * the shelf as five copies of the same picture. See `shotFor`.
    *
    * Not on `Book`, because it is not a property of the book: it is a property of THIS
    * catch. Two people catching Dune from two posts hold the same book and different
