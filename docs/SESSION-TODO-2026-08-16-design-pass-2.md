@@ -80,10 +80,10 @@ Six reported. Root cause found for every one before any fix, per `systematic-deb
       button was inline-block and sat hard left; full width now. `3c56521`
 - [x] **6. Rounded corners and a real search field.** Radius on `<html>` as well as
       `<body>`, or the canvas shows square corners through it. `3c56521`
-- [?] **1. "Some books are not saved with their actual covers."** The multi-book instances
-      are fixed by item 2. For a SINGLE-book catch, `coverSources` still prefers the
-      photograph over the catalogue's art, by a documented decision. **Needs Maximo's
-      call** — see the question in the session log.
+- [x] **1. "Some books are not saved with their actual covers."** Multi-book instances fixed
+      by item 2. For a single-book catch, **Maximo chose catalogue art first**: the reason
+      the photograph led had expired when `rank` + `strayWords` fixed the wrong-edition
+      match it defended against. Read-time, so it re-covers the existing shelf. `d37504b`
 
 ## Open
 
@@ -116,3 +116,8 @@ Six reported. Root cause found for every one before any fix, per `systematic-deb
 | 5 | ✅ | Permission justifications, item 17 split (`9e05ee9`) |
 | 6 | ✅ | The extension gets night, and a board (`a7d5eee`) |
 | 7 | ✅ | Tray reviewed on five grounds, harnesses committed (`c76cf19`) |
+| 8 | ✅ | The iOS turn: Apple neutrals, true black, materials, the sheet rebuilt (`a40e335`) |
+| 9 | ✅ | Bug pass: covers and the tray overlap (`f386fa9`) |
+| 10 | ✅ | Bug pass: the caps, the tray's typeface, popup corners and search (`3c56521`) |
+| 11 | ✅ | Catalogue art leads; three comments stating the old order corrected (`d37504b`) |
+| 12 | ✅ | Doc reconciliation and the handoff, this pass |

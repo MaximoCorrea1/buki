@@ -4,17 +4,18 @@
 
 | | |
 | --- | --- |
-| Tests | 345 across 37 files, all passing |
+| Tests | **375 across 40 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
-| Working tree | clean. The landing and the extension are both on the third generation |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **50** as this line was written, so the commit carrying it makes 51 |
+| Working tree | clean |
+| Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **61** as this line was written, so the commit carrying it makes 62 |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: 37 steps done, **48** left |
 
-*(The 2026-08-15 header said 48 commits and 49 plan steps left; both were re-derived here
-rather than carried. **A commit count written into a commit is wrong by one the moment it
-lands**, which is how this number has drifted twice, so the probe is given beside it. Run
-the probe; do not trust the figure.)*
+*(Re-derived every time this header is touched, never carried. **A commit count written
+into a commit is wrong by one the moment it lands**, which is how this number has drifted
+three times now, so the probe is given beside it. Run the probe; do not trust the figure.
+The test count has drifted the same way: it read 345 while the suite was at 375.)*
 
 ## 0. Which doc owns which fact
 
@@ -412,6 +413,12 @@ forcing the query true and clicking it: `data-theme` stayed `dark` and the body 
 
 ### 2.5 The extension caught up, 2026-08-15
 
+> **Dated record. Its closing claim expired the next day.** This section ends by saying
+> the only surface still behind is `content.ts`. That was true on 2026-08-15 and stopped
+> being true on 2026-08-16, when the whole extension went to iOS neutrals and the tray
+> went with it. The reasoning below is why the extension caught up at all and is worth
+> keeping; for what any surface looks like now, `docs/brand.md` owns it.
+
 `docs/brand.md` had recorded since that morning that three generations were live at once and
 that the extension would follow the landing. It has followed. **`popup.html` and
 `options.html` are third generation**; the only surface still behind is `content.ts`, which
@@ -730,6 +737,28 @@ That is the rest of item 17.
   4%, so on a plate the painting shows straight through the card and takes the text with
   it. Over artwork a panel has to be real glass, measured against the plate's own extreme
   pixels — sample them out of the file, do not guess them.
+- **A cap chosen for one shape silently truncates another.** `MAX_BOOKS = 8` was sized
+  against a photographed bookshelf holding fifty spines, and `groundText` returned the
+  first grounding line's results because its job was to find THE book on a cover. Both
+  were right for the shape they were written for. Neither knew about a post that lists
+  twenty titles, and the result was seven books with nothing on screen saying the rest had
+  been dropped. **When you write a cap, write down the shape you sized it against**, so
+  the next shape is visible as a question rather than as a silent loss.
+- **An ordering bug can reproduce the very truncation it was meant to fix.** Collecting
+  books from every grounding line is not enough: putting line one's runners-up ahead of
+  line two's best turns a list of twenty into a few titles and their near-misses, because
+  the caller slices. Bests first, then the alternates.
+- **`getBoundingClientRect()` includes transforms, including one still animating.** The
+  tray's FLIP reflow measured mid-travel slots, wrote a fresh `translateY` and discarded
+  the in-flight offset, snapping a card by over a hundred pixels onto its neighbour. It
+  was not a rare race: the interrupting reflows fire at 115ms and 200ms inside a 280ms
+  travel, so it happened on the normal path. **When you re-enter an animation, carry the
+  offset it is already carrying.**
+- **A decision's justification can expire without the decision looking stale.**
+  `coverSources` put the photograph ahead of the catalogue's art because OpenLibrary's
+  relevance index returned the wrong edition — a real, measured problem, fixed months
+  later by `rank` + `strayWords`. The sentence still read true; only its premise had gone.
+  **When a rule surprises you, check whether the thing it defends against still happens.**
 - **A comment can be right while the code beneath it is wrong.** The popup's caught spine
   was `#7cc0fd`, hardcoded, directly under a comment explaining that a light value on that
   ground measures 1.6:1 and cannot be used. Read the value, not the paragraph about it.

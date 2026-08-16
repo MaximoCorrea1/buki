@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-**Document version:** v6
+**Document version:** v7
 **Last updated:** 2026-08-16
 
 ## Product Overview
@@ -168,13 +168,23 @@ book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/
 
 ## Visual Identity
 
-Established 2026-08-11, rebuilt 2026-08-15. **Full system in `docs/brand.md`, which owns
-this. Everything here is a pointer; if the two disagree, `brand.md` wins.**
+Established 2026-08-11, rebuilt 2026-08-15, and **the extension turned again on
+2026-08-16**. **Full system in `docs/brand.md`, which owns this. Everything here is a
+pointer; if the two disagree, `brand.md` wins.**
 
-**Every surface is on the third generation as of 2026-08-15.** The landing went first and
-the popup, the setup page and the in-page catch tray followed the same day. There is no
-scheduled drift left. Copy written against the older identity is still true about the
-*product*; only the look changed.
+**The landing and the extension are on different generations, deliberately.** The landing
+is third: the world of the plates, cream sampled from the artwork. The popup, the setup
+page and the catch tray are **fourth**: Apple's system neutrals top to bottom with true
+black at night, materials on the masthead and the scrim, and a detail sheet rebuilt as one
+centred column. The landing is the brand's world; the extension is the tool, and it should
+feel native to the browser it lives in.
+
+**Two colours cross that line and they are the ones that matter:** the cobalt accent and
+the five book dyes. Those carry the identity, so the extension going neutral costs nothing
+and the covers got louder against a grey ground than they ever were against beige.
+
+Copy written against any earlier identity is still true about the *product*; only the look
+changed.
 
 **What changed and why it matters to positioning.** The landing was cream with a serif
 display, which is the single most common look in machine-generated design, and it read as
@@ -203,8 +213,10 @@ difference between a lit spine and a dark one, which is what separates Buki from
 list. It must never become a book glyph, an open book, a bookmark ribbon, or a letter B.
 
 The caught spine is a blue rather than the cobalt accent, deliberately: it has to separate
-from the *other spines*, not from the page. On every cream ground it is `#2f7fd6`; on the
-landing at night, where the spines are cream and the relationship inverts, `#1231a8`.
+from the *other spines*, not from the page. `#2f7fd6` on the landing by day and on every
+cream ground, `#1231a8` on the landing at night where the spines are cream and the
+relationship inverts, and `#2f7fd6` in **both** moods on the extension, which it could
+only become once the spines went neutral and stopped inverting.
 
 **The rule that governs every layout:** a plate carries a statement, the cream carries the
 reading. Anything a person has to read more than once belongs on the page, never on the
@@ -265,6 +277,13 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v7 (2026-08-16). **Visual Identity only, again, and it is a real change rather than a
+  correction.** The extension turned to iOS system neutrals: Apple's greys, true black at
+  night, materials where it has real layers, and a detail sheet rebuilt as one centred
+  column. The landing is untouched and the two are now on different generations on
+  purpose. The cobalt accent and the five dyes cross that line and nothing else does.
+  **Positioning, audience, pricing, objections and customer language are unchanged**, so
+  copy built against v1–v6 is still true about the product.
 - v6 (2026-08-16). **Visual Identity only, and it was four expired claims, not a
   repositioning.** v5 was written mid-session and outlived its premises within hours: it
   said the mark has *two* spines and the brand story needed rewriting (resolved the same

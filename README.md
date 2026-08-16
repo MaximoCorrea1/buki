@@ -9,9 +9,9 @@ that sold you on it, and files it under **Now / Next / Someday**. Mark a book fi
 you're done, and every saved book carries a quiet Buy link.
 
 > **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
-> **49 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-16), carrying
-> catch-anywhere, shelf export, a landing and an extension both rebuilt to the third
-> design generation, the three-spine mark, and the decision layer for the paid tier. **This file describes
+> **61 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-16), carrying
+> catch-anywhere, shelf export, a landing on the third design generation and an extension
+> on the fourth, the three-spine mark, and the decision layer for the paid tier. **This file describes
 > `buki-pro`, because that is where the work is.** What is built, what is not, and what is
 > blocked is an ordered checklist in `OPENWORK.md`. Read that first.
 >
@@ -124,16 +124,21 @@ Cheapest, highest-precision signal first:
    Free and near-certain, so it skips everything below.
 2. **The cover and the post's words together** → a vision model names the book. Sending
    both matters: the caption is often the clue that makes an unreadable cover legible.
-3. **The post's text**, grounded line by line: each line is tried as a search until one
-   resolves to a real book. A post listing ten books has its titles on separate lines, so
-   searching the whole blob finds nothing while searching each line finds plenty.
+3. **The post's text**, grounded line by line: every line is tried as a search and every
+   line that resolves contributes a book. A post listing ten books has its titles on
+   separate lines, so searching the whole blob finds nothing while searching each line
+   finds all ten. Until 2026-08-16 this stopped at the first line that resolved, which
+   found one book and its runners-up however many the post named.
 
 Whatever the source, a match must share a real word with what was searched, and how *many*
 words it shares becomes the confidence the card reports. Ties are broken on **stray words**,
 significant words in the result's title that the query never mentioned, because otherwise
 every book in a series scores identically and the catalogue's own ordering silently decides
-which one you get. That is how a photo of *Dune* used to shelve *Children of Dune*. Six
-title shapes still defeat the tie-break; they are listed in `OPENWORK.md` §4.1.
+which one you get. That is how a photo of *Dune* used to shelve *Children of Dune*. The
+title shapes it has to survive are enumerated as tests, in `src/recognizer/groundText.test.ts`
+under `rank tie-breaking` — which is where they belong, because a shape nobody can run is a
+shape nobody checks. *(This used to point at `OPENWORK.md` §4.1, a section that does not
+exist and may never have.)*
 
 **Nothing is ever saved without being chosen.** Auto-save was removed, because a save you
 did not make is a save you cannot learn to distrust. Every entry can be removed from its
