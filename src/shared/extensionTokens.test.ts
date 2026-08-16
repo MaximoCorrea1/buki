@@ -107,9 +107,17 @@ describe('the extension takes its colours from tokens', () => {
     '--stamp',
     '--stamp-dim',
     // a binding dye itself, on the setup page's "why this is needed" card. It costs the
-    // spine contrast at night, 1.50:1 against the sunk well, and the two white cords
-    // across it carry it at 11.69:1. That is precisely why brand.md says a cord is white.
+    // spine contrast at night, and the two white cords across it carry it. That is
+    // precisely why brand.md says a cord is white rather than gilt.
     '--forest',
+    // The caught spine, and this one is EARNED rather than exempted. It must separate from
+    // its NEIGHBOURS, and the neighbours used to invert between moods (navy on cream, then
+    // cream on navy), so the value had to invert with them. Against the iOS neutrals it
+    // does not: #2f7fd6 measures 4.60:1 against the day spine and 4.10:1 against the night
+    // one, clearing the bar from both sides. mark.test.ts checks this line against
+    // tools/mark.mjs for BOTH extension grounds, so a single value here is asserted twice
+    // rather than merely permitted.
+    '--mark-caught',
   ]);
 
   for (const [name, body] of Object.entries(SURFACES)) {

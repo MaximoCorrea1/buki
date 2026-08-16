@@ -10,20 +10,22 @@ here first, then in every surface that uses it, in the same commit.
 
 ## Read this before changing anything
 
-**The landing moved ahead on 2026-08-15 and the extension caught up the same day.** Knowing
-which surface is on which generation is the difference between a fix and a regression.
+**The landing and the extension are now on DIFFERENT generations, on purpose.** The landing
+is the world of the plates and keeps its sampled cream; the extension turned to iOS system
+neutrals on 2026-08-16. Knowing which surface is on which is the difference between a fix
+and a regression.
 
 | Surface | Generation | State |
 | --- | --- | --- |
 | `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. |
-| `popup.html`, `options.html` | **third** | Caught up 2026-08-15. Manrope, sentences at `--ink`, capsules, an iOS segmented control, two radii. **Both moods since 2026-08-16**, from one `light-dark()` per token, with a switch in the popup's left corner and the setup page's. They also gained a real board and books that cast a shadow — see *One room, two moods* and *A shelf has to look like a shelf*. |
+| `popup.html`, `options.html` | **fourth** | **iOS system neutrals, 2026-08-16.** Apple's greys top to bottom, true black at night, materials on the masthead and the scrim, a segmented control with a thumb that lifts, and a detail sheet rebuilt as one centred column. Both moods from one `light-dark()` per token, with a switch. See *The iOS turn*. |
 | `src/extension/toolbar.ts` | third | A book board on Chrome's own toolbar. Unaffected by the pass: it is a 16px bitmap, not a stylesheet. |
-| `src/extension/content.ts` | **third** | Caught up 2026-08-15, last and on purpose. The landing's night palette, capsules, sentences at full contrast, the mark's spine and cords down the card's edge. **Opaque, and with no webfont** - see *The one surface with no ground of its own*. |
+| `src/extension/content.ts` | **fourth** | Neutrals brought in line 2026-08-16 so the extension is one product; it was a navy card floating over a neutral panel. **Still opaque and still no webfont**, which is the one part of the iOS turn it does not take - see *The one surface with no ground of its own*. |
 | `icons/*.png`, `icons/icon.svg`, `icons/mark.svg`, `docs/icon*` | **third** | Regenerated 2026-08-15 from `tools/mark.mjs`, the single definition. `make-icons.mjs` had still been drawing the FIRST-generation mark, so the toolbar icon was a different logo from every other surface. |
 
-**Every surface is now on the third generation.** The mark is one drawing everywhere,
-defined once in `tools/mark.mjs`. What differs between surfaces is the *material*, and every
-difference is a decision with a reason: see *One room, two moods* and *The one
+**The mark is one drawing everywhere**, defined once in `tools/mark.mjs`, and the five dyes
+and the cobalt accent are identical on every surface. Everything else about a surface is a
+decision with a reason: see *The iOS turn*, *The detail sheet is one column*, and *The one
 surface with no ground of its own*.
 
 ### The one surface with no ground of its own
@@ -33,7 +35,8 @@ night, Reddit, a newsletter, a black photo essay, a white documentation site. Ev
 Buki surface chooses its own background. This one is handed one, and it was held back
 through two design generations for exactly that reason.
 
-**So two thirds of the third generation arrives and one third does not.**
+**So most of a generation arrives here and two named things never do: the transparency and
+the webfont.**
 
 **The transparency stops here.** The landing's glass works because the page owns what is
 behind it and every value was measured against it. Here the backdrop might be a photograph,
@@ -52,12 +55,15 @@ generations. The stylesheet is read out of `content.ts` so it cannot drift; the 
 fixture, because `content.ts` registers a `chrome.runtime` listener at module scope and
 therefore cannot be imported at all.
 
-**Reviewed on all five grounds on 2026-08-16, and it needed nothing.** The card lifts off
-white and off black on the same shadow, the spine's cord gaps read at every card height, the
-jade shelf tag and the disabled pile hold, and the empty state is still an invitation. When
-the popup and the setup page gained a second mood that day, the tray was deliberately left
-alone: it owns its ground in every mood by design, and retouching the newest surface to look
-busy is how a pass undoes itself.
+**Reviewed on all five grounds on 2026-08-16.** Its structure needed nothing: the card lifts
+off white and off black on the same shadow, the spine's cord gaps read at every card height,
+the jade shelf tag and the disabled pile hold, and the empty state is still an invitation.
+
+**Its neutrals did change, later the same day, and refusing to would have been the error.**
+When the popup and the setup page went to iOS greys, a navy card floating over a neutral
+panel read as two different apps. The palette is the one thing a surface cannot keep to
+itself. What it kept is everything the section above argues for: opaque, no webfont, and its
+own ground.
 
 **The webfont stops here too.** Manrope would need a `web_accessible_resources` entry
 matching `<all_urls>`, because catch-anywhere injects this script into any tab. Widening the
@@ -66,11 +72,18 @@ card, is the same trade `OPENWORK.md` item 7 refused for the `downloads` permiss
 system stack is the honest choice anyway: on a Mac it resolves to SF, which is what Manrope
 is reaching for.
 
-**What does arrive:** the landing's night palette in place of the violet-black room and its
-amber lamp, capsules with a press on every control, sentences at full contrast (`--dim` was
-`#b4a6c8` and carried every author line), two radii, and the mark's own spine and two cords
-down the card's edge - drawn as a **gradient**, so they stay at the fractions
+**What does arrive:** capsules with a press on every control, sentences at full contrast
+(`--dim` was `#b4a6c8` and carried every author line), two radii, and the mark's own spine
+and two cords down the card's edge - drawn as a **gradient**, so they stay at the fractions
 `tools/mark.mjs` puts them at however tall the card turns out to be.
+
+**Its ground is an ELEVATED grey, not the true black the popup uses**, and that difference is
+the whole argument in miniature. The popup owns its entire window, so it can be `#000`. This
+is a card that lands on somebody else's page, including a black one. Measured on the five
+grounds this section names: **17.01:1** on a white documentation site, **16.10:1** on X in
+daylight, **4.10:1** mid-photograph, and **1.23:1** on a black photo essay — where the ring
+and the shadow are the only things carrying it, which is why the ring is heavier here than
+anywhere else in the product. On `#1c1c1e`: `--ink` 17.01:1, `--ink-2` 7.21:1, jade 10.54:1.
 
 ### One room, two moods
 
@@ -86,13 +99,10 @@ opened dozens of times a day, out of a browser that is already dark, and a 560px
 firing out of dark chrome is a flash rather than a material choice. The brand's own idea is
 *a library at night*, and the one surface that never got night was the shelf.
 
-**The night palette was not invented for it.** The extension has had one since 2026-08-15,
-in the catch tray, measured against its own ground: `--ink` 16.79:1, `--muted` 13.98:1,
-`--accent` 7.14:1 on `#080d20`. The popup and the setup page adopt that, so the tray, the
-panel and the landing at night are one room reached from three directions. `tools/mark.mjs`
-gained an `extension night` ground, listed separately from `landing, night` even though the
-three values are identical, because a ground is a surface rather than a palette and the next
-one has to be measured rather than assumed to land on an existing row.
+> **The night palette described here was the landing's navy, and it lasted one day.** The
+> extension went to iOS system neutrals on 2026-08-16 — see *The iOS turn* below, which is
+> the current answer. What survives from this section is the decision that the shelf gets a
+> night at all, and the rule about the dyes.
 
 **What survives from the original argument, unchanged and still the rule:** the bindings
 carry the identity and never respond to a mood. The five dyes, the two inks stamped on them
@@ -116,6 +126,116 @@ column with the mark and the count on the axis and Settings already pinned out o
 on the right; a second control in the same corner would crowd it and push the axis around,
 which is what the catch card's dismiss control was lifted out of the flow to avoid. One at
 each corner makes the header symmetric rather than merely un-crowded.
+
+### The iOS turn
+
+Added 2026-08-16. Maximo, on the extension: *"should be more ios style. transparency,
+contrast and smooth. the light mode colors. should be better. not so much browns and
+veiges."* Then, when offered three palettes: *"but more ios ios ios."*
+
+**The neutrals are Apple's, and exactly two colours are kept.** The panel was cream and tan
+(`--paper` `#fbf7ec`, `--board` `#e6dcc2`, `--sunk` `#f3ecd9`) and it is now
+`#f2f2f7` / `#d8d8de` / `#e9e9ef` by day and true black with lifted greys at night. What
+does not move is the **cobalt accent** and the **five dyes**, because those are the two
+things that actually carry the identity: swapping them would desync the mark and the landing
+and buy nothing. **The landing is untouched.** It is the world of the plates and its palette
+is sampled from them; the extension is the tool.
+
+**True black is not a flourish.** It is what iOS ships, it is what an OLED panel wants, and
+it gives a lifted surface somewhere to lift *from* — which the navy did not. The selected
+segment measured **1.07:1** against its own track on the navy.
+
+| | Day | Night |
+| --- | --- | --- |
+| `--paper` | `#f2f2f7` | `#000000` |
+| `--card` | `#ffffff` | `#1c1c1e` |
+| `--sunk` | `#e9e9ef` | `#151517` |
+| `--thumb` | `#ffffff` | `#48484a` |
+| `--ink` | `#111114` | `#ffffff` |
+| `--muted` | `#484852` | `#a8a8b0` |
+| `--accent` | `#1231a8` | `#7f9bea` |
+
+| Pair | Ratio |
+| --- | --- |
+| `--ink` on paper / card / sunk | 16.89 / 18.85 / 15.59 by day |
+| `--ink` on paper / card / sunk | 21.00 / 17.01 / 18.24 at night |
+| `--muted`, worst ground | 7.47 day, 7.21 night |
+| `--accent` on paper | 9.27 day, 7.78 night |
+
+#### Where this departs from Apple, and why
+
+**`--muted` is darker than iOS's own.** Apple's secondaryLabel is `#6C6C74`, which measures
+**4.30:1** on the light fill. This document's rule is that a passing ratio is not the test
+and nothing may read faded, after *"WAY MORE CONTRAST! NO FADED FONTS!"* was raised twice.
+`#484852` and `#a8a8b0` clear 7:1 on their worst grounds. **Apple's value loses to the
+house rule**, and that is the right way round.
+
+#### Transparency, and exactly where it is allowed
+
+The flat rule — no gradient, no colour over colour — was written for the room and still
+governs the *plank* and the *bindings*. The third generation's alpha licence was the
+landing's alone. This turn extends it to the popup and the setup page, and **only to the two
+places that have a real layer**:
+
+1. **The masthead**, because the shelf scrolls underneath it and we own the shelf.
+2. **The sheet's scrim**, which blurs the shelf behind the card the way Control Centre does.
+
+Nowhere else, and **never on the catch tray**. That is the same line this document already
+draws one surface along: *glass where we own what is behind it, opaque where we do not.* A
+translucent tray would have its contrast decided by a photograph nobody has seen.
+
+**The grain went with the beige.** It was the tooth of a paper sheet and this surface has
+stopped pretending to be paper. It stays on the landing, which has not.
+
+#### The segmented control, drawn the way iOS draws one
+
+The chosen pile never read as chosen: the thumb was `--card` on `--sunk`, **1.18:1** by day
+and **1.12:1** at night, and the track carried a ring that was doing the job the thumb
+should do. It has its own `--thumb` token now. By day, white on grey at 1.21:1 is *exactly*
+what Apple ships and it is carried entirely by two shadows, near and far — one soft shadow
+alone reads as a blur and one hard shadow alone reads as a border. At night Apple lifts the
+thumb for real, so this does too: `#48484a` is 2.00:1 off the track with a 9.12:1 label.
+
+#### The caught spine stops being two values
+
+`--mark-caught` is `#2f7fd6` in **both** moods on the extension, where every other colour
+token is a `light-dark()` pair. It could never be one value before: the caught spine has to
+separate from its *neighbours*, and the neighbours inverted between moods (navy on cream,
+then cream on navy), so it had to invert with them. Against neutral spines it does not —
+4.60:1 against the day spine, 4.10:1 against the night one. `tools/mark.mjs` carries both
+grounds and `mark.test.ts` asserts the single value against each of them.
+
+### The detail sheet is one column
+
+Added 2026-08-16, and it is the defect Maximo named: *"the cta buttons are not centered and
+look bad."*
+
+The card was a left-aligned two-column block — cover beside the title, with the source link
+and the Buy pill hard left underneath — sitting above two **centred** controls. Two axes in a
+500px card, and the stranded one was the control that earns money. It also left roughly 120px
+of empty white beside the author, because that column held a title, a name, one small pill
+and nothing else.
+
+It is one centred column now, in the order the card is actually used: **the book, then where
+it goes, then what you can do with it, then the way out.** Three things follow from that
+order and each is a decision:
+
+- **The pile control comes before Buy.** Filing the book is what the sheet is *for*. A
+  disclosed affiliate link outranking the product's own job would be a dark pattern, in a
+  small way, and small ways are how products lose trust.
+- **Buy is full width and names its destination** — *Buy on Amazon*, *Buy on Bookshop.org* —
+  because a control says what it does, and a link that earns a commission can afford to say
+  where it is sending you. It stays jade, one of the five dyes, so it never competes with the
+  focus ring.
+- **Remove from shelf is a plain text button**, not an outlined one. That is what iOS uses
+  for an ordinary destructive action at the foot of a sheet, and it stops the card ending on
+  two competing capsules.
+
+**A drawn cover must never be the ugly one.** `.stamp` was three fixed pixel sizes tuned for
+the 118px shelf cover, so at 96px in the sheet *The Fountainhead* set as **"Fountainhe / ad"**
+— on the one cover we draw ourselves. The steps are `cqw` now, a share of the board's own
+width, so they hold at any size the board is used at, and `overflow-wrap` is `break-word`
+rather than `anywhere` so a word is only split when it genuinely cannot fit.
 
 ### A shelf has to look like a shelf
 

@@ -42,122 +42,109 @@
         font-display: block;
       }
       :root {
-        /* TWO MOODS, ONE DECLARATION PER TOKEN, as of 2026-08-16.
+        /* iOS NEUTRALS, AND EXACTLY TWO COLOURS KEPT. Rewritten 2026-08-16.
 
-           This panel was light only for its whole life, and docs/brand.md argued for it:
-           the landing is the moment of CATCHING, a lit shelf in the dark, and this is the
-           moment of READING your list, and a list is read on paper. That argument lost to
-           a simpler one. The shelf is opened dozens of times a day, out of a browser that
-           is already dark, and a 560px cream panel firing out of dark chrome is a flash
-           rather than a material. The brand's own idea is a library AT NIGHT, and the one
-           surface that never got night was the shelf.
+           The panel was cream and tan: --paper #fbf7ec, --board #e6dcc2, --sunk #f3ecd9.
+           Maximo's words were "not so much browns and veiges", then "more ios ios ios".
+           So the neutrals are Apple's own, top to bottom, and the two things that actually
+           carry this product's identity stay exactly where they were: the cobalt accent
+           and the five book dyes. Swapping those would desync the mark and the landing and
+           buy nothing.
 
-           THE NIGHT PALETTE IS NOT NEW AND WAS NOT INVENTED HERE. The extension has had
-           one since 2026-08-15, in the catch tray, measured against its own ground:
-           --ink 16.79:1, --muted 13.98:1, --accent 7.14:1 on #080d20. The popup adopts it
-           rather than choosing a second dark, so the tray, the panel and the landing at
-           night are one room. Every value below was re-derived with tools/mark.mjs's
-           contrast(), not copied on faith.
+           TRUE BLACK AT NIGHT is not a stylistic flourish. It is what iOS ships and what
+           an OLED panel wants, and it gives the lifted greys somewhere to lift from, which
+           the old navy did not: the selected segment measured 1.07:1 against its own track.
 
-           light-dark() rather than a second palette in a media query: that would be a
-           third copy once the switch is added, and this repo's recorded failure mode is
-           that the copies drifted. src/shared/extensionTokens.test.ts fails the build on a
-           duplicated dark block, and on any colour token that declares only one mood.
+           WHERE THIS DEPARTS FROM APPLE, AND WHY. iOS secondaryLabel is #6C6C74, which
+           measures 4.30:1 on the light fill. This repo's rule is that a passing ratio is
+           not the test and nothing is allowed to read faded, after "WAY MORE CONTRAST! NO
+           FADED FONTS!" was raised twice. So --muted is #484852 and #a8a8b0, both of which
+           clear 7:1 on their worst ground. Apple's value loses to Maximo's rule.
 
-           THE DYES DO NOT APPEAR HERE, and that is the rule. A binding is a dye, not a
-           status colour, and a book keeps its cloth in any light. --stamp and --stamp-dim
-           are the two inks stamped on a binding and are identical in both moods. */
+           Measured with tools/mark.mjs's contrast(), never estimated:
+             ink on paper/card/sunk    16.89 / 18.85 / 15.59  by day
+                                       21.00 / 17.01 / 18.24  at night
+             muted, worst ground        7.47 day, 7.21 night
+             accent on paper            9.27 day, 7.78 night
+             paper on accent            9.27 / 7.78            (a filled button's label)
+
+           THE DYES DO NOT APPEAR HERE. A binding is a dye, not a status colour, and a book
+           keeps its cloth in any light, so --stamp and --stamp-dim are one value in both
+           moods. src/shared/extensionTokens.test.ts enforces the rest. */
         color-scheme: light dark;
 
-        --paper: light-dark(#fbf7ec, #080d20);
-        /* A raised surface. At night it gets LIGHTER, never darker: darkening it further
-           is how the landing's emphasised card reached 1.04:1 against its own page.
-           Cream on #16204a is 13.65:1. */
-        --card: light-dark(#ffffff, #16204a);
-        /* The board, in three solid bands: a lit front edge, the body, and the edge in
-           shadow. No gradient, because the flat rule in docs/brand.md governs this surface
-           and the landing's third-generation alpha licence explicitly does not reach it.
-           What makes a board read is the SEQUENCE of the three plus the shadow it casts,
-           not any one pair clearing a ratio: measured, the body is 1.28:1 on the paper by
-           day and 1.45:1 at night, and it is a surface rather than a control, so that is
-           the correct bar. --board-hi is the new one and it is what makes the shelf
-           visible at night. */
-        --board: light-dark(#e6dcc2, #262e4d);
-        --board-hi: light-dark(#f2ebd8, #3f4c7a);
-        --board-lo: light-dark(#d9cca8, #12182c);
-        --ink: light-dark(#0a0f33, #f5efde);
-        /* DARKENED 2026-08-15, and most of what wore it was promoted to --ink.
-           It was #3d477a: 8.24:1, AAA, and the panel still read faded, because --muted
-           carried every author name, the empty state, the footer and the card's byline —
-           nearly every SENTENCE in a 560px panel. Body copy two steps below its heading in
-           a different hue reads as ink that ran out. Same finding as the landing, same
-           fix: sentences take --ink and hierarchy comes from size and weight.
-           #232c5c measures 12.37:1, so what still wears it is not faded either. */
-        --muted: light-dark(#232c5c, #d5dbf0);
+        /* The ground and the two surfaces on it. Apple's grouped-background idiom: a grey
+           page carrying white cards by day, true black carrying lifted greys at night. */
+        --paper: light-dark(#f2f2f7, #000000);
+        --card: light-dark(#ffffff, #1c1c1e);
+        --sunk: light-dark(#e9e9ef, #151517);
+
+        /* THE SEGMENTED CONTROL'S THUMB, and it needed its own token. It used to be
+           --card, which measured 1.18:1 against its own track by day and 1.12:1 at night,
+           so the chosen pile read only by its shadow and at night a shadow on a dark ground
+           does nothing at all. By day white-on-grey at 1.21:1 is exactly what Apple ships,
+           carried entirely by the shadow. At night Apple lifts the thumb for real, so this
+           does too: #48484a is 2.00:1 off the track with a white label at 9.12:1. */
+        --thumb: light-dark(#ffffff, #48484a);
+
+        /* The board, still three solid bands and a cast shadow, now in neutrals. The flat
+           rule still governs the plank: no gradient. What makes it read is the sequence of
+           the three in the direction light falls, not any pair clearing a ratio. */
+        --board: light-dark(#d8d8de, #38383a);
+        --board-hi: light-dark(#f0f0f4, #48484a);
+        --board-lo: light-dark(#c4c4cc, #232325);
+
+        --ink: light-dark(#111114, #ffffff);
+        --muted: light-dark(#484852, #a8a8b0);
+
+        /* KEPT, deliberately. Cobalt is the mark's accent and the landing's, and it is the
+           one hue this panel shares with the rest of the product. */
         --accent: light-dark(#1231a8, #7f9bea);
-        /* A sunk well goes the other way from a raised one: DARKER at night, because
-           it is the absence of lift. Cream on it is 15.23:1. */
-        --sunk: light-dark(#f3ecd9, #111832);
+        --select: light-dark(#d6defa, #1f2a4a);
 
-        /* THREE LITERALS LIVED HERE UNTIL 2026-08-16, and every one of them was the trap
-           docs/brand.md calls "a colour written as three numbers is still a hardcoded
-           colour". None of them named a token, so relighting the panel would not have
-           touched one, and each fails in a different way on a dark ground:
+        /* Neutral, where it was rgba(20,16,14,.4): a warm black over the cream composited
+           to about #a09a8e, which is a brown wash over the whole shelf and was the beige
+           complaint at its worst. It also BLURS now, which is the Control Centre idiom and
+           the one place a scrim earns a material. */
+        --scrim: light-dark(rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.5));
+        --shadow: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.55));
+        --shadow-deep: light-dark(rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.8));
 
-             ::selection  #d5ddf5   a pale blue. Cream text on it is about 1.2:1, so
-                                    SELECTING text would hide it. Nothing screenshots that.
-             .pile lift   rgba(10,15,51,.14)  a navy shadow, which on a navy panel does
-                                    nothing at all and the chosen segment loses its lift.
-             #scrim       rgba(20,16,14,.4)   a warm-black veil. Dark over dark stops
-                                    separating the sheet from the shelf underneath it.
+        /* MATERIALS. The transparency goes where this panel genuinely has layers: the
+           masthead is sticky over a shelf that scrolls under it, and the scrim covers it.
+           Nowhere else. This is the same line docs/brand.md already draws for the catch
+           tray, one surface along: glass where we own what is behind it, opaque where we
+           do not. The tray therefore stays opaque and always will. */
+        --material: light-dark(
+          color-mix(in srgb, #f2f2f7 72%, transparent),
+          color-mix(in srgb, #000000 62%, transparent)
+        );
+        --material-solid: light-dark(#f2f2f7, #000000);
+        /* Apple's separator, at Apple's alpha, and drawn at 0.5px where the display can. */
+        --hairline: light-dark(rgba(60, 60, 67, 0.29), rgba(84, 84, 88, 0.65));
 
-           src/shared/extensionTokens.test.ts fails the build if a literal comes back, and
-           it checks box-shadow as well as the fills, because a shadow is a colour too. */
-        --select: light-dark(#d5ddf5, #1b2a5c);
-        /* The scrim goes HARDER at night, not softer. A 40% warm black over a dark
-           panel barely separates the sheet from the shelf underneath it; the job of a
-           scrim is to say the sheet is in front, and there is less ground left to
-           darken. Cream on the selection ground is 11.93:1. */
-        --scrim: light-dark(rgba(20, 16, 14, 0.4), rgba(0, 0, 0, 0.66));
-        /* Navy shadows, which is a shadow that does nothing on a navy panel. Black at
-           night, and heavier, for the same reason as the scrim. */
-        --shadow: light-dark(rgba(10, 15, 51, 0.14), rgba(0, 0, 0, 0.55));
-        --shadow-deep: light-dark(rgba(10, 15, 51, 0.5), rgba(0, 0, 0, 0.8));
-
-        /* Two radii and a capsule, where there were 2, 3, 7, 8, 9 and 13px. Smaller than
-           the landing's 22/14 on purpose: a 560px panel is not a page, and a radius that
-           reads as generous at 1220px reads as bloated here. */
+        /* Three radii now. The sheet is a sheet and wants the larger iOS corner; the old
+           14px on a 500px card read as a dialog rather than as a card you picked up. */
+        --r-xl: 20px;
         --r-lg: 14px;
-        --r-md: 9px;
+        --r-md: 10px;
 
-        /* The two inks a binding gets, and no more. Cream for the title, dimmed cream
-           for the rules. Not --lamp: gilt on every cover would spend the one-accent
-           rule a dozen times per shelf. */
-
-        /* THE MARK. Three spines: two shelved and one pulled out and lit.
-           The caught spine has to separate from TWO things at once — from the paper, so
-           you can see it, and from the shelved spines, so it reads as caught rather than
-           as a third book. Measured on this ground:
-             #7cc0fd  1.81:1 on the paper, 9.58:1 on the spines  -> invisible as a shape
-             #1231a8  9.66:1 on the paper, 1.80:1 on the spines  -> nothing looks caught
-             #2f7fd6  3.83:1 on the paper, 4.54:1 on the spines  -> the only one that clears both
-           The old value was #7cc0fd, hardcoded, directly under a comment explaining that a
-           light value on this ground measures 1.6:1 and cannot be used. The comment was
-           right and the code did it anyway. */
         --mark-spine: var(--ink);
-        /* At night the paper and the spines swap, so the relationship inverts and the
-           caught spine takes the cobalt: 9.00:1 against cream neighbours, where #2f7fd6
-           would be 1.98:1 and nothing would look caught. tools/mark.mjs holds both
-           grounds and src/shared/mark.test.ts reads this line against them. */
-        --mark-caught: light-dark(#2f7fd6, #1231a8);
+        /* ONE VALUE IN BOTH MOODS, which it could not be until now. The caught spine has
+           to separate from its NEIGHBOURS, and the neighbours used to be navy by day and
+           cream by night, so it had to invert with them. With neutral spines it does not:
+           #2f7fd6 measures 4.60:1 against the day spine and 4.10:1 against the night one,
+           clearing the bar from both sides. tools/mark.mjs carries both grounds and
+           src/shared/mark.test.ts reads this line against them. */
+        --mark-caught: #2f7fd6;
 
+        /* The two inks a binding gets, and no more. One value in both moods, forever. */
         --stamp: #faf7f2;
         --stamp-dim: #d6cec2;
 
-        /* The buy pill. Green rather than the accent, so it reads as its own kind of
-           action and never competes with a focus ring. */
-        /* The jade is the tray's own, so the buy pill is one object across the
-           extension. Jade on the night ground is 8.32:1, and 7.38:1 on the hover. */
+        /* The buy pill, in jade, which is one of the five dyes rather than a green picked
+           to look like one. It reads as its own kind of action and never competes with the
+           focus ring. Jade on the night ground is 8.32:1 and 7.38:1 on the hover. */
         --buy-bg: light-dark(#e7f5ee, #10352a);
         --buy-bg-hi: light-dark(#d8efe3, #143e31);
         --buy-ink: light-dark(#0f6b4a, #6fe0b6);
@@ -167,26 +154,18 @@
         /* The system serif, and the only serif left. It sets BOOK TITLES and nothing else,
            which is the rule in docs/brand.md, and it ships no bytes. */
         --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-        /* Mono survives for DATA THAT LINES UP and nothing else: the shelf count, the
-           per-pile counts, and the cloth, which is a character grid and could not be
-           anything else. It used to set Settings, the recognition record and the pile tag
-           as well — those are words, and tracked uppercase mono renders a word as if it
-           were a machine value. */
+        /* Mono is for data that lines up: the shelf count, the per-pile counts, and the
+           cloth, which is a character grid and could not be anything else. */
         --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-        /* Ionic's port of the iOS sheet curve, for the one thing here that travels
-           rather than merely appearing: the switch's two icons trading places. */
+        /* Ionic's port of the iOS sheet curve, for anything that travels a distance. */
         --drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
-        /* The tooth of the paper. One inline SVG, tiled: no file to request, no script,
-           and the browser rasterizes it once. It sits on the BACKGROUND rather than in a
-           layer over the page, because grain across type costs legibility and buys
-           nothing, and because a full-bleed overlay is what made this popup unclickable
-           once already. Same carve-out as the cloth in docs/brand.md: noise over one
-           solid ground is texture, not a blend. */
-        --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+        /* THE GRAIN IS GONE. It was the tooth of a paper sheet, and this surface is not
+           pretending to be paper any more. iOS surfaces are flat and clean, and noise over
+           a true-black ground is just noise. It stays on the landing, which is still the
+           world of the plates. */
       }
-
 
       /* THE SWITCH ACTUALLY SWITCHING, and this is separate from the line above it.
          `color-scheme: light dark` only says the surface UNDERSTANDS both moods; on its
@@ -229,9 +208,9 @@
         margin: 0;
         padding: 0 0 10px;
         background-color: var(--paper);
-        background-image: var(--grain);
         color: var(--ink);
         font: 14px/1.45 var(--ui);
+        -webkit-font-smoothing: antialiased;
       }
       body::-webkit-scrollbar { width: 10px; }
       body::-webkit-scrollbar-thumb {
@@ -250,9 +229,22 @@
         align-items: center;
         gap: 3px;
         padding: 14px 20px 12px;
-        background-color: var(--paper);
-        background-image: var(--grain);
-        border-bottom: 1px solid var(--board);
+        /* A MATERIAL, not a fill. The shelf scrolls underneath this, which is the one
+           condition that earns a blur: there is something real behind it and we own what
+           that something is. A hairline at Apple's own 0.29 alpha, drawn at half a pixel
+           where the display can manage it. */
+        background: var(--material);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-bottom: 0.5px solid var(--hairline);
+      }
+      /* backdrop-filter is an enhancement. Without it the masthead has to be opaque, or
+         book covers scroll through the wordmark. */
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        header { background: var(--material-solid); }
+      }
+      @media (prefers-reduced-transparency: reduce) {
+        header { background: var(--material-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
       }
       header .brand { display: flex; align-items: center; gap: 8px; }
       header svg { display: block; flex: none; }
@@ -334,14 +326,16 @@
 
          Capsules inside a capsule, per the third generation, and the selected segment is a
          raised white surface rather than a differently-coloured one. */
+      /* An iOS segmented control, drawn the way iOS draws one: a sunk track, a thumb
+         that LIFTS, and no ring around the track. The ring was doing the job the thumb
+         should do, which is why the chosen pile never read as chosen. */
       .piles {
         display: flex;
         gap: 2px;
         width: fit-content;
-        margin: 12px auto 0;
-        padding: 3px;
+        margin: 14px auto 0;
+        padding: 2px;
         background: var(--sunk);
-        box-shadow: inset 0 0 0 1px var(--board);
         border-radius: 999px;
       }
       .pile {
@@ -361,10 +355,13 @@
       }
       .pile:active { transform: scale(0.96); }
       .pile .n { font: 600 11px/1 var(--mono); letter-spacing: 0.02em; color: var(--muted); }
+      /* The thumb. Two shadows, near and far, because one soft shadow reads as a blur
+         and one hard shadow reads as a border. This is the whole reason a 1.21:1 fill
+         looks lifted on iOS. */
       .pile[aria-selected="true"] {
-        background: var(--card);
+        background: var(--thumb);
         color: var(--ink);
-        box-shadow: 0 1px 3px var(--shadow);
+        box-shadow: 0 0 0 0.5px var(--shadow), 0 3px 8px var(--shadow-deep);
       }
       .pile[aria-selected="true"] .n { color: var(--ink); }
       .pile:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
@@ -374,15 +371,18 @@
       }
 
       /* --- search --------------------------------------------------------- */
+      /* A filled field, not an outlined one. iOS fields have no border: the fill IS
+         the affordance, which is also what docs/brand.md concluded for the landing's
+         secondary button when its 1.38:1 ring turned out to be a boundary you cannot see. */
       #find {
         width: calc(100% - 40px);
-        margin: 10px 20px 0;
-        padding: 7px 11px;
+        margin: 12px 20px 0;
+        padding: 9px 12px;
         background: var(--sunk);
         color: var(--ink);
-        border: 1px solid var(--board);
+        border: 0;
         border-radius: var(--r-md);
-        font: 13px/1.3 var(--ui);
+        font: 13.5px/1.3 var(--ui);
       }
       #find::placeholder { color: var(--muted); }
       #find:focus {
@@ -434,7 +434,7 @@
         background: var(--board);
         border-top: 1px solid var(--board-hi);
         border-bottom: 2px solid var(--board-lo);
-        box-shadow: 0 7px 14px -7px var(--shadow-deep);
+        box-shadow: 0 6px 12px -6px var(--shadow-deep);
       }
 
       .slot { min-width: 0; }
@@ -481,6 +481,11 @@
         flex-direction: column;
         padding: 11px;
         background: var(--binding);
+        /* So the stamp can size itself off the BOARD rather than off a fixed pixel value.
+           At 118px on the shelf the old fixed sizes were right; at 96px in the sheet the
+           same value broke "The Fountainhead" across a line as "Fountainhe / ad". A drawn
+           cover is the one cover we control, so it must never be the ugly one. */
+        container-type: inline-size;
       }
 
       /* The cloth: the book's own mark, repeated. One node, not six hundred.
@@ -517,11 +522,17 @@
         font-family: var(--serif);
         color: var(--stamp);
         letter-spacing: -0.015em;
-        overflow-wrap: anywhere;
+        /* break-word, not anywhere: break BETWEEN words first and only split one when it
+           genuinely cannot fit. `anywhere` breaks eagerly, which is what put "ad" on its
+           own line under "Fountainhe". */
+        overflow-wrap: break-word;
+        hyphens: auto;
       }
-      .stamp.large { font-size: 21px; line-height: 1.02; }
-      .stamp.medium { font-size: 15px; line-height: 1.08; }
-      .stamp.small { font-size: 11.5px; line-height: 1.14; }
+      /* The same three steps, expressed as a share of the board's own width so they hold
+         at 118px on the shelf and at 96px in the sheet. 21/118, 15/118, 11.5/118. */
+      .stamp.large { font-size: 17.8cqw; line-height: 1.02; }
+      .stamp.medium { font-size: 12.7cqw; line-height: 1.08; }
+      .stamp.small { font-size: 9.7cqw; line-height: 1.14; }
 
       .cap { margin-top: 9px; }
       .cap .t {
@@ -570,102 +581,149 @@
         padding: 20px;
       }
       #sheet[hidden] { display: none; }
+      /* A blurred scrim, which is the one other place this panel has a real layer: the
+         shelf is behind it and we own the shelf. Control Centre does exactly this. */
       #scrim {
         position: fixed;
         inset: 0;
         background: var(--scrim);
-        transition: opacity 180ms var(--ease-out);
+        backdrop-filter: blur(10px) saturate(140%);
+        -webkit-backdrop-filter: blur(10px) saturate(140%);
+        transition: opacity 220ms var(--ease-out);
       }
+      @media (prefers-reduced-transparency: reduce) {
+        #scrim { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      }
+
+      /* ONE COLUMN, ONE AXIS.
+
+         This card used to be a left-aligned two-column block (cover beside the title, with
+         the source link and the Buy pill hard left under it) sitting above two CENTRED
+         controls. Two axes in a 500px card, and the one control that earns money was the
+         stranded one. It also left about 120px of empty white to the right of the author,
+         because the column had a title, a name, one small pill and nothing else to hold.
+
+         Everything is on the page's axis now, in the order the card is actually used:
+         the book, then where it goes, then what you can do with it, then the way out.
+         No border: a card separates by its own fill plus a shadow, and on iOS a sheet has
+         no outline at all. */
       .card {
         position: relative;
         width: 100%;
-        padding: 20px;
-        background: var(--card);
-        border: 1px solid var(--board);
-        border-radius: var(--r-lg);
-        /* A modal is not anchored to a trigger, so it scales from its own centre. */
-        transform-origin: center;
-        transition: transform 180ms var(--ease-out), opacity 180ms var(--ease-out);
-      }
-      #sheet[data-in="false"] .card { transform: scale(0.96); opacity: 0; }
-      #sheet[data-in="false"] #scrim { opacity: 0; }
-
-      .card .top { display: flex; gap: 16px; }
-      .card .held { width: 96px; flex: none; }
-      .card .about { min-width: 0; padding-top: 2px; }
-      .card h3 { margin: 0; font: 700 17px/1.2 var(--serif); letter-spacing: -0.015em; }
-      .card .by { margin-top: 3px; font-size: 13px; color: var(--ink); }
-      .card .links {
+        padding: 26px 22px 20px;
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-        margin-top: 12px;
-        font-size: 11.5px;
-        font-weight: 600;
+        align-items: center;
+        text-align: center;
+        background: var(--card);
+        border-radius: var(--r-xl);
+        box-shadow: 0 1px 2px var(--shadow), 0 24px 48px -12px var(--shadow-deep);
+        /* A modal is not anchored to a trigger, so it scales from its own centre. */
+        transform-origin: center;
+        transition: transform 260ms var(--drawer), opacity 200ms var(--ease-out);
       }
-      .card .links a { text-decoration: none; }
-      .card .links a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-      .src { color: var(--muted); }
-      /* A pill, so it reads as an action rather than another link. */
-      .buy {
-        padding: 3px 9px;
+      /* Never from scale(0), and barely from 0.96: a sheet that jumps in reads as a
+         dialog. Travel plus a whisper of scale on the drawer curve reads as a sheet. */
+      #sheet[data-in="false"] .card { transform: translateY(10px) scale(0.985); opacity: 0; }
+      #sheet[data-in="false"] #scrim { opacity: 0; }
+
+      /* The cover, held. Bigger than it was, because it is now the top of the card rather
+         than a thumbnail beside the title, and it is the thing you recognise the book by. */
+      .card .held { width: 108px; margin-bottom: 14px; }
+      .card h3 {
+        margin: 0;
+        font: 700 19px/1.22 var(--serif);
+        letter-spacing: -0.015em;
+        text-wrap: balance;
+      }
+      .card .by { margin-top: 4px; font-size: 13.5px; color: var(--ink); }
+
+      /* THE PILE CONTROL IS THE PRIMARY INTERACTION, so it comes first and it is the one
+         thing given room. The same component as the masthead's, which is the point: one
+         idea to learn, and the control that says where a book is, is the one that moves it. */
+      .card .piles { margin-top: 20px; }
+
+      /* Buy is a real call to action now instead of a 3px pill hiding under an author's
+         name. Full width, on the axis, in jade so it never competes with the focus ring.
+         It stays SECOND, under the piles: filing the book is what the sheet is for, and a
+         disclosed affiliate link that outranks the product's own job would be a dark
+         pattern in a small way. */
+      .card .buy {
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+        padding: 12px 16px;
         border-radius: 999px;
         background: var(--buy-bg);
         color: var(--buy-ink);
+        font: 700 14px/1 var(--ui);
+        letter-spacing: -0.004em;
+        text-decoration: none;
         transition: transform 140ms var(--ease-out), background-color 140ms ease;
       }
-      .buy:active { transform: scale(0.95); }
-      /* A press on the button that leaves the extension. It had a hover and nothing for
-         a finger, which is the one state a finger never produces. */
-      .drop:active { transform: scale(0.97); }
+      .card .buy:active { transform: scale(0.97); }
+
+      /* The provenance line: the one thing no competitor stores, so it is text on the axis
+         rather than a link buried in a column. */
+      .card .src {
+        margin-top: 14px;
+        color: var(--muted);
+        font: 600 12.5px/1.4 var(--ui);
+        text-decoration: none;
+      }
+      .card .src:focus-visible,
+      .card .buy:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+
       @media (hover: hover) and (pointer: fine) {
-        .src:hover { color: var(--accent); text-decoration: underline; }
-        .buy:hover { background: var(--buy-bg-hi); }
+        .card .src:hover { color: var(--accent); text-decoration: underline; }
+        .card .buy:hover { background: var(--buy-bg-hi); }
       }
 
-      .card .piles { margin-top: 18px; }
+      /* Out of the flow, so a centred column stays centred on the card rather than on
+         whatever space is left beside a button. */
       .shut {
         position: absolute;
-        top: 9px;
-        right: 9px;
-        width: 27px;
-        height: 27px;
+        top: 12px;
+        right: 12px;
+        width: 28px;
+        height: 28px;
         display: grid;
         place-items: center;
         border: 0;
         border-radius: 999px;
-        background: transparent;
+        background: var(--sunk);
         color: var(--muted);
         font-size: 15px;
         line-height: 1;
         cursor: pointer;
-        transition: transform 140ms var(--ease-out), background-color 140ms ease;
+        transition: transform 140ms var(--ease-out), background-color 140ms ease,
+                    color 140ms ease;
       }
       .shut:active { transform: scale(0.92); }
-      .shut:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+      .shut:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; }
       @media (hover: hover) and (pointer: fine) {
-        .shut:hover { background: var(--board); color: var(--ink); }
+        .shut:hover { color: var(--ink); }
       }
 
-      /* Set apart, and not red. Red is for danger; removing a book you chose to save is
-         a decision. */
+      /* Set apart, and not red. Red is for danger; removing a book you chose to save is a
+         decision. A plain text button rather than an outlined one, which is what iOS uses
+         for a destructive-but-ordinary action at the foot of a sheet, and it stops the card
+         ending on two competing capsules. */
       .drop {
-        display: block;
-        margin: 16px auto 0;
-        padding: 7px 14px;
-        border: 1px solid var(--board);
-        border-radius: 999px;
-        background: transparent;
+        margin-top: 6px;
+        padding: 11px 14px;
+        border: 0;
+        background: none;
         color: var(--muted);
         cursor: pointer;
-        font: 600 12px/1 var(--ui);
-        transition: color 140ms ease, border-color 140ms ease;
+        font: 600 13px/1 var(--ui);
+        transition: color 140ms ease, transform 140ms var(--ease-out);
       }
-      .drop:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+      .drop:active { transform: scale(0.97); }
+      .drop:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; border-radius: 999px; }
       .drop:disabled { opacity: 0.5; cursor: default; }
       @media (hover: hover) and (pointer: fine) {
-        .drop:hover { color: var(--ink); border-color: var(--muted); }
+        .drop:hover { color: var(--ink); }
       }
 
       /* --- empty ---------------------------------------------------------- */

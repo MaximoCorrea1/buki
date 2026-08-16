@@ -84,13 +84,25 @@ const STYLE = `
    only by the screen: catching six books in a row should show six cards, and the stack
    that used to cap at three quietly dropped the rest of your afternoon. */
 .buki-tray {
-  /* docs/brand.md is the source, and these are the LANDING AT NIGHT, variable for
-     variable. A content script cannot share a stylesheet with the landing, so this is a
-     copy: change them there and here in the same commit.
-     Measured on --bg: --ink 16.79:1, --ink-2 13.98:1, --accent 7.14:1. All AAA, and the
-     old --dim was #b4a6c8, which carried every author line and every eyebrow. */
-  --bg: #080d20; --lift: #16204a; --ring: rgba(245,239,222,.16);
-  --ink: #f5efde; --ink-2: #d5dbf0; --accent: #7f9bea;
+  /* iOS NEUTRALS, 2026-08-16, so the tray, the popup and the setup page are one product.
+     These were the landing at night, navy for navy; the extension went to Apple's system
+     greys and a navy card floating over a neutral one would have read as two apps.
+
+     THE GROUND IS AN ELEVATED GREY, NOT TRUE BLACK, and that is the difference between
+     this surface and the popup. The popup owns its whole window so it can be #000; this
+     is a CARD that lands on somebody else's page, including a black one. Measured against
+     the five grounds docs/brand.md names: 17.01:1 on a white docs site, 16.10:1 on X in
+     daylight, 4.10:1 mid-photograph, and 1.23:1 on a black essay - where the ring and the
+     shadow are what carry it, which is why the ring got heavier here.
+
+     Measured on --bg: --ink 17.01:1, --ink-2 7.21:1, --jade 10.54:1. --accent is a FILL
+     and a RING in this stylesheet and never body text, so its bar is its label's: black
+     on it is 7.78:1, where the old #0a0f33 would be 6.30:1. */
+  --bg: #1c1c1e; --lift: #2c2c2e; --ring: rgba(255,255,255,.18);
+  --ink: #ffffff; --ink-2: #a8a8b0; --accent: #7f9bea;
+  /* The label on a filled accent. Named, because the literal it replaced was #0a0f33 and
+     it no longer clears the bar on this ground - exactly the retokening trap. */
+  --on-accent: #000000;
   /* The one status colour. It appears nowhere else in that role, which is how it earns
      being a colour rather than a word. */
   --jade: #6fe0b6; --jade-bg: #10352a;
@@ -105,7 +117,7 @@ const STYLE = `
   display: flex; flex-direction: column; gap: 10px;
   width: 340px; max-width: calc(100vw - 36px); max-height: calc(100vh - 36px);
   overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; scrollbar-color: #26304f transparent;
+  scrollbar-width: thin; scrollbar-color: #48484a transparent;
   /* The column is transparent to clicks so it never swallows one meant for the page.
      Each card opts back in. */
   pointer-events: none;
@@ -123,7 +135,8 @@ const STYLE = `
   border-radius: var(--r-lg);
   /* A ring rather than a border, so the card's height never shifts by a pixel, and a
      shadow deep enough to lift off a white page as well as a black one. */
-  box-shadow: inset 0 0 0 1px var(--ring), 0 18px 44px -16px rgba(0,0,0,.85);
+  box-shadow: inset 0 0 0 1px var(--ring), 0 2px 6px rgba(0,0,0,.28),
+    0 18px 44px -16px rgba(0,0,0,.85);
   font: 14px/1.45 var(--ui);
   opacity: 0; transform: translateY(10px) scale(.985);
   /* Transitions, not keyframes: catches arrive in bursts, and a keyframe restarts from
@@ -175,7 +188,7 @@ const STYLE = `
   /* Flat cloth, not a gradient. It is also the floor rather than a placeholder: a page's
      own CSP can refuse an OpenLibrary cover, and a broken-image glyph would read as the
      extension being broken rather than as a picture that did not load. */
-  background: var(--cloth, #26304f);
+  background: var(--cloth, #3a3a3c);
 }
 .buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .buki-who { flex: 1; min-width: 0; }
@@ -238,7 +251,7 @@ const STYLE = `
 .buki-intent:disabled { cursor: default; opacity: .5; }
 .buki-intent:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-intent:not(:disabled):hover { background: var(--accent); color: #0a0f33; }
+  .buki-intent:not(:disabled):hover { background: var(--accent); color: var(--on-accent); }
 }
 /* The pile it is already in. Stated rather than greyed out: the point is that clicking
    it would change nothing, which is information, not a disabled control. */

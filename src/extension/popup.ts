@@ -48,6 +48,19 @@ const log = createRecognitionLog({ storage, now: () => Date.now() });
 
 const SOURCE_LABEL = { tweet: 'the post that sold you', page: 'where you found it' } as const;
 
+/**
+ * The Buy button names where it goes.
+ *
+ * It used to say "Buy" on a 3px pill. As a full-width action it can afford the truth, and
+ * a control that says where it is about to send you is the honest form for a link that
+ * earns a commission. The disclosure in the footer stays either way; Web Store policy
+ * permits an affiliate link only when it is disclosed.
+ */
+const STORE_LABEL: Record<Store, string> = {
+  amazon: 'Buy on Amazon',
+  bookshop: 'Buy on Bookshop.org',
+};
+
 /** Four across at 560px is a 118px cover, the smallest a title reads at. */
 const PER_SHELF = 4;
 
@@ -305,38 +318,48 @@ function openSheet(saved: SavedBook): void {
   shut.setAttribute('aria-label', 'Close');
   shut.addEventListener('click', closeSheet);
 
-  const top = document.createElement('div');
-  top.className = 'top';
+  /**
+   * ONE COLUMN, in the order the card is actually used: the book, then where it goes,
+   * then what you can do with it, then the way out.
+   *
+   * It used to be a left-aligned two-column block above two centred controls, which put
+   * the Buy pill alone on the left while everything under it sat on the axis. Two axes in
+   * a 500px card, and the stranded one was the control that earns money.
+   */
   const art = document.createElement('div');
   art.className = 'held';
   art.appendChild(coverFor(saved, covers));
 
-  const meta = document.createElement('div');
-  meta.className = 'about';
   const title = document.createElement('h3');
   title.textContent = saved.book.title;
-  meta.appendChild(title);
+
+  const parts: Node[] = [shut, art, title];
+
   if (saved.book.author) {
     const by = document.createElement('div');
     by.className = 'by';
     by.textContent = saved.book.author;
-    meta.appendChild(by);
+    parts.push(by);
   }
 
-  const links = document.createElement('div');
-  links.className = 'links';
+  // Filing the book is what the sheet is FOR, so the pile control comes before Buy. An
+  // affiliate link outranking the product's own job would be a dark pattern in a small way.
+  parts.push(movePiles(saved));
+
+  // No buy link on a finished book. A record is not an inbox item.
+  const buy = saved.intent === 'read' ? null : buyLink(saved.book, store);
+  if (buy) parts.push(link(buy, STORE_LABEL[store], 'buy'));
+
+  // The post that sold you: the one thing no competitor stores, so it goes on the axis
+  // rather than into a column of links.
   // Only http(s): the source is browser-supplied today, but this keeps a future
   // paste/import path from putting a javascript: URL on the shelf.
   if (saved.source && /^https?:\/\//i.test(saved.source.url)) {
-    links.appendChild(link(saved.source.url, SOURCE_LABEL[saved.source.kind], 'src'));
+    parts.push(link(saved.source.url, SOURCE_LABEL[saved.source.kind], 'src'));
   }
-  // No buy link on a finished book. A record is not an inbox item.
-  const buy = saved.intent === 'read' ? null : buyLink(saved.book, store);
-  if (buy) links.appendChild(link(buy, 'Buy', 'buy'));
-  if (links.childElementCount) meta.appendChild(links);
 
-  top.append(art, meta);
-  card.append(shut, top, movePiles(saved), removeButton(saved));
+  parts.push(removeButton(saved));
+  card.append(...parts);
   sheet.replaceChildren(scrim, card);
   sheet.hidden = false;
   // Two frames: the element has to be laid out at its start state before the transition

@@ -65,18 +65,20 @@ export const MARK = {
   grounds: {
     'landing, day': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
     'landing, night': { ground: '#080d20', spine: '#f5efde', caught: '#1231a8' },
-    'extension paper': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
     /**
-     * Added 2026-08-16, when the popup and the setup page gained a second mood.
+     * The extension went to iOS system neutrals on 2026-08-16, so these two grounds moved
+     * and both were re-measured rather than adjusted by eye.
      *
-     * It is the same three values as `landing, night`, and that is the finding rather
-     * than a duplicate worth collapsing: the extension's night is the CATCH TRAY'S night,
-     * which the tray has carried since 2026-08-15, and the tray's night is the landing's.
-     * One room, reached from three directions. Listed separately because a ground is a
-     * surface rather than a palette, and the next surface to gain a mood must be measured
-     * rather than assumed to land on one of these.
+     * **The caught spine is now ONE value across both moods**, which it could never be
+     * before. It has to separate from its NEIGHBOURS, and the neighbours used to be navy
+     * on cream by day and cream on navy by night, so it had to invert with them. Against
+     * neutral spines it does not: `#2f7fd6` clears the bar from both sides, 4.60:1 against
+     * the day spine and 4.10:1 against the night one. That is why `popup.html` and
+     * `options.html` declare a single value where every other colour token is a
+     * `light-dark()` pair.
      */
-    'extension night': { ground: '#080d20', spine: '#f5efde', caught: '#1231a8' },
+    'extension paper': { ground: '#f2f2f7', spine: '#111114', caught: '#2f7fd6' },
+    'extension night': { ground: '#000000', spine: '#ffffff', caught: '#2f7fd6' },
     'icon plate': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
   },
 };

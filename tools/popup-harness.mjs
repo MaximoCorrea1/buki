@@ -69,11 +69,36 @@ const stub = `<script>
 </script>
 `;
 
+/**
+ * THE SHEET COULD NOT BE SEEN EITHER, which is worse than the shelf: it is built entirely
+ * by `openSheet` in response to a click, so opening the harness showed the shelf and
+ * nothing else. Load with `#sheet` and this picks the first book up for you.
+ *
+ * It polls rather than waiting on an event because `paint()` is called from an async
+ * `refresh()` with no signal when it lands, and adding one to popup.ts for a harness would
+ * be the harness leaking into the product.
+ */
+const openSheet = `<script>
+(function () {
+  if (location.hash !== '#sheet') return;
+  var tries = 0;
+  var t = setInterval(function () {
+    var pick = document.querySelector('.pick');
+    if (pick) { clearInterval(t); pick.click(); }
+    else if (++tries > 60) clearInterval(t);
+  }, 25);
+})();
+</script>
+`;
+
 const src = readFileSync('popup.html', 'utf8');
 const anchor = '<script src="dist/popup.js"></script>';
 if (!src.includes(anchor)) {
   console.error('popup.html no longer loads dist/popup.js; update this harness.');
   process.exit(1);
 }
-writeFileSync(OUT, src.replace(anchor, `${stub}    ${anchor}`));
-console.log(`${OUT} written, ${shelf.length} books. Screenshot it at 560px wide.`);
+writeFileSync(OUT, src.replace(anchor, `${stub}    ${anchor}\n    ${openSheet}`));
+console.log(
+  `${OUT} written, ${shelf.length} books. Screenshot it at 560px wide. ` +
+    `Add #sheet to the url to open a book's detail sheet.`,
+);

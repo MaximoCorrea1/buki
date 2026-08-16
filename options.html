@@ -42,14 +42,19 @@
            rather than gilt. */
         color-scheme: light dark;
 
-        --paper: light-dark(#fbf7ec, #080d20);
-        --board: light-dark(#e6dcc2, #262e4d);
-        --ink: light-dark(#0a0f33, #f5efde);
+        --paper: light-dark(#f2f2f7, #000000);
+        --card: light-dark(#ffffff, #1c1c1e);
+        --board: light-dark(#d8d8de, #38383a);
+        --hairline: light-dark(rgba(60, 60, 67, 0.29), rgba(84, 84, 88, 0.65));
+        --ink: light-dark(#111114, #ffffff);
         /* Darkened with popup.html on 2026-08-15, and the sentences that wore it went to
            --ink. It was #3d477a: AAA at 8.24:1 and still reading faded, because it carried
            the lede, the why block, every hint and the log status. See docs/brand.md,
            "Hierarchy is size and weight". 12.37:1 now. */
-        --muted: light-dark(#232c5c, #d5dbf0);
+        /* #484852 and #a8a8b0 clear 7:1 on their worst ground. Apple's own
+           secondaryLabel is #6C6C74, which is 4.30:1 on the light fill: too faded for a
+           repo whose founder flagged faded type twice. Apple's value loses. */
+        --muted: light-dark(#484852, #a8a8b0);
         /* The accent LIFTS at night rather than sinking, and the save button's label is
            var(--paper), so it flips with it and stays legible without a second rule:
            cream on cobalt is 9.66:1 by day, near-black on the light blue is 7.14:1 at
@@ -71,9 +76,11 @@
            light value on this ground measures 1.6:1 and cannot be used. The comment was
            right and the code did it anyway. */
         --mark-spine: var(--ink);
-        --mark-caught: light-dark(#2f7fd6, #1231a8);
+        /* One value in both moods now that the spines are neutral: 4.60:1 against the
+           day spine, 4.10:1 against the night one. See popup.html and tools/mark.mjs. */
+        --mark-caught: #2f7fd6;
 
-        --sunk: light-dark(#f3ecd9, #111832);
+        --sunk: light-dark(#e9e9ef, #151517);
 
         /* THREE LITERALS LIVED HERE UNTIL 2026-08-16, and each fails differently on a dark
            ground. ::selection was a pale blue: cream text on it is about 1.2:1, so
@@ -83,9 +90,10 @@
            does nothing at all. None of the three named a token, so relighting would not
            have moved one. src/shared/extensionTokens.test.ts fails the build on a literal,
            box-shadow included, because a shadow is a colour too. */
-        --select: light-dark(#d5ddf5, #1b2a5c);
+        --select: light-dark(#d6defa, #1f2a4a);
         --accent-hi: light-dark(#0e2989, #9db3f0);
-        --shadow-deep: light-dark(rgba(10, 15, 51, 0.5), rgba(0, 0, 0, 0.8));
+        --shadow: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.55));
+        --shadow-deep: light-dark(rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.8));
 
         /* Two radii and a capsule, matching popup.html. */
         --r-lg: 14px;
@@ -157,10 +165,11 @@
            way there is one radius, and it can change without a second edit here. */
         overflow: hidden;
         margin: 0 0 28px;
-        padding: 15px 17px 16px 24px;
-        background: var(--sunk);
-        border: 1px solid var(--board);
+        padding: 16px 18px 17px 26px;
+        background: var(--card);
+        border: 0;
         border-radius: var(--r-lg);
+        box-shadow: 0 1px 2px var(--shadow);
         font-size: 14px;
         line-height: 1.6;
       }
@@ -196,11 +205,11 @@
       }
       input, select {
         width: 100%;
-        padding: 10px 12px;
+        padding: 11px 13px;
         margin: 0 0 4px;
         background: var(--sunk);
         color: var(--ink);
-        border: 1px solid var(--board);
+        border: 0;
         border-radius: var(--r-md);
         font: 13.5px/1.4 var(--ui);
       }
@@ -257,8 +266,7 @@
          see. (The landing's own `.btn.ghost` ring is 1.38:1 and has the same problem; it
          is left alone here rather than changed as a side effect of extension work.) */
       .ghost {
-        background: transparent; color: var(--muted);
-        box-shadow: inset 0 0 0 1.5px var(--muted);
+        background: var(--sunk); color: var(--ink);
       }
       /* Gated, per the checklist in docs/brand.md. This page carried NO hover gate at all
          while the popup carried five: an ungated :hover sticks after a tap on a touch
@@ -267,9 +275,7 @@
         .save:not(:disabled):hover {
           background: var(--accent-hi); box-shadow: 0 3px 14px -4px var(--shadow-deep);
         }
-        .ghost:not(:disabled):hover {
-          color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink);
-        }
+        .ghost:not(:disabled):hover { background: var(--board); }
       }
 
       #status, #logStatus {
