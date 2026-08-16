@@ -18,7 +18,7 @@ and a regression.
 | Surface | Generation | State |
 | --- | --- | --- |
 | `docs/index.html` | **third** | Manrope, no serif, `light-dark()` palette, floating pill, capsule controls, a light/dark switch. **Complete top to bottom**: one centred axis, one surface language, two radii, every sentence at `--ink`, and four uses of the artwork — hero, the second plate as a full band, pricing, and the close. |
-| `popup.html`, `options.html` | **fourth** | **iOS system neutrals, 2026-08-16.** Apple's greys top to bottom, true black at night, materials on the masthead and the scrim, a segmented control with a thumb that lifts, and a detail sheet rebuilt as one centred column. Both moods from one `light-dark()` per token, with a switch. See *The iOS turn*. |
+| `popup.html`, `options.html` | **fourth** | **iOS system neutrals, 2026-08-16.** Apple's greys top to bottom, true black at night, materials in four places (masthead, scrim, control fills, the sheet card), a segmented control with a thumb that lifts, a detail sheet rebuilt as one centred column, and a window whose radius is on an element that can actually clip it. Both moods from one `light-dark()` per token, with a switch. See *The iOS turn*. |
 | `src/extension/toolbar.ts` | third | A book board on Chrome's own toolbar. Unaffected by the pass: it is a 16px bitmap, not a stylesheet. |
 | `src/extension/content.ts` | **fourth** | Neutrals brought in line 2026-08-16 so the extension is one product, and Manrope with them, inlined rather than exposed. **Still opaque**, which is now the only part of the iOS turn it does not take - see *The one surface with no ground of its own*. |
 | `icons/*.png`, `icons/icon.svg`, `icons/mark.svg`, `docs/icon*` | **third** | Regenerated 2026-08-15 from `tools/mark.mjs`, the single definition. `make-icons.mjs` had still been drawing the FIRST-generation mark, so the toolbar icon was a different logo from every other surface. |
@@ -160,14 +160,16 @@ segment measured **1.07:1** against its own track on the navy.
 | `--sunk` | `#e9e9ef` | `#151517` |
 | `--thumb` | `#ffffff` | `#48484a` |
 | `--ink` | `#111114` | `#ffffff` |
-| `--muted` | `#484852` | `#a8a8b0` |
+| `--muted` | `#43434d` | `#b5b5bd` |
 | `--accent` | `#1231a8` | `#7f9bea` |
 
 | Pair | Ratio |
 | --- | --- |
 | `--ink` on paper / card / sunk | 16.89 / 18.85 / 15.59 by day |
 | `--ink` on paper / card / sunk | 21.00 / 17.01 / 18.24 at night |
-| `--muted`, worst ground | 7.47 day, 7.21 night |
+| `--muted`, worst of FOUR grounds | 7.06 day, 7.03 night |
+| `--fill` composited | `#dedee4` day, `#262629` night |
+| `--thumb` off that track | 1.34:1 day, 1.65:1 night |
 | `--accent` on paper | 9.27 day, 7.78 night |
 
 #### Where this departs from Apple, and why
@@ -175,18 +177,38 @@ segment measured **1.07:1** against its own track on the navy.
 **`--muted` is darker than iOS's own.** Apple's secondaryLabel is `#6C6C74`, which measures
 **4.30:1** on the light fill. This document's rule is that a passing ratio is not the test
 and nothing may read faded, after *"WAY MORE CONTRAST! NO FADED FONTS!"* was raised twice.
-`#484852` and `#a8a8b0` clear 7:1 on their worst grounds. **Apple's value loses to the
+`#43434d` and `#b5b5bd` clear 7:1 on their worst grounds. **Apple's value loses to the
 house rule**, and that is the right way round.
+
+**Those two values moved on 2026-08-16, and the reason is the rule below them.** They were
+`#484852` and `#a8a8b0`, correct when muted text only ever landed on `--paper` and
+`--card`. Making the controls and the sheet translucent added two more grounds, and on the
+worst of each the old values measured **6.53:1** by day and **6.07:1** at night — under the
+bar. So the token was re-derived against **all four**, taking the lightest day value and the
+darkest night value that still clear 7, so it is no less muted than it has to be.
+**Transparency and contrast pull against each other; this is where they were reconciled**
+rather than one of them quietly winning.
 
 #### Transparency, and exactly where it is allowed
 
 The flat rule — no gradient, no colour over colour — was written for the room and still
 governs the *plank* and the *bindings*. The third generation's alpha licence was the
-landing's alone. This turn extends it to the popup and the setup page, and **only to the two
-places that have a real layer**:
+landing's alone. This turn extends it to the popup and the setup page, and **only to the
+places that have a real layer**. There were two; there are now four, added 2026-08-16 when
+Maximo asked for *"more ios style directives, transparancies, nice colors, mor contrasts"*:
 
 1. **The masthead**, because the shelf scrolls underneath it and we own the shelf.
 2. **The sheet's scrim**, which blurs the shelf behind the card the way Control Centre does.
+3. **A control's ground is a fill, not a colour.** `--fill` is Apple's `systemFill`:
+   `rgba(120,120,128,.16)` by day, `.32` at night. The segmented control's track, the
+   search field and the sheet's close button use it, so one token reads correctly on the
+   paper, on a card and on the sheet instead of being three tokens. It is also what makes
+   the thumb legible — **1.34:1** off its track by day, where the opaque `--sunk` gave 1.21.
+4. **The sheet card itself**, at 86%. iOS sheets are `thickMaterial`, and the thing behind
+   this one is the shelf you opened the book from, already blurred. 86% rather than the
+   masthead's 72% precisely because the masthead sits over a ground we chose and this sits
+   over a **book cover we did not**: measured at both extremes, `--ink` holds **13.61:1**
+   over the darkest cover and **14.32:1** over the lightest.
 
 Nowhere else, and **never on the catch tray**. That is the same line this document already
 draws one surface along: *glass where we own what is behind it, opaque where we do not.* A
@@ -194,6 +216,52 @@ translucent tray would have its contrast decided by a photograph nobody has seen
 
 **The grain went with the beige.** It was the tooth of a paper sheet and this surface has
 stopped pretending to be paper. It stays on the landing, which has not.
+
+#### The window's radius has to be on something that can clip
+
+Added 2026-08-16, after the popup shipped rounded corners twice and had square ones both
+times. `html` declares no background, so **`body`'s background propagates to the canvas** —
+and a canvas background is painted across the whole canvas and is **not clipped by anybody's
+`border-radius`**. The body's own background is then not painted at all. So a rounded `html`
+plus a rounded, painted `body` is two live declarations and no rounding.
+
+Measured as a corner **pixel** over a transparent backdrop, because a ratio would not have
+answered it:
+
+| | corner pixel at (2,2) |
+| --- | --- |
+| `html` + `body` rounded, `body` painted | `rgba(0,0,0,255)` — square |
+| root transparent, a wrapper painted and rounded | `rgba(0,0,0,0)` — round |
+
+**Making the root transparent is not enough on its own**: a transparent root propagates from
+the body in turn. The paint has to be on a **third element** — `popup.html`'s `.win`. The
+scrim restates the same radius, because it is the only other thing that paints edge to edge
+and without it opening a book squares the corners off again.
+
+`options.html` deliberately keeps none of this: it is a full browser tab, its canvas
+*should* cover the viewport, and it has no window to round.
+
+#### A card may not outgrow the tray it lives in
+
+Added 2026-08-16. The catch card's height is a function of how many books came back, and
+that cap went **8 → 20** the same day. A five-book card measures **680px**; the tray is
+`calc(100vh - 36px)`, which is **732px** on a laptop.
+
+Two things follow, and the second is what was reported as *"the toasts overlap one another,
+they are not stacking"*. A card taller than its tray cannot be read without scrolling past
+its own action. And **every neighbour a card displaces travels its full height** — a new
+card is laid out at its final position at once while the stack is held back by the FLIP
+transform, so the front of that travel draws the stack across the newcomer. Measured at
+**436px** of overlap for a five-book card, resolving by 25% of the 280ms travel.
+
+The bound goes on the **list**, never the card: `min(50vh, 380px)`, which is where three
+books stop scrolling. The head and *Save all* stay outside it, because a batch card whose
+batch button scrolls away has lost the reason it exists. **There is no fade at the scroll
+edge** — a mask over the last 18px of that list sits on top of that row's own
+now/next/someday buttons, and decoration that dims a control is not decoration.
+
+**The FLIP arithmetic was not the cause and was not changed.** An interrupted slot teleports
+**0.0px**; see `src/extension/slotTravel.ts`.
 
 #### The segmented control, drawn the way iOS draws one
 

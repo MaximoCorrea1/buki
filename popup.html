@@ -58,15 +58,15 @@
            WHERE THIS DEPARTS FROM APPLE, AND WHY. iOS secondaryLabel is #6C6C74, which
            measures 4.30:1 on the light fill. This repo's rule is that a passing ratio is
            not the test and nothing is allowed to read faded, after "WAY MORE CONTRAST! NO
-           FADED FONTS!" was raised twice. So --muted is #484852 and #a8a8b0, both of which
-           clear 7:1 on their worst ground. Apple's value loses to Maximo's rule.
+           FADED FONTS!" was raised twice. Apple's value loses to Maximo's rule.
 
            Measured with tools/mark.mjs's contrast(), never estimated:
              ink on paper/card/sunk    16.89 / 18.85 / 15.59  by day
                                        21.00 / 17.01 / 18.24  at night
-             muted, worst ground        7.47 day, 7.21 night
              accent on paper            9.27 day, 7.78 night
              paper on accent            9.27 / 7.78            (a filled button's label)
+           --muted has its own note below, because it now answers to four grounds rather
+           than two and the numbers in this block were true only of the first two.
 
            THE DYES DO NOT APPEAR HERE. A binding is a dye, not a status colour, and a book
            keeps its cloth in any light, so --stamp and --stamp-dim are one value in both
@@ -95,7 +95,19 @@
         --board-lo: light-dark(#c4c4cc, #232325);
 
         --ink: light-dark(#111114, #ffffff);
-        --muted: light-dark(#484852, #a8a8b0);
+        /* MEASURED AGAINST FOUR GROUNDS, NOT ONE, and it moved because two of them are new.
+           It was #484852/#a8a8b0, chosen when muted text only ever landed on --paper and
+           --card. The translucent control fill and the sheet's material below are two more
+           grounds, and on the worst of each this measured 6.53:1 by day and 6.07:1 at
+           night - under the 7:1 this panel holds itself to.
+
+           These are the LIGHTEST day value and the DARKEST night value that still clear 7
+           on all four, so the token is no less muted than it has to be:
+             day   #43434d   9.77 on card, 8.76 on paper, 7.30 on fill, 7.06 on sheet
+             night #b5b5bd  10.31 on paper, 8.35 on card, 7.41 on fill, 7.03 on sheet
+           Transparency and contrast pull against each other and this is where they were
+           reconciled, rather than one of them quietly winning. */
+        --muted: light-dark(#43434d, #b5b5bd);
 
         /* KEPT, deliberately. Cobalt is the mark's accent and the landing's, and it is the
            one hue this panel shares with the rest of the product. */
@@ -120,6 +132,34 @@
           color-mix(in srgb, #000000 62%, transparent)
         );
         --material-solid: light-dark(#f2f2f7, #000000);
+
+        /* A CONTROL'S GROUND IS A FILL, NOT A COLOUR. This is the piece of iOS the panel
+           was still faking: a segmented control's track, a search field and a small round
+           button are not grey rectangles, they are `systemFill` - a translucent neutral
+           that takes its cast from whatever it sits on, so the same token reads correctly
+           on the paper, on a card and on the sheet without being three tokens. Apple's own
+           alphas, and Apple's own #787880.
+
+           Composited, so these are grounds rather than guesses:
+             day   rgba(120,120,128,.16) on #f2f2f7 -> #dedee4
+             night rgba(120,120,128,.32) on #000000 -> #262629
+           The thumb reads off the track at 1.34:1 by day where an opaque --sunk gave 1.21,
+           and 1.65:1 at night. */
+        --fill: light-dark(rgba(120, 120, 128, 0.16), rgba(120, 120, 128, 0.32));
+        --fill-hi: light-dark(rgba(120, 120, 128, 0.26), rgba(120, 120, 128, 0.46));
+
+        /* THE SHEET IS A MATERIAL, because it is the one card in this product with a real,
+           blurred, KNOWN layer behind it: our own shelf under our own scrim. That is the
+           line docs/brand.md draws - glass where we own what is behind it - and it is why
+           the catch tray, which lands on somebody else's page, stays opaque forever.
+
+           86% is high for a material and that is the point: the worst thing behind it is a
+           book cover, so the floor was measured at both extremes rather than assumed.
+           Ink holds 13.61:1 over the darkest and 14.32:1 over the lightest. */
+        --sheet-material: light-dark(
+          color-mix(in srgb, #ffffff 86%, transparent),
+          color-mix(in srgb, #1c1c1e 86%, transparent)
+        );
         /* Apple's separator, at Apple's alpha, and drawn at 0.5px where the display can. */
         --hairline: light-dark(rgba(60, 60, 67, 0.29), rgba(84, 84, 88, 0.65));
 
@@ -203,29 +243,43 @@
       .count, .shelf-stat, time { font-variant-numeric: tabular-nums; }
 
 
-      /* ROUNDED, both of them. The radius has to be on <html> as well: the popup's
-         canvas is painted from the root element, so rounding only <body> leaves square
-         corners of root background showing through. `color-scheme` on :root is what makes
-         the corners outside the radius follow the mood rather than flashing white at
-         night. */
-      html { border-radius: var(--r-win); }
+      /* ROUNDED, AND NEITHER THE ROOT NOR THE BODY MAY BE WHAT PAINTS IT.
+         `html` declares no background, so the body's background PROPAGATES TO THE CANVAS
+         (CSS Backgrounds §2.11.2) - and the canvas background is painted across the whole
+         canvas and is not clipped by anybody's border-radius. The body's own background is
+         then not painted at all. So the previous version of this block carried the radius
+         twice, on <html> and on <body>, and both were inert.
+
+         Measured as a corner PIXEL rather than argued, headless over a transparent
+         backdrop so alpha answers outright:
+           html + body rounded, body painted   rgba(0,0,0,255) at (2,2)   SQUARE
+           root transparent, wrapper painted   rgba(0,0,0,0)   at (2,2)   ROUND
+         Making the root transparent is not enough on its own either: a transparent root
+         propagates from the body in turn. The paint has to be on a third element.
+
+         What shows OUTSIDE the radius is then Chrome's own popup base, which follows
+         `color-scheme` - dark at night, where --paper is #000 anyway. */
       body {
-        border-radius: var(--r-win);
         /* 560 gives a 118px cover four across, which is the smallest a title reads at.
            Chrome allows up to 800. One declaration, so this is a one-line change. */
         width: 560px;
-        max-height: 600px;
-        overflow-y: auto;
-        overflow-x: hidden;
         margin: 0;
-        padding: 0 0 10px;
-        background-color: var(--paper);
         color: var(--ink);
         font: 14px/1.45 var(--ui);
         -webkit-font-smoothing: antialiased;
       }
-      body::-webkit-scrollbar { width: 10px; }
-      body::-webkit-scrollbar-thumb {
+      .win {
+        border-radius: var(--r-win);
+        max-height: 600px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 0 0 10px;
+        background-color: var(--paper);
+        /* The scroller moved here with the paint, so the masthead's `position: sticky`
+           now resolves against this element. It has to be the same box for both. */
+      }
+      .win::-webkit-scrollbar { width: 10px; }
+      .win::-webkit-scrollbar-thumb {
         background: var(--board);
         border: 3px solid var(--paper);
         border-radius: 5px;
@@ -298,7 +352,7 @@
       header .theme:active { transform: scale(0.92); }
       header .theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
       @media (hover: hover) and (pointer: fine) {
-        header .theme:hover { background: var(--sunk); color: var(--ink); }
+        header .theme:hover { background: var(--fill-hi); color: var(--ink); }
       }
       header .theme svg {
         position: absolute; width: 15px; height: 15px;
@@ -347,7 +401,7 @@
         width: fit-content;
         margin: 14px auto 0;
         padding: 2px;
-        background: var(--sunk);
+        background: var(--fill);
         border-radius: 999px;
       }
       .pile {
@@ -407,7 +461,7 @@
         width: 100%;
         margin: 0;
         padding: 9px 12px 9px 34px;
-        background: var(--sunk);
+        background: var(--fill);
         color: var(--ink);
         border: 0;
         border-radius: var(--r-md);
@@ -617,13 +671,29 @@
       #scrim {
         position: fixed;
         inset: 0;
+        /* The scrim is the one element that paints edge to edge, so it is the one element
+           that has to restate the window's radius. The popup's viewport and the .win panel
+           are the same box, so inset:0 plus the same radius lines up exactly. Without it,
+           opening a book squares the corners off again for as long as the sheet is up. */
+        border-radius: var(--r-win);
         background: var(--scrim);
         backdrop-filter: blur(10px) saturate(140%);
         -webkit-backdrop-filter: blur(10px) saturate(140%);
         transition: opacity 220ms var(--ease-out);
       }
+      /* Both fallbacks the masthead already has, for the same reason: a material is an
+         enhancement, and without the blur it has to be an opaque fill or a book cover
+         shows through the title of the book it is about. */
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .card { background: var(--card); }
+      }
       @media (prefers-reduced-transparency: reduce) {
         #scrim { backdrop-filter: none; -webkit-backdrop-filter: none; }
+        .card {
+          background: var(--card);
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+        }
       }
 
       /* ONE COLUMN, ONE AXIS.
@@ -646,7 +716,17 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
-        background: var(--card);
+        /* A MATERIAL, not a fill, and this is the third and last place in the panel that
+           earns one. iOS sheets are `thickMaterial` because the thing behind a sheet is
+           still there and still yours - here that is the shelf you opened the book from,
+           already blurred by the scrim. The card picking up a trace of its own covers is
+           the whole reason to do it.
+           86% rather than the masthead's 72%, because the masthead sits over a ground we
+           chose and this sits over a book cover we did not. Measured at both extremes:
+           ink holds 13.61:1 over the darkest cover and 14.32:1 over the lightest. */
+        background: var(--sheet-material);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
         border-radius: var(--r-xl);
         box-shadow: 0 1px 2px var(--shadow), 0 24px 48px -12px var(--shadow-deep);
         /* A modal is not anchored to a trigger, so it scales from its own centre. */
@@ -722,7 +802,7 @@
         place-items: center;
         border: 0;
         border-radius: 999px;
-        background: var(--sunk);
+        background: var(--fill);
         color: var(--muted);
         font-size: 15px;
         line-height: 1;
@@ -796,6 +876,11 @@
     </style>
   </head>
   <body>
+    <!-- THE WINDOW. It exists so the popup's corners can be round: a background on <body>
+         propagates to the canvas, which is painted square and clips to nothing. Everything
+         that scrolls lives inside it; the sheet is a sibling, because it covers the whole
+         popup rather than a scrolled position within it. -->
+    <div class="win">
     <header>
       <div class="brand">
         <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true">
@@ -839,11 +924,12 @@
       </button>
     </header>
     <main id="app"></main>
-    <div id="sheet" hidden data-in="false"></div>
     <footer id="disclosure" hidden>
       Buy links are affiliate links. Buki may earn a small commission, at no cost to
       you. Nothing else about your shelf leaves this computer.
     </footer>
+    </div>
+    <div id="sheet" hidden data-in="false"></div>
     <script src="dist/popup.js"></script>
   </body>
 </html>

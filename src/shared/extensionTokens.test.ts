@@ -168,6 +168,57 @@ describe('the extension takes its colours from tokens', () => {
     });
   }
 
+  /**
+   * THE WINDOW'S RADIUS HAS TO BE ON SOMETHING THAT CAN ACTUALLY CLIP.
+   *
+   * `html` declares no background, so per CSS Backgrounds §2.11.2 the `body`'s background
+   * PROPAGATES TO THE CANVAS - and a canvas background is painted across the whole canvas
+   * and is not clipped by anybody's `border-radius`. The body's own background is then not
+   * painted at all. So a rounded `html` plus a rounded, painted `body` produces two live
+   * declarations and square corners, which is exactly what shipped.
+   *
+   * Measured 2026-08-16 as a corner PIXEL rather than argued, headless over a transparent
+   * backdrop so alpha answers outright:
+   *
+   *   html + body rounded, body painted   rgba(0,0,0,255) at (2,2)   square
+   *   root transparent, wrapper painted   rgba(0,0,0,0)   at (2,2)   round
+   *
+   * Neither the root NOR the body may carry the paint, because a transparent root
+   * propagates from the body in turn. It has to be a third element inside.
+   */
+  const ROOTS = new Set(['html', 'body', 'html, body', 'body, html']);
+  const PAINTS = /(^|;)\s*background(-color)?\s*:/;
+
+  /**
+   * Only the popup has corners. `options.html` opens as a full browser tab, where the
+   * canvas covering the viewport is exactly what is wanted and there is no window to
+   * round - so painting its body is right, and this rule would be wrong there.
+   */
+  it('popup.html paints its window from an element the radius can clip', () => {
+    const rules = chromeRules(popup);
+    expect(rules.length).toBeGreaterThan(15);
+
+    const painted = rules.filter(({ selector, body }) => ROOTS.has(selector) && PAINTS.test(body));
+    expect(
+      painted.map((r) => r.selector),
+      'a background here propagates to the canvas, which no radius clips',
+    ).toEqual([]);
+
+    // And the radius has to land on something that does paint, or it clips nothing.
+    const carrier = rules.find(
+      ({ selector, body }) =>
+        !ROOTS.has(selector) && /border-radius:\s*var\(--r-win\)/.test(body) && PAINTS.test(body),
+    );
+    expect(carrier, 'no element both paints the window and rounds it').toBeDefined();
+  });
+
+  it('options.html is a full tab and deliberately keeps none of that', () => {
+    // Guards the carve-out above from becoming a silent exemption: if the setup page ever
+    // grows a window radius, this fails and the rule has to be extended rather than
+    // quietly not applying.
+    expect(options).not.toMatch(/border-radius:\s*var\(--r-win\)/);
+  });
+
   it('exempts only the surfaces that draw a book rather than the panel', () => {
     // If a name in the allowlist stops existing, the exemption is silently protecting
     // nothing, and the next literal to appear under that name goes unnoticed.

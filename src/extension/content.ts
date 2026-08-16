@@ -328,6 +328,37 @@ const STYLE = `
    The hairline between rows is what makes four decisions read as four rather than as one
    long form: the card is a short list, and a list needs its items separated or it is a
    paragraph. */
+/* THE LIST IS BOUNDED AND THE CARD IS NOT.
+
+   A card's height is a function of how many books came back, and that cap went 8 -> 20 on
+   2026-08-16 so a post listing twenty books stops becoming seven. Nothing in that change
+   is wrong; its consequence lands here, on the one surface with no bound of its own.
+   Measured the same day: a FIVE-book card is 680px, in a tray that is 732px on a laptop.
+
+   Two things follow, and the second is what got reported as toasts overlapping. A card
+   taller than the tray cannot be read without scrolling past its own action. And every
+   neighbour a card displaces travels its FULL height - a new card is laid out at its final
+   position at once while the stack is held back by the FLIP transform, so the front of
+   that travel draws the stack across the newcomer. 436px of overlap for a five-book card,
+   gone by 25% of the 280ms travel. At three books that was a couple of hundred pixels and
+   a few frames, which is why it was invisible until this week.
+
+   The ceiling is on the LIST rather than the card, so the head and "Save all" stay put:
+   a batch card whose batch button scrolls away has lost the reason it exists.
+
+   380px is where three books stop scrolling, which is what a photographed stack usually
+   is; 50vh is what keeps the card from filling a short window. There is NO fade at the
+   scroll edge, and that is deliberate - a mask over the last 18px of this list sits on
+   top of that row's own now/next/someday buttons, and decoration that dims a control is
+   not decoration. A part-visible row is its own affordance, and the scrollbar is thin
+   rather than hidden for the same reason. */
+.buki-books {
+  max-height: min(50vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-2) transparent;
+}
 .buki-find { display: flex; gap: 12px; align-items: flex-start; margin-top: 13px; }
 .buki-find + .buki-find { padding-top: 13px; border-top: 1px solid var(--ring); }
 /* Per book, not per card: a photographed stack can be half yours already. */
@@ -780,7 +811,14 @@ function foundBody(card: Card): Node[] {
   }
   head.append(who, closeButton(card));
 
-  const body: Node[] = [head, ...card.candidates.map((c, i) => bookRow(card, c, i))];
+  // The rows go in a bounded scroller so the card cannot outgrow the tray it lives in.
+  // The head and the batch button stay outside it: a card whose "Save all" scrolls away
+  // has lost the reason a batch card exists.
+  const books = document.createElement('div');
+  books.className = 'buki-books';
+  books.append(...card.candidates.map((c, i) => bookRow(card, c, i)));
+
+  const body: Node[] = [head, books];
   // Only worth offering when there is a batch. On one book it would be a second button
   // saying what the three above it already say.
   if (card.candidates.length > 1) body.push(saveAllButton(card));

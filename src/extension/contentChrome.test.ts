@@ -87,6 +87,48 @@ describe('the catch tray, which lives on a page we do not control', () => {
     expect(ungated).toEqual([]);
   });
 
+  /**
+   * A CARD MUST NOT BE ABLE TO OUTGROW THE TRAY IT LIVES IN.
+   *
+   * The card's height is a function of how many books the recognizer returned, and that
+   * cap went 8 → 20 on 2026-08-16 so a post listing twenty books stops becoming seven.
+   * Nothing about that change is wrong. Its consequence lands here, on the one surface
+   * with no bound of its own.
+   *
+   * Rendered and measured the same day: a five-book card is 680px. The tray is
+   * `calc(100vh - 36px)`, which is 732px on a laptop. So one card already fills the column
+   * at five books and cannot fit at twenty.
+   *
+   * Two things follow, and the second is the reported bug. A card taller than the tray
+   * cannot be read without scrolling past its own action. And every neighbour a card
+   * displaces travels its FULL HEIGHT: a new card is laid out at its final position at
+   * once while the stack is held back by the FLIP transform, so the front of that travel
+   * draws the stack across the newcomer. Measured at 436px of overlap for a five-book
+   * card, resolving by 25% of the 280ms travel. That transient was a few frames and a
+   * couple of hundred pixels when a card held three books.
+   *
+   * The bound has to be on the LIST, not the card: pinning the head and the action is what
+   * keeps "Save all" reachable, which is the whole reason a batch card exists.
+   */
+  it('bounds the one part of a card whose height is a list', () => {
+    const list = rules().find((r) =>
+      r.selector.split(',').some((s) => s.trim() === '.buki-books'),
+    );
+    expect(list, '.buki-books is not styled: a card can still grow without limit').toBeDefined();
+    expect(list?.body, '.buki-books needs a ceiling').toMatch(/max-height:/);
+    expect(list?.body, '.buki-books needs to scroll once it reaches it').toMatch(
+      /overflow-y:\s*auto/,
+    );
+  });
+
+  it('puts the book rows inside that bounded list rather than straight onto the card', () => {
+    // Read as text, like everything else here: there is no DOM in this runner and
+    // content.ts registers chrome.runtime.onMessage at module scope, so it cannot be
+    // imported at all. This asserts the builder names the container the rule above bounds
+    // — it cannot prove the rows end up inside it. tools/tray-harness.mjs is for looking.
+    expect(content).toContain(`'buki-books'`);
+  });
+
   it('answers a press on every control, since a finger never hovers', () => {
     const CONTROLS = ['.buki-btn', '.buki-x', '.buki-intent', '.buki-act'];
     for (const control of CONTROLS) {

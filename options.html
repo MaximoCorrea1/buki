@@ -51,10 +51,15 @@
            --ink. It was #3d477a: AAA at 8.24:1 and still reading faded, because it carried
            the lede, the why block, every hint and the log status. See docs/brand.md,
            "Hierarchy is size and weight". 12.37:1 now. */
-        /* #484852 and #a8a8b0 clear 7:1 on their worst ground. Apple's own
-           secondaryLabel is #6C6C74, which is 4.30:1 on the light fill: too faded for a
-           repo whose founder flagged faded type twice. Apple's value loses. */
-        --muted: light-dark(#484852, #a8a8b0);
+        /* Apple's own secondaryLabel is #6C6C74, which is 4.30:1 on the light fill: too
+           faded for a repo whose founder flagged faded type twice. Apple's value loses.
+
+           These two values are the POPUP's, and they are here so the two pages do not
+           drift: popup.html re-derived them on 2026-08-16 against four grounds instead of
+           two, when its controls became translucent. The reasoning lives there, beside the
+           token. On this page's two grounds they measure 8.76:1 and 10.31:1, which is
+           strictly better than what they replaced. */
+        --muted: light-dark(#43434d, #b5b5bd);
         /* The accent LIFTS at night rather than sinking, and the save button's label is
            var(--paper), so it flips with it and stays legible without a second rule:
            cream on cobalt is 9.66:1 by day, near-black on the light blue is 7.14:1 at

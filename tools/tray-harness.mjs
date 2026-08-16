@@ -68,6 +68,13 @@ const row = (title, author, cloth, shelved) => `
         </div>
       </div>`;
 
+/**
+ * The bounded list the rows live in. `foundBody` wraps them in this, so the fixture has to
+ * as well or the harness draws a card that cannot exist - which is exactly how it missed a
+ * five-book card being 680px in a 732px tray.
+ */
+const books = (...rows) => `<div class="buki-books">${rows.join('')}</div>`;
+
 /** One card per state the tray can actually be in. */
 const TRAY = [
   // A photograph holding several books: the case the batch button exists for.
@@ -78,11 +85,31 @@ const TRAY = [
           <div class="buki-count">3 books in this picture</div>
         </div>${closeBtn}
       </div>
-      ${row('Ficciones', 'Jorge Luis Borges', CLOTH.coral)}
-      ${row('The Left Hand of Darkness', 'Ursula K. Le Guin', CLOTH.peri, 'next')}
-      ${row('Pale Fire', 'Vladimir Nabokov', CLOTH.plum)}
-      <button class="buki-act buki-wide">Save all to Someday</button>`,
+      ${books(
+        row('Ficciones', 'Jorge Luis Borges', CLOTH.coral),
+        row('The Left Hand of Darkness', 'Ursula K. Le Guin', CLOTH.peri, 'next'),
+        row('Pale Fire', 'Vladimir Nabokov', CLOTH.plum),
+      )}
+      <button class="buki-act">Save all to Someday</button>`,
     CLOTH.coral,
+  ),
+  // TWENTY, which is what MAX_BOOKS allows since 2026-08-16 and what the old fixture could
+  // not show. This is the card the height bound exists for: without it, 2,600px in a tray
+  // that is 732px on a laptop.
+  card(
+    `<div class="buki-head">
+        <div class="buki-who">
+          <div class="buki-eyebrow">read from the post</div>
+          <div class="buki-count">20 books in this picture</div>
+        </div>${closeBtn}
+      </div>
+      ${books(
+        ...Array.from({ length: 20 }, (_, i) =>
+          row(`Book number ${i + 1}`, 'A. N. Author', Object.values(CLOTH)[i % 4]),
+        ),
+      )}
+      <button class="buki-act">Save all to Someday</button>`,
+    CLOTH.peri,
   ),
   // One book, already on the shelf: the "it saved a book I already saved" answer.
   card(

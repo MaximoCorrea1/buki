@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **375 across 40 files**, all passing |
+| Tests | **379 across 40 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -110,13 +110,23 @@ unblocks.
       - **Catch two books in quick succession**, so the second card arrives while the
         first is still settling. No card may overlap another. The travel is 280ms and the
         interrupting reflows fire at 115ms and 200ms, so this reproduces easily.
-      - **The popup's rounded corners.** No harness can show this: the corners belong to
-        the popup window, and every harness renders in an ordinary page. Check both moods
-        — a white corner at night would mean the root's `color-scheme` is not reaching the
-        canvas.
+      - **The popup's rounded corners.** Rewritten 2026-08-16 (second pass), because the
+        first version of this check described the wrong mechanism. The radius is now on
+        `.win`, an element inside `<body>`, since a background on the root or the body
+        propagates to the canvas and no radius clips a canvas. Corner roundness is now
+        proven by a corner pixel in headless. **What is still unproven is what Chrome
+        paints OUTSIDE the radius in a real popup bubble** — the document canvas is
+        deliberately transparent now, so that area is Chrome's own base colour, which
+        should follow `color-scheme`. Check both moods. A white corner at night is the
+        failure to look for.
       - **The tray's typeface on a strict-CSP page** (GitHub, or a bank). The font is a
         `data:` URL registered with `FontFace`, and a page's own `font-src` may refuse it.
         Refusal is meant to fall through to the system stack, not to break the card.
+      - **A catch holding TWENTY books**, on a laptop. Added 2026-08-16 (second pass). The
+        card's book list is now bounded at `min(50vh, 380px)` and scrolls inside the card;
+        the head and *Save all* must stay put, and the card must never be taller than the
+        tray. Three books must NOT scroll. `node tools/tray-harness.mjs` renders both, but
+        only a real page can show it landing on somebody else's scroll.
 
       **A ninth, added 2026-08-16 with the extension's second mood.** On a machine set to
       dark, open the popup: it should be dark. Press the switch in the **top left**. It
@@ -754,6 +764,29 @@ That is the rest of item 17.
   was not a rare race: the interrupting reflows fire at 115ms and 200ms inside a 280ms
   travel, so it happened on the normal path. **When you re-enter an animation, carry the
   offset it is already carrying.**
+- **A background on `html` or `body` propagates to the CANVAS, and a canvas background is
+  not clipped by anybody's `border-radius`.** The popup shipped a rounded `<html>` and a
+  rounded, painted `<body>`, and had square corners both times — two live declarations,
+  neither doing anything. Making the root transparent does not fix it either, because a
+  transparent root propagates from the body in turn. **The paint has to be on a third
+  element.** Verified as a corner PIXEL over a transparent backdrop: `rgba(0,0,0,255)`
+  before, `rgba(0,0,0,0)` after.
+- **Raising a cap changes the GEOMETRY of everything downstream of it, not just the count.**
+  `MAX_BOOKS` 8 → 20 was right and fixed a real loss. It also made a catch card 680px in a
+  732px tray, and since a new card's neighbours travel its full height, a transient overlap
+  that was a couple of hundred pixels became 436px. **An element whose height is driven by a
+  list needs a bound that does not depend on the list.**
+- **A probe that has never been shown to detect the thing it is looking for is not
+  evidence.** Five instruments lied in one session, four of them built that session: a
+  harness that renders the stylesheet and never runs the script; a rAF probe under
+  `--virtual-time-budget` (rAF does not fire); the same probe with rAF shimmed to a timer
+  (with `--dump-dom` no frames are produced, so CSS transitions never advance at all); a
+  FLIP invariant measured in viewport coordinates across a deliberate scroll; and the same
+  one reading at t=0 of a travel it had armed and never advanced. **Earn a probe with an
+  A/B where the control is expected to differ**, then trust it.
+- **Park the clock instead of waiting for it.** `animation.currentTime` is honoured by style
+  recalc without a frame being drawn, which is the only way to measure a transition-timing
+  bug in headless. Nothing about `--virtual-time-budget` makes transitions advance.
 - **A decision's justification can expire without the decision looking stale.**
   `coverSources` put the photograph ahead of the catalogue's art because OpenLibrary's
   relevance index returned the wrong edition — a real, measured problem, fixed months
