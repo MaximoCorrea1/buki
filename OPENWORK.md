@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **512 across 52 files**, all passing |
+| Tests | **515 across 52 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -17,7 +17,9 @@
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
 three times now, so the probe is given beside it. Run the probe; do not trust the figure.
-The test count has drifted the same way: it read 345 while the suite was at 375.)*
+The test count has drifted the same way: it read 345 while the suite was at 375, and on
+2026-08-17 this header was written as 512 and three tests were added before the commit
+landed. **Both numbers here were corrected by the verification gate, not by noticing.**)*
 
 ## 0. Which doc owns which fact
 

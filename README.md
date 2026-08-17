@@ -9,7 +9,7 @@ that sold you on it, and files it under **Now / Next / Someday**. Mark a book fi
 you're done, and every saved book carries a quiet Buy link.
 
 > **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
-> **68 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-17), carrying
+> **69 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-17), carrying
 > catch-anywhere, shelf export, a landing on the third design generation and an extension
 > on the fourth, **the catcher** (the blue ball with eyes, which replaced the three-spine
 > mark on 2026-08-17), and the whole paid tier. **This file describes

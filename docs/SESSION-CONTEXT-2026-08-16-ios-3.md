@@ -141,7 +141,7 @@ Four turns, in Maximo's words:
 
 | Measurement | Probe | Value |
 | --- | --- | --- |
-| Test suite | `./node_modules/.bin/vitest run` | **512 across 52 files** |
+| Test suite | `./node_modules/.bin/vitest run` | **515 across 52 files** |
 | Typecheck | `node node_modules/typescript/bin/tsc --noEmit` | exit 0, now covering `api/` |
 | Build | `node build.mjs` | clean, 5 bundles |
 | Branch | `git rev-list --count main..buki-pro` | **68** ahead, not merged |
