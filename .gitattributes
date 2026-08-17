@@ -1,3 +1,17 @@
 # Keep line endings stable across machines (developed on Windows).
 * text=auto eol=lf
+
+# BINARY, AND THE LIST HAS TO BE COMPLETE. `* text=auto` makes git guess, and a guess of
+# "text" on an image means CRLF normalisation runs through the bytes. Only *.png was
+# listed, so the four .jfif source photographs were tracked as text and one careless
+# normalisation pass would have corrupted them silently - checked on 2026-08-17 and they
+# survived, but only because they were restored before the commit.
 *.png binary
+*.jpg binary
+*.jpeg binary
+*.jfif binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.woff2 binary
+*.pdf binary
