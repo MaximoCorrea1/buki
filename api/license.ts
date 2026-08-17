@@ -17,6 +17,9 @@ export default async function handler(request: Request): Promise<Response> {
     secret: process.env['BUKI_TOKEN_SECRET'] ?? '',
     polarToken: process.env['POLAR_ACCESS_TOKEN'] ?? '',
     organizationId: process.env['POLAR_ORGANIZATION_ID'] ?? '',
+    // Same variable `/api/vision` uses. Without it this endpoint answers anybody, which
+    // made it an open licence-key oracle standing on POLAR_ACCESS_TOKEN.
+    extensionId: process.env['BUKI_EXTENSION_ID'] ?? '',
     activateUrl: POLAR_ACTIVATE,
     fetch: (url, init) => fetch(url, init),
     now: () => Date.now(),

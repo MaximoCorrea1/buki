@@ -297,7 +297,7 @@ sixth was found on 2026-08-17 by reading `api/vision.ts` rather than the list.
 | --- | --- | --- |
 | `GEMINI_API_KEY` | **Yes.** `/api/vision` returns **500** without it | below |
 | `BUKI_TOKEN_SECRET` | **Yes.** 500 without it | `openssl rand -base64 32`, and nowhere else |
-| `BUKI_EXTENSION_ID` | **Yes.** 500 without it | `chrome://extensions` with the extension loaded unpacked |
+| `BUKI_EXTENSION_ID` | **Yes. BOTH endpoints 500 without it** | `chrome://extensions` with the extension loaded unpacked |
 | `POLAR_ACCESS_TOKEN` | Yes, for `/api/license` | §6 |
 | `POLAR_ORGANIZATION_ID` | Yes, for `/api/license` | §1, the UUID |
 | `BUKI_TRIAL_CLOSED` | **No. Leave it unset.** | the brake, below |
@@ -330,6 +330,49 @@ same as unset.
 > refused **every** request, and a paying subscriber was told *"The free trial is closed
 > just now"*. Fixed, with a test that a licensed request still returns 200 while the trial
 > is closed. It is safe to use now; it was not when it was undocumented.
+
+---
+
+### 8.1 What actually stops abuse, and what only looks like it does
+
+Maximo, 2026-08-17: *"the free trial is counted on localstorage? easily tampered"*. Yes,
+and the honest answer has three parts.
+
+**The trial count is `chrome.storage.local` and anybody can reset it.** That is deliberate
+and `trial.ts` says so: defending it needs identity, which needs accounts, which needs a
+database, to protect a resource worth a fraction of a cent. **The stronger argument is the
+escape hatch**: anyone willing to edit extension storage is exactly the person who could
+paste their own Gemini key instead, which the product gives away free, forever, unlimited.
+Cheating buys them nothing they cannot have by asking.
+
+**The real exposure is not the counter, it is the endpoint.** Both APIs identify the caller
+by `Origin: chrome-extension://<id>`, the extension id is public the moment the item is
+listed, and an Origin header is trivially set by anything that is not a browser. So the
+trial path is reachable by `curl`. `policy.ts` has always said this in as many words.
+
+**`/api/license` was worse until 2026-08-17: it had no origin check at all**, so it was an
+open licence-key oracle standing on `POLAR_ACCESS_TOKEN`. Anyone could POST a candidate key
+and read from the status whether it was real. And because a successful activation consumes
+one of that key's five slots, a leaked key plus five requests locks the person who paid out
+of their own licence. It now runs the same check as `/api/vision`, before the body is read
+and long before Polar is called, so a refusal costs neither quota nor a slot.
+
+**None of that is a spend cap, and a spend cap is the only control that bounds the loss.**
+
+- [ ] **Set a hard budget cap and an alert on the Gemini key**, in Google Cloud billing,
+      on the same visit you create the key. This is the one control that does not depend on
+      guessing an attacker's cleverness.
+- [ ] **Know the real per-catch cost before trusting the risk assessment.** `policy.ts`
+      says a catch costs about **$0.00011**, and that number appears exactly once in this
+      repo: in the comment that uses it to justify the design. **No probe, no source.** It
+      may well be right; it has never been measured, and this repo has a documented habit
+      of deriving conclusions from numbers nobody rendered.
+- [ ] `BUKI_TRIAL_CLOSED=1` is the emergency stop, and since 2026-08-17 it stops only the
+      trial rather than everybody.
+
+The in-memory per-IP cap in `api/vision.ts` is **not** a fourth control worth counting. Edge
+functions are many and short-lived, so each instance keeps its own `Map` and the cap leaks
+by design; its own comment calls it "a brake on a runaway, not an accounting system".
 
 ---
 

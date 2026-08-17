@@ -265,6 +265,13 @@ better, because the licence lives in `proState`'s own storage key instead of ins
 
 ## Open, 2026-08-17
 
+- [!] **A live Polar org token was pasted into chat, 2026-08-17.** `polar_oat_…` with
+      licence-key READ AND WRITE scope. Told Maximo to revoke and reissue immediately; it
+      was never written to any file in this repo. Secrets go straight into Vercel, never
+      into a message.
+- [ ] **Set a hard spend cap and an alert on the Gemini key.** Maximo only. The only
+      control that bounds what abuse can cost, because both APIs identify the caller by an
+      `Origin` header that anything non-browser can set. `OPENWORK.md` item 26.
 - [?] **Is the secondary button filled enough to look filled?** `.ghost` is `--sunk` on
       `--paper`: **1.08:1 by day, 1.15:1 at night**, on four controls. Not a rule violation
       (`brand.md` allows a filled surface instead of a 3:1 edge, and Apple's own secondary

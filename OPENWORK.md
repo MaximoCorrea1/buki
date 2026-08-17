@@ -4,14 +4,14 @@
 
 | | |
 | --- | --- |
-| Tests | **530 across 53 files**, all passing |
+| Tests | **533 across 53 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **75** as this line was written, so the commit carrying it makes 76 |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **76** as this line was written, so the commit carrying it makes 77 |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -668,6 +668,16 @@ needs a credential or a dashboard is the shell around it.
       `src/extension/contentChrome.test.ts` guards what a screenshot cannot: the rule is
       about every page, not the one you happened to look at.
 
+- [ ] **26. Set a hard spend cap and an alert on the Gemini key.** Maximo only, in Google
+      Cloud billing, and it is the **only** control that bounds what abuse can cost. Both
+      APIs identify the caller by an `Origin` header, which anything that is not a browser
+      can set, and the extension id is public the moment the item is listed. Everything
+      else raises the bar; a spend cap is the floor. `docs/superpowers/polar-setup.md` §8.1.
+
+      **While there, check the real per-catch cost.** `policy.ts` rests the trial threat
+      model on "about $0.00011" and that number appears once in this repo, in the comment
+      that uses it. Never measured.
+
 - [ ] **25. Is the secondary button filled enough to look filled? MEASURED 2026-08-17, not
       changed.** `.ghost` on the setup page is `--sunk` on `--paper`: **1.08:1 by day,
       1.15:1 at night.** Four controls wear it (*Reset provider*, *Export the shelf*,
@@ -1001,6 +1011,21 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   list** ("a comment can be right while the code beneath it is wrong"), and the pair of them
   is the real rule: the comment and the code are two artefacts, and nothing checks that they
   agree.
+- **TWO ENDPOINTS, ONE THREAT MODEL, AND ONLY ONE OF THEM IMPLEMENTED IT.** `/api/vision`
+  has always checked `Origin: chrome-extension://<id>` and documented, correctly, that the
+  header is forgeable and is therefore one of three defences. **`/api/license` had no check
+  at all**, which made it an open licence-key oracle standing on `POLAR_ACCESS_TOKEN`:
+  anybody could POST a candidate key and read from the status whether it was real, on our
+  token and our quota. And since a successful activation consumes one of that key's five
+  slots, a leaked key plus five requests locks the person who paid out of their own licence.
+  Found by asking the threat question about the OTHER endpoint. **When one handler has a
+  guard, ask what the sibling handler has**, especially when the sibling is the one holding
+  the credential.
+- **A NUMBER THAT JUSTIFIES A DESIGN DECISION HAS TO HAVE A PROBE.** `policy.ts` says a
+  catch costs "about $0.00011" and rests the whole trial threat model on it. That figure
+  appears exactly once in the repo: in the comment that uses it. No source, never measured.
+  It may be right. It is the same shape as every contrast ratio this file already records
+  being wrong about.
 - **A KILL SWITCH NAMED FOR ONE POPULATION MUST BE GATED ON THAT POPULATION.**
   `BUKI_TRIAL_CLOSED` was checked BEFORE `decideAccess` in `visionHandler.ts`, so flipping
   it refused every request and told a paying subscriber *"The free trial is closed just

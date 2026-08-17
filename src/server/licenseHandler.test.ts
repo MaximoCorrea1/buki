@@ -3,6 +3,7 @@ import { handleLicense, type LicenseEnv } from './licenseHandler';
 import { verify, TOKEN_TTL_MS } from './token';
 
 const SECRET = 'test-secret-at-least-32-characters-long!!';
+const EXT = 'abcdefghijklmnopabcdefghijklmnop';
 const NOW = Date.UTC(2026, 7, 17, 12, 0, 0);
 
 /**
@@ -23,15 +24,19 @@ const env = (over: Partial<LicenseEnv> = {}): LicenseEnv => ({
   secret: SECRET,
   polarToken: 'POLAR-TOKEN-SECRET',
   organizationId: 'org_1',
+  extensionId: EXT,
   activateUrl: 'https://api.polar.test/v1/license-keys/activate',
   fetch: vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 })),
   now: () => NOW,
   ...over,
 });
 
-const post = (body: unknown): Request =>
+const post = (body: unknown, headers: Record<string, string> = {}): Request =>
   new Request('https://get-buki.vercel.app/api/license', {
     method: 'POST',
+    // The real caller is an MV3 worker or the options page, both of which send this on a
+    // cross-origin fetch. `/api/vision` has relied on it since it was written.
+    headers: { origin: `chrome-extension://${EXT}`, ...headers },
     body: JSON.stringify(body),
   });
 
@@ -73,7 +78,13 @@ describe('exchanging a licence for a session', () => {
   });
 
   it('rejects a body that is not JSON', async () => {
-    const req = new Request('https://x/api/license', { method: 'POST', body: 'not json' });
+    // Carries the Origin, so this asserts the BODY check rather than the origin check that
+    // now runs before it. Without the header it returned 403 and proved nothing about JSON.
+    const req = new Request('https://x/api/license', {
+      method: 'POST',
+      headers: { origin: `chrome-extension://${EXT}` },
+      body: 'not json',
+    });
     expect((await handleLicense(req, env())).status).toBe(400);
   });
 
@@ -123,5 +134,57 @@ describe('exchanging a licence for a session', () => {
     expect(String((init.headers as Record<string, string>)['Authorization'])).toContain(
       'POLAR-TOKEN-SECRET',
     );
+  });
+});
+
+/**
+ * WHO MAY ASK AT ALL.
+ *
+ * Until 2026-08-17 this endpoint had no origin check and no rate limit, which made it an
+ * open licence-key oracle standing on our Polar credential. Anybody could POST a candidate
+ * key and learn from the status whether it was real, on our token and our quota.
+ *
+ * The second consequence is the one that reaches a customer: a successful activation
+ * CONSUMES ONE OF THE FIVE SLOTS on that key. A leaked key plus five requests locks the
+ * person who paid out of their own licence until they go and deactivate.
+ *
+ * The check is the same `fromExtension` that `/api/vision` has always used, and it is
+ * forgeable in exactly the same way — an Origin header is a header. It is worth having for
+ * the same reason it is worth having there: it removes the casual path completely, and on
+ * this endpoint there was previously nothing at all.
+ */
+describe('who may ask for a session', () => {
+  it('refuses a request that did not come from our extension', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));
+    const res = await handleLicense(
+      post({ key: 'KEY-1' }, { origin: 'https://elsewhere.test' }),
+      env({ fetch }),
+    );
+
+    expect(res.status).toBe(403);
+    // THE POINT. A refusal that still called Polar would spend the quota and burn an
+    // activation slot anyway, which is most of the damage this check exists to prevent.
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a request carrying no Origin at all, which is what curl sends', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));
+    const bare = new Request('https://get-buki.vercel.app/api/license', {
+      method: 'POST',
+      body: JSON.stringify({ key: 'KEY-1' }),
+    });
+
+    const res = await handleLicense(bare, env({ fetch }));
+
+    expect(res.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('refuses to run without an extension id rather than accepting everybody', async () => {
+    // The same reasoning as the other three variables: a missing id must not silently
+    // become "any origin is fine". Failing loudly is the only safe reading of an absent
+    // credential, and `visionHandler` already treats it that way.
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ extensionId: '' }));
+    expect(res.status).toBe(500);
   });
 });

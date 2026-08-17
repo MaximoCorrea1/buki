@@ -8,6 +8,7 @@
  * a secret, but the proxy has to verify the licence anyway before spending our provider
  * key — so a check made in the extension would be decoration. One place decides.
  */
+import { fromExtension } from './policy';
 import { sign, TOKEN_TTL_MS } from './token';
 
 export interface LicenseEnv {
@@ -15,6 +16,8 @@ export interface LicenseEnv {
   /** Ours. It must never reach the client, not even inside an error we are quoting. */
   polarToken: string;
   organizationId: string;
+  /** Who is allowed to ask. See the origin check below. */
+  extensionId: string;
   activateUrl: string;
   fetch: (url: string, init?: RequestInit) => Promise<Response>;
   now: () => number;
@@ -31,9 +34,25 @@ const json = (body: unknown, status: number): Response =>
 export async function handleLicense(request: Request, env: LicenseEnv): Promise<Response> {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  if (!env.secret || !env.polarToken || !env.organizationId) {
+  if (!env.secret || !env.polarToken || !env.organizationId || !env.extensionId) {
     console.error('[buki] misconfigured: missing environment');
     return new Response('Server not configured', { status: 500 });
+  }
+
+  // WHO MAY ASK. Without this the endpoint is an open licence-key oracle standing on our
+  // Polar credential: anybody could POST a candidate key and read from the status whether
+  // it was real, on our token and our quota. Worse, a SUCCESSFUL activation consumes one
+  // of that key's five slots, so a leaked key plus five requests locks the person who paid
+  // out of their own licence.
+  //
+  // Checked BEFORE the body is read and long before Polar is called, because a refusal
+  // that still made the outbound call would spend the quota and burn the slot anyway.
+  //
+  // Forgeable, like every Origin header, and worth having for the same reason it is worth
+  // having on `/api/vision`: it closes the casual path entirely, and there was nothing
+  // here at all before. It is not a substitute for a spend cap on the provider key.
+  if (!fromExtension(request.headers.get('origin'), env.extensionId)) {
+    return json({ error: 'Not authorised' }, 403);
   }
 
   let key: string;
