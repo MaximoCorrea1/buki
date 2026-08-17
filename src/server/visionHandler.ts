@@ -46,8 +46,6 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
     return new Response('Server not configured', { status: 500 });
   }
 
-  if (env.trialClosed) return refuse('The free trial is closed just now.', 402);
-
   const now = env.now();
   // `null` when the header is ABSENT, which is the correct state for somebody who has
   // never paid. An empty string is a session that BROKE, and `decideAccess` is careful
@@ -70,10 +68,20 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
     );
   }
 
-  // The cap is for the TRIAL only. Rate-limiting somebody who is paying is the worst
-  // possible place to save a hundredth of a cent.
-  if (access.kind === 'trial' && env.ipCap(request, now)) {
-    return refuse('Too many free catches from this network today.', 429);
+  // BOTH BRAKES ARE FOR THE TRIAL ONLY, and they sit together so the next one added has
+  // to walk past this sentence. Stopping somebody who is paying is the worst possible
+  // place to save a hundredth of a cent.
+  //
+  // `trialClosed` used to be checked ABOVE `decideAccess`, which refused every request:
+  // a subscriber holding a valid session was told "The free trial is closed just now",
+  // which is a lockout AND a false statement made to the one person who paid not to see
+  // it. The IP cap on the next line had the gate right from the start; the switch beside
+  // it did not, eight lines apart.
+  if (access.kind === 'trial') {
+    if (env.trialClosed) return refuse('The free trial is closed just now.', 402);
+    if (env.ipCap(request, now)) {
+      return refuse('Too many free catches from this network today.', 429);
+    }
   }
 
   let upstream: Response;

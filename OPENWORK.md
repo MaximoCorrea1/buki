@@ -4,14 +4,14 @@
 
 | | |
 | --- | --- |
-| Tests | **529 across 53 files**, all passing |
+| Tests | **530 across 53 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **74** as this line was written, so the commit carrying it makes 75 |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **75** as this line was written, so the commit carrying it makes 76 |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -78,19 +78,26 @@ unblocks.
       stores no subscription state, which is why there is no database.
       *Unblocks: item 2, then Tasks 6, 7, 9.*
 
-- [ ] **2. Set five environment variables** in Vercel, project `buki`, all environments.
+- [ ] **2. Set the environment variables** in Vercel, project `buki`, all environments.
       **None of these may ever appear in a file under `src/extension/`.** That is a leak,
-      not a shortcut.
+      not a shortcut. **Field by field, with the reasoning: `docs/superpowers/polar-setup.md` §8.**
 
-      | Name | Notes |
-      | --- | --- |
-      | `GEMINI_API_KEY` | **Paid tier.** Create at https://aistudio.google.com/apikey then link billing at https://aistudio.google.com/plan_information. The free tier queues rather than erroring, which is what the 12-second hang on 2026-08-12 looked like, and "it does not throttle" is a line on the pricing page. |
-      | `BUKI_TOKEN_SECRET` | 32+ random bytes, `openssl rand -base64 32` |
-      | `BUKI_EXTENSION_ID` | from `chrome://extensions` with the extension loaded unpacked |
-      | `POLAR_ACCESS_TOKEN` | from item 1 |
-      | `POLAR_ORGANIZATION_ID` | Polar settings |
+      **This item said FIVE until 2026-08-17. There are six**, and the sixth was found by
+      reading `api/vision.ts` instead of this list.
 
-      Nothing reads these yet. `/api/vision` does not exist; that is Task 6.
+      | Name | Required | Notes |
+      | --- | --- | --- |
+      | `GEMINI_API_KEY` | **yes, 500 without it** | Create at https://aistudio.google.com/apikey then link billing at https://aistudio.google.com/plan_information. The free tier queues rather than erroring, which is what the 12-second hang on 2026-08-12 looked like, and "it does not throttle" is a line on the pricing page. **No model is pinned**, on purpose. |
+      | `BUKI_TOKEN_SECRET` | **yes, 500 without it** | 32+ random bytes, `openssl rand -base64 32` |
+      | `BUKI_EXTENSION_ID` | **yes, 500 without it** | from `chrome://extensions` with the extension loaded unpacked |
+      | `POLAR_ACCESS_TOKEN` | yes, for `/api/license` | from item 1 |
+      | `POLAR_ORGANIZATION_ID` | yes, for `/api/license` | Polar settings, the **UUID** |
+      | `BUKI_TRIAL_CLOSED` | **no. leave unset** | The emergency brake: `1` stops the free trial answering, with no deploy. Anything else is the same as unset. |
+
+      The first three are checked together and return **500** if any is missing, because a
+      missing secret would verify every session token as garbage and silently demote every
+      subscriber to the trial. A half-configured deploy that looks like it works is the
+      failure being avoided.
 
 - [ ] **3. Task 11 Step 5: verify catch-anywhere by hand.** Six checks, written out in
       `docs/superpowers/plans/2026-08-09-buki-pro.md` under Task 11. **No agent can ever
@@ -994,6 +1001,16 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   list** ("a comment can be right while the code beneath it is wrong"), and the pair of them
   is the real rule: the comment and the code are two artefacts, and nothing checks that they
   agree.
+- **A KILL SWITCH NAMED FOR ONE POPULATION MUST BE GATED ON THAT POPULATION.**
+  `BUKI_TRIAL_CLOSED` was checked BEFORE `decideAccess` in `visionHandler.ts`, so flipping
+  it refused every request and told a paying subscriber *"The free trial is closed just
+  now"* — a lockout and a false statement to the one person who paid not to see it. **Eight
+  lines below, the IP cap had it right**, gated on `access.kind === 'trial'` under a comment
+  saying that stopping somebody who is paying is the worst place to save a hundredth of a
+  cent. Two brakes, one intent, and only one of them read it. Both now sit inside a single
+  `if (access.kind === 'trial')` so the next one has to walk past the sentence.
+  **The switch was also undocumented**, which is how it survived: `OPENWORK.md` item 2 said
+  five variables and `api/vision.ts` reads six.
 - **A PLAN'S INSTRUCTIONS AGE EXACTLY LIKE ITS SNIPPETS, and one of them would have done
   damage.** Task 15 Step 3 says "strike §1.1 and §2.3" of this file. The plan was written
   2026-08-09; there is no §1.1 at all now, and §2.3 is *Three colours that only broke at

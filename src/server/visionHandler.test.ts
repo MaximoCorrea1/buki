@@ -55,6 +55,25 @@ describe('the recognition proxy', () => {
     expect(res.status).toBe(402);
   });
 
+  it('keeps serving a PAYING subscriber while the trial is closed', async () => {
+    // The switch is named for the trial and has to mean only the trial. It used to sit
+    // above `decideAccess`, so flipping it refused EVERY request — a subscriber holding a
+    // valid session was told "The free trial is closed just now", which is both a lockout
+    // and a false statement to the one person who paid not to see it.
+    //
+    // Eight lines below, the IP cap already had this exactly right, gated on
+    // `access.kind === 'trial'` under a comment saying that rate-limiting somebody who is
+    // paying is the worst possible place to save a hundredth of a cent. Two brakes, one
+    // intent, and only one of them read it.
+    const token = await sign({ licenseKeyId: 'lk_1', activationId: 'act_1' }, SECRET, NOW);
+    const res = await handleVision(
+      post({ headers: { authorization: `Bearer ${token}` } }),
+      env({ trialClosed: true }),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
   it('serves an unlicensed request that came from our own extension', async () => {
     const fetch = vi.fn(async () => new Response('{"choices":[]}', { status: 200 }));
     const res = await handleVision(post(), env({ fetch }));
