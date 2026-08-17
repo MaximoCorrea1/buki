@@ -175,3 +175,80 @@ describe('summarize', () => {
     expect(summarize([])).toEqual({ caught: 0, keptPct: null });
   });
 });
+
+/**
+ * Undo, which `markWrong` had no answer for.
+ *
+ * Removing a book flags its attempt as a wrong match, because deleting a wrong match is
+ * the only grading signal this log gets for free. Undo was added later, when removal moved
+ * onto the tile and became one click, and it reversed the DELETION without reversing the
+ * FLAG. `shelfEdit.ts` said so in a comment and called it a real todo.
+ *
+ * Two things are wrong after a remove-then-undo, and the second is the worse one:
+ *
+ *   the rate stays down    the attempt is still counted as a wrong match
+ *   the link is broken     `library.add` issues a NEW id, so the event's savedId names a
+ *                          book that is no longer on the shelf, and a later genuine
+ *                          removal can never be flagged at all
+ */
+describe('a book that comes back', () => {
+  const five = async (log: ReturnType<typeof makeLog>): Promise<void> => {
+    // MIN_FOR_RATE catches, so a percentage exists to be wrong about.
+    for (const savedId of ['a', 'b', 'c', 'd', 'e']) await log.record(attempt({ savedId }));
+  };
+
+  it('stops being counted as a wrong match', async () => {
+    const log = makeLog();
+    await five(log);
+    expect(summarize(await log.list()).keptPct).toBe(100);
+
+    await log.markWrong('a');
+    expect(summarize(await log.list()).keptPct).toBe(80);
+
+    // Undo. The book returns under a new id, which is what `library.add` hands back.
+    await log.markRestored('a', 'a-again');
+    expect(summarize(await log.list())).toEqual({ caught: 5, keptPct: 100 });
+  });
+
+  it('can be flagged again when it is removed for good', async () => {
+    // The relink, and the reason `markRestored` takes two ids instead of one. Without it
+    // the event still says 'a', `markWrong('a-again')` matches nothing, and the log has
+    // quietly lost the ability to score this catch for the rest of its life in the buffer.
+    const log = makeLog();
+    await five(log);
+    await log.markWrong('a');
+    await log.markRestored('a', 'a-again');
+
+    await log.markWrong('a-again');
+    expect(summarize(await log.list()).keptPct).toBe(80);
+  });
+
+  it('leaves every other attempt alone', async () => {
+    const log = makeLog();
+    await five(log);
+    await log.markWrong('a');
+    await log.markWrong('b');
+
+    await log.markRestored('a', 'a-again');
+
+    const events = await log.list();
+    expect(events.find((e) => e.savedId === 'b')?.wrong).toBe(true);
+    expect(events.find((e) => e.savedId === 'a')).toBeUndefined();
+    expect(summarize(events).keptPct).toBe(80);
+  });
+
+  it('relinks even when the removal was too late to have flagged anything', async () => {
+    // Past WRONG_WINDOW_MS a deletion says nothing about the recognizer, so `markWrong` is
+    // a no-op. The id still changes on the way back in, so the relink is not conditional
+    // on there having been a flag to clear.
+    const { log, advance } = makeClockedLog();
+    await log.record(attempt({ savedId: 'a' }));
+    advance(WRONG_WINDOW_MS + 1);
+    await log.markWrong('a');
+    await log.markRestored('a', 'a-again');
+
+    const events = await log.list();
+    expect(events[0]?.savedId).toBe('a-again');
+    expect(events[0]?.wrong).toBeUndefined();
+  });
+});

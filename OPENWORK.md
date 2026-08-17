@@ -4,14 +4,14 @@
 
 | | |
 | --- | --- |
-| Tests | **523 across 53 files**, all passing |
+| Tests | **529 across 53 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **70** as this line was written, so the commit carrying it makes 71 |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **72** as this line was written, so the commit carrying it makes 73 |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **65** steps done, **20** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -989,6 +989,16 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   list** ("a comment can be right while the code beneath it is wrong"), and the pair of them
   is the real rule: the comment and the code are two artefacts, and nothing checks that they
   agree.
+- **A ONE-WAY FLAG BREAKS THE MOMENT SOMETHING GAINS AN UNDO.** `markWrong` was written when
+  removal was permanent: deleting a wrong match is the recogniser's only free grading
+  signal, so a deletion set `wrong: true` and nothing ever cleared it. Undo arrived later,
+  when removal moved onto the tile, and reversed the deletion without reversing the flag.
+  **The half that was written down was the smaller half.** `library.add` issues a NEW id on
+  restore, so the event went on naming a book that was no longer on the shelf: remove it
+  again, genuinely, and `markWrong` matched nothing and the log had permanently lost the
+  ability to score that catch. **A rate that is one too low is visible; an event that can
+  never be scored again is not.** When you add an undo, list every side effect the original
+  action had, not just the one the user can see.
 - **A rule that selects `button` does not style an `<a>` you drew as a button.** `#getPro`
   sat in the same `.actions` row as *Activate* wearing `.ghost`'s colours and none of its
   shape: measured in Chrome, `radius 0px, padding 0px, height 23.3` against

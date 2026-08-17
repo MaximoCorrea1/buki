@@ -275,9 +275,18 @@ better, because the licence lives in `proState`'s own storage key instead of ins
       while the shelf's fourth pile is called **Read**, meaning finished. Distinguishable in
       context, not distinct words. Renaming that pile to **Finished** would end it. Founder's
       call; noted in `src/extension/trayCopy.ts`.
-- [ ] **Undo does not unflag the recognition.** `removeBook` marks the match wrong on the
-      way out and nothing clears it on the way back in, so remove-then-undo leaves the kept
-      rate one worse. One attempt in a rolling 200. Needs an unflag path through the log.
+- [x] **Undo unflags the recognition. FIXED 2026-08-17**, and the investigation found a
+      second bug hiding behind the one that was written down. The known half: `removeBook`
+      marks the match wrong on the way out and nothing cleared it on the way back in, so
+      remove-then-undo left the kept rate one worse. **The half nobody had noticed:**
+      `library.add` issues a NEW id on restore, so the event went on naming a book that was
+      no longer on the shelf, and if you later removed that book because it really was
+      wrong, `markWrong` matched nothing and the log had permanently lost the ability to
+      score that catch. That one is invisible in the number, which is why it survived.
+      `markRestored(previousId, savedId)` does both. Four links, each covered:
+      `restoreArgs` carries `restoreOf`, the message type has it, `background.ts` calls
+      `markRestored` (asserted as SOURCE, since that file cannot be imported), and the log
+      method has 4 tests. Both halves proved to discriminate by breaking each separately.
 - [!] **The paid tier cannot be switched on from here.** Items 1 (a Polar product) and 2
       (five Vercel variables) are Maximo's, and until both exist `api/vision` answers
       nothing — so a user with no key of their own still gets no cover reading, and the

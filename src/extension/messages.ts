@@ -117,7 +117,20 @@ export type BackgroundRequest =
    * shelf. Additive: a record saved before this simply has none and falls back to the
    * catalogue's art. `savedBooks` keeps its name and its shape.
    */
-  | { type: 'saveBook'; book: Book; intent: Intent; source?: SavedSource; shot?: string }
+  /**
+   * `restoreOf` is present only on an UNDO, and it carries the id the book had before it
+   * was removed. Without it a restore is byte-identical to a fresh save, so the worker
+   * cannot tell that it needs to put the recognition back: `removeBook` flags the attempt
+   * as a wrong match on the way out, and nothing cleared it on the way back in.
+   */
+  | {
+      type: 'saveBook';
+      book: Book;
+      intent: Intent;
+      source?: SavedSource;
+      shot?: string;
+      restoreOf?: string;
+    }
   /** Removes AND flags the recognition, so the popup needs one round trip, not two. */
   | { type: 'removeBook'; savedId: string }
   /**

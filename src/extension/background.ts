@@ -517,6 +517,17 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
         // being deleted - which is the whole point of having caught it.
         void rememberCover(saved.shot, liveCoverDeps());
         void rememberCover(msg.book.coverUrl, liveCoverDeps());
+        // AN UNDO, not a fresh save. `removeBook` flagged this attempt as a wrong match on
+        // the way out; putting the book back has to put the recognition back too, and
+        // relink the event to the id `add` just issued. Without the relink the event names
+        // a book that is not on the shelf and a later genuine removal flags nothing.
+        // Fire and forget, like the covers above: the shelf write already succeeded and a
+        // failed relink must not fail the undo the user can see.
+        if (msg.restoreOf) {
+          void log
+            .markRestored(msg.restoreOf, saved.id)
+            .catch((err: unknown) => console.error('[Buki] could not restore the match', err));
+        }
         sendResponse({ ok: true, saved } satisfies ShelfResponse);
       })
       .catch((err: unknown) => {

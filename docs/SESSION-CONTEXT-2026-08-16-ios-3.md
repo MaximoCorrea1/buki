@@ -349,6 +349,35 @@ every control's `transition: background-color 140ms`, so one screenshot caught a
 on a light page and read as a contrast bug that was not there. The fix is to inject
 `transition: none !important` **before** narrowing the theme.
 
+## The undo bug, and the bigger one standing behind it
+
+**Believed**, from the todo written when the bug was first noticed: remove-then-undo leaves
+the kept rate one worse, it is one attempt in a rolling 200, and the fix is an unflag path.
+
+**Measured** by tracing the data flow before proposing anything: that is true and it is the
+*smaller* half. `library.add` issues a NEW id on restore, so the original event's `savedId`
+names a book that is no longer on the shelf. Remove that book again, this time because it
+really was the wrong book, and `markWrong` matches nothing at all. **The log had
+permanently lost the ability to score that catch**, for the rest of its life in the buffer.
+
+The reason the small half was the one written down is worth keeping: **a rate that is one
+too low is visible in the masthead, and an event that can never be scored again is not.**
+
+`markRestored(previousId, savedId)` clears the flag and relinks in one pass, is not gated on
+`WRONG_WINDOW_MS` (that window decides whether a deletion MEANS anything; the id changes
+either way), and deletes the `wrong` key rather than setting it false, so a restored attempt
+is indistinguishable from one never flagged.
+
+**Four links, and the third is the one that gets skipped:** `restoreArgs` carries
+`restoreOf`, the message type declares it, **`background.ts` calls `markRestored`**, and the
+log method does the work. The third is asserted as SOURCE TEXT, because `background.ts`
+registers `chrome` listeners at module scope and throws on import. That guard exists
+because `needsRenewal` was written, tested and left with no caller the day before.
+
+Both halves were proved to discriminate by breaking each separately: disabling the
+flag-clear failed exactly the two flag tests, disabling the relink failed exactly the three
+relink tests.
+
 ### A decision that was right, described wrongly for two days
 
 `.ghost` carried a long comment arguing for a `--muted` ring and rejecting `--board` **by
