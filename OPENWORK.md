@@ -12,7 +12,7 @@
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
 | Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **72** as this line was written, so the commit carrying it makes 73 |
-| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **65** steps done, **20** left |
+| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -619,7 +619,12 @@ needs a credential or a dashboard is the shell around it.
       left is the pair that cannot be written until the proxy answers: `docs/privacy.html`
       and the landing's data section, both of which still say the picture goes straight to
       the provider the user configured. *(see §3 below)*
-- [ ] **18. Task 15, close the loop.** 4 steps.
+- [~] **18. Task 15, close the loop.** Step 1 is done (529/53, `tsc` 0, build clean).
+      **Step 3 carries a DO-NOT-EXECUTE banner as of 2026-08-17**: it says "strike §1.1 and
+      §2.3", and this file has been restructured twice since the plan was written. There is
+      no §1.1, and §2.3 is now the dark-mode contrast record from 2026-08-15, which has
+      nothing to do with Task 0. Following it literally would delete a live section. Steps 2
+      and 4 wait on items 1 and 2, because Step 2 needs a real Chrome and a Polar test card.
 - [ ] **19. Merge `buki-pro` into `main`.** 37 commits and counting. Use
       `superpowers:finishing-a-development-branch`.
 
@@ -989,6 +994,13 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   list** ("a comment can be right while the code beneath it is wrong"), and the pair of them
   is the real rule: the comment and the code are two artefacts, and nothing checks that they
   agree.
+- **A PLAN'S INSTRUCTIONS AGE EXACTLY LIKE ITS SNIPPETS, and one of them would have done
+  damage.** Task 15 Step 3 says "strike §1.1 and §2.3" of this file. The plan was written
+  2026-08-09; there is no §1.1 at all now, and §2.3 is *Three colours that only broke at
+  night*, a record of a defect class that has recurred three times and has nothing to do
+  with Task 0. This is the fifth time that plan has been wrong about its own details and the
+  first where obeying it would have destroyed something. **Read the target before acting on
+  a reference to it**, especially when the instruction is to delete.
 - **A ONE-WAY FLAG BREAKS THE MOMENT SOMETHING GAINS AN UNDO.** `markWrong` was written when
   removal was permanent: deleting a wrong match is the recogniser's only free grading
   signal, so a deletion set `wrong: true` and nothing ever cleared it. Undo arrived later,
