@@ -115,3 +115,125 @@ compressing its items is a real and common bug. Rendered as an A/B — as shippe
 `.buki-slot { flex: none }` — both measured **`slotH = cardH = 448.6`, spill 0.0**. A flex
 item's automatic minimum size already prevents it. **The fix was written and thrown away
 before it was committed**, which is the only reason it is recorded here.
+
+
+---
+
+# 2026-08-17 - the catcher, six reports, and the paid tier
+
+*(Continued in this file rather than a fourth pair: one thread of work, and `OPENWORK.md`
+section 0 warns that filename order is not a reading order.)*
+
+## What was asked
+
+Four turns, in Maximo's words:
+
+1. *"i added the newLogo.png use that everywhere"* - plus six fixes: rounded corners,
+   delete features, toast CTAs/contrast/covers, scrolling between toasts, *"read from the
+   cover - unverified ... what is that, remove it"*, and *"buki found x books on this
+   image"*.
+2. *"the pupils are not showing"* on the toolbar icon and in the right-click menu.
+3. *"go. continue building all the features. the pro everything. the landing. the pro ctas
+   within the extension, the badges, everything"*.
+4. This doc pass and a handoff.
+
+## Measured, with the probe beside it
+
+| Measurement | Probe | Value |
+| --- | --- | --- |
+| Test suite | `./node_modules/.bin/vitest run` | **512 across 52 files** |
+| Typecheck | `node node_modules/typescript/bin/tsc --noEmit` | exit 0, now covering `api/` |
+| Build | `node build.mjs` | clean, 5 bundles |
+| Branch | `git rev-list --count main..buki-pro` | **68** ahead, not merged |
+| Tracked files | `git ls-files` piped to `wc -l` | 199 |
+| Plan | `grep -c` on the buki-pro plan | **64** done, **21** left (was 37/48) |
+| Logo geometry | sampled from `icons/mark-source.png` | ball r50; eyes cx 31.3/68.3, cy 45.9, rx 13.7, ry 19.5; glints cx 35/71.4, cy 35.2, r 3.9 |
+| Logo ramp | sampled | `#7bcdfc` to `#4aa3f9` to `#013ebf`; eyes `#091a3b`; glint `#fdfdfd` |
+| Catchlight pixels per icon | decoded the shipped PNGs | 16px **0**, 32px 6, 48px 15 - before the fix |
+| Cover under a page CSP | rendered under `img-src 'self' data:` | cross-origin **BLOCKED**, `data:` LOADED, `blob:` BLOCKED |
+| Tray CTA centring | Range rect vs button box | dx 0.00, dy **-1.00px** before; -0.50px after |
+| Intent row width | real harness DOM | row 223 of 267 available before the fix; 267 after |
+| Five-book card | rendered | 680px, in a tray that is 732px on a laptop |
+
+## Beliefs overturned
+
+### The popup's corners cannot be rounded, and the previous day's fix made it worse
+
+**Believed** (2026-08-16, and measured): moving the paint off the root onto `.win` makes
+the corners round. The corner pixel really did go `rgba(0,0,0,255)` to `rgba(0,0,0,0)`.
+
+**Measured** by the only instrument that could - Maximo, in the browser: *"it still has an
+outside container with sharp coorners"*. Chrome's extension popup on Windows is a **square
+native window painting its own opaque background**. A transparent canvas does not reveal a
+rounded window; it reveals **Chrome's**, with our panel inset inside it and a seam between.
+
+**The surviving rule:** the CSS mechanism established that day is still true and is what
+let the right answer be reached in one step. What was wrong was assuming the document was
+the outermost thing on screen.
+
+### A confident comment is not a render - for the fourth time
+
+**Believed**, written into `make-icons.mjs` alongside the new mark: a catchlight at 16px
+"eats the eye it is supposed to sit in", so they were gated behind `size >= 32`.
+
+**Measured:** rendered at 16px with and without, on a light toolbar and a dark one, the
+true-size catchlight is a clean lit pixel and the gated version is the one that looks dead.
+`icon16.png` shipped with **zero** catchlight pixels.
+
+**This is the fourth time in this repo that a claim about how something renders was written
+without rendering it.** The other three were contrast ratios. The guard is now the shipped
+artefact: `src/shared/icons.test.ts` decodes `icons/*.png` and fails if an eye has no lit
+spot in it.
+
+### A function can be written, tested, and have no caller
+
+**Believed:** the paid tier's client half was complete after the 2026-08-17 build.
+
+**Measured** during this doc pass, by reconciling the plan's steps against the code:
+`needsRenewal` had **no caller**. A Pro session would have expired after 24 hours, ridden
+the seven-day grace, and then shown a paying subscriber the wall they had already paid to
+pass. **Nothing was red.** Fixed as `ensureSession`, wired into the recognition path,
+because an MV3 worker is torn down between clicks and a catch is the only reliable
+heartbeat this extension has.
+
+### A plan's checkbox is a claim, and claims get made carelessly
+
+**Believed:** ticking the six tasks built that day was bookkeeping.
+
+**Measured:** four of twenty-nine ticks were on steps nobody had performed - a discriminate
+check, a brand-checklist pass, a "look at it in a real page", and a "restructure the page"
+that was actually an added section. Three were then done properly (the discriminate check
+ran and failed correctly when the guard was removed; the wall was rendered and looked at)
+and the restructure was left open and honest.
+
+## Instruments that lied
+
+| Instrument | How it lied | What to do instead |
+| --- | --- | --- |
+| **My own probe of the intent row** | Said the three labels fitted, measured in a simplified page with no scrollbar. The real card is 26px narrower | Measure in the harness that has the real container |
+| **`width: 100%` on a flex item** | Reads as "take the whole line"; it is clamped by what is left ON the line, so the row stayed beside the cover at 223 of 267 | `flex-basis: 100%` is what breaks the line |
+| **`flex: 1`** | Reads as "share fairly"; it sets a zero basis and forces EQUAL widths, so the longest label clipped its own last letter | `flex: 1 1 auto` grows from the content basis |
+| **The tray harness fixture** | Drifted from the builders three times in one week - button row deleted, nesting stale, copy retyped | It now reads the stylesheet AND the wall's copy out of source |
+| **My own icon test's first probe** | Failed with a difference of exactly zero, and the icon was right: `Math.round` on a 0..100 coordinate read pixel 6 where 5.6 lives in pixel 5 | `Math.floor` - the pixel that CONTAINS the coordinate |
+| **A test that reads declarations as text** | `background: var(--fill)` sailed past the tray's "nothing see-through" guard on the day `--fill` became an rgba | Resolve tokens before asserting on a value |
+| **`.gitattributes`** | Declared `* text=auto eol=lf` with only `*.png` marked binary, so four `.jfif` photographs were tracked as TEXT and a normalisation pass ran through their bytes | Name every binary type; they were restored and verified before the commit |
+| **A Python heredoc through Bash** | Broke on quoting for the third recorded time | Write the script with the Write tool and run it |
+
+## Decisions worth not re-deriving
+
+- **The mark is a rich icon with no flat derivative, and that is a change.** The old mark
+  needed a cream plate because two ink spines vanished on a dark toolbar. The ball carries
+  its own colour and silhouette - 11.98:1 on black, 8.9:1 on white - so `icons/icon.svg`,
+  `docs/icon.svg` and `icons/mark.svg` are now the same drawing, and `--mark-spine` and
+  `--mark-caught` were deleted from all three surfaces.
+- **A filled disc is judged on its ramp, not on any one stop.** The bar is "the best stop
+  clears 4.5:1" and "the eyes clear 3:1 WHERE THE EYES ACTUALLY ARE". The naive version
+  failed a mark that renders perfectly, which is the same error this repo has now made
+  three times in three different shapes.
+- **The escape hatch on the wall is real.** Your own key means unlimited cover reading,
+  free forever. It is a full-width button because it is true.
+- **The licence key never rides a catch.** It is exchanged once a day for a signed session;
+  only the session travels. `isLicensed` stays true through the server's grace window, so
+  our own outage never signs a subscriber out.
+- **The tray card stays opaque forever**, but a control sitting ON it may be translucent:
+  its ground is ours, so the composite is computable (#39393d, white label at 11.50:1).

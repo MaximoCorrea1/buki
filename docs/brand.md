@@ -241,6 +241,39 @@ and without it opening a book squares the corners off again.
 `options.html` deliberately keeps none of this: it is a full browser tab, its canvas
 *should* cover the viewport, and it has no window to round.
 
+#### The wall is a card state, and there are exactly two places Buki asks for money
+
+Added 2026-08-17 with the paid tier. **The wall and the options page. Nowhere else**, and
+the masthead badge is the rule's edge case rather than an exception to it: it states a fact
+for most of the trial and becomes an offer only in the last three catches, because a
+countdown that starts at ten is pressure applied to somebody browsing their own shelf.
+
+**The wall is a sixth state of the card that was about to read this cover**, not a new
+surface. It lands where the answer would have landed, keeps that catch's picture and its
+dismiss control, and **never self-dismisses** — every other transient state in the tray
+carries no decision, and an offer that removes itself after four seconds is an offer nobody
+read.
+
+Four rules about what it says are asserted in `src/extension/trayCopy.test.ts`, because
+copy is the part of a design that rots silently:
+
+1. **Say what happened**, in the number the gate actually enforces.
+2. **Name the price.** A paywall that hides it reads as a trap, and $4 is small enough to
+   be the argument rather than something to soften.
+3. **Offer the free way out as plainly as the paid one.** With your own provider key, cover
+   reading is unlimited and free forever. That is genuinely true, so it is a full-width
+   button and not a line of small type — burying it would make this a dark pattern instead
+   of an offer.
+4. **Never threaten the shelf.** Nothing already saved is ever at risk. The test forbids
+   *lose*, *delete*, *expire* and *removed*: that is the line between a limit and a hostage.
+
+It also never says **upgrade**. Nothing about the shelf improves; what is bought is the one
+job Buki cannot do on your own computer.
+
+**The one filled button in the tray.** Every other control is a ring on the card's own
+ground; the paid action is the accent, which appears nowhere else in that stylesheet as a
+fill. Black on it measures 7.78:1. The free way out sits directly beneath at the same size.
+
 #### A card may not outgrow the tray it lives in
 
 Added 2026-08-16. The catch card's height is a function of how many books came back, and

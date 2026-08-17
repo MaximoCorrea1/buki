@@ -1,5 +1,14 @@
 # Pricing: Buki
 
+> **The NUMBERS live in `src/shared/pricing.ts`, not here.** Since 2026-08-17 the price is
+> also printed inside the extension, on the wall, where a stale figure stops being a typo
+> and becomes a false statement made to somebody about to pay. `src/shared/pricing.test.ts`
+> finds every `$n` on the landing and in this file and fails on any the module has not
+> declared, the same way `host.test.ts` guards the production domain.
+>
+> **This document still owns everything else**: what is in each tier, what is deliberately
+> free, and why. Change a number in `pricing.ts`; change the reasoning here.
+
 Last updated: 2026-08-13, when export moved to Free on both tiers. Currency: USD. No
 account required for any tier.
 

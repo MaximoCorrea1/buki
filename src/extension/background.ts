@@ -19,7 +19,9 @@ import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { PRICING_URL } from '../shared/pricing';
 import { createGate, WallError } from './gate';
-import { readPro, type ProState } from './proState';
+import { readPro, writePro, ensureSession, type ProState } from './proState';
+import { createLicense } from './license';
+import { BUKI_HOST } from '../shared/host';
 import { visionRoute } from './visionRoute';
 import { createTrial } from './trial';
 import { coverDataUrl } from './coverData';
@@ -156,7 +158,23 @@ async function recognize(
 ): Promise<{ result: RecognitionResult; model: string }> {
   // Both read per call, so pasting a licence key or a provider key takes effect on the
   // next catch rather than the next reload.
-  const [settings, pro] = await Promise.all([readSettings(), readPro(chrome.storage.local)]);
+  const [settings, held] = await Promise.all([readSettings(), readPro(chrome.storage.local)]);
+
+  // RENEW BEFORE THE CALL, not on a timer. An MV3 worker is torn down between clicks, so a
+  // background schedule is the one thing that cannot be relied on here; the catch itself is
+  // the only reliable heartbeat this extension has. `ensureSession` is a no-op for anybody
+  // without a licence, and it never throws - a renewal that fails keeps the token we hold
+  // and rides the server's grace window.
+  const pro = await ensureSession(held, {
+    exchange: (key) =>
+      createLicense({
+        fetch: (url, init) => fetch(url, init),
+        endpoint: `${BUKI_HOST}/api/license`,
+        now: () => Date.now(),
+      }).exchange(key),
+    save: (state) => writePro(chrome.storage.local, state),
+    now: () => Date.now(),
+  });
   let keyWasMissing = false;
 
   // Every request this catch makes goes through one signal, so calling it off reaches the

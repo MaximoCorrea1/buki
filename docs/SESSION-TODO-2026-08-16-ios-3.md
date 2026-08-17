@@ -55,14 +55,24 @@ session is folded into `OPENWORK.md`.
 
 - [x] **Verify in a real Chrome popup what is painted OUTSIDE the radius.** Maximo looked,
       2026-08-17: an opaque square container. Answered by the one instrument that could.
-- [ ] The plate quote's dead `font-style: italic` was one instance. **The grep for other
-      dead declarations is still never run.** Carried from pass 2.
+- [x] **The dead-declaration grep is RUN**, 2026-08-17, after being carried for three
+      sessions. Live `font-style: italic`: none (the only hit is a comment on the landing
+      recording its removal). `font-weight` outside Manrope's 200-800 range: none. `<i>` or
+      `<em>` on a surface with no italic face: none. **One real finding:** the catch tray
+      was the only surface not declaring `font-synthesis: none` while running a face that
+      ships no italic - latent rather than live, and now closed with a test across all
+      three extension surfaces (`src/shared/fonts.test.ts`).
 - [ ] **The rest of item 17:** `docs/store/listing.md`, and its `Single purpose` field
       first. Carried from pass 2.
-- [?] **F.** `docs/superpowers/specs/2026-08-09-buki-pro-design.md` still carries no STALE
-      banner while three other superseded docs do. Carried from pass 2.
+- [x] **F. The buki-pro spec is banner'd**, 2026-08-17. It was a `[?]` about taste until
+      its tier table turned out to state something FALSE - export is Pro-only there, and it
+      has been free on every tier since 2026-08-13. A doc a reader can act on and be wrong
+      is not a matter of taste. Banner added, table corrected.
 - [?] **19.** Merge `buki-pro` → `main`. Maximo's call on timing.
-- [!] **1, 2, 3, 9, 10–18** — Maximo's, or waiting on Maximo's.
+- [!] **1, 2, 3, 9** — Maximo's. **Items 12–16 are DONE** and 10–11 are code-complete
+      (2026-08-17); only their deploy steps remain, which are items 1 and 2. Item 18 has
+      not been started. See `OPENWORK.md` for the per-item state, which is the index that
+      survives; this line is a pointer, not a copy.
 
 ## Checkpoint log
 
@@ -142,6 +152,58 @@ snippet was checked against the code before use.
 - [x] **`.gitattributes`** — only `*.png` was marked binary while `* text=auto eol=lf`
       applied to everything else, so four `.jfif` photographs were tracked as TEXT. A
       normalisation pass ran over them and they were restored before the commit.
+
+## 2026-08-17, third stretch - the paid tier
+
+Asked for in one line: *"the pro everything. the landing. the pro ctas within the
+extension, the badges, everything"*. Run through `superpowers:executing-plans` against
+`docs/superpowers/plans/2026-08-09-buki-pro.md`. **The plan was wrong twice more about its
+own details** - its `license.test.ts` used `GRACE_MS` without importing it, and its `Claim`
+shape was `{licenseKeyId, issuedAt}` where the repo's is `{licenseKeyId, activationId}` -
+so every snippet was checked against the code before use. That is the third and fourth
+recorded instance; treat the plan as intent, never as source.
+
+- [x] **`license.ts`** - key in, session out. 16 tests. `isLicensed` stays true through the
+      server's whole grace window, on purpose.
+- [x] **`proState.ts`** - the one place `Standing` is assembled, so three callers cannot
+      each read "has a key" as "is Pro". Plus `ensureSession` (below).
+- [x] **`gate.ts`** - the single chokepoint. Check before the call, spend only after one
+      that happened. 9 tests, each naming the failure it prevents.
+- [x] **The wall** - a sixth card state, never transient, four copy rules asserted,
+      including a test that forbids *lose*, *delete*, *expire* and *removed*.
+- [x] **`shared/pricing.ts`** - `host.ts` for money. Finds every price by looking and
+      refuses any it has not declared.
+- [x] **The plan badge** - silent for most of the trial, an offer only in the last three.
+- [x] **The options page's Buki Pro section**, wired on its own guard.
+- [x] **Both serverless functions** as pure handlers under `src/server/` with four-line
+      shells in `api/`, so they are typechecked and tested without a deploy. 24 tests.
+- [x] **`visionRoute.ts`** - whose credential goes where. Their key never reaches our proxy.
+- [x] **The landing's `#costs` anchor renamed `#pricing`**, because the extension links to
+      it and it was broken the moment that link was written. Asserted.
+- [x] **`.gitattributes`** - every binary type named. Four `.jfif` photographs had been
+      tracked as text; restored and verified before any commit.
+
+## 2026-08-17, fourth stretch - the doc pass, and what it caught
+
+- [x] **`ensureSession`.** THE DOC PASS FOUND A REAL HOLE. Reconciling the plan's steps
+      against the code showed `needsRenewal` had **no caller**, so a Pro session would have
+      died after 24 hours, ridden the grace, and shown a paying subscriber the wall. Nothing
+      was red. Built test-first, wired into the recognition path, 7 new tests.
+- [x] **Four plan ticks removed as unearned**, then three of them genuinely done: the
+      dismissal test's discriminate check (verified by breaking `wall` and watching it
+      fail), and the wall rendered and looked at. The page restructure is left open.
+- [x] **The wall added to `tools/tray-harness.mjs`**, with its words READ OUT OF
+      `trayCopy.ts` rather than retyped - the fixture has drifted three times in a week.
+      The first reader understood `'...'` but not template literals and printed
+      `[head unreadable]`, which is the right way to fail.
+- [x] **Every tracked `.md` reconciled**: `OPENWORK.md` (header, four traps, items 10-16),
+      `README.md` (the mark, 68 commits, the proxy's real state), `docs/pricing.md` (points
+      at `src/shared/pricing.ts` for the numbers), `docs/brand.md` (*The wall is a card
+      state*), `.agents/product-marketing.md` (v8), and the buki-pro spec.
+- [x] **The buki-pro spec's false claim corrected.** It said export was Pro-only; it has
+      been free on every tier since 2026-08-13. That was the `[?]` founder question about a
+      STALE banner - but a doc stating something a reader could act on and be wrong is not
+      a matter of taste, so it is banner'd and the table is fixed.
 
 ## Open, 2026-08-17
 

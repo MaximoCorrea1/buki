@@ -179,6 +179,12 @@ const STYLE = `
   pointer-events: none;
 }
 .buki-tray, .buki-tray * { box-sizing: border-box; }
+/* MANROPE SHIPS NO ITALIC, and the other three surfaces have said so since 2026-08-15.
+   This one had not, so a future <em> in a book title would have been sheared into the
+   counterfeit docs/brand.md records reaching production once. Scoped to the tray rather
+   than <html>: this stylesheet is injected into somebody else's page and must never
+   change how THEIR type renders. */
+.buki-tray, .buki-tray * { font-synthesis: none; }
 /* Bottom-aligned by margin, not justify-content: a flex-end column clips its own
    overflow at the TOP, which hides the oldest card instead of letting you scroll to it. */
 .buki-slot:first-child { margin-top: auto; }

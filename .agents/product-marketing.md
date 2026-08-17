@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-**Document version:** v7
+**Document version:** v8
 **Last updated:** 2026-08-16
 
 ## Product Overview
@@ -277,6 +277,16 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v8 (2026-08-17). **The paid tier exists in code, and the mark changed.** Two things a
+  copy task must not get wrong now. First, the Pro tier is no longer a plan: the wall, the
+  entitlement gate, the licence exchange and both serverless handlers are written and
+  tested, and what remains is a Polar product and five Vercel variables. Copy may describe
+  Pro as real; it may NOT yet describe it as available, because nobody can buy one.
+  Second, **the three-spine mark is retired** — the mark is the catcher, a blue ball with
+  two eyes, on every surface. Any positioning line that leans on "three spines, one caught"
+  is describing a logo that no longer ships. The trial number, the price and the anchor the
+  extension links to are all asserted by `src/shared/pricing.test.ts`; do not restate a
+  price here.
 - v7 (2026-08-16). **Visual Identity only, again, and it is a real change rather than a
   correction.** The extension turned to iOS system neutrals: Apple's greys, true black at
   night, materials where it has real layers, and a detail sheet rebuilt as one centred

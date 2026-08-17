@@ -1,6 +1,26 @@
 # Buki Pro, and a book caught anywhere: design
 
-**Date:** 2026-08-09 · **Status:** approved, ready for planning
+**Date:** 2026-08-09 · **Status:** approved, PLANNED AND LARGELY BUILT — see the banner
+
+> ## PARTLY SUPERSEDED, 2026-08-17
+>
+> This is a dated record of the design decision and is kept as written, because the
+> reasoning is why the paid tier is shaped the way it is. Three things in it are no longer
+> true, and the first was actively wrong to leave standing:
+>
+> 1. **Export is FREE on every tier**, and has been since 2026-08-13. The table below says
+>    Pro-only, and the section near the end plans it as a Pro feature. That is the one
+>    claim in this file a reader could act on and be wrong: `.agents/product-marketing.md`
+>    v4 records the change, and `docs/pricing.md` is the contract.
+> 2. **The settings shape is not what this file drafts.** The licence and its session live
+>    in their own record (`src/extension/proState.ts`, key `buki-pro`), deliberately apart
+>    from `visionSettings`, which the user is invited to edit. A bearer credential and a
+>    provider preference should not share a lifetime.
+> 3. **The trial is enforced client-side by `entitlement.ts` + `gate.ts`**, with a per-IP
+>    brake on the proxy as a second line rather than the accounting.
+>
+> For what is built, read `OPENWORK.md` items 10–16. For the plan's step-level state,
+> `docs/superpowers/plans/2026-08-09-buki-pro.md`.
 
 Two changes ship together because neither is worth much alone. Buki learns to catch a book
 from any image anywhere on the web, and it learns to charge for doing the reading itself.
@@ -27,7 +47,7 @@ For what the product does today, read `README.md`. For positioning and voice,
 | Works on any image, anywhere | yes | yes |
 | The shelf, piles, search, Buy links | yes, forever | yes |
 | No key, no setup, no throttling | no | **yes** |
-| Export to Goodreads and StoryGraph | no | **yes** |
+| Export to Goodreads and StoryGraph | **yes, since 2026-08-13** | yes |
 | Sync and backup | not built yet | included when it ships |
 
 **Three things are never gated, at any point, including after the trial is spent.**

@@ -9,9 +9,10 @@ that sold you on it, and files it under **Now / Next / Someday**. Mark a book fi
 you're done, and every saved book carries a quiet Buy link.
 
 > **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
-> **61 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-16), carrying
+> **68 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-17), carrying
 > catch-anywhere, shelf export, a landing on the third design generation and an extension
-> on the fourth, the three-spine mark, and the decision layer for the paid tier. **This file describes
+> on the fourth, **the catcher** (the blue ball with eyes, which replaced the three-spine
+> mark on 2026-08-17), and the whole paid tier. **This file describes
 > `buki-pro`, because that is where the work is.** What is built, what is not, and what is
 > blocked is an ordered checklist in `OPENWORK.md`. Read that first.
 >
@@ -164,8 +165,10 @@ lookup. A vision model reads the picture instead of the letters.
 ## What it doesn't do (yet)
 
 - No sync. The shelf lives in one browser and stays there.
-- No keyless setup. Recognition needs your own key until there's a proxy that holds one.
-  **That proxy is the point of `buki-pro`.**
+- No keyless setup **yet**. Recognition needs your own key until the proxy is switched on.
+  The proxy is **written** — `src/server/visionHandler.ts` and `licenseHandler.ts`, with
+  shells in `api/` — and waits on a Polar product and five Vercel variables, which are
+  `OPENWORK.md` items 1 and 2.
 
 **Three things that were on this list shipped, and are worth not re-planning.**
 Catch-anywhere landed on 2026-08-12: the right-click menu works on any image on any site,

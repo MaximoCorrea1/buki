@@ -1,16 +1,18 @@
 # Open work
 
-**State as of 2026-08-16**, verified by running the commands, not from memory:
+**State as of 2026-08-17**, verified by running the commands, not from memory:
 
 | | |
 | --- | --- |
-| Tests | **413 across 44 files**, all passing |
-| Typecheck | `tsc --noEmit` exit 0 |
+| Tests | **512 across 52 files**, all passing |
+| Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
+| Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **61** as this line was written, so the commit carrying it makes 62 |
-| Plan | `grep -c` on `2026-08-09-buki-pro.md`: 37 steps done, **48** left |
+| Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **68** as this line was written, so the commit carrying it makes 69 |
+| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **64** steps done, **21** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -801,6 +803,26 @@ That is the rest of item 17.
 - **Park the clock instead of waiting for it.** `animation.currentTime` is honoured by style
   recalc without a frame being drawn, which is the only way to measure a transition-timing
   bug in headless. Nothing about `--virtual-time-budget` makes transitions advance.
+- **A function can be written, tested, and have NO CALLER.** `needsRenewal` was built on
+  2026-08-17 with tests, and nothing invoked it, so a Pro session would have expired after
+  a day, ridden the seven-day grace and then shown a paying subscriber the wall they had
+  already paid to pass. **Nothing was red.** It was found by reconciling the plan's steps
+  against the code during the doc pass, which is the only thing that would have found it.
+  When a helper exists to answer a question, grep for who asks.
+- **A plan's checkbox is a claim, and claims get made carelessly.** Ticking the six tasks
+  built that day put four ticks on steps nobody had performed — a discriminate check, a
+  brand-checklist pass, a "look at it in a real page", and a page restructure that was
+  actually just an added section. Three were then done properly and one was left open. **If
+  a step says "prove" or "look at", the tick means you did that, not that the feature works.**
+- **A fixture that quotes copy will quote it wrongly.** `tools/tray-harness.mjs` now reads
+  the wall's sentences out of `trayCopy.ts` instead of retyping them, and the first version
+  of that reader understood `'...'` but not template literals — so it rendered
+  `[head unreadable]`. That is the right failure: **a harness that silently draws a blank
+  headline is worse than one that refuses to draw.**
+- **`* text=auto` plus an incomplete binary list will corrupt images.** `.gitattributes`
+  named only `*.png`, so four `.jfif` photographs were tracked as TEXT and a CRLF
+  normalisation pass ran through their bytes. They were restored and verified before the
+  commit. The list is complete now; if a new binary type arrives, it goes in the same commit.
 - **A generated artefact nobody re-reads will drift, and a confident comment is not a
   render.** `icons/*.png` are committed and `build.mjs` does not regenerate them, so
   nothing opened the file Chrome actually loads. The 16px icon shipped with no catchlights

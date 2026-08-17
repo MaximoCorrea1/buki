@@ -40,6 +40,55 @@ if (open === -1 || close === -1) {
 }
 const STYLE = src.slice(open + 'const STYLE = `'.length, close);
 
+/**
+ * The wall's words, READ OUT OF trayCopy.ts rather than retyped.
+ *
+ * Same technique as the stylesheet above, and for the same reason: this fixture has
+ * drifted from the builders three times in one week. Copy is the easiest thing to let
+ * rot, because a stale sentence still renders.
+ */
+const copySrc = readFileSync('src/extension/trayCopy.ts', 'utf8');
+const wallBlock = copySrc.slice(
+  copySrc.indexOf('export const WALL'),
+  copySrc.indexOf('} as const;', copySrc.indexOf('export const WALL')),
+);
+
+/**
+ * The constants the wall's sentences interpolate, read from where they are defined.
+ *
+ * Two of the five fields are TEMPLATE literals rather than plain strings, and the first
+ * version of this extractor only understood `'...'`. It rendered `[head unreadable]` and
+ * `[act unreadable]` — loudly, which is why the fallback says that rather than returning
+ * an empty string. A harness that silently draws a blank headline is worse than one that
+ * refuses to draw at all.
+ */
+const priceSrc = readFileSync('src/shared/pricing.ts', 'utf8');
+const constant = (name) =>
+  priceSrc.match(new RegExp(`${name} = '?([^';\n]+)'?;`))?.[1]?.trim() ?? `[${name}?]`;
+const SUBS = {
+  TRIAL_SPELLED: constant('TRIAL_SPELLED'),
+  PRO_MONTHLY_USD: constant('PRO_MONTHLY_USD'),
+};
+
+/**
+ * Every quoted run that follows `<name>:`, joined, with `${CONST}` resolved.
+ *
+ * Joined rather than taken singly because `body` is two concatenated literals, kept that
+ * way to stay inside the line length. A reader that took only the first would render half
+ * a sentence — the quiet wrongness this whole file exists to prevent.
+ */
+const wallWord = (name) => {
+  const at = wallBlock.indexOf(`${name}:`);
+  if (at === -1) return `[${name} is not in trayCopy.ts any more]`;
+  const upto = wallBlock.slice(at, wallBlock.indexOf(',\n', at) + 1 || undefined);
+  const parts = upto.match(/'[^']*'|`[^`]*`/g);
+  if (!parts) return `[${name} unreadable]`;
+  return parts
+    .map((p) => p.slice(1, -1))
+    .join('')
+    .replace(/\$\{(\w+)\}/g, (whole, key) => SUBS[key] ?? whole);
+};
+
 /** The five dyes, from generatedCover.ts, so a card's spine is a real binding. */
 const CLOTH = { coral: '#ff5a47', jade: '#22b584', peri: '#6274ff', plum: '#b45ce0' };
 
@@ -143,6 +192,21 @@ const TRAY = [
       </div>
       <button class="buki-act">Try the post's words</button>`,
     CLOTH.plum,
+    false,
+  ),
+  // THE WALL. The only card that asks for money, and the reason its words are read out of
+  // trayCopy.ts above rather than typed here.
+  card(
+    `<div class="buki-head">
+        <div class="buki-who">
+          <div class="buki-eyebrow">${wallWord('eyebrow')}</div>
+          <div class="buki-t buki-plain">${wallWord('head')}</div>
+          <div class="buki-note">${wallWord('body')}</div>
+        </div>${closeBtn}
+      </div>
+      <button class="buki-act buki-buy">${wallWord('act')}</button>
+      <button class="buki-act">${wallWord('free')}</button>`,
+    CLOTH.jade,
     false,
   ),
 ];

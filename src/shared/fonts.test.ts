@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import popupHtml from '../../popup.html?raw';
 import optionsHtml from '../../options.html?raw';
+import contentTs from '../extension/content.ts?raw';
 
 /**
  * A dangling `@font-face` is the quietest failure this repo can ship.
@@ -60,4 +61,29 @@ describe('the fonts the extension ships', () => {
       .map((file) => `${file} ships but no surface loads it`);
     expect(unused).toEqual([]);
   });
+});
+
+/**
+ * MANROPE SHIPS NO ITALIC, on every surface that uses it.
+ *
+ * `font-synthesis: none` makes the browser refuse to shear the roman rather than quietly
+ * producing the counterfeit `docs/brand.md` records reaching production once. Three
+ * surfaces declared it and the CATCH TRAY did not - found by the long-carried "grep for
+ * other dead declarations" on 2026-08-17, which had been deferred for three sessions.
+ *
+ * Nothing in the tray is italic today, so this was latent rather than live. That is
+ * exactly when it is cheapest to close: one declaration, and the class of bug cannot come
+ * back through a future `<em>` in a book title.
+ */
+describe('no surface may synthesise an italic', () => {
+  const SURFACES: Record<string, string> = {
+    'popup.html': popupHtml,
+    'options.html': optionsHtml,
+    'the catch tray (content.ts)': contentTs,
+  };
+  for (const [name, body] of Object.entries(SURFACES)) {
+    it(`${name} declares font-synthesis: none`, () => {
+      expect(body.replace(/\s+/g, ' ')).toMatch(/font-synthesis:\s*none/);
+    });
+  }
 });

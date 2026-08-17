@@ -13,7 +13,7 @@
  * a signed token, and the two having different lifetimes is the point.
  */
 import type { StorageArea } from './storage';
-import { isLicensed, type Session } from './license';
+import { isLicensed, needsRenewal, type Exchange, type Session } from './license';
 import type { Standing } from './entitlement';
 
 export const PRO_KEY = 'buki-pro';
@@ -77,4 +77,53 @@ export function standingOf(
     trialSpent,
     ownKey: providerKey.trim() !== '',
   };
+}
+
+/**
+ * Trade the licence for a fresh session before the one we hold runs out.
+ *
+ * **This had no caller until 2026-08-17.** `needsRenewal` was written and tested with
+ * nothing calling it, so a subscriber's token would have expired after a day, ridden the
+ * seven-day grace, and then shown them the wall they had already paid to pass. Nothing was
+ * red; it was found by reconciling the plan against the code.
+ *
+ * THE FAILURE RULE IS THE POINT. A renewal that fails for a reason that might pass — Polar
+ * down, network blinked — KEEPS the token we have, because the server honours it on grace
+ * and throwing it away would sign a paying customer out during OUR outage. A renewal
+ * refused outright (revoked, refunded, subscription ended) is an answer rather than an
+ * outage, so the session goes and the key stays, which is what lets the options page say
+ * what is wrong.
+ *
+ * It never throws. It is called on the path of a catch somebody is waiting on, and a
+ * failure to renew must degrade to "carry on with what we have", never to a lost catch.
+ */
+export async function ensureSession(
+  pro: ProState,
+  deps: {
+    exchange: (key: string) => Promise<Exchange>;
+    save: (state: ProState) => Promise<void>;
+    now: () => number;
+  },
+): Promise<ProState> {
+  if (!pro.key) return pro;
+  if (!needsRenewal(pro.session, deps.now())) return pro;
+
+  let result: Exchange;
+  try {
+    result = await deps.exchange(pro.key);
+  } catch {
+    return pro; // keep what we have and ride the grace window
+  }
+
+  if (result.ok) {
+    const next: ProState = { key: pro.key, session: result.session };
+    await deps.save(next);
+    return next;
+  }
+
+  if (result.retryable) return pro;
+
+  const next: ProState = { key: pro.key, session: null };
+  await deps.save(next);
+  return next;
 }
