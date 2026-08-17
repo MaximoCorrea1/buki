@@ -16,6 +16,19 @@
  * carries only the numbers, because only the numbers can drift silently.
  */
 
+import { BUKI_HOST } from './host';
+
+/**
+ * Where a price CTA goes, from both the wall and the popup's plan badge.
+ *
+ * Here rather than spelled out at each call site, and asserted against the landing:
+ * `pricing.test.ts` fails if `docs/index.html` loses the anchor. It was written broken -
+ * the extension linked to `#pricing` on a page whose section was called `#costs`, so both
+ * buttons landed at the top of a long page. The section was renamed to match its own nav
+ * label, which already read "Pricing".
+ */
+export const PRICING_URL = `${BUKI_HOST}/#pricing`;
+
 export const FREE_USD = 0;
 export const PRO_MONTHLY_USD = 4;
 export const PRO_YEARLY_USD = 29;

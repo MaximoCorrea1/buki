@@ -15,11 +15,17 @@ you're done, and every saved book carries a quiet Buy link.
 > `buki-pro`, because that is where the work is.** What is built, what is not, and what is
 > blocked is an ordered checklist in `OPENWORK.md`. Read that first.
 >
-> **Two** things the landing advertises do not exist yet: the hosted proxy and the ten free
-> catches. Both wait on `OPENWORK.md` items 1 and 2, which are Maximo's, and both are
-> unblocked the moment a Polar product and five Vercel variables exist. Today recognition
-> needs the user's own API key. Export to Goodreads and StoryGraph **shipped on 2026-08-13**
-> and is free on every tier.
+> **The paid tier is written and is not yet switched on.** As of 2026-08-17 the whole
+> client half exists — the entitlement gate, the trial counter, the wall, the licence
+> exchange, the plan badge — and so do both serverless functions
+> (`src/server/visionHandler.ts` and `licenseHandler.ts`, with four-line shells in `api/`).
+> **What is missing is not code.** It is a Polar product and five Vercel environment
+> variables, both of which are Maximo's and are `OPENWORK.md` items 1 and 2. Until they
+> exist, `${BUKI_HOST}/api/vision` answers nothing, so a user with no key of their own gets
+> no cover reading — which is why the landing's "ten catches free" is still a promise
+> rather than a fact.
+>
+> Export to Goodreads and StoryGraph **shipped on 2026-08-13** and is free on every tier.
 
 ## Two ways to catch a book
 

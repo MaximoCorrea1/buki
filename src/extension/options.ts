@@ -8,6 +8,7 @@ import { readPro, writePro, standingOf } from './proState';
 import { createTrial } from './trial';
 import { planLabel } from './entitlement';
 import { BUKI_HOST } from '../shared/host';
+import { PRICING_URL } from '../shared/pricing';
 import { priceLine } from '../shared/pricing';
 
 const $ = <T extends HTMLElement>(id: string): T | null => document.getElementById(id) as T | null;
@@ -41,7 +42,7 @@ async function wirePro(): Promise<void> {
   // boundary of the handlers below, and `!` at every use is a worse answer than binding.
   const el = { field, activate, now, status, buy };
 
-  buy.href = `${BUKI_HOST}/#pricing`;
+  buy.href = PRICING_URL;
   buy.textContent = `Buki Pro, ${priceLine()}`;
 
   const trial = createTrial({ storage });

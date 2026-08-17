@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { PRO_MONTHLY_USD, PRO_YEARLY_USD, FREE_USD, priceLine } from './pricing';
+import { PRO_MONTHLY_USD, PRO_YEARLY_USD, FREE_USD, priceLine, PRICING_URL } from './pricing';
+import { BUKI_HOST } from './host';
 import { TRIAL_CATCHES } from '../extension/entitlement';
 import indexHtml from '../../docs/index.html?raw';
 import pricingMd from '../../docs/pricing.md?raw';
@@ -65,6 +66,19 @@ describe('the price is one number', () => {
     // more than the gate allows is the one claim a stranger can check in five minutes.
     expect(TRIAL_CATCHES).toBe(10);
     expect(indexHtml.toLowerCase()).toContain('ten catches free');
+  });
+
+  it('the landing has the anchor the EXTENSION links to', () => {
+    // The wall and the plan badge both open `${BUKI_HOST}/#pricing`. Without this id they
+    // land at the top of a long page and the reader has to go looking for the thing they
+    // just pressed a button to see. A cross-surface link nobody asserts is a link that
+    // breaks the next time a section is renamed — and this one was broken the moment it
+    // was written, which is why the test exists.
+    expect(indexHtml).toMatch(/id="pricing"/);
+  });
+
+  it('the extension points at that anchor and nowhere else for the price', () => {
+    expect(PRICING_URL).toBe(`${BUKI_HOST}/#pricing`);
   });
 
   it('renders one price line every surface can quote', () => {

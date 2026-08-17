@@ -17,9 +17,10 @@ import { bestQuality, distinctMedia } from './twitterImage';
 import { inlineAll, livePrep } from './inlineImage';
 import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
-import { BUKI_HOST } from '../shared/host';
+import { PRICING_URL } from '../shared/pricing';
 import { createGate, WallError } from './gate';
-import { readPro } from './proState';
+import { readPro, type ProState } from './proState';
+import { visionRoute } from './visionRoute';
 import { createTrial } from './trial';
 import { coverDataUrl } from './coverData';
 import { withSignal } from './cancellable';
@@ -111,14 +112,28 @@ function noteFailure(ms: number, flow: AttemptDraft['flow']): void {
   note({ ms, flow, source: 'none', confidence: 'low', outcome: 'no-match' });
 }
 
-function visionFor(settings: Settings, net: FetchLike) {
+function visionFor(settings: Settings, net: FetchLike, pro: ProState) {
+  // WHERE THIS GOES IS visionRoute's DECISION, not this function's. With their own key it
+  // is their own provider; with none it is Buki's proxy, carrying a session token if one
+  // is live and nothing at all if not - which is what the trial looks like on the wire.
+  const route = visionRoute(settings, pro);
+
   // A blank key is legitimate against a proxy holding its own credential, but against a
   // public provider it just means setup is unfinished - worth saying so rather than
   // firing a request that can only 401.
-  const providerNeedsKey = /googleapis\.com|openai\.com|openrouter\.ai/.test(settings.endpoint);
-  if (!settings.apiKey && providerNeedsKey) throw new NoKeyError('no key');
+  const providerNeedsKey = /googleapis\.com|openai\.com|openrouter\.ai/.test(route.endpoint);
+  if (!route.apiKey && providerNeedsKey) throw new NoKeyError('no key');
 
-  return createLlmVision({ fetch: net, config: toVisionConfig(settings) });
+  return createLlmVision({
+    fetch: net,
+    config: {
+      endpoint: route.endpoint,
+      // Empty means the proxy chooses, so fall back to the configured model only when we
+      // are talking to a provider directly.
+      model: route.model || settings.model,
+      ...(route.apiKey ? { apiKey: route.apiKey } : {}),
+    },
+  });
 }
 
 /**
@@ -139,7 +154,9 @@ async function recognize(
   job: string,
   opts: { fromText?: boolean } = {},
 ): Promise<{ result: RecognitionResult; model: string }> {
-  const settings = await readSettings(); // read per call, so a new key needs no reload
+  // Both read per call, so pasting a licence key or a provider key takes effect on the
+  // next catch rather than the next reload.
+  const [settings, pro] = await Promise.all([readSettings(), readPro(chrome.storage.local)]);
   let keyWasMissing = false;
 
   // Every request this catch makes goes through one signal, so calling it off reaches the
@@ -163,7 +180,7 @@ async function recognize(
         // before the call and accounts for it only after one that happened; a WallError
         // unwinds the whole recognition and becomes the card's wall state. A catch from a
         // retailer link never reaches here, which is why it is free at every level.
-        return await gate.run('cover', () => visionFor(settings, net).guessBooks(input));
+        return await gate.run('cover', () => visionFor(settings, net, pro).guessBooks(input));
       } catch (err) {
         if (!(err instanceof NoKeyError)) throw err;
         keyWasMissing = true;
@@ -514,7 +531,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     if (msg.page === 'options') void chrome.runtime.openOptionsPage();
     // The pricing anchor rather than the bare host: somebody who pressed a price button
     // should land on the prices, not at the top of a landing page they have to scroll.
-    else void chrome.tabs.create({ url: `${BUKI_HOST}/#pricing` });
+    else void chrome.tabs.create({ url: PRICING_URL });
     sendResponse({ ok: true });
     return false;
   }

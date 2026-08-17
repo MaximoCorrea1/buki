@@ -1,7 +1,7 @@
 import { createLibrary, type StorageArea, type SavedBook, type Intent } from './storage';
 import { restoreArgs } from './shelfEdit';
 import { badgeFor } from './planBadge';
-import { BUKI_HOST } from '../shared/host';
+import { PRICING_URL } from '../shared/pricing';
 import { readPro, standingOf } from './proState';
 import { readSettings } from './settings';
 import { createTrial } from './trial';
@@ -533,7 +533,7 @@ function wirePlanBadge(): void {
   const el = document.getElementById('plan');
   el?.addEventListener('click', () => {
     if (!el.hasAttribute('data-cta')) return;
-    void chrome.tabs.create({ url: `${BUKI_HOST}/#pricing` });
+    void chrome.tabs.create({ url: PRICING_URL });
   });
 }
 

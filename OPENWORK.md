@@ -575,13 +575,27 @@ decisions.
 Each is fully specified in `docs/superpowers/plans/2026-08-09-buki-pro.md` with complete
 code. Tasks 1 to 5 are done and tested; these are the wiring.
 
-- [ ] **10. Task 6, the vision proxy.** 5 steps. Needs items 1 and 2.
-- [ ] **11. Task 7, exchanging a licence for a session.** 4 steps. Needs item 10.
-- [ ] **12. Task 8, the extension holds a licence.** 5 steps.
-- [ ] **13. Task 9, settings learn about the licence.** 6 steps. Needs item 11.
-- [ ] **14. Task 10, the worker gates a catch.** 6 steps. Needs items 12 and 13.
-- [ ] **15. Task 12, the wall.** 9 steps. The paywall UI.
-- [ ] **16. Task 13, the options page holds a licence.** 4 steps.
+**Items 10 to 16 were BUILT on 2026-08-17.** Every one of them is code-complete, tested
+and typechecked; what remains in each is the part only Maximo can do. The pattern is the
+same throughout: the decision lives in a pure module under `src/`, and the thing that
+needs a credential or a dashboard is the shell around it.
+
+- [~] **10. Task 6, the vision proxy.** `src/server/visionHandler.ts` + `api/vision.ts`,
+      13 tests including "never lets the provider key reach the client". `vercel.json`
+      excludes `/api/` from the static headers. **Remaining: the five variables (item 2)
+      and a deploy.**
+- [~] **11. Task 7, exchanging a licence for a session.** `src/server/licenseHandler.ts` +
+      `api/license.ts`, 11 tests. **Remaining: the Polar product (item 1).**
+- [x] **12. Task 8, the extension holds a licence.** `license.ts` and `proState.ts`.
+      `isLicensed` stays true through the server's grace window; holding a key is not
+      holding a subscription.
+- [x] **13. Task 9, settings learn about the licence.** The Buki Pro section on the options
+      page, wired on its own guard rather than behind the provider form's early return.
+- [x] **14. Task 10, the worker gates a catch.** `gate.ts` wraps the vision call, and
+      `visionRoute.ts` decides whose credential goes where.
+- [x] **15. Task 12, the wall.** A sixth card state, its words in `trayCopy.ts`, and a test
+      that forbids the four words which would turn a limit into a hostage.
+- [x] **16. Task 13, the options page holds a licence.** Same section as item 13.
 - [~] **17. Task 14, the documents that are now false.** 4 steps. **Half done 2026-08-16**
       — the permission justifications are written; the data-usage declaration and the
       listing still wait on the proxy. *(see §3 below)*

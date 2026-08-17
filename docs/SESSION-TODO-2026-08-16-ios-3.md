@@ -112,6 +112,37 @@ session is folded into `OPENWORK.md`.
       and `src/shared/icons.test.ts` now decodes the shipped PNGs — red-green verified by
       re-adding the gate and watching it fail.
 
+## 2026-08-17, second stretch — the paid tier
+
+Asked for in one line: *"the pro everything. the landing. the pro ctas within the
+extension, the badges, everything"*. Executed against `docs/superpowers/plans/2026-08-09-buki-pro.md`
+with `superpowers:executing-plans`; **the plan was wrong twice more about its own details**
+(its `license.test.ts` used `GRACE_MS` without importing it, and its `Claim` shape was
+`{licenseKeyId, issuedAt}` where the repo's is `{licenseKeyId, activationId}`), so every
+snippet was checked against the code before use.
+
+- [x] **`license.ts`** — key in, session out. 16 tests. `isLicensed` deliberately stays
+      true past expiry for the server's whole grace window.
+- [x] **`proState.ts`** — the one place `Standing` is assembled, so three callers cannot
+      each read "has a key" as "is Pro".
+- [x] **`gate.ts`** — the single chokepoint. Check before the call, spend only after one
+      that happened. 9 tests, each naming the failure it prevents.
+- [x] **The wall** — a sixth card state, never transient, with a test forbidding "lose",
+      "delete", "expire" and "removed".
+- [x] **`shared/pricing.ts`** — `host.ts` for money. Finds every price by looking and
+      refuses any it has not declared; holds the landing's "ten catches free" to the
+      number the gate enforces.
+- [x] **The plan badge** — says nothing for most of the trial, on purpose.
+- [x] **The options page's Buki Pro section** — wired on its own guard.
+- [x] **Both serverless functions**, as pure handlers under `src/server/` with four-line
+      shells in `api/`, so they are typechecked and tested without a deploy. 24 tests.
+- [x] **`visionRoute.ts`** — whose credential goes where. Their key never reaches our proxy.
+- [x] **The landing's `#costs` anchor renamed `#pricing`**, because the extension now links
+      to it and it was broken the moment that link was written. Asserted.
+- [x] **`.gitattributes`** — only `*.png` was marked binary while `* text=auto eol=lf`
+      applied to everything else, so four `.jfif` photographs were tracked as TEXT. A
+      normalisation pass ran over them and they were restored before the commit.
+
 ## Open, 2026-08-17
 
 - [?] **The "Read" collision.** The tray now says *Read now / Read next / Read someday*
@@ -121,6 +152,13 @@ session is folded into `OPENWORK.md`.
 - [ ] **Undo does not unflag the recognition.** `removeBook` marks the match wrong on the
       way out and nothing clears it on the way back in, so remove-then-undo leaves the kept
       rate one worse. One attempt in a rolling 200. Needs an unflag path through the log.
+- [!] **The paid tier cannot be switched on from here.** Items 1 (a Polar product) and 2
+      (five Vercel variables) are Maximo's, and until both exist `api/vision` answers
+      nothing — so a user with no key of their own still gets no cover reading, and the
+      landing's "ten catches free" is a promise rather than a fact.
+- [ ] **The Polar checkout URL has no home yet.** The Pro card and the wall both lead to
+      install-then-activate, which is the true flow today. When the product exists, that
+      URL wants to live beside the price in `src/shared/pricing.ts`.
 - [ ] **The tray harness renders with the FALLBACK font under headless file://**, so every
       width measured there is wider than what ships. Fine for catching overflow; wrong for
       judging type.
