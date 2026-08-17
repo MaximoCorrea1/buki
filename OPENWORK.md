@@ -4,14 +4,14 @@
 
 | | |
 | --- | --- |
-| Tests | **515 across 52 files**, all passing |
+| Tests | **516 across 52 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **68** as this line was written, so the commit carrying it makes 69 |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **70** as this line was written, so the commit carrying it makes 71 |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **64** steps done, **21** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -600,9 +600,11 @@ needs a credential or a dashboard is the shell around it.
 - [x] **15. Task 12, the wall.** A sixth card state, its words in `trayCopy.ts`, and a test
       that forbids the four words which would turn a limit into a hostage.
 - [x] **16. Task 13, the options page holds a licence.** Same section as item 13.
-- [~] **17. Task 14, the documents that are now false.** 4 steps. **Half done 2026-08-16**
-      — the permission justifications are written; the data-usage declaration and the
-      listing still wait on the proxy. *(see §3 below)*
+- [~] **17. Task 14, the documents that are now false.** 4 steps. **The permission
+      justifications (2026-08-16) and the store listing (2026-08-17) are written.** What is
+      left is the pair that cannot be written until the proxy answers: `docs/privacy.html`
+      and the landing's data section, both of which still say the picture goes straight to
+      the provider the user configured. *(see §3 below)*
 - [ ] **18. Task 15, close the loop.** 4 steps.
 - [ ] **19. Merge `buki-pro` into `main`.** 37 commits and counting. Use
       `superpowers:finishing-a-development-branch`.
@@ -649,7 +651,7 @@ needs a credential or a dashboard is the shell around it.
 
 ---
 
-## 3. The store documents: permissions are done, the listing is not
+## 3. The store documents: both are written, and neither may be submitted yet
 
 **`docs/store/permissions.md` was the one that failed review, and its permission half is
 now written (2026-08-16).** `scripting`, `activeTab` and the optional host permission are
@@ -675,16 +677,27 @@ They describe the picture going straight to the provider the user configured, an
 `/api/vision` makes that false. Rewrite them, `docs/privacy.html` and the landing's data
 section **in the same commit as the proxy**.
 
-**`docs/store/listing.md` is untouched and still fails.** It describes the X-only,
-bring-your-own-key, no-server product: the name, the short description and the whole
-detailed description are the narrow version. **Its `Single purpose` field is the one to
-fix first** — it says Buki "identifies books shown in posts on x.com", and a single-purpose
-statement scoped to one site sitting next to a manifest that asks for `scripting`,
-`activeTab` and an optional `https://*/*` is a contradiction a reviewer is specifically
-looking for. The manifest and `package.json` descriptions were corrected on 2026-08-16;
-this file is the last place the narrow pitch survives.
+**`docs/store/listing.md` is rewritten, 2026-08-17.** The `Single purpose` field was the
+one that would have failed: it said Buki *"identifies books shown in posts on x.com"*, a
+statement scoped to one site sitting beside a manifest asking for `scripting`, `activeTab`
+and an optional `https://*/*`, which is exactly the contradiction a reviewer looks for. It
+now names one purpose covering every entry point the manifest has.
 
-That is the rest of item 17.
+**Two things the rewrite found that were not on anybody's list:**
+
+- **The `Name` field was a field the dashboard does not own.** It read
+  `Buki: catch books from X` while `manifest.json` says `Buki`. The Web Store takes the
+  name and the summary from the manifest, so the file was offering copy for a box that
+  does not exist, in a value that contradicted the shipped one. The summary is now quoted
+  from the manifest verbatim and asserted as such.
+- **The listing is written FORWARD**, against the product at submission rather than the
+  product today, because item 22 decided Buki ships only once the paid tier works. It
+  carries a DO-NOT-SUBMIT gate naming the two things that must be true first, in the same
+  shape as `permissions.md`'s banners.
+
+**What is genuinely left in item 17:** `docs/privacy.html` and the landing's data section.
+Both still say the picture goes straight to the provider the user configured, which the
+proxy makes false, and both are rewritten in the same commit as the proxy.
 
 ---
 
@@ -913,3 +926,36 @@ That is the rest of item 17.
   viewport needs the iframe harness, not `--window-size`.
 - **`popup.html` renders nothing outside an extension host.** It is `<main id="app">` and
   draws itself from `chrome.storage`. Use `node tools/popup-harness.mjs`.
+- **A guard written for one of two allowlists is how the second one drifts.**
+  `extensionTokens.test.ts` holds two: `LITERAL_BY_DESIGN` and `MOOD_INVARIANT`. The first
+  is asserted against dead entries, under a comment saying *"if a name in the allowlist
+  stops existing, the exemption is silently protecting nothing."* The second was not, and
+  within a day of the mark changing it was exempting `--mark-caught`, a token deleted from
+  all three surfaces. **A dead exemption is worse than a missing one**: it reads as a
+  considered decision, so the next reader spends their scepticism elsewhere, and the day a
+  token returns under that name it is pre-approved. Both are asserted now. When you write
+  an allowlist, count how many the file already has.
+- **A POINTER IS A CLAIM AND EXPIRES LIKE ONE.** Superseding a section is only half the
+  edit; whatever points AT it has to move in the same commit. `docs/brand.md` banner'd the
+  three-spine mark correctly and its own `## The mark` banner went on saying *"read The
+  mark: three spines below"* for a day, sending anyone who trusted it straight to retired
+  values. The same day, `.agents/product-marketing.md`'s changelog announced the new mark
+  while its Visual Identity body still described three spines, two cords and per-ground
+  values as current, and the body is the half a copy task actually reads.
+- **A banner that ENUMERATES is making a claim about everything it leaves out.**
+  `DESIGN.md` opened with "Two things in it are no longer true" and named two, so its later
+  appendix paragraphs about the mark, the type and "one product again" all read as still
+  true. Three were stale. If a record cannot be kept current, the banner has to say
+  *category*, not *count*.
+- **A comment can describe elements the file does not contain.** `popup.html`,
+  `options.html` and `docs/index.html` each carried an SVG comment about three spines and a
+  cord MASK directly above a `<defs>` defining a ball gradient. Measured: zero `<mask>`,
+  zero `<rect>`, two `<ellipse>` in all three. `mark.test.ts` asserts the geometry across
+  six surfaces and cannot see a sentence. **This is the mirror of the trap already in this
+  list** ("a comment can be right while the code beneath it is wrong"), and the pair of them
+  is the real rule: the comment and the code are two artefacts, and nothing checks that they
+  agree.
+- **The Chrome Web Store takes the name and the summary from `manifest.json`.**
+  `docs/store/listing.md` offered a `Name` of `Buki: catch books from X` for a dashboard box
+  that does not exist, contradicting the manifest's `Buki`. Copy written for a field nobody
+  fills in is copy that never ships and never gets corrected.

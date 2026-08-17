@@ -205,6 +205,42 @@ recorded instance; treat the plan as intent, never as source.
       STALE banner - but a doc stating something a reader could act on and be wrong is not
       a matter of taste, so it is banner'd and the table is fixed.
 
+## 2026-08-17, fifth stretch - after compaction: the store listing, and four expired pointers
+
+Resumed with *"reread all context all docs and the flows"*. **Probed before planning**, per
+rule 4, and the probe disagreed with a doc immediately: the buki-pro plan shows all six of
+Task 9's steps unticked while `OPENWORK.md` item 13 calls Task 9 done. Read the code rather
+than either: `visionRoute.ts` genuinely SUPERSEDES the plan's `toVisionConfig` approach, and
+better, because the licence lives in `proState`'s own storage key instead of inside
+`visionSettings`. Item 13 is right; the plan's Task 9 is a stale route, not undone work.
+
+- [x] **The caller sweep, run across every Pro module** rather than only the one that bit
+      us. `visionRoute`, `createGate`, `ensureSession`, `needsRenewal`, `readPro`,
+      `writePro`, `standingOf`, `isLicensed`, `coverDataUrl`, `restoreArgs`, `badgeFor`,
+      `trialLeft`, `spend` - all reach a real entry point (`background.ts`, `popup.ts`,
+      `options.ts`). **No second `needsRenewal`.** Worth having asked.
+- [x] **A DEAD EXEMPTION, found and closed with a test.** `extensionTokens.test.ts` holds
+      two allowlists and asserts only one of them against dead entries. The unguarded one,
+      `MOOD_INVARIANT`, was carving out `--mark-caught`, a token deleted from all three
+      surfaces the day before. TDD: the new test failed naming that exact entry while the
+      three live tokens passed in the same loop, which is the discriminate check for free.
+- [x] **Four expired pointers, all pointing at the retired mark.** `brand.md`'s `## The
+      mark` banner said "read *The mark: three spines* below" one section above *THE
+      CATCHER*; `.agents/product-marketing.md`'s Visual Identity described three spines and
+      per-ground values while its own v8 changelog announced they were retired; `DESIGN.md`
+      enumerated "two things no longer true" with three more in its appendix; and
+      `popup.html`, `options.html` and `docs/index.html` each carried an SVG comment about
+      three spines and a cord MASK above a `<defs>` defining a ball. Measured: zero
+      `<mask>`, zero `<rect>`, two `<ellipse>` in all three files.
+- [x] **`docs/store/listing.md` rewritten**, the one item OPENWORK named as unblocked.
+      Routed through `marketing-skills:copywriting`. `marketing-skills:aso` was invoked and
+      **did not fit** - it audits a live Apple or Play listing and this product has none -
+      so its transferable parts were used and its procedure was not. The `Single purpose`
+      field was the review risk and is fixed; the `Name` field turned out to be one the
+      dashboard does not own.
+- [x] **v9 of `.agents/product-marketing.md`**, and the header date corrected: it said v8
+      was last updated 2026-08-16 while the v8 entry beneath it is dated 2026-08-17.
+
 ## Open, 2026-08-17
 
 - [?] **The "Read" collision.** The tray now says *Read now / Read next / Read someday*

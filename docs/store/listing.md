@@ -1,84 +1,155 @@
 # Chrome Web Store listing
 
-> ## ⚠ STALE. Do not submit as written. Rewrite is OPENWORK item 17.
+> ## ⛔ DO NOT SUBMIT until both of these are true
 >
-> Every line below describes the **X-only, bring-your-own-key, no-server** product. Four
-> things now invalidate it:
+> The copy below describes the product **as it will be at submission**, which is not what a
+> user gets today. `OPENWORK.md` item 22 records the decision that Buki ships only once the
+> paid tier works, so this file is written forward rather than written twice.
 >
-> | What changed | What this file must say instead |
+> | Gate | Where |
 > | --- | --- |
-> | Catch works on **any image anywhere** (shipped 2026-08-12) | The name, the short description, and the whole detailed description. "catch books from X" is the narrow version and it is no longer the pitch. |
-> | Recognition will be **hosted**, ten free catches then $4/month | The listing must disclose a paid tier and that recognition contacts a Buki server. **Not yet true**, so do not write it until Task 6 ships. |
-> | The landing, the mark and the extension surfaces were **redesigned** | The promo tile and the screenshot shot-list. |
-> | The production domain is now `get-buki.vercel.app` | Already corrected below. |
+> | The Polar product exists | `OPENWORK.md` item 1, field by field in `docs/superpowers/polar-setup.md` |
+> | The five Vercel variables are set and `/api/vision` answers | `OPENWORK.md` item 2 |
 >
-> The privacy URL must resolve or review fails. Positioning to write against is in
-> `.agents/product-marketing.md` v3; the differentiator is in `competitor-profiles/_summary.md`.
+> Until then, *"Ten catches from a photograph are free"* is a promise rather than a fact,
+> because a user with no key of their own gets no cover reading at all. **Submitting before
+> that is shipping a listing that misdescribes the product**, which is the one thing store
+> review reliably catches.
+>
+> One more gate, and it is not optional: **`docs/privacy.html` and the landing's data
+> section still describe the picture going straight to the provider the user configured.**
+> The proxy makes that false. They are rewritten in the same commit as the proxy, per
+> `docs/store/permissions.md`.
 
-Everything here is copy-paste ready. Fields match the Web Store developer dashboard.
+**Rewritten 2026-08-17.** The previous version described the X-only, bring-your-own-key,
+no-server product and had been stale since 2026-08-12. Positioning is
+`.agents/product-marketing.md` v9; the differentiator is in `competitor-profiles/_summary.md`.
+
+---
+
+## Where each field actually comes from
+
+This tripped the previous version, which offered a Name that contradicted the shipped
+manifest. **Two of these fields are not typed into the dashboard at all.**
+
+| Field | Source | Value today |
+| --- | --- | --- |
+| Name | `manifest.json` → `name` | `Buki` |
+| Summary (short description, 132 max) | `manifest.json` → `description` | 100 characters, below |
+| Detailed description | dashboard | below |
+| Category, Language, Single purpose, Privacy URL | dashboard | below |
+| Permission justifications | dashboard | **`docs/store/permissions.md`**, not here |
+
+If the dashboard offers an editable title, it must match the manifest exactly. A store
+title that disagrees with the manifest is a contradiction a reviewer can see without
+leaving the page.
 
 ## Name
 
-```
-Buki: catch books from X
-```
-
-## Short description (132 characters max)
+Taken from the manifest. Do not invent a longer one here:
 
 ```
-Catch books you see on X into your own shelf, before they get lost in your bookmarks.
+Buki
 ```
+
+The old value was `Buki: catch books from X`, which was both stale and a field the
+dashboard does not own. The keywords belong in the summary and the detailed description,
+which is where the store actually reads them.
+
+## Summary / short description (132 characters max)
+
+Already shipped in `manifest.json`, 100 characters, and correct:
+
+```
+Catch a book from any picture on the web into your own shelf, before it gets lost in your bookmarks.
+```
+
+Change it in `manifest.json` or the store and the code will disagree. `src/shared/host.test.ts`
+does not guard this string; check it by eye when the manifest moves.
 
 ## Detailed description
 
 ```
-You see a book in a post, save it, and never see it again. It sinks under memes and
-threads, and there's no way to tell the ones you meant it about from the impulse saves.
+You see a book in a picture, save the post, and never find it again. It sinks under
+everything you saved after it, and months later you cannot tell the ones you meant from
+the impulse saves.
 
 Buki gives those books a place.
 
-TWO WAYS TO CATCH A BOOK
+IT READS THE PICTURE, NOT THE CAPTION
 
-• Right-click a cover image and choose "Save book to shelf". Buki reads the cover and
-  the post's words together, checks the result against OpenLibrary, and files it. This is
-  the one that works on a photo with no link and no title in the text.
+Right-click any cover image anywhere on the web and choose "Save book to shelf". Buki
+reads the picture together with the words around it, checks the answer against
+OpenLibrary, and files it. That is the one that works on a photograph with no link and no
+title written anywhere.
 
-• Hit the book icon on a post. Same recognition, and you pick where the book goes.
+On X there is a book icon in the post's action bar that does the same thing in one press.
+
+A photograph holding several books gives you several books, not just the clearest one.
 
 NOW, NEXT, OR SOMEDAY
 
-Every book gets an intention, so something you mean to read next month doesn't sit in the
-same pile as something you saved on a whim. Mark it finished when you're done.
+Every book gets an intention, so something you mean to read next month does not sit in the
+same pile as something you saved on a whim. Mark it read when you finish it.
 
-IT TELLS YOU WHEN IT'S UNSURE
+Nothing reaches your shelf until you pick a pile. Buki never saves a book for you.
 
-Every catch names its evidence: read from the cover, from a link in the post, or
-unverified when the catalogue could not confirm it. Nothing reaches your shelf until you
-pick a pile, so a wrong guess costs you a glance rather than a cleanup. Buki also keeps a
-private count of how often it got it right, so you can decide how much to trust it. That
-count never leaves your computer.
+IT TELLS YOU WHERE THE ANSWER CAME FROM
+
+Every catch names its evidence: read from the cover, from the link in the post, or from
+the post's own words. Buki also keeps a private count of how often you kept what it found,
+so you can decide how much to trust it. That count never leaves your computer.
+
+IT KEEPS THE POST THAT SOLD YOU
+
+The picture you caught a book from is stored with the book. Months later you see not just
+which book you saved, but why you wanted it.
 
 YOUR SHELF IS YOURS
 
-It lives in your browser. No account, no sync, no analytics, nothing to sign up for.
-Uninstalling takes it all with it.
+It lives in your browser. No account, no sign-up, no sync, no analytics. Export it to
+Goodreads or StoryGraph whenever you like, free, on every plan. Uninstalling takes it all
+with it.
 
-ONE-TIME SETUP
+WHAT IT COSTS
 
-Reading a cover from a photo is the one thing Buki can't do on your machine, so it
-needs a vision model. Paste a free key from Google AI Studio. About two minutes, no
-billing details. Any OpenAI-compatible endpoint works instead.
+Ten catches from a photograph are free. No card, no account, nothing to set up.
 
-Without a key, Buki still catches books from retailer links and from a post's own
-words. Only reading a cover from a photo needs one.
+After that, Buki Pro is $4 a month or $29 a year.
+
+Free forever, with no limit: books caught from a shop link or from a post's own words,
+your whole shelf, the piles, export, and unlimited cover reading with your own API key
+from Google AI Studio or any OpenAI-compatible provider.
+
+WHAT LEAVES YOUR COMPUTER, AND WHEN
+
+Reading a cover from a photograph is the one thing Buki cannot do on your machine. When
+you ask it to, that one picture is sent to Buki's server, which passes it to a vision
+model and returns the answer. The picture is not stored and no account is attached to it,
+because there is no account. Nothing else about you is sent, and nothing is sent unless
+you ask for a catch.
+
+If you would rather not involve us at all, add your own key in settings and the picture
+goes straight to the provider you chose instead.
 
 AFFILIATE DISCLOSURE
 
-Saved books carry a Buy link. If you buy through it, Buki may earn a small commission
-at no extra cost to you. It appears only on books you already saved, and it never changes
+Saved books carry a Buy link. If you buy through it, Buki may earn a small commission at
+no extra cost to you. It appears only on books you already saved, and it never changes
 what Buki shows you. You can choose Amazon or Bookshop.org, which supports independent
 bookshops.
 ```
+
+**Why it is ordered this way.** The Web Store's long description is indexed, and the first
+lines are what a browsing reader actually reads, so the problem goes first and the
+differentiator ("reads the picture, not the caption") goes above every feature. Cost and
+data sit near the bottom because they answer objections rather than create desire, but they
+are stated plainly rather than buried: `.agents/product-marketing.md` records that the
+affiliate disclosure is a **policy** requirement, not a courtesy, and that Chrome Web Store
+policy permits affiliate links only when they are disclosed.
+
+**No testimonials, no user counts, no ratings claims.** Zero users, pre-launch. Do not
+invent one; the positioning doc says so in as many words.
 
 ## Category
 
@@ -91,36 +162,63 @@ bookshops.
 ## Single purpose (required)
 
 ```
-Buki identifies books shown in posts on x.com and saves them to a reading list stored
-in the user's own browser.
+Buki identifies books shown in pictures on web pages and saves them to a reading list
+stored in the user's own browser.
 ```
+
+**This field is the one most likely to fail review, and the previous version would have.**
+It said Buki *"identifies books shown in posts on x.com"*, scoped to one site, while
+`manifest.json` asks for `scripting`, `activeTab` and an optional `https://*/*`. A
+single-purpose statement narrower than the permissions it sits beside is precisely the
+contradiction a reviewer looks for, and it reads as an extension asking for more than it
+admits to.
+
+The statement above is one purpose, not two, and it covers every entry point the manifest
+actually has: the context menu on any page, the book icon in a post's action bar on X, and
+the shelf in the popup. Saving is not a second purpose; it is what identifying is *for*.
+
+**Permission justifications go in the dashboard's own fields, and they are written already
+in `docs/store/permissions.md`.** Do not restate them here. That file is the one that
+failed review before, and it now leads with the narrowest honest framing: `activeTab` plus
+one optional host permission requested on first use, never a broad host permission at
+install.
 
 ## Privacy policy URL
 
-Already live. Paste this:
+Must resolve, or review fails.
 
 ```
 https://get-buki.vercel.app/privacy
 ```
 
 Vercel serves `docs/` as the site root (see `vercel.json`). Redeploy with
-`vercel deploy --prod`. Use the project's production domain, never a raw deployment URL:
-those are SSO-protected on this account and a reviewer would hit a login wall.
+`vercel deploy --prod`. Use the production domain, never a raw deployment URL: those are
+SSO-protected on this account and a reviewer would hit a login wall.
 
-## Screenshots: 1280×800, at least one, up to five
+**Its contents are currently false.** See the second gate in the banner at the top.
 
-Take these against a shelf with **real** books you actually saved. A mocked shelf reads
-as a mock.
+## Screenshots: 1280x800, at least one, up to five
 
-1. **The shelf**, face out: eight to twelve books across two or three boards, with the
-   pile control visible above them. This is the one that sells it, so lead with it.
-2. **A catch in progress** on a real post: the card in the corner with a book found and
-   the three pile buttons unpressed.
-3. **The book icon** in a post's action bar, so people see where it lives.
-4. **The masthead stat** (`23 caught · 87% kept`). Nothing else in this category shows
-   you its own accuracy.
+`OPENWORK.md` item 9, and it waits on item 3 so these show the current product. Shoot
+against a shelf holding books actually saved. A mocked shelf reads as a mock.
 
-## Promotional tile: 440×280
+1. **The shelf**, face out: eight to twelve books across two or three boards, with the pile
+   control visible above them. This is the one that sells it, so lead with it.
+2. **A catch on a photograph holding several books**, showing the card with more than one
+   book found and the three pile buttons unpressed. This is the differentiator and no
+   competitor screenshot can show it.
+3. **A catch somewhere that is not X**, so the breadth in the single-purpose statement is
+   visible rather than asserted.
+4. **The book icon** in a post's action bar, so people see where it lives.
+5. **The masthead count** (`23 caught, 87% kept`). Nothing else in this category publishes
+   its own accuracy.
 
-The mark on a `#F4F2FB` ground, wordmark to the right, one line beneath:
-"Catch books before you forget them."
+## Promotional tile: 440x280
+
+The catcher on a light ground, wordmark to the right, one line beneath: "Catch books
+before you forget them."
+
+**The mark is the catcher**, a blue ball with two eyes, as of 2026-08-17. It is defined
+once in `tools/mark.mjs` and every number in it was sampled from `icons/mark-source.png`.
+Do not redraw it for the tile, and do not use the three-spine mark: that drawing is retired
+on every surface. `docs/brand.md`, *The mark: THE CATCHER*.

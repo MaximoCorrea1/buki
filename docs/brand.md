@@ -305,14 +305,26 @@ what Apple ships and it is carried entirely by two shadows, near and far — one
 alone reads as a blur and one hard shadow alone reads as a border. At night Apple lifts the
 thumb for real, so this does too: `#48484a` is 2.00:1 off the track with a 9.12:1 label.
 
-#### The caught spine stops being two values
+#### The caught spine stopped being two values, then stopped being at all
 
-`--mark-caught` is `#2f7fd6` in **both** moods on the extension, where every other colour
+> **EXPIRED 2026-08-17, one day after it was written.** `--mark-caught` and `--mark-spine`
+> are deleted from all three surfaces; the mark is the catcher and carries its own colour
+> inside one drawing. Kept because the reasoning is the clearest case in this repo of a
+> token that genuinely earned a single value, and because the way it expired is instructive.
+
+`--mark-caught` was `#2f7fd6` in **both** moods on the extension, where every other colour
 token is a `light-dark()` pair. It could never be one value before: the caught spine has to
 separate from its *neighbours*, and the neighbours inverted between moods (navy on cream,
-then cream on navy), so it had to invert with them. Against neutral spines it does not —
-4.60:1 against the day spine, 4.10:1 against the night one. `tools/mark.mjs` carries both
-grounds and `mark.test.ts` asserts the single value against each of them.
+then cream on navy), so it had to invert with them. Against neutral spines it did not —
+4.60:1 against the day spine, 4.10:1 against the night one.
+
+**What this cost.** The exemption outlived the token by a day inside
+`src/shared/extensionTokens.test.ts`, whose `MOOD_INVARIANT` set went on carving out a name
+no surface declared. The same file already guarded its *other* allowlist against exactly
+that, with the comment *"if a name in the allowlist stops existing, the exemption is
+silently protecting nothing"* — **a guard written for one of two allowlists is how the
+second one drifts.** Both are asserted now. A dead exemption is worse than a missing one: it
+reads as a considered decision, so the next reader spends their scepticism elsewhere.
 
 ### The detail sheet is one column
 
@@ -442,10 +454,17 @@ everything downstream follows, because it was already written in tokens.
 status colour, and a book keeps its cloth in any light. The generated covers, the spines
 and the cloth edge are identical in both modes.
 
-**The mark mirrors rather than lightens.** Cream spines with a cobalt catch measures 9.00:1
-against 9.58:1 in daylight. Keeping the light blue would have measured 1.69:1 against cream
-neighbours and the mark would say nothing, which is the whole reason `--mark-caught` exists
-as a token.
+**The mark mirrored rather than lightened. EXPIRED 2026-08-17: it no longer has to.** Cream
+spines with a cobalt catch measured 9.00:1 against 9.58:1 in daylight, and keeping the light
+blue would have measured 1.69:1 against cream neighbours, so the mark would have said
+nothing. `--mark-spine` and `--mark-caught` existed for exactly that, and both are deleted.
+
+**The surviving rule is the one worth carrying:** an element that has to separate from its
+NEIGHBOURS is read against those neighbours, not against the page, so when the neighbours
+invert between moods the element must invert with them. The catcher does not inherit this,
+because it has no neighbours — it is one filled ball carrying its own silhouette, 11.98:1 on
+black and 8.9:1 on white, so it needs no mood pair at all and none of the six surfaces
+declares one. See *The mark: THE CATCHER*.
 
 **The plates are re-duotoned, never filtered.** `tools/plates-dark.sh`, from the shipped
 webp rather than the museum scan, which works because `colorlevels` runs last in
@@ -472,14 +491,19 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 ## The mark
 
 > **One mark, defined once in `tools/mark.mjs`.** Six surfaces are asserted against it by
-> `src/shared/mark.test.ts`: geometry, and since 2026-08-16 the caught spine's colour too.
-> Read *The mark: three spines* below. The section after it, *The redrawn mark*, is a dated
-> record of the first drawing and is **superseded** — it is kept for the reasoning, not for
-> its values.
+> `src/shared/mark.test.ts`.
 >
-> *(This banner said "two marks are live and they are different objects" until 2026-08-16.
-> Its premise expired on 2026-08-15 when Maximo supplied the three-spine source and the
-> two-spine landing drawing was removed. See `OPENWORK.md` item 24.)*
+> **Read *The mark: THE CATCHER* immediately below, and nothing else here for a value.**
+> The two sections after it — *The mark: three spines* and *The redrawn mark* — are dated
+> records of drawings that no longer ship. They are kept for the reasoning, never for their
+> numbers.
+>
+> *(This banner has now expired twice, and both times by pointing at the wrong section
+> rather than by being wrong about the mark. It said "two marks are live and they are
+> different objects" until 2026-08-16; it then said "read *The mark: three spines* below"
+> for a day after the catcher replaced it on 2026-08-17, which sent a reader who trusted the
+> banner straight to retired values. **A pointer is a claim and expires like one.** When you
+> supersede a section, fix what points at it in the same edit.)*
 
 ### The mark: THE CATCHER, everywhere, as of 2026-08-17
 
@@ -1287,8 +1311,11 @@ Write from the reader's side of the screen. Say what happens.
       nothing at all and reports no error
 - [ ] **Nothing full-bleed and `position: fixed` can take a click**
 - [ ] **A component still owns its own colours inside a scoped block**
-- [ ] **The mark's caught spine is `tools/mark.mjs`'s call, per ground, never a nearby
-      value.** `mark.test.ts` reads it out of all six surfaces since 2026-08-16
+- [ ] **Every colour in the mark is `tools/mark.mjs`'s call, never a nearby value.**
+      `mark.test.ts` reads them out of all six surfaces. *(This line said "the mark's caught
+      spine, per ground" until 2026-08-17. There is no caught spine and no per-ground value
+      any more — the catcher carries one sampled gradient everywhere — but the rule it was
+      written for is the one above, and it outlived the drawing.)*
 - [ ] **Render it before arguing from a ratio.** A contrast number picks the pair YOU chose
       to compare, and a flanked element is read against its neighbours rather than its
       ground. `node tools/mark-sizes.mjs` draws the mark at every shipping size on every

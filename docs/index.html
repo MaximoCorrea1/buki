@@ -1336,15 +1336,18 @@
     <div class="top-wrap" id="top-wrap">
       <header class="top">
         <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-          <!-- Maximo's drawing, redrawn as geometry rather than traced. THREE spines: two
-               shelved and one pulled out and lit, which is what makes the mark about
-               CATCHING rather than about books. The two cord rules cut across all three,
-               and they are cut with a MASK rather than painted in the page colour, so the
-               gaps are genuinely transparent and the mark sits on glass, on a plate or on
-               flat paper without carrying a background with it.
-               The mask is applied inside the rotated group too, so the caught spine's
-               cords lean with it. Fills are tokens: black on navy is invisible, which is
-               exactly how the first mark broke. See docs/brand.md. -->
+          <!-- THE CATCHER: a ball with two eyes, which is what makes the mark about SEEING
+               rather than about books. Maximo's drawing, and every number below was SAMPLED
+               out of icons/mark-source.png by tools/mark.mjs rather than redrawn by eye;
+               that file is the definition and src/shared/mark.test.ts asserts this surface
+               against it.
+               No plate and no mask: the ball is its own silhouette, so it sits on glass, on
+               a plate or on flat paper without carrying a background with it. No token
+               either — 11.98:1 on black and 8.9:1 on white means it needs no per-mood value,
+               which is what ended the class of bug that put an invisible fill on navy.
+               See docs/brand.md, "The mark: THE CATCHER".
+               (This comment described three spines and a cord mask for a day after the
+               drawing beneath it became a ball.) -->
           <defs>
             <linearGradient id="bk1-ball" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse">
               <stop offset="0" stop-color="#7bcdfc" />

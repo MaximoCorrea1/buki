@@ -237,3 +237,83 @@ and the restructure was left open and honest.
   our own outage never signs a subscriber out.
 - **The tray card stays opaque forever**, but a control sitting ON it may be translucent:
   its ground is ours, so the composite is computable (#39393d, white label at 11.50:1).
+
+---
+
+# 2026-08-17, after compaction - the listing, and what a pointer costs when it expires
+
+## Measured, with the probe beside it
+
+| Measurement | Probe | Value |
+| --- | --- | --- |
+| Test suite, on resuming | `./node_modules/.bin/vitest run` | **515 across 52 files**, matching the docs |
+| Test suite, at the end | same | **516** |
+| Branch | `git rev-list --count main..buki-pro` | **70** ahead, not merged |
+| Plan | `grep -c` on the buki-pro plan | **64** done, **21** left |
+| Callers of every Pro module | `grep -rn` excluding tests and the declaration | all 13 reach `background.ts`, `popup.ts` or `options.ts` |
+| `--mark-caught` in the surfaces it was exempted for | `grep -c -- '--mark-caught:' popup.html options.html` | **0 and 0** |
+| The other three exempted tokens | same | `--stamp` 1, `--stamp-dim` 1, `--forest` 1, all live |
+| Spine geometry in the three SVG surfaces | `grep -c '<mask' / '<rect' / '<ellipse'` | **0 / 0 / 2** in every one |
+| Manifest summary | `manifest.json` → `description.length` | **100**, inside the store's 132 |
+| Em-dashes in the new listing | `grep -c '—'` | **0** |
+
+## Beliefs overturned
+
+### The plan's Task 9 is not undone work, it is a route that was superseded
+
+**Believed**, from the plan's own checkboxes: six unticked steps under *Settings learn about
+the licence* meant six steps to do, and `OPENWORK.md` item 13 calling Task 9 done was the
+error.
+
+**Measured** by reading `settings.ts` and `visionRoute.ts`: the plan wanted `Settings` to
+grow `license` and `session` fields and `toVisionConfig` to choose between them. The build
+put the licence in `proState`'s own storage key and the choice in `visionRoute`, which is
+the better separation - a credential for our server does not belong in the same record as
+the endpoint someone typed into a box. **Item 13 is right and the plan is stale.** This is
+the fifth time the plan has been wrong about its own details; treat it as intent.
+
+### A guard against dead entries protected one allowlist and not its neighbour
+
+**Believed:** `extensionTokens.test.ts` guards its exemptions, because it visibly does -
+there is a test called *exempts only the surfaces that draw a book rather than the panel*
+carrying the comment *"if a name in the allowlist stops existing, the exemption is silently
+protecting nothing."*
+
+**Measured:** the file holds **two** allowlists. That test asserts `LITERAL_BY_DESIGN`.
+`MOOD_INVARIANT`, eight lines further up the same file, had no assertion at all, and within
+a day of the mark changing it was exempting `--mark-caught` from the light-dark() rule while
+no surface declared it. The guard existed, was correct, and covered half the problem.
+
+### "Every tracked .md reconciled" was true of the sections and false of the pointers
+
+**Believed**, written into this file one stretch ago: the doc pass reconciled every tracked
+`.md` against the system.
+
+**Measured:** it reconciled the sections. It did not reconcile what POINTS at them.
+`brand.md` banner'd the three-spine mark correctly and then told the reader, in the banner
+directly above *THE CATCHER*, to go and read the superseded section. `product-marketing.md`
+announced the change in its changelog and left the body describing three spines.
+`DESIGN.md` said "two things are no longer true" while three more had expired in its
+appendix. Three shipped HTML files described a cord mask above a ball.
+
+**The rule that comes out of it:** superseding a section is half an edit. **A pointer is a
+claim and expires like one**, and a banner that ENUMERATES is making a claim about
+everything it left out.
+
+## Decisions worth not re-deriving
+
+- **The listing is written FORWARD.** It describes the product at submission, not today,
+  because item 22 decided Buki ships only once the paid tier works. Writing it against
+  today's product would mean writing it twice, so it carries a DO-NOT-SUBMIT gate naming
+  the two things that must be true first, in the same shape as `permissions.md`'s banners.
+- **The store takes the name and the summary from `manifest.json`.** The old listing offered
+  a `Name` of `Buki: catch books from X` for a box the dashboard does not own, contradicting
+  the manifest's `Buki`. The summary is now quoted from the manifest verbatim.
+- **`marketing-skills:aso` was invoked and did not fit**, and that is recorded rather than
+  hidden: it audits a LIVE Apple or Play listing, scoring ratings, review recency and
+  feature graphics. Buki is pre-launch on a third store with none of those. Its transferable
+  facts held (the long description is indexed, the first lines carry conversion, no
+  "best/#1/free" in a title) and its procedure was not run.
+- **The single-purpose statement covers entry points, not sites.** One purpose, phrased so
+  the context menu on any page, the book icon on X and the shelf in the popup are all
+  instances of it. Saving is not a second purpose; it is what identifying is for.

@@ -16,6 +16,16 @@ Owner: Maximo (@MaxoCorrea)
 >   and could not learn to distrust. Nothing is saved without a pile being picked.
 > - **The picker is gone.** One catch card per post replaced it, along with the toast
 >   stack and the queue. See `docs/superpowers/plans/2026-08-01-catch-tray.md`.
+> - **Nothing visual in here is current**, including the later "what changed since"
+>   paragraphs near the end, which were appended and then expired in their turn. The mark is
+>   **not** three spines with one pulled out and lit — it is the catcher, a blue ball with
+>   two eyes, since 2026-08-17. The type is **not** Petrona; it is Manrope, one family, no
+>   serif in the interface at all. The landing and the extension are on **different**
+>   generations on purpose, so "one product again" no longer describes the look.
+>
+> *(This list said "two things" and named two until 2026-08-17. A banner that enumerates is
+> making a claim about everything it left out, which is why the third bullet is a category
+> rather than a third item.)*
 >
 > For what the product does today, read `README.md`. For the design system, `docs/brand.md`.
 > For the shelf, `docs/superpowers/specs/2026-08-05-shelf-and-piles-design.md`.

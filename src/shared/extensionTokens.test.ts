@@ -110,14 +110,16 @@ describe('the extension takes its colours from tokens', () => {
     // spine contrast at night, and the two white cords across it carry it. That is
     // precisely why brand.md says a cord is white rather than gilt.
     '--forest',
-    // The caught spine, and this one is EARNED rather than exempted. It must separate from
-    // its NEIGHBOURS, and the neighbours used to invert between moods (navy on cream, then
-    // cream on navy), so the value had to invert with them. Against the iOS neutrals it
-    // does not: #2f7fd6 measures 4.60:1 against the day spine and 4.10:1 against the night
-    // one, clearing the bar from both sides. mark.test.ts checks this line against
-    // tools/mark.mjs for BOTH extension grounds, so a single value here is asserted twice
-    // rather than merely permitted.
-    '--mark-caught',
+    // `--mark-caught` used to sit here. It was the caught spine, and its exemption was
+    // EARNED rather than granted: the spine had to separate from its neighbours, and the
+    // neighbours inverted between moods, so the value had to invert with them until the
+    // spines went neutral.
+    //
+    // The premise is gone. The mark is the catcher as of 2026-08-17, it carries its own
+    // colour inside one drawing, and `--mark-spine` / `--mark-caught` were deleted from all
+    // three surfaces. The reasoning is kept because it is the clearest example in this repo
+    // of a token that genuinely deserved a single value; the entry is not, because it named
+    // something nothing declares. The test at the bottom of this file now enforces that.
   ]);
 
   for (const [name, body] of Object.entries(SURFACES)) {
@@ -237,6 +239,24 @@ describe('the extension takes its colours from tokens', () => {
     const all = Object.values(SURFACES).join('\n');
     for (const selector of LITERAL_BY_DESIGN) {
       expect(all).toContain(selector);
+    }
+  });
+
+  it('exempts only tokens that some surface still declares', () => {
+    // The same argument as the test above, for the OTHER allowlist in this file — and this
+    // is the one that drifted. `--mark-caught` sat in MOOD_INVARIANT after the three-spine
+    // mark was retired on 2026-08-17 and the token was deleted from all three surfaces, so
+    // the set carried a carve-out for a name nothing declares.
+    //
+    // A dead exemption is worse than a missing one. It reads as a considered decision, so
+    // the next reader spends their scepticism somewhere else, and the day a token comes
+    // back under that name it is pre-approved. The guard below was written for one of this
+    // file's two allowlists; a guard that covers one of two is how the second one drifts.
+    const all = Object.values(SURFACES).join('\n');
+    for (const token of MOOD_INVARIANT) {
+      expect(all, `${token} is exempted from light-dark(), but no surface declares it`).toContain(
+        `${token}:`,
+      );
     }
   });
 });

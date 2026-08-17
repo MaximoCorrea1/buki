@@ -1,7 +1,7 @@
 # Product Marketing Context
 
-**Document version:** v8
-**Last updated:** 2026-08-16
+**Document version:** v9
+**Last updated:** 2026-08-17
 
 ## Product Overview
 
@@ -206,17 +206,22 @@ a page whose whole claim is that nothing about them is collected. It ships no it
 slant and never a fade**. The only serif left is the system serif, and it sets book titles
 and nothing else, because that is what a real book stamps on a board.
 
-**The mark: three spines, two shelved and one pulled out and lit, crossed by two cords.**
-Drawn by Maximo, redrawn as geometry, and **defined once in `tools/mark.mjs`** with six
-surfaces asserted against it. The third spine is the entire argument: *catching* is the
-difference between a lit spine and a dark one, which is what separates Buki from a reading
-list. It must never become a book glyph, an open book, a bookmark ribbon, or a letter B.
+**The mark: the catcher — a blue ball with two big eyes and a catchlight in each.** Drawn by
+Maximo (*"i added the newLogo.png use that everywhere"*), sampled rather than redrawn, and
+**defined once in `tools/mark.mjs`** with six surfaces asserted against it. It looks at you,
+and that is the entire argument: the thing Buki does is **see** a book in a picture, which
+is what separates it from a reading list. It must never become a book glyph, an open book, a
+bookmark ribbon, or a letter B.
 
-The caught spine is a blue rather than the cobalt accent, deliberately: it has to separate
-from the *other spines*, not from the page. `#2f7fd6` on the landing by day and on every
-cream ground, `#1231a8` on the landing at night where the spines are cream and the
-relationship inverts, and `#2f7fd6` in **both** moods on the extension, which it could
-only become once the spines went neutral and stopped inverting.
+It did not cost the product its colour: the ramp's deep end is within a hair of the cobalt
+accent. **Copy may say it looks at you; do not describe it as a book, a shelf or spines.**
+
+*(Superseded on 2026-08-17: three spines, two shelved and one pulled out and lit. That mark
+is retired on every surface, its `--mark-spine` / `--mark-caught` tokens are deleted, and
+`brand.md` keeps the drawing only as a dated record. Any line leaning on "one spine pulled
+out and lit" is describing a logo that no longer ships. **This paragraph said otherwise for
+a day after v8's own changelog announced the change** — the changelog was updated and the
+body was not, which is what a fact kept in two places does.)*
 
 **The rule that governs every layout:** a plate carries a statement, the cream carries the
 reading. Anything a person has to read more than once belongs on the page, never on the
@@ -277,6 +282,14 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v9 (2026-08-17). **A correction, not a change: v8 contradicted itself.** Its changelog
+  announced that the three-spine mark was retired while its Visual Identity section went on
+  describing three spines, two cords and the caught spine's per-ground values as current —
+  and the body is the half a copy task actually reads. The mark paragraph now describes the
+  catcher and keeps the retired drawing as a dated note. **Positioning, audience, pricing,
+  objections and customer language are unchanged**, so copy built against v1–v8 is still
+  true about the product; only a line leaning on spines is not. Also fixes the header, which
+  said v8 was last updated 2026-08-16 while the v8 entry below is dated 2026-08-17.
 - v8 (2026-08-17). **The paid tier exists in code, and the mark changed.** Two things a
   copy task must not get wrong now. First, the Pro tier is no longer a plan: the wall, the
   entitlement gate, the licence exchange and both serverless handlers are written and
