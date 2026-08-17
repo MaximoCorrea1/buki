@@ -521,14 +521,20 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
         // the way out; putting the book back has to put the recognition back too, and
         // relink the event to the id `add` just issued. Without the relink the event names
         // a book that is not on the shelf and a later genuine removal flags nothing.
-        // Fire and forget, like the covers above: the shelf write already succeeded and a
-        // failed relink must not fail the undo the user can see.
-        if (msg.restoreOf) {
-          void log
-            .markRestored(msg.restoreOf, saved.id)
-            .catch((err: unknown) => console.error('[Buki] could not restore the match', err));
-        }
-        sendResponse({ ok: true, saved } satisfies ShelfResponse);
+        // CHAINED, not fire-and-forget, and the distinction cost a review to see. A
+        // failed relink must not fail the undo the user can see — that is what the inner
+        // `.catch` is for — but "must not fail" is not "must not be awaited". `removeBook`
+        // two blocks below already proves you get both: it chains `markWrong` before
+        // responding, under a comment about the day this exact race left the kept rate
+        // stale. The popup holds its OWN read-only log instance and there is no
+        // `chrome.storage.onChanged` listener anywhere, so a stale read after Undo does
+        // not self-correct — it sits there until something unrelated refreshes.
+        const relink = msg.restoreOf
+          ? log
+              .markRestored(msg.restoreOf, saved.id)
+              .catch((err: unknown) => console.error('[Buki] could not restore the match', err))
+          : Promise.resolve();
+        void relink.then(() => sendResponse({ ok: true, saved } satisfies ShelfResponse));
       })
       .catch((err: unknown) => {
         console.error('[Buki] save failed', err);

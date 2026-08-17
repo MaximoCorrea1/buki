@@ -237,6 +237,40 @@ describe('a book that comes back', () => {
     expect(summarize(events).keptPct).toBe(80);
   });
 
+  it('does nothing at all when no event carries that id', async () => {
+    // Symmetry with markWrong's "ignores a deletion of a book that has no event". Reached
+    // for real once the 200-event ring buffer has evicted the original attempt: the book
+    // is still on the shelf and still removable, but its recognition is long gone.
+    const log = makeLog();
+    await five(log);
+    await log.markRestored('never-existed', 'whatever');
+
+    expect(summarize(await log.list())).toEqual({ caught: 5, keptPct: 100 });
+  });
+
+  it('relinks EVERY attempt that produced the book, which is the intended reading', async () => {
+    // Two events can legitimately share one savedId: `library.add` reuses the id when
+    // `sameBook` matches, and the tray lets you save an already-shelved book into another
+    // pile. So catching the same book twice writes two attempts against one shelf slot.
+    //
+    // A review split on whether the map should stop at one. It should not, and this test
+    // exists so the behaviour is a DECISION rather than an accident of `.map`: a savedId
+    // names a shelf slot, and if the book in it was wrong then every attempt that produced
+    // that book was wrong. Restoring it makes every one of them right again. Flagging one
+    // and not its twin would be the incoherent state.
+    const log = makeLog();
+    await log.record(attempt({ savedId: 'dup' }));
+    await log.record(attempt({ savedId: 'dup' }));
+    await log.markWrong('dup');
+    expect((await log.list()).filter((e) => e.wrong)).toHaveLength(2);
+
+    await log.markRestored('dup', 'dup-again');
+
+    const events = await log.list();
+    expect(events.every((e) => e.savedId === 'dup-again')).toBe(true);
+    expect(events.some((e) => e.wrong)).toBe(false);
+  });
+
   it('relinks even when the removal was too late to have flagged anything', async () => {
     // Past WRONG_WINDOW_MS a deletion says nothing about the recognizer, so `markWrong` is
     // a no-op. The id still changes on the way back in, so the relink is not conditional

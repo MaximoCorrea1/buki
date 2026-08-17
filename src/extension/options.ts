@@ -137,11 +137,6 @@ async function main(): Promise<void> {
     return chrome.permissions.request({ origins: [origin] });
   }
 
-  // THE PRO SECTION, wired before the provider form and guarded on its own fields.
-  // `main()` returns early if any provider field is missing, and burying the licence
-  // section behind that return is exactly how the theme switch was dead for two days.
-  void wirePro();
-
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -249,3 +244,20 @@ async function main(): Promise<void> {
 }
 
 void main();
+
+/**
+ * THE PRO SECTION, at module scope, which is the entire point.
+ *
+ * This used to be `void wirePro();` INSIDE `main()`, below a guard that returns early when
+ * any of seven PROVIDER ids is missing — `key`, `endpoint`, `model`, `status`, `form`,
+ * `reset`, `store`. None of them has anything to do with a licence. Rename one and the
+ * whole paid path went dark without a sound: `#planNow` stuck on "Reading your plan…",
+ * `#activate` with no listener, `#getPro`'s href left as the literal "#".
+ *
+ * The comment that used to sit at that call site said the opposite — that the section was
+ * "guarded on its own fields" and safe from main()'s return — and cited the two days the
+ * theme switch spent inside a `prefers-reduced-motion` guard as the reason. It named the
+ * right lesson from the wrong side of the guard. `optionsPage.test.ts` asserts column 0
+ * now, because a module-scope call is the only version of this that cannot inherit one.
+ */
+void wirePro();

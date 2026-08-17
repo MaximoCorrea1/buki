@@ -4,14 +4,14 @@
 
 | | |
 | --- | --- |
-| Tests | **533 across 53 files**, all passing |
+| Tests | **536 across 53 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **76** as this line was written, so the commit carrying it makes 77 |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **77** as this line was written, so the commit carrying it makes 78 |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -63,6 +63,39 @@ unblocks.
 ---
 
 ## Part 1. Maximo only. Nothing in Part 3 can start until 1 and 2 are done
+
+> ### ⛔ 27 IS NOW THE FIRST THING. It outranks 1 and 2.
+>
+> **Every paying customer's licence self-destructs in about five days.** Found by the
+> adversarial reviewer on 2026-08-17 and then CONFIRMED against Polar's own documentation,
+> not left as a hypothesis.
+>
+> `POST /v1/license-keys/activate` **creates an activation** — it spends one of the five
+> slots. It is the **only** Polar endpoint this codebase ever calls. And `ensureSession`
+> calls it on **every renewal**, which is daily (`needsRenewal` fires 5 minutes before a
+> 24-hour token expires), with the same constant label `Buki for Chrome`.
+>
+> | Day | What happens |
+> | --- | --- |
+> | 0 | Customer pastes the key. Slot 1 of 5. |
+> | 1–4 | Each day of use renews. Slots 2, 3, 4, 5. |
+> | 5 | Polar answers *"Activation limit reached"*. `license.ts` maps any 4xx to non-retryable, `proState.ts` clears the session and keeps the key, `visionRoute` then sends no token, the server classifies them `trial`, and `gate.ts` throws `WallError`. **A paying subscriber is shown the "Get Buki Pro" wall.** |
+>
+> Nothing distinguishes this from a genuine revocation. `proState.test.ts` frames every
+> non-retryable rejection as *"revoked, refunded, or the subscription ended"*.
+>
+> **This repo already stated the premise and missed the conclusion.** `polar-setup.md` §7
+> says, in a sentence written this same session: *"Each `curl` consumes one of the five
+> activation slots on that key."* That is the same call the extension makes every day.
+>
+> **The fix, which is Polar's own documented pattern:** activate ONCE, keep the returned
+> `activation_id`, and use **`validate`** (which accepts an `activation_id` and creates no
+> activation) for every check after that. The `activationId` is already captured — it goes
+> into the signed token claim in `licenseHandler.ts` — and is never sent back to Polar.
+>
+> **Maximo:** confirm the org-scoped `validate` path and that a repeated `activate` with an
+> identical label really does mint a second activation. Two curls and the dashboard settle
+> it. **Do not launch before this is fixed**; it breaks 100% of paying customers.
 
 - [ ] **1. Create the Polar product.** **Field by field, with the reasoning and a curl that
       proves it before any code exists: `docs/superpowers/polar-setup.md`.**
@@ -668,6 +701,28 @@ needs a credential or a dashboard is the shell around it.
       `src/extension/contentChrome.test.ts` guards what a screenshot cannot: the rule is
       about every page, not the one you happened to look at.
 
+- [ ] **29. `proState` has no write queue, and it is the one read-modify-write that costs
+      money.** `trial.ts`, `storage.ts` and `recognitionLog.ts` each wrap their storage
+      read-modify-write in `createWriteQueue()`, each with a comment saying two overlapping
+      writes would silently drop one. `readPro`/`writePro` do not, and `ensureSession` is
+      exactly that pattern with a **Polar call that spends an activation slot** in the
+      middle. Two catches clicked in the same second both read a stale `ProState`, both see
+      `needsRenewal`, and both exchange: two slots for one user action. Worse, if one
+      succeeds and the other hits a retryable error, `ensureSession` returns the ORIGINAL
+      stale object rather than re-reading, so that catch travels with no token and is billed
+      to the customer's trial. **Interacts with item 27**: both burn the same five slots.
+      Fix: single-flight the exchange, the way `createLookupMemo` already dedupes concurrent
+      recognitions. *(adversarial reviewer, P1)*
+
+- [ ] **28. `/api/license` has no rate limit.** The Origin check added on 2026-08-17 closed
+      the zero-effort path and nothing more: `Origin` is a header any script sets, and the
+      extension id is public the moment the item is listed. `/api/vision` at least pairs its
+      check with a per-IP cap; `LicenseEnv` carries no rate-limit dependency at all. Five
+      forged requests with a leaked key exhaust a customer's five slots. **Two reviewers
+      raised this independently** (security P2, adversarial P0). Fix: throttle per licence
+      key before calling Polar, and prefer `validate` over `activate` for probes so an
+      attempt cannot touch the slot count — which is the same change item 27 needs.
+
 - [ ] **26. Set a hard spend cap and an alert on the Gemini key.** Maximo only, in Google
       Cloud billing, and it is the **only** control that bounds what abuse can cost. Both
       APIs identify the caller by an `Origin` header, which anything that is not a browser
@@ -1011,6 +1066,23 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   list** ("a comment can be right while the code beneath it is wrong"), and the pair of them
   is the real rule: the comment and the code are two artefacts, and nothing checks that they
   agree.
+- **A `?raw` SOURCE-TEXT GUARD CANNOT SEE CONTROL FLOW, AND IT WAS PROVED.** A reviewer
+  mutated `background.ts` twice and re-ran the suite: wrapping the whole relink block in
+  `if (false && msg.restoreOf)` left `shelfEdit.test.ts` green, and **swapping the arguments
+  to `markRestored(saved.id, msg.restoreOf)` — which reverses every undo — left all 533
+  tests green.** `expect(background).toContain('markRestored')` proves two identifiers exist
+  in a file. This repo uses `?raw` correctly everywhere else (markup, CSS, `@font-face`,
+  geometry) because those have no branches; `background.ts` was the first use against
+  executable code. **The real fix is to extract a `handleSaveBook(msg, deps)` in the
+  `(request, env) => response` shape `src/server/` already uses**, so the call can be spied
+  on. Until then, know the guard's blind spot rather than trusting it.
+- **A COMMENT THAT NAMES THE RIGHT LESSON CAN STILL SIT ON THE WRONG SIDE OF IT.**
+  `options.html` gained a comment on 2026-08-17 saying the licence section is "guarded on
+  its own four elements" and cannot vanish with `main()`'s early return — **citing the two
+  days the theme switch spent inside a `prefers-reduced-motion` guard as the reason.** But
+  `void wirePro();` was inside `main()`, below a guard on seven provider ids. Renaming any
+  one of them would have taken the entire paid path down silently. The lesson was quoted
+  accurately and applied to the wrong line. **Now at module scope, asserted at column 0.**
 - **TWO ENDPOINTS, ONE THREAT MODEL, AND ONLY ONE OF THEM IMPLEMENTED IT.** `/api/vision`
   has always checked `Origin: chrome-extension://<id>` and documented, correctly, that the
   header is forgeable and is therefore one of three defences. **`/api/license` had no check

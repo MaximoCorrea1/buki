@@ -447,9 +447,13 @@
            told every reader they had work to do. A fresh install catches books with no
            key, no card and no account, and the one thing somebody who paid needs is
            somewhere to paste a licence.
-           Wired by wirePro(), which is guarded on its own four elements. main() returns
-           early if any PROVIDER field is missing and this section must not disappear with
-           it, which is the mistake the theme switch spent two days inside. -->
+           Wired by wirePro(), which is guarded on its own four elements AND, since
+           2026-08-17, called at MODULE SCOPE. This comment claimed that independence for a
+           day while `void wirePro();` still sat inside main(), below a guard on seven
+           provider ids that have nothing to do with a licence — so renaming one would have
+           taken the whole paid path down in silence. It named the right lesson (the two
+           days the theme switch spent inside a guard) from the wrong side of it.
+           optionsPage.test.ts asserts the call is at column 0. -->
       <h2>Your plan</h2>
       <p class="plan-now" id="planNow">Reading your plan&hellip;</p>
       <p class="hint" id="planWhat">

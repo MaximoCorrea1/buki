@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import options from '../../options.html?raw';
+import optionsTs from './options.ts?raw';
+
+/**
+ * The page markup, with comments and CSS stripped.
+ *
+ * `indexOf` over the raw file counted prose. A review proved it: inserting one benign
+ * comment mentioning `id="key"` above the masthead flipped two order assertions with no
+ * element moved at all, and the failure read as a layout regression. This repo's house
+ * style is unusually comment-dense, so that collision is likelier here than elsewhere.
+ */
+const DOM = options.replace(/<!--[\s\S]*?-->/g, '').replace(/<style>[\s\S]*?<\/style>/g, '');
 
 /**
  * The setup page's SHAPE, which is a product decision rather than a style one.
@@ -20,7 +31,8 @@ import options from '../../options.html?raw';
  * all four pass on a page whose first field is the wrong one.
  */
 
-const at = (needle: string): number => options.indexOf(needle);
+/** Anchored on the opening TAG, not a bare attribute, for the same reason. */
+const at = (needle: string): number => DOM.indexOf(needle);
 
 describe('the setup page leads with what most people need', () => {
   it('puts the licence field above the API key field', () => {
@@ -66,6 +78,26 @@ describe('the setup page leads with what most people need', () => {
     }
   });
 
+  it('wires the licence section OUTSIDE main()’s provider guard', () => {
+    // THE CLAIM THIS FILE'S OWN COMMENT MADE, now actually enforced.
+    //
+    // `main()` returns early if any of seven PROVIDER ids is missing — none of which has
+    // anything to do with Pro. `void wirePro();` sat INSIDE main(), after that guard, so
+    // renaming a provider field would have taken the whole licence path down silently:
+    // #planNow stuck on "Reading your plan…", #activate with no listener, #getPro's href
+    // left as the literal "#". Nothing thrown, nothing logged.
+    //
+    // `docs/brand.md` and OPENWORK §5 both record this exact shape — "a guard at the top
+    // of a script owns everything below it", learned when the theme switch spent two days
+    // inside a prefers-reduced-motion guard. The comment claiming independence was written
+    // while the call site still had none.
+    //
+    // Column 0 IS the assertion: a module-scope call cannot inherit a function's guard.
+    expect(optionsTs, 'wirePro() must be called at module scope, not inside main()').toMatch(
+      /^void wirePro\(\);$/m,
+    );
+  });
+
   it('does not tell anyone that setup is required', () => {
     // The lede said "Setup: one field, once." for as long as a key was mandatory. It is
     // the first sentence on the page and it was describing the previous product.
@@ -79,13 +111,30 @@ describe('the setup page leads with what most people need', () => {
     //   activate <button>  radius 999px  padding 11px/20px  height 35.5
     //   getPro   <a>       radius 0px    padding 0px        height 23.3
     // A square, unpadded box in a row of pills, on the one control that leads to paying.
-    // Anchored on `padding: 11px 20px`, which appears exactly once. Three rules carry
-    // `border-radius: 999px` and the first of them is the plan badge, so matching on the
-    // radius found the wrong rule and failed for the wrong reason.
-    const shape = options.match(/([^{}]*)\{[^{}]*padding:\s*11px 20px/)?.[1] ?? '';
-    expect(shape, 'the pill-shape rule must name the anchor as well as button').toContain(
-      'a.ghost.buy',
+    // Identified STRUCTURALLY, by selector, not by anchoring on a magic padding value. A
+    // review proved the value anchor brittle: changing only `11px 20px` on the correctly
+    // shaped rule failed this test with a message about the anchor, which is a false
+    // report about a feature that had not moved.
+    // Comments stripped FIRST: this file's comments are long and sit directly above the
+    // rules they explain, so without this they land inside the selector capture and no
+    // selector ever compares equal to `button`.
+    const style = (options.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
     );
+    const rules = [...style.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, sel, body]) => ({
+      selectors: (sel ?? '').split(',').map((s) => s.trim()),
+      body: body ?? '',
+    }));
+
+    const shape = rules.find(
+      (r) => r.selectors.includes('button') && r.body.includes('border-radius'),
+    );
+    expect(shape, 'no rule gives `button` its shape').toBeDefined();
+    expect(
+      shape?.selectors,
+      'the anchor must share the buttons’ shape rule; it is an <a> and a rule selecting `button` never matches it',
+    ).toContain('a.ghost.buy');
   });
 
   it('does not offer a keyless custom endpoint, because the router ignores one', () => {
