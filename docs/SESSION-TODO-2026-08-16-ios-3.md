@@ -105,6 +105,13 @@ session is folded into `OPENWORK.md`.
 - [x] **CRLF damage found and undone.** Python writes converted 13 files, which broke the
       tray stylesheet slice to -1 and made two green tests meaningless. Normalised; re-run.
 
+- [x] **The pupils were missing at 16px** — on the toolbar and in the context menu, both
+      of which use `icon16.png`. Measured: zero catchlight pixels at 16, six at 32, fifteen
+      at 48. Cause was my own `size >= 32` gate, justified by a comment I never rendered.
+      Rendered A/B at 16px: the catchlight reads, the gated version looks dead. Gate gone,
+      and `src/shared/icons.test.ts` now decodes the shipped PNGs — red-green verified by
+      re-adding the gate and watching it fail.
+
 ## Open, 2026-08-17
 
 - [?] **The "Read" collision.** The tray now says *Read now / Read next / Read someday*

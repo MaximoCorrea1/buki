@@ -47,15 +47,26 @@ function chunk(type, data) {
 /**
  * Colour at one sample point, or null for outside the ball.
  *
- * THE CATCHLIGHTS ARE DROPPED BELOW 32px, and that is a size decision rather than a
- * shortcut. A catchlight is 7.8 units across of 100, which at 16px is 1.2 pixels sitting
- * inside a 4-pixel eye: drawn, it eats the eye it is supposed to sit in and the face reads
- * as two grey smudges. The eyes are what carry the mark at 16px, so they get the pixels.
- * Every icon set simplifies at its smallest size for exactly this reason.
+ * THE CATCHLIGHTS ARE DRAWN AT EVERY SIZE, INCLUDING 16.
+ *
+ * They were gated behind `size >= 32` for one day, under a confident comment claiming a
+ * catchlight "eats the eye it is supposed to sit in" at 16px and that the face would read
+ * as two grey smudges. **That was written without rendering it.** Rendered - 16px, with
+ * and without, on a light toolbar and a dark one - the true-size catchlight is a clean lit
+ * pixel inside the eye, and the version without is the one that looks wrong: two flat dark
+ * ovals with nothing alive in them. Maximo saw it in the browser before this did: "the
+ * pupils are not showing".
+ *
+ * A catchlight is 7.8 units of 100, so at 16px it is 1.2px inside a 4.4px eye. That is
+ * exactly what 4x4 supersampling is for. No per-size fudge either: the geometry is what
+ * `tools/mark.mjs` sampled off the drawing, at every size.
+ *
+ * `src/shared/icons.test.ts` opens the PNGs Chrome actually loads and fails if an eye has
+ * no lit spot in it.
  */
-function sample(x, y, size) {
+function sample(x, y) {
   if (!inCircle(x, y, MARK.ball)) return null;
-  if (size >= 32 && MARK.catchlights.some((c) => inCircle(x, y, c))) return GLINT;
+  if (MARK.catchlights.some((c) => inCircle(x, y, c))) return GLINT;
   if (MARK.eyes.some((e) => inEllipse(x, y, e))) return INK;
   return rampAt(x, y);
 }
@@ -74,7 +85,7 @@ function png(size) {
         for (let sx = 0; sx < SS; sx++) {
           const x = ((px + (sx + 0.5) / SS) / size) * 100;
           const y = ((py + (sy + 0.5) / SS) / size) * 100;
-          const hit = sample(x, y, size);
+          const hit = sample(x, y);
           if (hit) {
             r += hit[0];
             g += hit[1];

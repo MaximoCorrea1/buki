@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **401 across 43 files**, all passing |
+| Tests | **413 across 44 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -787,6 +787,16 @@ That is the rest of item 17.
 - **Park the clock instead of waiting for it.** `animation.currentTime` is honoured by style
   recalc without a frame being drawn, which is the only way to measure a transition-timing
   bug in headless. Nothing about `--virtual-time-budget` makes transitions advance.
+- **A generated artefact nobody re-reads will drift, and a confident comment is not a
+  render.** `icons/*.png` are committed and `build.mjs` does not regenerate them, so
+  nothing opened the file Chrome actually loads. The 16px icon shipped with no catchlights
+  because the rasteriser gated them behind `size >= 32`, under a comment asserting that at
+  that size a catchlight "eats the eye it is supposed to sit in". Rendered - which the
+  comment's author had not done - it is a clean lit pixel, and the gated version is the one
+  that looks dead. **That is the fourth time in this repo that a claim about how something
+  renders was written without rendering it.** `src/shared/icons.test.ts` now decodes the
+  shipped PNGs; `tools/png.mjs` exists so a test can read a pixel without this browser
+  extension acquiring @types/node.
 - **Writing a file from Python on Windows converts it to CRLF, and anything that slices on
   `'
 '` then silently returns garbage.** `contentChrome.test.ts` and `tools/tray-harness.mjs`
