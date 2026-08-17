@@ -80,10 +80,10 @@
            The old value was #7cc0fd, hardcoded, directly under a comment explaining that a
            light value on this ground measures 1.6:1 and cannot be used. The comment was
            right and the code did it anyway. */
-        --mark-spine: var(--ink);
-        /* One value in both moods now that the spines are neutral: 4.60:1 against the
-           day spine, 4.10:1 against the night one. See popup.html and tools/mark.mjs. */
-        --mark-caught: #2f7fd6;
+        /* THE MARK CARRIES ITS OWN COLOUR NOW. --mark-spine and --mark-caught were
+           removed on 2026-08-17 with the three-spine mark: the ball is one drawing with a
+           sampled gradient, so there is nothing here for a surface to theme. Its colours
+           and the reason it needs no per-mood value are in tools/mark.mjs. */
 
         --sunk: light-dark(#e9e9ef, #151517);
 
@@ -362,18 +362,18 @@
                MASK rather than painted in the paper colour, so the gaps are transparent and
                the mark carries no background with it. The mask is applied inside the rotated
                group as well, so the caught spine's cords lean with it. -->
-          <mask id="bk-cords">
-            <rect x="-25" y="-25" width="150" height="150" fill="#fff" />
-            <rect x="-25" y="64.6" width="150" height="1.9" fill="#000" />
-            <rect x="-25" y="72.9" width="150" height="1.9" fill="#000" />
-          </mask>
-          <g mask="url(#bk-cords)" fill="var(--mark-spine)">
-            <rect x="15" y="6" width="19" height="88" rx="9.5" />
-            <rect x="66" y="6" width="19" height="88" rx="9.5" />
-          </g>
-          <g transform="rotate(-8 50 50)" mask="url(#bk-cords)">
-            <rect x="40.5" y="7" width="19" height="86" rx="9.5" fill="var(--mark-caught)" />
-          </g>
+          <defs>
+            <linearGradient id="bk3-ball" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#7bcdfc" />
+              <stop offset="0.46" stop-color="#4aa3f9" />
+              <stop offset="1" stop-color="#013ebf" />
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="50" fill="url(#bk3-ball)" />
+          <ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b" />
+          <ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b" />
+          <circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd" />
+          <circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd" />
         </svg>
         <h1>Buki</h1>
       </div>

@@ -1,45 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Buki">
   <!--
-    The mark on its own ground, for every context we do not control: favicon, browser tab
-    strip, Chrome's toolbar, the Web Store tile.
+    THE CATCHER. A blue ball with two eyes, from Maximo's drawing (newLogo.png), which
+    replaced three spines and two stamped cords on 2026-08-17.
 
-    WHY THE PLATE EXISTS. The bare mark is two ink spines and one lit spine. On a dark
-    surface the ink spines vanish into it and all that survives is a single pale bar with
-    two floating cords, which is not the mark. Chrome's toolbar and tab strip are dark in
-    dark mode, so a transparent icon would break for every user who runs one. The cream
-    plate makes the ground ours instead of the host's.
+    GEOMETRY AND COLOUR ARE tools/mark.mjs, and src/shared/mark.test.ts asserts this file
+    agrees with it on both. Every number was sampled out of the PNG rather than redrawn:
+    the ball's bounds, both eyes, both catchlights, and the three gradient stops.
 
-    Use icons/mark.svg instead wherever the page owns its background.
-
-    GEOMETRY IS tools/mark.mjs. Every coordinate below is asserted against it by
-    src/shared/mark.test.ts, because this drawing now exists in five places and the last
-    value that was "defined once" turned up in seven files.
-
-    THE CORDS ARE PAINTED HERE, not masked, and that is allowed exactly because this file
-    owns its ground: they are the plate colour, on the plate. Everywhere else they are cut
-    with a mask, since a painted cord carries a background with it and the mark would then
-    only work on the one surface that background matches.
+    THERE IS NO PLATE ANY MORE, and its removal is the point rather than an omission. The
+    old mark needed one: two INK spines on a dark toolbar vanished into it and left a
+    single pale bar with two floating cords, which is not the mark. A ball carries its own
+    colour and its own silhouette — measured 11.98:1 on black and 8.9:1 on white — so the
+    same file now serves the toolbar, the favicon, the tile and a page that owns its own
+    background. icons/icon.svg and docs/icon.svg are this drawing too.
   -->
-  <rect width="100" height="100" rx="22" fill="#fbf7ec"/>
-  <g transform="translate(50 50) scale(0.86) translate(-50 -50)">
-    <g fill="#0a0f33">
-      <rect x="15" y="6" width="19" height="88" rx="9.5"/>
-      <rect x="66" y="6" width="19" height="88" rx="9.5"/>
-    </g>
-    <!-- #2f7fd6, not the #7cc0fd this file carried before. On cream, #7cc0fd measures
-         1.81:1 against the plate and 9.58:1 against the spines; the accent #1231a8 is
-         9.66:1 and 1.80:1. Only #2f7fd6 clears both, at 3.83:1 and 4.54:1. -->
-    <rect x="40.5" y="7" width="19" height="86" rx="9.5"
-          fill="#2f7fd6" transform="rotate(-8 50 50)"/>
-    <g fill="#fbf7ec">
-      <rect x="15" y="64.6" width="19" height="1.9"/>
-      <rect x="15" y="72.9" width="19" height="1.9"/>
-      <rect x="66" y="64.6" width="19" height="1.9"/>
-      <rect x="66" y="72.9" width="19" height="1.9"/>
-      <g transform="rotate(-8 50 50)">
-        <rect x="40.5" y="64.6" width="19" height="1.9"/>
-        <rect x="40.5" y="72.9" width="19" height="1.9"/>
-      </g>
-    </g>
-  </g>
+  <!--
+    Identical to icons/mark.svg, and that is now correct rather than duplication: the plate
+    that used to distinguish this file existed because the OLD mark's two ink spines
+    disappeared on a dark toolbar. The ball does not, so there is nothing left to
+    distinguish. The two files are kept because the manifest, the favicon and the docs site
+    reference different paths; src/shared/mark.test.ts asserts they never diverge.
+  -->
+  <defs>
+    <linearGradient id="bk-ball" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7bcdfc"/>
+      <stop offset="0.46" stop-color="#4aa3f9"/>
+      <stop offset="1" stop-color="#013ebf"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#bk-ball)"/>
+  <ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/>
+  <ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/>
+  <!-- Up and to the RIGHT of each eye's centre, by the same offset in both. That is where
+       the drawing puts the light, and it is what stops the face reading as a stare. -->
+  <circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd"/>
+  <circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd"/>
 </svg>

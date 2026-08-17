@@ -1,29 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Buki">
   <!--
-    The bare mark, for anywhere the page owns its own background. Use icons/icon.svg
-    instead for a favicon, Chrome's toolbar or the Web Store tile: those grounds are the
-    host's, not ours, and the plate is what makes them ours.
+    THE CATCHER. A blue ball with two eyes, from Maximo's drawing (newLogo.png), which
+    replaced three spines and two stamped cords on 2026-08-17.
 
-    GEOMETRY IS tools/mark.mjs, and src/shared/mark.test.ts asserts this file agrees with
-    it. It previously carried its own numbers, a `rotate(10)` that leaned the caught spine
-    the wrong way, and a `#7cc0fd` fallback that measures 1.81:1 on cream.
+    GEOMETRY AND COLOUR ARE tools/mark.mjs, and src/shared/mark.test.ts asserts this file
+    agrees with it on both. Every number was sampled out of the PNG rather than redrawn:
+    the ball's bounds, both eyes, both catchlights, and the three gradient stops.
 
-    THE CORDS ARE CUT WITH A MASK, not painted. A painted cord is a coloured bar: it
-    carries a background with it, and the mark would then only work on the one surface
-    that background happens to match. Masked, the gaps are genuinely transparent, so this
-    file sits on glass, on a plate and on flat paper unchanged. The mask is applied inside
-    the rotated group as well, so the caught spine's cords lean with it.
+    THERE IS NO PLATE ANY MORE, and its removal is the point rather than an omission. The
+    old mark needed one: two INK spines on a dark toolbar vanished into it and left a
+    single pale bar with two floating cords, which is not the mark. A ball carries its own
+    colour and its own silhouette — measured 11.98:1 on black and 8.9:1 on white — so the
+    same file now serves the toolbar, the favicon, the tile and a page that owns its own
+    background. icons/icon.svg and docs/icon.svg are this drawing too.
   -->
-  <mask id="bk-cords">
-    <rect x="-25" y="-25" width="150" height="150" fill="#fff"/>
-    <rect x="-25" y="64.6" width="150" height="1.9" fill="#000"/>
-    <rect x="-25" y="72.9" width="150" height="1.9" fill="#000"/>
-  </mask>
-  <g mask="url(#bk-cords)" fill="var(--mark-spine, #0a0f33)">
-    <rect x="15" y="6" width="19" height="88" rx="9.5"/>
-    <rect x="66" y="6" width="19" height="88" rx="9.5"/>
-  </g>
-  <g transform="rotate(-8 50 50)" mask="url(#bk-cords)">
-    <rect x="40.5" y="7" width="19" height="86" rx="9.5" fill="var(--mark-caught, #2f7fd6)"/>
-  </g>
+  <defs>
+    <linearGradient id="bk-ball" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7bcdfc"/>
+      <stop offset="0.46" stop-color="#4aa3f9"/>
+      <stop offset="1" stop-color="#013ebf"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#bk-ball)"/>
+  <ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/>
+  <ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/>
+  <!-- Up and to the RIGHT of each eye's centre, by the same offset in both. That is where
+       the drawing puts the light, and it is what stops the face reading as a stare. -->
+  <circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd"/>
+  <circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd"/>
 </svg>

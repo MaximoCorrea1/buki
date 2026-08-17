@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **379 across 40 files**, all passing |
+| Tests | **401 across 43 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -787,6 +787,36 @@ That is the rest of item 17.
 - **Park the clock instead of waiting for it.** `animation.currentTime` is honoured by style
   recalc without a frame being drawn, which is the only way to measure a transition-timing
   bug in headless. Nothing about `--virtual-time-budget` makes transitions advance.
+- **Writing a file from Python on Windows converts it to CRLF, and anything that slices on
+  `'
+'` then silently returns garbage.** `contentChrome.test.ts` and `tools/tray-harness.mjs`
+  both locate the tray's stylesheet with `indexOf('
+`;
+')`. After a CRLF write that
+  returned **-1**, so the test sliced nearly the whole file, its vacuous-pass guard
+  (`rules().length > 15`) still passed because TypeScript parsed as CSS yields plenty of
+  brace pairs, and two tests reported green on a stylesheet they were not reading. The repo
+  pins `eol=lf` in `.gitattributes`; **pass `newline=''` when writing, and re-run the slice
+  as the check.** A guard against a vacuous pass has to be something garbage cannot satisfy.
+- **A backtick inside a CSS comment ends the `STYLE` template literal.** The tray's
+  stylesheet is a JS template literal, so writing `` `padding: 9px` `` in a comment inside it
+  is a parse error a hundred lines away. Twice in one day. Prose, not code voice, inside
+  STYLE.
+- **`width: 100%` does not force a flex item onto its own line; `flex-basis: 100%` does.**
+  The intent row was given `width: 100%` to move it under the cover, and stayed beside it at
+  223px of the 267 available, still clipping. The arithmetic said it should have fitted,
+  which is why it was measured.
+- **`flex: 1` forces EQUAL widths, not fair ones.** It sets a zero basis, so three pills
+  reading "Read now", "Read next" and "Read someday" were each handed a third of the row and
+  the longest clipped its own last letter. `flex: 1 1 auto` grows from the content basis.
+- **A `var()` hides a value from any test that reads declarations as text.** The tray's
+  "nothing see-through carries text" guard was walked straight through on the day
+  `background: var(--fill)` was introduced, by the person who wrote the guard, because the
+  alpha was one indirection away. Resolve tokens before asserting on a value.
+- **A hand-maintained fixture drifts the moment the builder moves.** `tools/tray-harness.mjs`
+  fell out of step with `bookRow` three times in one session, and each time the harness
+  showed a layout bug that was not in the product, or hid one that was. When a card looks
+  wrong there, check the fixture's nesting against the builder before believing the CSS.
 - **A decision's justification can expire without the decision looking stale.**
   `coverSources` put the photograph ahead of the catalogue's art because OpenLibrary's
   relevance index returned the wrong edition — a real, measured problem, fixed months

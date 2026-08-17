@@ -114,6 +114,14 @@ export type BackgroundRequest =
   | { type: 'saveBook'; book: Book; intent: Intent; source?: SavedSource; shot?: string }
   /** Removes AND flags the recognition, so the popup needs one round trip, not two. */
   | { type: 'removeBook'; savedId: string }
+  /**
+   * Fetch a cover in the WORKER and hand back a data: URL.
+   *
+   * The catch tray cannot load one itself: it draws inside somebody else's page, so its
+   * <img> obeys that page's CSP, and a cross-origin cover is blocked on every strict site.
+   * Measured 2026-08-17. See coverData.ts.
+   */
+  | { type: 'coverBytes'; url: string }
   | { type: 'logEvent'; event: PendingEvent }
   | { type: 'clearLog' };
 

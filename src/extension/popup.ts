@@ -1,4 +1,5 @@
 import { createLibrary, type StorageArea, type SavedBook, type Intent } from './storage';
+import { restoreArgs } from './shelfEdit';
 import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
 import { buyLink, type Store } from './buyLink';
 import { coverFor } from './cover';
@@ -155,6 +156,26 @@ function renderSlot(
   pick.addEventListener('click', () => openSheet(saved));
   pick.appendChild(coverFor(saved, covers));
 
+  /**
+   * REMOVE, ON THE SHELF ITSELF. It already existed inside the detail sheet, two clicks
+   * behind a cover, which is why it was asked for while looking at a shelf that had one.
+   *
+   * It is a sibling of the cover rather than a child: `pick` is a <button>, and a button
+   * inside a button is invalid markup that Chrome silently unnests, which would put this
+   * control outside the tile at render time. It shows on hover and on keyboard focus, so
+   * it is reachable without a mouse and invisible until wanted.
+   */
+  const drop = document.createElement('button');
+  drop.className = 'unshelve';
+  drop.type = 'button';
+  drop.title = `Remove ${saved.book.title}`;
+  drop.setAttribute('aria-label', `Remove ${saved.book.title} from your shelf`);
+  drop.textContent = '×';
+  drop.addEventListener('click', (e) => {
+    e.stopPropagation();
+    void unshelve(saved);
+  });
+
   const cap = document.createElement('div');
   cap.className = 'cap';
   const title = document.createElement('div');
@@ -174,7 +195,7 @@ function renderSlot(
     cap.appendChild(from);
   }
 
-  slot.append(pick, cap);
+  slot.append(pick, drop, cap);
   return slot;
 }
 
@@ -287,6 +308,69 @@ function movePiles(saved: SavedBook): HTMLElement {
     bar.appendChild(to);
   }
   return bar;
+}
+
+/**
+ * Take a book off the shelf from the shelf, and offer it straight back.
+ *
+ * ONE CLICK DESTROYS SOMETHING, so there has to be a way back, and an undo is the right
+ * one rather than a confirm: a confirm taxes every removal to protect the rare mistake,
+ * and this popup has no dialog and should not grow one. The strip replaces itself, so a
+ * run of removals never stacks bars.
+ */
+const UNDO_MS = 8000;
+let undoTimer: number | undefined;
+
+async function unshelve(saved: SavedBook): Promise<void> {
+  try {
+    await writeShelf({ type: 'removeBook', savedId: saved.id });
+    await refresh();
+    offerUndo(saved);
+  } catch (err) {
+    console.error('[Buki] remove failed', err);
+  }
+}
+
+function offerUndo(saved: SavedBook): void {
+  const host = document.getElementById('undo');
+  if (!host) return;
+  window.clearTimeout(undoTimer);
+  host.replaceChildren();
+
+  const said = document.createElement('span');
+  // The title, because "Removed a book" makes you check which one.
+  said.textContent = `Removed ${saved.book.title}`;
+
+  const back = document.createElement('button');
+  back.type = 'button';
+  back.className = 'undo-go';
+  back.textContent = 'Undo';
+  back.addEventListener('click', async () => {
+    back.disabled = true;
+    try {
+      // restoreArgs, so it returns to the pile it was in with the picture it was caught
+      // from - not to a default. src/extension/shelfEdit.ts says what undo cannot restore.
+      await writeShelf({ type: 'saveBook', ...restoreArgs(saved) });
+      hideUndo();
+      await refresh();
+    } catch (err) {
+      console.error('[Buki] undo failed', err);
+      back.disabled = false;
+    }
+  });
+
+  host.append(said, back);
+  host.hidden = false;
+  undoTimer = window.setTimeout(hideUndo, UNDO_MS);
+}
+
+function hideUndo(): void {
+  window.clearTimeout(undoTimer);
+  const host = document.getElementById('undo');
+  if (host) {
+    host.hidden = true;
+    host.replaceChildren();
+  }
 }
 
 /** Set apart, and not red. Red is for danger; removing a book you chose to save is a

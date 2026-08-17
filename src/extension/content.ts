@@ -6,6 +6,7 @@ import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
 import { shotFor } from './coverSource';
 import { shiftOf, travelFrom } from './slotTravel';
+import { foundHeading, INTENT_LABEL, PROVENANCE } from './trayCopy';
 import manrope from '../../fonts/manrope.woff2';
 import { createCatchTray, type Candidate, type Card } from './catchTray';
 import { postKey } from './lookupMemo';
@@ -142,7 +143,19 @@ const STYLE = `
      and a RING in this stylesheet and never body text, so its bar is its label's: black
      on it is 7.78:1, where the old #0a0f33 would be 6.30:1. */
   --bg: #1c1c1e; --lift: #2c2c2e; --ring: rgba(255,255,255,.18);
-  --ink: #ffffff; --ink-2: #a8a8b0; --accent: #7f9bea;
+  /* --ink-2 raised from #a8a8b0 on 2026-08-17, to the value popup.html re-derived the
+     same day, so the author line and the eyebrow read the same on both surfaces. 8.35:1
+     on this card where it was 7.21:1 - still muted, no longer faint. */
+  --ink: #ffffff; --ink-2: #b5b5bd; --accent: #7f9bea;
+
+  /* A CONTROL'S GROUND IS A FILL, and this is the one place the tray is allowed a
+     translucent surface. The CARD stays opaque forever, because it lands on somebody
+     else's page and a translucent card has its contrast decided by a photograph nobody
+     has seen - docs/brand.md, The one surface with no ground of its own. But a control
+     sitting ON the card has a ground WE own, so it can take the same Apple systemFill the
+     popup's segmented track does, and the two surfaces stop being two products.
+     Composited on the card it is #39393d, with a white label at 11.50:1. */
+  --fill: rgba(120,120,128,.32); --fill-hi: rgba(120,120,128,.46);
   /* The label on a filled accent. Named, because the literal it replaced was #0a0f33 and
      it no longer clears the bar on this ground - exactly the retokening trap. */
   --on-accent: #000000;
@@ -262,7 +275,7 @@ const STYLE = `
 .buki-x:active { transform: scale(.9); }
 .buki-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-x:hover { color: var(--ink); background: var(--lift); }
+  .buki-x:hover { color: var(--ink); background: var(--fill); }
 }
 
 /* Still working. Constant motion, so linear — an eased sweep looks like it is being
@@ -281,10 +294,28 @@ const STYLE = `
 /* The piles. Capsules in sentence case, the same control the popup's segmented row is
    built from. They were tracked uppercase mono at 10.5px, which is a label treatment on
    three things that are actually the card's whole purpose. */
-.buki-row { display: flex; gap: 6px; margin: 13px 0 0; }
+/* FULL WIDTH, on its own line under the book. Three labels reading "Read now",
+   "Read next" and "Read someday" do not fit across the 250px left beside a 32px cover:
+   they wrapped to two lines and the third clipped its own last letter. The row wraps to
+   the card's whole width instead, which is 287px for three, and each label sits on one
+   line. flex-basis, NOT width: width: 100% on a flex item is clamped by what is left on
+   the line, so the row stayed beside the cover at 223px of the 267 available and the third
+   label still clipped. A basis of 100% is what actually forces the line break. Measured,
+   because the arithmetic said it should have fitted. */
+.buki-row { display: flex; gap: 6px; margin: 11px 0 0; flex-basis: 100%; }
 .buki-intent {
-  flex: 1; cursor: pointer; border: 0; border-radius: 999px;
-  padding: 9px 0 10px; background: var(--lift); color: var(--ink);
+  /* CENTRED ON THE BOX, both ways. It was padding: 9px 0 10px, a pixel more underneath
+     the label than above it, which put every label a measured 1.00px high - horizontally
+     they were already exact. Flex centring with symmetric padding means the box centres
+     the label instead of the padding arithmetic having to. min-height rather than
+     vertical padding so the pill keeps its height whatever the label's line-height. */
+  /* flex: 1 1 auto, NOT flex: 1. flex: 1 sets a zero basis, so all three pills are
+     forced to the SAME width and the longest label - "Read someday" - is handed less room
+     than its own text and clips. Growing from the content basis lets them share the spare
+     space without any of them ending up narrower than what is written on it. */
+  flex: 1 1 auto; cursor: pointer; border: 0; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 34px; padding: 0 6px; white-space: nowrap; background: var(--fill); color: var(--ink);
   font: 600 13px/1 var(--ui); letter-spacing: -.004em;
   box-shadow: inset 0 0 0 1px var(--ring);
   transition: background-color 140ms ease, color 140ms ease,
@@ -308,9 +339,11 @@ const STYLE = `
    edge underneath a centred head - two axes on a 340px card, the same defect the popup's
    detail sheet had. A card's action is the width of the card. */
 .buki-act {
-  display: block; width: 100%; text-align: center;
-  margin: 13px 0 0; cursor: pointer; border: 0; border-radius: 999px;
-  padding: 11px 16px 12px; background: transparent; color: var(--ink);
+  /* Full width so its label sits on the card's own axis, and centred on its own box for
+     the same reason .buki-intent is: it carried 11px above and 12px below. */
+  width: 100%; margin: 13px 0 0; cursor: pointer; border: 0; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 38px; padding: 0 16px; background: transparent; color: var(--ink);
   font: 600 13px/1 var(--ui); letter-spacing: -.004em;
   box-shadow: inset 0 0 0 1px var(--ring);
   transition: background-color 140ms ease, box-shadow 140ms ease,
@@ -319,7 +352,7 @@ const STYLE = `
 .buki-act:active { transform: scale(.97); }
 .buki-act:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
-  .buki-act:hover { background: var(--lift); box-shadow: inset 0 0 0 1px var(--accent); }
+  .buki-act:hover { background: var(--fill-hi); box-shadow: inset 0 0 0 1px var(--accent); }
 }
 
 
@@ -346,20 +379,26 @@ const STYLE = `
    The ceiling is on the LIST rather than the card, so the head and "Save all" stay put:
    a batch card whose batch button scrolls away has lost the reason it exists.
 
-   380px is where three books stop scrolling, which is what a photographed stack usually
-   is; 50vh is what keeps the card from filling a short window. There is NO fade at the
+   420px is where three books stop scrolling, which is what a photographed stack usually
+   is; 54vh is what keeps the card from filling a short window. It was 380/50 until the
+   intent row moved onto its own line on 2026-08-17 and a row grew from 113px to 131px -
+   the bound is a function of the row, so it moved with it. There is NO fade at the
    scroll edge, and that is deliberate - a mask over the last 18px of this list sits on
    top of that row's own now/next/someday buttons, and decoration that dims a control is
    not decoration. A part-visible row is its own affordance, and the scrollbar is thin
    rather than hidden for the same reason. */
 .buki-books {
-  max-height: min(50vh, 380px);
+  max-height: min(54vh, 420px);
   overflow-y: auto;
-  overscroll-behavior: contain;
+  /* NO overscroll-behavior: contain HERE, and its absence is the fix. Containing the
+     scroll on the INNER list stopped the wheel chaining outward, so running out of one
+     card's books left it dead instead of moving to the next card - "easy to scroll through
+     each toast, hard to scroll between toasts". Containment belongs on .buki-tray, which
+     is the edge of Buki: chaining past THAT would scroll somebody else's page. */
   scrollbar-width: thin;
   scrollbar-color: var(--ink-2) transparent;
 }
-.buki-find { display: flex; gap: 12px; align-items: flex-start; margin-top: 13px; }
+.buki-find { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-top: 13px; }
 .buki-find + .buki-find { padding-top: 13px; border-top: 1px solid var(--ring); }
 /* Per book, not per card: a photographed stack can be half yours already. */
 .buki-shelf {
@@ -770,15 +809,6 @@ function tick(cards: Card[]): void {
 // ---------------------------------------------------------------- what a card looks like
 
 /** Where the answer came from, in the card's own words. */
-const PROVENANCE: Record<string, string> = {
-  vision: 'read from the cover',
-  // Read off the cover, but the catalogue was unreachable, so nothing corroborated it.
-  // Saying so is the difference between a shelf you trust and one you have to re-check.
-  unverified: 'read from the cover · unverified',
-  link: 'from the link in the post',
-  text: "from the post's words",
-  none: 'no source',
-};
 
 function paintCard(el: HTMLElement, card: Card): void {
   // The best-read book lends the card its cloth. On a card with no book the cords made
@@ -806,7 +836,7 @@ function foundBody(card: Card): Node[] {
   if (card.candidates.length > 1) {
     const count = document.createElement('div');
     count.className = 'buki-count';
-    count.textContent = `${card.candidates.length} books in this picture`;
+    count.textContent = foundHeading(card.candidates.length);
     who.append(count);
   }
   head.append(who, closeButton(card));
@@ -879,8 +909,10 @@ function bookRow(card: Card, cand: Candidate, index: number): HTMLElement {
     author.append(' ', tag);
   }
 
-  who.append(title, author, intentRow(card, cand, index));
-  row.append(who);
+  who.append(title, author);
+  // A sibling of `who`, not a child: `.buki-find` wraps, so the row lands on its own
+  // full-width line under the cover and the title rather than in the column beside them.
+  row.append(who, intentRow(card, cand, index));
   return row;
 }
 
@@ -917,11 +949,30 @@ function coverThumb(book: Book): HTMLElement {
   thumb.className = 'buki-thumb';
   thumb.style.setProperty('--cloth', clothFor(book));
   if (book.coverUrl) {
-    const img = document.createElement('img');
-    img.src = book.coverUrl;
-    img.alt = '';
-    img.addEventListener('error', () => img.remove());
-    thumb.append(img);
+    /**
+     * THE WORKER FETCHES IT, NOT US.
+     *
+     * This <img> lives in the HOST page's document, so the host's Content-Security-Policy
+     * governs it - and a cross-origin cover is blocked on every strict site. Measured in
+     * Chrome 151 under `img-src 'self' data:`: the OpenLibrary URL BLOCKED, a data: URL
+     * LOADED, a blob: URL BLOCKED. The old code set the URL directly, the load failed, the
+     * error handler removed the image and the reader saw the cloth colour underneath.
+     *
+     * So the worker reads the bytes - it has the host permission and no page CSP - and
+     * hands back a data: URL. A page that also forbids `data:` still falls through to the
+     * cloth, which is a real design rather than a broken state.
+     */
+    void chrome.runtime
+      .sendMessage({ type: 'coverBytes', url: book.coverUrl } satisfies BackgroundRequest)
+      .then((resp: { dataUrl?: string | null } | undefined) => {
+        if (!resp?.dataUrl) return;
+        const img = document.createElement('img');
+        img.src = resp.dataUrl;
+        img.alt = '';
+        img.addEventListener('error', () => img.remove());
+        thumb.append(img);
+      })
+      .catch(() => undefined);
   }
   return thumb;
 }
@@ -958,7 +1009,7 @@ function intentRow(card: Card, cand: Candidate, index: number): HTMLElement {
   (['now', 'next', 'someday'] as Intent[]).forEach((intent) => {
     const b = document.createElement('button');
     b.className = 'buki-intent';
-    b.textContent = intent;
+    b.textContent = INTENT_LABEL[intent as keyof typeof INTENT_LABEL];
     if (cand.savedTo) {
       b.disabled = true;
       if (cand.savedTo === intent) b.dataset['here'] = '';

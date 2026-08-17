@@ -448,7 +448,55 @@ in it. Surfaces are boards and spines, not cards floating on a gradient.
 > Its premise expired on 2026-08-15 when Maximo supplied the three-spine source and the
 > two-spine landing drawing was removed. See `OPENWORK.md` item 24.)*
 
-### The mark: three spines, everywhere, as of 2026-08-15
+### The mark: THE CATCHER, everywhere, as of 2026-08-17
+
+A blue ball with two big eyes and a catchlight in each. It looks at you, which is the whole
+idea: the thing Buki does is **see** a book in a picture. Maximo drew it and said *"i added
+the newLogo.png use that everywhere"*; the file is kept as `icons/mark-source.png`.
+
+**Every number in `tools/mark.mjs` was SAMPLED out of that PNG, not redrawn by eye** — the
+ball's bounds, both eyes, both catchlights, and the three gradient stops. Redrawing a
+cartoon by hand across six files is how six slightly different faces happen.
+
+| | |
+| --- | --- |
+| ball | `cx 50, cy 50, r 50` — it fills the viewBox, with no baked-in padding |
+| eyes | `cx 31.3 / 68.3, cy 45.9, rx 13.7, ry 19.5` — tall ovals, which is what makes it *look* rather than stare |
+| catchlights | `cx 35 / 71.4, cy 35.2, r 3.9` — up and to the **right** of each eye, the same offset in both |
+| ramp | `#7bcdfc` → `#4aa3f9` → `#013ebf`, on the diagonal |
+| eye ink / glint | `#091a3b` / `#fdfdfd`, one value on every ground, forever |
+
+**It did not cost the product its colour.** The ramp's deep end is within a hair of the
+landing's cobalt `#1231a8`, and its midpoint sits where the old caught spine did,
+`#2f7fd6`. Same family, lit.
+
+**The plate is gone, and that is the point rather than an omission.** The old mark needed
+one: two *ink* spines on Chrome's dark toolbar vanished into it and left a single pale bar
+with two floating cords, which is not the mark. A ball carries its own colour and its own
+silhouette — **11.98:1 on black, 8.9:1 on white** — so `icons/icon.svg`, `docs/icon.svg`
+and `icons/mark.svg` are now the same drawing, and the toolbar icon is drawn on
+transparency, which is what a toolbar icon should be.
+
+**`--mark-spine` and `--mark-caught` were deleted** from all three surfaces with it. A
+full-colour mark has nothing for a surface to theme, which also ends the class of bug that
+put `#7cc0fd` in three files under a comment explaining why it could not be used.
+
+#### How it is judged, and why not the obvious way
+
+A filled disc owes a **legible silhouette**, not a uniform ratio. On the light panel the
+ramp's top measures **1.57:1** and its bottom **7.70:1**; at night the top is **11.98:1**
+and the bottom **2.44:1**. A bar demanding every stop clear every ground would fail a mark
+that renders perfectly at 16px on both — verified by rendering it at 16/20/24/32/48/64/128
+on both grounds *before* the bar was written. So the test asks that the **best** stop clears
+4.5:1, and that the eyes clear 3:1 **where the eyes actually are** — sampled off the ramp at
+each eye's own top, centre and bottom, because the first draft compared the eye ink to
+`#013ebf`, a colour that lives in the bottom-right corner where no eye sits, and failed at
+2.00:1.
+
+**That is the third time this repo has scored an element against a colour that is nowhere
+near it**, in three different shapes. It is the standing trap of this design system.
+
+### The mark: three spines (SUPERSEDED 2026-08-17, kept for the reasoning)
 
 **Two shelved spines and one pulled out and lit, all three crossed by two cords.** One
 drawing, on the landing, the popup, the options page and the icon set.

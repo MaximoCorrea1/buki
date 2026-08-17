@@ -254,8 +254,10 @@
            reached that conclusion and rejected a caught-versus-ground bar for it. Run
            `node tools/mark-sizes.mjs --extra "#7cc0fd"` and look before arguing from a
            ratio; that tool exists because this was got wrong from a number twice. */
-        --mark-spine:  light-dark(#0a0f33, #f5efde);
-        --mark-caught: light-dark(#2f7fd6, #1231a8);
+        /* THE MARK CARRIES ITS OWN COLOUR NOW. --mark-spine and --mark-caught were
+           removed on 2026-08-17 with the three-spine mark: the ball is one drawing with a
+           sampled gradient, so there is nothing here for a surface to theme. Its colours
+           and the reason it needs no per-mood value are in tools/mark.mjs. */
 
         /* On the navy block. */
         --cream: #f5efde;
@@ -1343,18 +1345,18 @@
                The mask is applied inside the rotated group too, so the caught spine's
                cords lean with it. Fills are tokens: black on navy is invisible, which is
                exactly how the first mark broke. See docs/brand.md. -->
-          <mask id="bk-cords">
-            <rect x="-25" y="-25" width="150" height="150" fill="#fff" />
-            <rect x="-25" y="64.6" width="150" height="1.9" fill="#000" />
-            <rect x="-25" y="72.9" width="150" height="1.9" fill="#000" />
-          </mask>
-          <g mask="url(#bk-cords)" fill="var(--mark-spine)">
-            <rect x="15" y="6" width="19" height="88" rx="9.5" />
-            <rect x="66" y="6" width="19" height="88" rx="9.5" />
-          </g>
-          <g transform="rotate(-8 50 50)" mask="url(#bk-cords)">
-            <rect x="40.5" y="7" width="19" height="86" rx="9.5" fill="var(--mark-caught)" />
-          </g>
+          <defs>
+            <linearGradient id="bk1-ball" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#7bcdfc" />
+              <stop offset="0.46" stop-color="#4aa3f9" />
+              <stop offset="1" stop-color="#013ebf" />
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="50" fill="url(#bk1-ball)" />
+          <ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b" />
+          <ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b" />
+          <circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd" />
+          <circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd" />
         </svg>
         <span class="word">Buki</span>
         <nav>

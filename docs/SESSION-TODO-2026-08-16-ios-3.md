@@ -1,4 +1,7 @@
-# Session TODO — 2026-08-16 — iOS pass 3
+# Session TODO — 2026-08-16 → 17 — iOS pass 3, then the catcher
+
+*(2026-08-17 continues in this ledger rather than a fourth pair: it is the same thread of
+work, and `OPENWORK.md` §0 warns that filename order is not a reading order.)*
 
 Forget-nothing ledger. Markers: `[ ]` open · `[x]` done+verified · `[~]` in progress ·
 `[?]` needs a founder decision · `[!]` blocked.
@@ -29,12 +32,13 @@ session is folded into `OPENWORK.md`.
       A/B, both `slotH = cardH = 448.6`. A flex item's automatic minimum size already
       prevents the shrink.
 
-- [x] **1. The paint moved off the root.** `popup.html` gained `.win`; the scrim restates
-      the radius so opening a book does not square the corners off. `options.html` is a
-      full tab and deliberately keeps none of it, guarded by its own test. Verified on the
-      REAL popup.html in both moods: corner pixel `rgba(0,0,0,0)`, masthead `#f2f2f7` by
-      day and `#000000` at night.
-- [x] **2. The card's list is bounded** at `min(50vh, 380px)`. Three books do not scroll;
+- [x] **1. The paint moved off the root — SUPERSEDED 2026-08-17, see below.** The CSS was
+      right and the measurement was right (corner pixel `rgba(0,0,0,0)`), and it still made
+      the popup worse, because what it uncovered was Chrome's own square bubble. Kept
+      because the mechanism it established is what let the real answer be reached in one
+      step the next day.
+- [x] **2. The card's list is bounded** at `min(54vh, 420px)` (was 50vh/380px until the
+      intent row grew a line on 2026-08-17 — the bound is a function of the row height). Three books do not scroll;
       twenty scroll inside the card and the head and *Save all* stay put. Verified by
       render: 3, 5 and 20 books all produce the same card height.
 - [x] **3. The iOS pass.** Two more materials, both measured first: `--fill` (Apple's
@@ -49,9 +53,8 @@ session is folded into `OPENWORK.md`.
 
 ## Open
 
-- [ ] **Verify in a real Chrome popup** what is painted OUTSIDE the radius. The canvas is
-      deliberately transparent now, so that area is Chrome's own base and should follow
-      `color-scheme`. Nothing here can prove it: `--load-extension` is refused. In item 3.
+- [x] **Verify in a real Chrome popup what is painted OUTSIDE the radius.** Maximo looked,
+      2026-08-17: an opaque square container. Answered by the one instrument that could.
 - [ ] The plate quote's dead `font-style: italic` was one instance. **The grep for other
       dead declarations is still never run.** Carried from pass 2.
 - [ ] **The rest of item 17:** `docs/store/listing.md`, and its `Single purpose` field
@@ -73,3 +76,44 @@ session is folded into `OPENWORK.md`.
 | 6 | ✅ | iOS pass: two new materials, `--muted` re-derived against four grounds |
 | 7 | ✅ | Rendered and looked at: shelf, sheet, tray on five grounds with a 20-book card |
 | 8 | ✅ | brand.md and OPENWORK.md updated in the same commit as the change |
+
+## 2026-08-17 — the catcher, and six more reports
+
+- [x] **THE MARK IS NOW THE CATCHER.** Maximo's ball-with-eyes replaces three spines on all
+      six surfaces plus the rasteriser. Every number SAMPLED from `icons/mark-source.png`,
+      never redrawn. Passes 16px on both grounds, rendered before it was believed. The
+      plate is gone because the ball needs no ground; `--mark-spine` and `--mark-caught`
+      deleted with it.
+- [x] **1. Rounded corners: they cannot be had, and Maximo was right.** Chrome's popup is a
+      square native window painting its own opaque background. Yesterday's transparent
+      canvas did not reveal a rounded window, it revealed CHROME'S square one with our panel
+      inset inside it. Reverted to painting edge to edge: no seam, roundness lives inside.
+- [x] **2. Remove a book FROM THE SHELF**, with an undo. It existed only inside the sheet.
+      `restoreArgs` puts it back in the pile it was in, with the picture it was caught from.
+- [x] **3b. Covers showed a colour.** ROOT CAUSE: the tray's `<img>` obeys the HOST page's
+      CSP. Measured under `img-src 'self' data:` — cross-origin BLOCKED, data: LOADED,
+      blob: BLOCKED. The worker now fetches and hands back a data: URL.
+- [x] **3a. CTA text off centre.** Measured 1.00px high from `padding: 9px 0 10px`; now
+      0.50px, which is the font's own asymmetry and below a device pixel.
+- [x] **4a. Hard to scroll between toasts** — `overscroll-behavior: contain` on the inner
+      list, added by me the day before. It belongs on the tray, not the list.
+- [x] **4b/5. Copy.** "· unverified" removed; the head reads *Buki found N books in this
+      picture*; the three actions carry the verb.
+- [x] **The intent row moved to its own full-width line**, because three verb+noun labels
+      clip across 250px. Took three measured attempts: `width: 100%` does not break a flex
+      line, `flex: 1` forces equal widths, and the harness fixture had drifted.
+- [x] **CRLF damage found and undone.** Python writes converted 13 files, which broke the
+      tray stylesheet slice to -1 and made two green tests meaningless. Normalised; re-run.
+
+## Open, 2026-08-17
+
+- [?] **The "Read" collision.** The tray now says *Read now / Read next / Read someday*
+      while the shelf's fourth pile is called **Read**, meaning finished. Distinguishable in
+      context, not distinct words. Renaming that pile to **Finished** would end it. Founder's
+      call; noted in `src/extension/trayCopy.ts`.
+- [ ] **Undo does not unflag the recognition.** `removeBook` marks the match wrong on the
+      way out and nothing clears it on the way back in, so remove-then-undo leaves the kept
+      rate one worse. One attempt in a rolling 200. Needs an unflag path through the log.
+- [ ] **The tray harness renders with the FALLBACK font under headless file://**, so every
+      width measured there is wider than what ships. Fine for catching overflow; wrong for
+      judging type.

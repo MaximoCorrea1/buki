@@ -17,6 +17,7 @@ import { bestQuality, distinctMedia } from './twitterImage';
 import { inlineAll, livePrep } from './inlineImage';
 import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
+import { coverDataUrl } from './coverData';
 import { withSignal } from './cancellable';
 import { createLookupMemo, postKey } from './lookupMemo';
 import { mayFetch, type PermissionDeps } from './imageOrigin';
@@ -470,6 +471,16 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
         console.error('[Buki] remove failed', err);
         sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
       });
+    return true; // async response
+  }
+
+  if (msg?.type === 'coverBytes') {
+    // The tray asks for this because it is not allowed to fetch it. A failure is answered
+    // with null rather than an error: the card falls back to its cloth, which is a real
+    // design and not a broken state.
+    coverDataUrl(msg.url, liveCoverDeps())
+      .then((dataUrl) => sendResponse({ ok: true, dataUrl }))
+      .catch(() => sendResponse({ ok: true, dataUrl: null }));
     return true; // async response
   }
 

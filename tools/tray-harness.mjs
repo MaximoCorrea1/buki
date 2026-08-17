@@ -52,6 +52,12 @@ const card = (inner, cloth, book = true) => `
 
 const closeBtn = `<button class="buki-x" title="Dismiss" aria-label="Dismiss this catch">&times;</button>`;
 
+/**
+ * One book row. `.buki-row` is a SIBLING of `.buki-who`, not a child - `bookRow` in
+ * content.ts appends it that way so `.buki-find` can wrap it onto its own full-width line.
+ * This fixture has drifted from the builder three times in one session; when a card looks
+ * wrong here, check the nesting against `bookRow` before believing the stylesheet.
+ */
 const row = (title, author, cloth, shelved) => `
       <div class="buki-find">
         <div class="buki-thumb" style="--cloth:${cloth}"></div>
@@ -60,11 +66,11 @@ const row = (title, author, cloth, shelved) => `
           <div class="buki-a">${author}${
             shelved ? ` <span class="buki-shelf">on your shelf &middot; ${shelved}</span>` : ''
           }</div>
-          <div class="buki-row">
-            <button class="buki-intent">now</button>
-            <button class="buki-intent"${shelved === 'next' ? ' disabled data-here=""' : ''}>next</button>
-            <button class="buki-intent">someday</button>
-          </div>
+        </div>
+        <div class="buki-row">
+          <button class="buki-intent">Read now</button>
+          <button class="buki-intent"${shelved === 'next' ? ' disabled data-here=""' : ''}>Read next</button>
+          <button class="buki-intent">Read someday</button>
         </div>
       </div>`;
 
@@ -82,7 +88,7 @@ const TRAY = [
     `<div class="buki-head">
         <div class="buki-who">
           <div class="buki-eyebrow">read from the cover</div>
-          <div class="buki-count">3 books in this picture</div>
+          <div class="buki-count">Buki found 3 books in this picture</div>
         </div>${closeBtn}
       </div>
       ${books(
@@ -100,7 +106,7 @@ const TRAY = [
     `<div class="buki-head">
         <div class="buki-who">
           <div class="buki-eyebrow">read from the post</div>
-          <div class="buki-count">20 books in this picture</div>
+          <div class="buki-count">Buki found 20 books in this picture</div>
         </div>${closeBtn}
       </div>
       ${books(
@@ -131,7 +137,7 @@ const TRAY = [
   card(
     `<div class="buki-head">
         <div class="buki-who">
-          <div class="buki-eyebrow">nothing on the cover</div>
+          <div class="buki-eyebrow">read from the cover</div>
           <div class="buki-t buki-plain">No book on that cover.</div>
         </div>${closeBtn}
       </div>

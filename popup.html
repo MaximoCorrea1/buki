@@ -165,23 +165,14 @@
 
         /* Three radii now. The sheet is a sheet and wants the larger iOS corner; the old
            14px on a 500px card read as a dialog rather than as a card you picked up. */
-        /* The window itself. Chrome hands an extension popup square corners, which is
-           the one thing on screen that still looks like a 2015 dialog. 16px is the shape
-           a rounded window has on both platforms this ships to, and it sits between the
-           sheet's 20 and the panel's 14 so nothing nests badly inside it. */
-        --r-win: 16px;
         --r-xl: 20px;
         --r-lg: 14px;
         --r-md: 10px;
 
-        --mark-spine: var(--ink);
-        /* ONE VALUE IN BOTH MOODS, which it could not be until now. The caught spine has
-           to separate from its NEIGHBOURS, and the neighbours used to be navy by day and
-           cream by night, so it had to invert with them. With neutral spines it does not:
-           #2f7fd6 measures 4.60:1 against the day spine and 4.10:1 against the night one,
-           clearing the bar from both sides. tools/mark.mjs carries both grounds and
-           src/shared/mark.test.ts reads this line against them. */
-        --mark-caught: #2f7fd6;
+        /* THE MARK CARRIES ITS OWN COLOUR NOW. --mark-spine and --mark-caught were
+           removed on 2026-08-17 with the three-spine mark: the ball is one drawing with a
+           sampled gradient, so there is nothing here for a surface to theme. Its colours
+           and the reason it needs no per-mood value are in tools/mark.mjs. */
 
         /* The two inks a binding gets, and no more. One value in both moods, forever. */
         --stamp: #faf7f2;
@@ -243,40 +234,41 @@
       .count, .shelf-stat, time { font-variant-numeric: tabular-nums; }
 
 
-      /* ROUNDED, AND NEITHER THE ROOT NOR THE BODY MAY BE WHAT PAINTS IT.
-         `html` declares no background, so the body's background PROPAGATES TO THE CANVAS
-         (CSS Backgrounds §2.11.2) - and the canvas background is painted across the whole
-         canvas and is not clipped by anybody's border-radius. The body's own background is
-         then not painted at all. So the previous version of this block carried the radius
-         twice, on <html> and on <body>, and both were inert.
+      /* THE WINDOW IS SQUARE, AND THAT IS CHROME'S DECISION RATHER THAN OURS.
 
-         Measured as a corner PIXEL rather than argued, headless over a transparent
-         backdrop so alpha answers outright:
-           html + body rounded, body painted   rgba(0,0,0,255) at (2,2)   SQUARE
-           root transparent, wrapper painted   rgba(0,0,0,0)   at (2,2)   ROUND
-         Making the root transparent is not enough on its own either: a transparent root
-         propagates from the body in turn. The paint has to be on a third element.
+         Rounded corners were tried on 2026-08-16 and the CSS half worked: a background on
+         html or body propagates to the CANVAS, a canvas background is not clipped by any
+         border-radius, so the paint moved to an inner .win and the corner pixel went from
+         rgba(0,0,0,255) to rgba(0,0,0,0). Measured, not argued.
 
-         What shows OUTSIDE the radius is then Chrome's own popup base, which follows
-         `color-scheme` - dark at night, where --paper is #000 anyway. */
+         What no harness here can see is what Chrome paints BEHIND the document, because
+         --load-extension is refused. Maximo looked, in the real browser: "it still has an
+         outside container with sharp coorners". Chrome's extension popup on Windows is a
+         SQUARE native window painting its own opaque background, and no API rounds it. A
+         transparent canvas therefore does not reveal a rounded window, it reveals Chrome's
+         square one - with our rounded panel inset inside it and a seam between the two.
+         That is strictly worse than square corners nobody notices.
+
+         So the root paints again, edge to edge, and there is no seam. The roundness lives
+         INSIDE: the segmented control, the search field, the cards and the sheet. That is
+         what iOS looks like inside a square screen, which is all a popup ever is. */
       body {
         /* 560 gives a 118px cover four across, which is the smallest a title reads at.
            Chrome allows up to 800. One declaration, so this is a one-line change. */
         width: 560px;
         margin: 0;
+        background-color: var(--paper);
         color: var(--ink);
         font: 14px/1.45 var(--ui);
         -webkit-font-smoothing: antialiased;
       }
+      /* Kept as the scroller so the masthead's `position: sticky` has a box to stick to,
+         and so the sheet can sit OUTSIDE it and cover the whole popup. It paints nothing. */
       .win {
-        border-radius: var(--r-win);
         max-height: 600px;
         overflow-y: auto;
         overflow-x: hidden;
         padding: 0 0 10px;
-        background-color: var(--paper);
-        /* The scroller moved here with the paint, so the masthead's `position: sticky`
-           now resolves against this element. It has to be the same box for both. */
       }
       .win::-webkit-scrollbar { width: 10px; }
       .win::-webkit-scrollbar-thumb {
@@ -671,11 +663,6 @@
       #scrim {
         position: fixed;
         inset: 0;
-        /* The scrim is the one element that paints edge to edge, so it is the one element
-           that has to restate the window's radius. The popup's viewport and the .win panel
-           are the same box, so inset:0 plus the same radius lines up exactly. Without it,
-           opening a book squares the corners off again for as long as the sheet is up. */
-        border-radius: var(--r-win);
         background: var(--scrim);
         backdrop-filter: blur(10px) saturate(140%);
         -webkit-backdrop-filter: blur(10px) saturate(140%);
@@ -841,6 +828,74 @@
       .empty { margin: 24px 20px; color: var(--ink); line-height: 1.6; text-align: center; }
       .empty b { display: block; margin-bottom: 3px; color: var(--ink); font-size: 15px; }
 
+      /* --- taking a book off the shelf ------------------------------------- */
+      /* A badge on the corner of the cover, the way iOS puts one on an app in edit mode.
+         Hidden until the tile is hovered OR something inside it has keyboard focus, so it
+         is reachable without a mouse and invisible until wanted. */
+      .slot { position: relative; }
+      .unshelve {
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        z-index: 2;
+        width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: var(--thumb);
+        color: var(--muted);
+        box-shadow: 0 1px 2px var(--shadow), 0 6px 14px -6px var(--shadow-deep);
+        font: 600 15px/1 var(--ui);
+        cursor: pointer;
+        opacity: 0;
+        transform: scale(0.86);
+        pointer-events: none;
+        transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out),
+          color 140ms ease;
+      }
+      .slot:hover .unshelve,
+      .slot:focus-within .unshelve {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+      }
+      .unshelve:active { transform: scale(0.9); }
+      @media (hover: hover) and (pointer: fine) {
+        .unshelve:hover { color: var(--ink); }
+      }
+
+      /* The way back. It sits in the flow rather than floating, because it is the only
+         thing on screen that is about to expire and a floating bar over a shelf reads as
+         a notification you can ignore. */
+      #undo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 14px 20px 0;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: var(--fill);
+        color: var(--ink);
+        font: 500 12.5px/1.3 var(--ui);
+      }
+      #undo[hidden] { display: none; }
+      .undo-go {
+        border: 0;
+        border-radius: 999px;
+        padding: 6px 14px;
+        background: var(--accent);
+        color: var(--paper);
+        font: 700 12.5px/1 var(--ui);
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out), opacity 140ms ease;
+      }
+      .undo-go:active { transform: scale(0.97); }
+      .undo-go:disabled { opacity: 0.5; cursor: default; }
+
       /* --- footer --------------------------------------------------------- */
       footer {
         margin: 18px 20px 0;
@@ -888,18 +943,18 @@
                MASK rather than painted in the paper colour, so the gaps are transparent and
                the mark carries no background with it. The mask is applied inside the rotated
                group as well, so the caught spine's cords lean with it. -->
-          <mask id="bk-cords">
-            <rect x="-25" y="-25" width="150" height="150" fill="#fff" />
-            <rect x="-25" y="64.6" width="150" height="1.9" fill="#000" />
-            <rect x="-25" y="72.9" width="150" height="1.9" fill="#000" />
-          </mask>
-          <g mask="url(#bk-cords)" fill="var(--mark-spine)">
-            <rect x="15" y="6" width="19" height="88" rx="9.5" />
-            <rect x="66" y="6" width="19" height="88" rx="9.5" />
-          </g>
-          <g transform="rotate(-8 50 50)" mask="url(#bk-cords)">
-            <rect x="40.5" y="7" width="19" height="86" rx="9.5" fill="var(--mark-caught)" />
-          </g>
+          <defs>
+            <linearGradient id="bk2-ball" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#7bcdfc" />
+              <stop offset="0.46" stop-color="#4aa3f9" />
+              <stop offset="1" stop-color="#013ebf" />
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="50" fill="url(#bk2-ball)" />
+          <ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b" />
+          <ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b" />
+          <circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd" />
+          <circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd" />
         </svg>
         <h1>Buki</h1>
       </div>
@@ -924,6 +979,9 @@
       </button>
     </header>
     <main id="app"></main>
+    <!-- One click on the shelf removes a book, so there is a way back. Replaced rather
+         than stacked: a run of removals must never build a column of bars. -->
+    <div id="undo" hidden role="status"></div>
     <footer id="disclosure" hidden>
       Buy links are affiliate links. Buki may earn a small commission, at no cost to
       you. Nothing else about your shelf leaves this computer.

@@ -190,34 +190,46 @@ describe('the extension takes its colours from tokens', () => {
   const PAINTS = /(^|;)\s*background(-color)?\s*:/;
 
   /**
-   * Only the popup has corners. `options.html` opens as a full browser tab, where the
-   * canvas covering the viewport is exactly what is wanted and there is no window to
-   * round - so painting its body is right, and this rule would be wrong there.
+   * THE POPUP WINDOW CANNOT BE ROUNDED, AND TRYING MADE IT WORSE. Settled 2026-08-17.
+   *
+   * The CSS half of this was established the day before and is still true: a background on
+   * `html` or `body` propagates to the CANVAS, and a canvas background is painted across
+   * the whole canvas and is not clipped by any `border-radius`. Moving the paint to an
+   * inner `.win` and leaving the canvas transparent did genuinely produce a rounded panel —
+   * measured as a corner pixel, `rgba(0,0,0,0)` where it had been `rgba(0,0,0,255)`.
+   *
+   * What that measurement could not see is what Chrome paints BEHIND the document, because
+   * `--load-extension` is refused here and no harness renders in a popup bubble. Maximo
+   * looked, in the real browser: *"it still has an outside container with sharp
+   * coorners"*. Chrome's extension popup on Windows is a square native window that paints
+   * its own opaque background, and no API rounds it. So a transparent canvas does not
+   * reveal a rounded window — it reveals CHROME'S square one, with our rounded panel inset
+   * inside it and a visible frame between the two.
+   *
+   * The honest answer is one uniform surface with no seam, and the roundness lives inside:
+   * the segmented control, the search field, the cards and the sheet are all rounded, which
+   * is what iOS actually looks like inside a square screen. **So the popup MUST paint from
+   * the root**, and nothing may carry a window radius.
    */
-  it('popup.html paints its window from an element the radius can clip', () => {
+  it('popup.html paints its window edge to edge, with no inset panel to show a seam', () => {
     const rules = chromeRules(popup);
     expect(rules.length).toBeGreaterThan(15);
 
     const painted = rules.filter(({ selector, body }) => ROOTS.has(selector) && PAINTS.test(body));
     expect(
-      painted.map((r) => r.selector),
-      'a background here propagates to the canvas, which no radius clips',
-    ).toEqual([]);
-
-    // And the radius has to land on something that does paint, or it clips nothing.
-    const carrier = rules.find(
-      ({ selector, body }) =>
-        !ROOTS.has(selector) && /border-radius:\s*var\(--r-win\)/.test(body) && PAINTS.test(body),
-    );
-    expect(carrier, 'no element both paints the window and rounds it').toBeDefined();
+      painted.length,
+      'nothing paints the canvas, so Chrome\'s own square bubble shows through',
+    ).toBeGreaterThan(0);
   });
 
-  it('options.html is a full tab and deliberately keeps none of that', () => {
-    // Guards the carve-out above from becoming a silent exemption: if the setup page ever
-    // grows a window radius, this fails and the rule has to be extended rather than
-    // quietly not applying.
-    expect(options).not.toMatch(/border-radius:\s*var\(--r-win\)/);
-  });
+  for (const [name, body] of Object.entries(SURFACES)) {
+    it(`${name} claims no window radius, because neither surface can have one`, () => {
+      // The popup's window is Chrome's and is square; options.html is a full browser tab
+      // and has no window of its own at all. A `--r-win` reappearing in either is a
+      // rounded panel inset in a square one, which is the seam this is here to prevent.
+      expect(body).not.toMatch(/--r-win|border-radius:\s*var\(--r-win\)/);
+    });
+  }
 
   it('exempts only the surfaces that draw a book rather than the panel', () => {
     // If a name in the allowlist stops existing, the exemption is silently protecting

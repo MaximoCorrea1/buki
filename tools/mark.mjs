@@ -1,87 +1,119 @@
 /**
  * THE BUKI MARK, defined once.
  *
- * Two shelved spines and one pulled out and lit, all three crossed by two stamped cords.
- * The third spine is the whole argument: it is what makes the mark about *catching*
- * rather than about books, and the two-spine drawing that briefly replaced it lost that.
+ * The catcher: a blue ball with two big eyes and a catchlight in each. It looks at you,
+ * which is the whole idea — the thing Buki does is SEE a book in a picture.
  *
- * It is drawn in `docs/index.html`, `popup.html`, `options.html` and `icons/icon.svg`, and
- * rasterised by `make-icons.mjs` beside this file. That is five copies of one drawing, so
- * this module is the definition and `src/shared/mark.test.ts` fails the build when a copy
- * disagrees with it. The repo has lost this exact bet twice: the production host was
- * "defined once" and spelled out in seven files, and the caught spine shipped as a
- * hardcoded #7cc0fd in three of them, one of which measured 1.81:1 on its own ground.
+ * It replaced three shelved spines and a caught one on 2026-08-17, on Maximo's
+ * instruction and from Maximo's drawing (`icons/mark-source.png`). **Every number below was
+ * SAMPLED out of that PNG, not redrawn by eye**: the ball's bounds, both eyes, both
+ * catchlights and the three gradient stops. The sampler is in the session context doc for
+ * 2026-08-17; the numbers are here because this is where they are consumed.
  *
- * Coordinates are a 0..100 box. Every consumer either inlines this viewBox or scales it.
+ * It is drawn in `docs/index.html`, `popup.html`, `options.html`, `icons/icon.svg`,
+ * `icons/mark.svg` and `docs/icon.svg`, and rasterised by `make-icons.mjs` beside this
+ * file. That is six copies of one drawing, so this module is the definition and
+ * `src/shared/mark.test.ts` fails the build when a copy disagrees with it. The repo has
+ * lost this exact bet twice: the production host was "defined once" and spelled out in
+ * seven files, and the old mark's caught spine shipped as a hardcoded #7cc0fd in three of
+ * them, one of which measured 1.81:1 on its own ground.
+ *
+ * Coordinates are a 0..100 box and the ball FILLS it. There is no baked-in padding,
+ * because a mark that carries its own margin cannot be aligned against anything.
  */
 
 export const MARK = {
-  /** The two books still on the shelf. Upright, because the shelf is not the subject. */
-  shelved: [
-    { x: 15, y: 6, w: 19, h: 88, rx: 9.5 },
-    { x: 66, y: 6, w: 19, h: 88, rx: 9.5 },
+  /** The ball. It is the silhouette, so it owns the whole viewBox. */
+  ball: { cx: 50, cy: 50, r: 50 },
+
+  /**
+   * The eyes. Tall ovals rather than circles — that is what makes it read as *looking*
+   * rather than as two holes, and it is what survives 16px in the Chrome toolbar, where
+   * the old mark's three 19-unit spines became three grey hairs.
+   */
+  eyes: [
+    { cx: 31.3, cy: 45.9, rx: 13.7, ry: 19.5 },
+    { cx: 68.3, cy: 45.9, rx: 13.7, ry: 19.5 },
   ],
 
   /**
-   * The caught one. NEGATIVE rotation: SVG's positive angle is clockwise, which puts a
-   * spine's top to the right, and the drawing leans the other way — top to the left, foot
-   * to the right, the way a book tips when it is pulled half out. The extension shipped
-   * `rotate(10)` for two generations and leaned it backwards.
-   */
-  caught: { x: 40.5, y: 7, w: 19, h: 86, rx: 9.5, rotate: -8, pivot: [50, 50] },
-
-  /**
-   * The two stamped cords, the same pair every generated cover carries, so the mark and a
-   * board on the shelf are the same object at two sizes.
+   * The catchlights, and they are NOT centred in the eyes.
    *
-   * They are cut with a MASK wherever this is inlined as SVG, never painted in the ground
-   * colour. A painted cord is a coloured bar: it carries a background with it, and the
-   * mark then only works on the one surface that background happens to match. Masked, the
-   * gaps are genuinely transparent and the same mark sits on the glass pill, on a plate
-   * and on flat paper. `make-icons.mjs` paints them, and may, because it is drawing onto
-   * a plate it owns.
+   * Both sit up and to the right of their eye's centre, by the same offset — the drawing
+   * puts the light source there and it is what stops the face reading as a stare. Sampled
+   * rather than guessed, because "put a dot in the eye" is exactly the kind of detail that
+   * gets redrawn slightly differently in each of six files.
    */
-  cords: [
-    { y: 64.6, h: 1.9 },
-    { y: 72.9, h: 1.9 },
+  catchlights: [
+    { cx: 35, cy: 35.2, r: 3.9 },
+    { cx: 71.4, cy: 35.2, r: 3.9 },
   ],
 
   /**
-   * THE CAUGHT SPINE IS A DIFFERENT VALUE ON EVERY GROUND, and this is the only part of
-   * the mark that is not one number.
+   * The ball's gradient: light at the top left, deep at the bottom right, on the diagonal.
    *
-   * It has to separate from two things at once: from the ground, so you can see it at
-   * all, and from the shelved spines, so it reads as *caught* rather than as a third
-   * book. Those pull in opposite directions, and which direction is scarce depends on
-   * whether the ground is cream or navy. Measured, on cream:
+   * The deep end is within a hair of the landing's cobalt (`#1231a8`) and the midpoint sits
+   * where the old mark's caught spine did (`#2f7fd6`), so the new mark did not cost the
+   * product its colour — it is the same family, lit.
+   */
+  ramp: {
+    x1: 14,
+    y1: 8,
+    x2: 82,
+    y2: 94,
+    stops: [
+      { at: 0, color: '#7bcdfc' },
+      { at: 0.46, color: '#4aa3f9' },
+      { at: 1, color: '#013ebf' },
+    ],
+  },
+
+  /** The eyes' ink and the catchlight. One value each, on every ground, forever. */
+  ink: '#091a3b',
+  glint: '#fdfdfd',
+
+  /**
+   * THE GROUNDS THE MARK HAS TO SURVIVE, and the bar is about the RAMP, not any one stop.
    *
-   *   #7cc0fd   1.81:1 vs the paper,  9.58:1 vs the spines  -> invisible as a shape
-   *   #1231a8   9.66:1 vs the paper,  1.80:1 vs the spines  -> nothing looks caught
-   *   #2f7fd6   3.83:1 vs the paper,  4.54:1 vs the spines  -> clears both
-   *
-   * The test asserts >= 3:1 on both counts for every ground listed here, so adding a
-   * surface means measuring it rather than guessing.
+   * A filled disc owes a legible silhouette, not a uniform ratio. On the light panel the
+   * ramp's top measures 1.57:1 and its bottom 7.70:1; at night the top is 11.98:1 and the
+   * bottom 2.44:1. Demanding every stop clear every ground would fail a mark that renders
+   * perfectly at 16px on both — which was verified by rendering it at 16, 20, 24, 32, 48,
+   * 64 and 128 before the bar was written. `mark.test.ts` asserts the best stop clears
+   * 4.5:1, and says at length why the naive version is the same error this repo has now
+   * made twice with a flanked element.
    */
   grounds: {
-    'landing, day': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
-    'landing, night': { ground: '#080d20', spine: '#f5efde', caught: '#1231a8' },
-    /**
-     * The extension went to iOS system neutrals on 2026-08-16, so these two grounds moved
-     * and both were re-measured rather than adjusted by eye.
-     *
-     * **The caught spine is now ONE value across both moods**, which it could never be
-     * before. It has to separate from its NEIGHBOURS, and the neighbours used to be navy
-     * on cream by day and cream on navy by night, so it had to invert with them. Against
-     * neutral spines it does not: `#2f7fd6` clears the bar from both sides, 4.60:1 against
-     * the day spine and 4.10:1 against the night one. That is why `popup.html` and
-     * `options.html` declare a single value where every other colour token is a
-     * `light-dark()` pair.
-     */
-    'extension paper': { ground: '#f2f2f7', spine: '#111114', caught: '#2f7fd6' },
-    'extension night': { ground: '#000000', spine: '#ffffff', caught: '#2f7fd6' },
-    'icon plate': { ground: '#fbf7ec', spine: '#0a0f33', caught: '#2f7fd6' },
+    'landing, day': { ground: '#fbf7ec' },
+    'landing, night': { ground: '#080d20' },
+    'extension paper': { ground: '#f2f2f7' },
+    'extension night': { ground: '#000000' },
+    /** Chrome's own toolbar, which is the one ground nobody here chooses. */
+    'toolbar, light': { ground: '#ffffff' },
+    'toolbar, dark': { ground: '#292a2d' },
   },
 };
+
+/**
+ * The mark as SVG, so six surfaces cannot each draw it slightly differently.
+ *
+ * `id` namespaces the gradient: two marks in one document with the same gradient id means
+ * the second one silently takes the first one's fill.
+ */
+export function markSvg(id = 'bk') {
+  const { ball, eyes, catchlights: lights, ramp, ink, glint } = MARK;
+  const stops = ramp.stops
+    .map((s) => `<stop offset="${s.at}" stop-color="${s.color}"/>`)
+    .join('');
+  const eye = (e) => `<ellipse cx="${e.cx}" cy="${e.cy}" rx="${e.rx}" ry="${e.ry}" fill="${ink}"/>`;
+  const light = (l) => `<circle cx="${l.cx}" cy="${l.cy}" r="${l.r}" fill="${glint}"/>`;
+  return (
+    `<defs><linearGradient id="${id}-ball" x1="${ramp.x1}" y1="${ramp.y1}" x2="${ramp.x2}" y2="${ramp.y2}" gradientUnits="userSpaceOnUse">${stops}</linearGradient></defs>` +
+    `<circle cx="${ball.cx}" cy="${ball.cy}" r="${ball.r}" fill="url(#${id}-ball)"/>` +
+    eyes.map(eye).join('') +
+    lights.map(light).join('')
+  );
+}
 
 /** WCAG 2.x relative luminance, so the values above can be asserted rather than trusted. */
 export function luminance(hex) {
@@ -97,11 +129,42 @@ export function contrast(a, b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** Signed-distance test for a rounded rect, used by the rasteriser. */
-export function inRoundRect(px, py, { x, y, w, h, rx }) {
-  const cx = Math.min(Math.max(px, x + rx), x + w - rx);
-  const cy = Math.min(Math.max(py, y + rx), y + h - rx);
+/** Inside the ball? Used by the rasteriser. */
+export function inCircle(px, py, { cx, cy, r }) {
   const dx = px - cx;
   const dy = py - cy;
-  return dx * dx + dy * dy <= rx * rx;
+  return dx * dx + dy * dy <= r * r;
+}
+
+/** Inside an eye? Same, for an axis-aligned ellipse. */
+export function inEllipse(px, py, { cx, cy, rx, ry }) {
+  const dx = (px - cx) / rx;
+  const dy = (py - cy) / ry;
+  return dx * dx + dy * dy <= 1;
+}
+
+/**
+ * The ramp's colour at a point, so the rasteriser paints the same gradient the SVG does.
+ * Projects the point onto the gradient axis and interpolates between the bracketing stops.
+ */
+export function rampAt(px, py) {
+  const { x1, y1, x2, y2, stops } = MARK.ramp;
+  const ax = x2 - x1;
+  const ay = y2 - y1;
+  const t = Math.min(1, Math.max(0, ((px - x1) * ax + (py - y1) * ay) / (ax * ax + ay * ay)));
+  let lo = stops[0];
+  let hi = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (t >= stops[i].at && t <= stops[i + 1].at) {
+      lo = stops[i];
+      hi = stops[i + 1];
+      break;
+    }
+  }
+  const span = hi.at - lo.at || 1;
+  const k = (t - lo.at) / span;
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const [r1, g1, b1] = rgb(lo.color);
+  const [r2, g2, b2] = rgb(hi.color);
+  return [r1 + (r2 - r1) * k, g1 + (g2 - g1) * k, b1 + (b2 - b1) * k].map(Math.round);
 }
