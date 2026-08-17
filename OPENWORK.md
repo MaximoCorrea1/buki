@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **516 across 52 files**, all passing |
+| Tests | **523 across 53 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -12,7 +12,7 @@
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
 | Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **70** as this line was written, so the commit carrying it makes 71 |
-| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **64** steps done, **21** left |
+| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **65** steps done, **20** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -237,6 +237,15 @@ Maximo's items 1 and 2.
          ring is `--muted`, the same value as the label, so the whole control is one solid
          colour and the flat rule holds. **Not `--board`: measured 1.28:1 on the paper**,
          a boundary you cannot see.
+
+         > **EXPIRED 2026-08-16, and the doc did not follow until 2026-08-17.** The iOS
+         > turn (`a40e335`) replaced that ring with a FILLED SURFACE, which is the Apple
+         > idiom and is what `docs/brand.md`'s checklist allows in as many words: *a
+         > control's boundary clears 3:1, **or** it has a filled surface instead of an
+         > edge.* So the decision is sound and this entry described the previous one for a
+         > day. **What nobody measured is the fill itself:** `--sunk` on `--paper` is
+         > **1.08:1 by day and 1.15:1 at night**, which is fainter than the 1.28:1 this
+         > entry rejects by name two lines up. See the `[?]` in Part 4, item 25.
 
       **One finding left alone on purpose.** The landing's `.btn.ghost` ring is `--rule` on
       `--paper`, which measures **1.38:1** and fails the 3:1 bar for a control boundary the
@@ -599,7 +608,12 @@ needs a credential or a dashboard is the shell around it.
       `visionRoute.ts` decides whose credential goes where.
 - [x] **15. Task 12, the wall.** A sixth card state, its words in `trayCopy.ts`, and a test
       that forbids the four words which would turn a limit into a hostage.
-- [x] **16. Task 13, the options page holds a licence.** Same section as item 13.
+- [x] **16. Task 13, the options page holds a licence.** Same section as item 13, and
+      **Task 13 Step 1, the restructure, is now genuinely done (2026-08-17)** rather than a
+      section added beside the old order. The page leads with *Your plan*; the own key is a
+      collapsed `<details>`; `src/extension/optionsPage.test.ts` asserts the order, which no
+      other guard in this repo can see. Rendered in both moods before the tick, and the
+      render found three defects the plan did not predict. See the plan's Task 13 Step 1.
 - [~] **17. Task 14, the documents that are now false.** 4 steps. **The permission
       justifications (2026-08-16) and the store listing (2026-08-17) are written.** What is
       left is the pair that cannot be written until the proxy answers: `docs/privacy.html`
@@ -641,6 +655,26 @@ needs a credential or a dashboard is the shell around it.
 
       `src/extension/contentChrome.test.ts` guards what a screenshot cannot: the rule is
       about every page, not the one you happened to look at.
+
+- [ ] **25. Is the secondary button filled enough to look filled? MEASURED 2026-08-17, not
+      changed.** `.ghost` on the setup page is `--sunk` on `--paper`: **1.08:1 by day,
+      1.15:1 at night.** Four controls wear it (*Reset provider*, *Export the shelf*,
+      *Clear the log*, *See what Pro costs*).
+
+      **This is not a rule violation.** `docs/brand.md`'s checklist says a control's
+      boundary clears 3:1 **or** it has a filled surface instead of an edge, and Apple's own
+      secondary buttons do not clear 3:1 against a grouped background either. The iOS turn
+      chose the fill deliberately.
+
+      **It is a taste call with an awkward fact attached:** the comment that used to sit
+      above that rule rejected `--board` **by name** at 1.28:1 as "a boundary you cannot
+      see", and the fill that replaced it is fainter than the value it rejected. `--board`
+      is the obvious alternative at **1.27:1 by day, 1.79:1 at night**, which is better in
+      both moods and still not 3:1.
+
+      Left alone rather than changed, because retouching a deliberate design decision as a
+      side effect of a restructure is exactly how the unrelated regressions in §5 got in.
+      Look at it in a real browser and say.
 
 - [x] **22. Ship free-first, or wait for the paid tier? DECIDED 2026-08-13 by Maximo:
       wait.** The landing copy therefore stays as written and stays true on the day it
@@ -955,6 +989,23 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   list** ("a comment can be right while the code beneath it is wrong"), and the pair of them
   is the real rule: the comment and the code are two artefacts, and nothing checks that they
   agree.
+- **A rule that selects `button` does not style an `<a>` you drew as a button.** `#getPro`
+  sat in the same `.actions` row as *Activate* wearing `.ghost`'s colours and none of its
+  shape: measured in Chrome, `radius 0px, padding 0px, height 23.3` against
+  `999px, 11px 20px, 35.5`. It looked like a link that had lost its underline, on the one
+  control that leads to paying. **When a control is not a `<button>`, check every rule that
+  gave the button its shape**, including `:active`.
+- **A computed-style read in the same task as the attribute that changes it can be stale.**
+  A probe that set `data-theme="light"` and immediately read `getComputedStyle` got the new
+  `body` background and the OLD `--sunk`, and reported the day contrast as 16.34:1 when it
+  is 1.08:1. A `light-dark()` custom property substituted into a descendant had not
+  re-resolved. **The screenshot was right and the probe was wrong**, which is the ordering
+  this repo keeps rediscovering: render it, then measure.
+- **A harness that flips the mood after load photographs the TRANSITION.** Every control on
+  the setup page carries `transition: background-color 140ms`, so narrowing the theme from
+  the parent frame animates them, and one screenshot caught a dark pill on a light page and
+  read as a contrast bug that was not there. Inject
+  `*, *::before, *::after { transition: none !important }` **before** flipping.
 - **The Chrome Web Store takes the name and the summary from `manifest.json`.**
   `docs/store/listing.md` offered a `Name` of `Buki: catch books from X` for a dashboard box
   that does not exist, contradicting the manifest's `Buki`. Copy written for a field nobody

@@ -317,3 +317,48 @@ everything it left out.
 - **The single-purpose statement covers entry points, not sites.** One purpose, phrased so
   the context menu on any page, the book icon on X and the shelf in the popup are all
   instances of it. Saving is not a second purpose; it is what identifying is for.
+
+## The options restructure, and three things only a render could say
+
+| Measurement | Probe | Value |
+| --- | --- | --- |
+| `#getPro` vs its neighbour | computed styles in Chrome, real page | `<a>` radius **0px**, padding **0px**, height **23.3** against `<button>` `999px / 11px 20px / 35.5` |
+| `.ghost` fill, night | same, `--sunk` on `--paper` | **1.15:1** |
+| `.ghost` fill, day | screenshot, after the probe lied | **1.08:1** |
+| `--board`, the rejected alternative | computed | **1.27:1** day, **1.79:1** night |
+| Suite after | `vitest run` | **523 across 53 files** |
+
+**`#getPro` was a square, unpadded box in a row of pills**, because the shape came from a
+rule selecting `button` and it is an `<a>`. It sat on the one control that leads to paying,
+and no test in this repo could see it: `extensionTokens` reads colours, `fonts` reads
+`@font-face`, `mark` reads geometry. `optionsPage.test.ts` now asserts the shape rule names
+the anchor, and the page's ORDER, which was equally invisible.
+
+### The instrument that lied this time, and the one that corrected it
+
+**Believed**, from a computed-style probe: `.ghost` measures 16.34:1 in day mode, so the
+fill is fine.
+
+**Measured** by taking the screenshot instead: the pills are pale grey on pale paper.
+The probe had set `data-theme="light"` and read `getComputedStyle` in the same task; it got
+the new `body` background and the **old** `--sunk`, because a `light-dark()` custom property
+substituted into a descendant had not re-resolved. Real value **1.08:1**.
+
+**And the harness lied a second way.** Flipping the mood from the parent frame animates
+every control's `transition: background-color 140ms`, so one screenshot caught a dark pill
+on a light page and read as a contrast bug that was not there. The fix is to inject
+`transition: none !important` **before** narrowing the theme.
+
+### A decision that was right, described wrongly for two days
+
+`.ghost` carried a long comment arguing for a `--muted` ring and rejecting `--board` **by
+name** at 1.28:1 as "a boundary you cannot see". `git show a40e335` shows the iOS turn
+deliberately replaced that ring with a filled surface, which is the Apple idiom and which
+`brand.md`'s checklist permits outright: *a control's boundary clears 3:1, or it has a
+filled surface instead of an edge.*
+
+So the code took the better decision and the prose kept defending the older one. The
+awkward part is only visible once measured: **the fill that replaced the ring is fainter
+than the value the comment rejected.** Logged as a founder call (`OPENWORK.md` item 25)
+rather than changed, because retouching a deliberate design decision as a side effect of a
+restructure is how the unrelated regressions in §5 got in.

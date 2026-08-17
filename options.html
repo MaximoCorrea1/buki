@@ -223,6 +223,12 @@
       .why b { font-weight: 700; }
       .why a { color: var(--accent); }
 
+      /* The form is a SECTION now, not the page's body, so it owes the same gap above it
+         that an <h2> gives every other section. It used to open the page and needed none.
+         A heading was tried here first and removed: `label` is 12px/700/--muted and so is
+         `h2`, so "Buy links" over "Where buy links go" rendered as the same line twice. */
+      form { margin-top: 34px; }
+
       label {
         display: block;
         margin: 0 0 6px;
@@ -265,7 +271,14 @@
       details > div { padding-top: 14px; }
 
       .actions { display: flex; align-items: center; gap: 12px; }
-      button {
+      /* THE ANCHOR IS IN THIS LIST BECAUSE IT IS A CONTROL. `#getPro` is an <a>, so a rule
+         selecting `button` never touched it, and it sat in the same .actions row as
+         "Activate" with none of the shape. Measured in Chrome against the real page:
+           activate <button>  radius 999px  padding 11px 20px  height 35.5
+           getPro   <a>       radius 0px    padding 0px        height 23.3
+         A square, unpadded box beside a pill, on the one control that leads to paying. */
+      button,
+      a.ghost.buy {
         cursor: pointer;
         border: 0;
         border-radius: 999px;
@@ -274,7 +287,10 @@
         transition: transform 140ms var(--ease-out), background-color 140ms ease,
                     box-shadow 140ms ease, color 140ms ease;
       }
-      button:active { transform: scale(0.97); }
+      /* The press goes with the shape. A control that looks pressable and does not move
+         when pressed reads as broken, and this one now looks exactly like its neighbour. */
+      button:active,
+      a.ghost.buy:active { transform: scale(0.97); }
       /* A disabled control has to LOOK disabled, and this page had no rule for it at all.
          Export is disabled whenever the shelf is empty, which is a state you can sit in
          for days, not the 200ms a button spends disabled mid-request. Same treatment the
@@ -285,13 +301,19 @@
          effectively unlabelled. A retokening that changes an accent's LIGHTNESS invalidates
          every hardcoded colour that sat on it. */
       .save { background: var(--accent); color: var(--paper); }
-      /* A ghost still has to read as a control. Borderless it is bold text that happens to
-         be clickable, and this page has three of them.
-         The ring is `--muted`, the SAME value as the label, so the whole control is one
-         solid colour: no alpha, no blend, per the flat rule in docs/brand.md. It is not
-         `--board`, which measures 1.28:1 on the paper and would be a boundary you cannot
-         see. (The landing's own `.btn.ghost` ring is 1.38:1 and has the same problem; it
-         is left alone here rather than changed as a side effect of extension work.) */
+      /* A ghost still has to read as a control, and this page has four of them.
+         It was a 1.5px `--muted` ring until the iOS turn (a40e335, 2026-08-16), which
+         replaced it with a FILLED SURFACE. That is the Apple idiom and it is the same move
+         docs/brand.md records for the landing: a filled surface needs no boundary to read
+         as a control. brand.md's checklist allows exactly this, in as many words: "a
+         control's boundary clears 3:1, OR it has a filled surface instead of an edge".
+         MEASURED 2026-08-17, because nobody had: `--sunk` against `--paper` is 1.08:1 by
+         day and 1.15:1 at night. The comment that used to sit here rejected `--board` BY
+         NAME at 1.28:1 as "a boundary you cannot see", and the fill that replaced it is
+         fainter than the value it rejected. The rule permits it; whether it is filled
+         enough to look filled is a taste call, and it is logged as one rather than changed
+         here, because retouching a deliberate design decision as a side effect of a
+         restructure is how unrelated regressions get in. */
       .ghost {
         background: var(--sunk); color: var(--ink);
       }
@@ -401,30 +423,55 @@
         </svg>
         <h1>Buki</h1>
       </div>
-      <p class="lede">Setup: one field, once.</p>
+      <p class="lede">Nothing on this page is required.</p>
 
+      <!-- THE CARD STAYS AT THE TOP, and its subject changed. It used to explain why you
+           needed an API key, back when you did. It now explains the one thing Buki cannot
+           do locally, which is the reason BOTH Pro and your own key exist, so it is the
+           page's thesis whichever path a reader takes.
+           It is also the only place --forest is used, and it draws a binding with two
+           cords. Deleting it would have orphaned forty lines of CSS and a token that
+           extensionTokens.test.ts asserts is still declared. -->
       <p class="why">
-        <b>Why this is needed.</b> Reading a book cover from a photo is the one thing
-        Buki can't do on your machine. It sends the cover and the post's text to a
-        vision model, which names the book. Google's free tier covers normal use. Your key
-        is stored on this computer and sent only to that provider.
+        <b>What this page is for.</b> Reading a book cover from a photograph is the one
+        thing Buki cannot do on your computer, so that one picture is sent to a vision
+        model to be identified. Everything else, your shelf, the piles, export, and any
+        book caught from a shop link, stays on this machine.
         <br /><br />
-        Get one at
-        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
-          >aistudio.google.com/apikey</a
-        >
-        it takes about two minutes and needs no billing details.
+        Buki Pro covers that reading, or you can bring your own key and cover it yourself.
+        Your plan is below, and you do not have to change it.
       </p>
 
-      <form id="form">
-        <label for="key">API key</label>
-        <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…" />
-        <p class="hint">
-          Stored locally, sent only to the provider below. Leave it empty and Buki still
-          catches books from retailer links and from a post's own words. Only reading a
-          cover from a photo needs a key.
-        </p>
+      <!-- YOUR PLAN FIRST. Task 13 Step 1, and the reason is that the page was built when
+           a key was mandatory: it opened with a field almost nobody needs any more, so it
+           told every reader they had work to do. A fresh install catches books with no
+           key, no card and no account, and the one thing somebody who paid needs is
+           somewhere to paste a licence.
+           Wired by wirePro(), which is guarded on its own four elements. main() returns
+           early if any PROVIDER field is missing and this section must not disappear with
+           it, which is the mistake the theme switch spent two days inside. -->
+      <h2>Your plan</h2>
+      <p class="plan-now" id="planNow">Reading your plan&hellip;</p>
+      <p class="hint" id="planWhat">
+        Pro keeps cover reading unlimited and needs no account: paying issues a licence key
+        you paste here. Your shelf, your piles, export and any book caught from a shop link
+        are free forever on every plan.
+      </p>
+      <label for="licence">Licence key</label>
+      <input id="licence" type="text" autocomplete="off" spellcheck="false"
+             placeholder="paste the key from your receipt" />
+      <div class="actions">
+        <button class="save" type="button" id="activate">Activate</button>
+        <a class="ghost buy" id="getPro" href="#" target="_blank" rel="noreferrer">See what Pro costs</a>
+        <span id="licenceStatus" role="status"></span>
+      </div>
 
+      <form id="form">
+        <!-- No <h2> here on purpose. One was added with the restructure and rendered
+             directly above the label, and the two are the same treatment: 12px, 700,
+             --muted. "Buy links" over "Where they go" read as a heading printed twice.
+             The label IS the section marker on this page, and it also gives the <select>
+             its accessible name, which an <h2> does not. -->
         <label for="store">Where buy links go</label>
         <select id="store">
           <option value="amazon">Amazon</option>
@@ -435,17 +482,41 @@
           to you. They only ever appear on books you have already saved.
         </p>
 
+        <!-- THE OWN-KEY PATH, DEMOTED. It was the page's headline field; it is now a
+             minority path and reads as one. The key, the endpoint and the model are one
+             block rather than a <details> inside a <details>, because choosing a provider
+             is what having your own key is FOR, and nesting them made the second level
+             almost unreachable.
+             Closed by default on purpose: a <details open> is the same page with a line
+             drawn on it. The inputs still submit with the form while collapsed. -->
         <details>
-          <summary>Use a different provider</summary>
+          <summary>Use your own recognition key instead</summary>
           <div>
+            <p class="hint">
+              Your key means unlimited cover reading, free forever, and the picture goes
+              straight from this browser to the provider you choose without passing through
+              Buki. Google AI Studio issues one in about two minutes with no billing
+              details:
+              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
+                >aistudio.google.com/apikey</a
+              >.
+            </p>
+            <label for="key">API key</label>
+            <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…" />
+            <p class="hint">
+              Stored on this computer and sent only to the endpoint below. Leave it empty
+              and Buki reads covers for you instead; catching a book from a shop link or
+              from a post's own words never needs a key either way.
+            </p>
             <label for="endpoint">Endpoint</label>
             <input id="endpoint" type="url" spellcheck="false" />
             <label for="model">Model</label>
             <input id="model" type="text" spellcheck="false" />
             <p class="hint">
-              Any OpenAI-compatible chat endpoint works Gemini, Cloudflare Workers AI,
-              OpenRouter, or your own proxy. A proxy that holds its own credential lets you
-              leave the key field blank.
+              Any OpenAI-compatible chat endpoint works: Gemini, Cloudflare Workers AI,
+              OpenRouter, or your own proxy. A self-hosted proxy that holds its own
+              credential still needs something in the key field, even a placeholder, because
+              an empty key is what tells Buki to read the cover for you.
             </p>
           </div>
         </details>
@@ -456,26 +527,6 @@
           <span id="status" role="status"></span>
         </div>
       </form>
-
-      <!-- BUKI PRO. The second and last place this product asks for money; the other is
-           the wall. Above the shelf because a licence is setup, and below the provider
-           form because bringing your own key is the free path and should be met first. -->
-      <h2>Buki Pro</h2>
-      <p class="plan-now" id="planNow">Reading your plan&hellip;</p>
-      <p class="hint" id="planWhat">
-        Cover reading is the one thing Buki cannot do on your computer. Pro keeps it
-        unlimited and needs no account: paying issues a licence key you paste here.
-        Your shelf, your piles, export and any book caught from a shop link are free
-        forever on every plan.
-      </p>
-      <label for="licence">Licence key</label>
-      <input id="licence" type="text" autocomplete="off" spellcheck="false"
-             placeholder="paste the key from your receipt" />
-      <div class="actions">
-        <button class="save" type="button" id="activate">Activate</button>
-        <a class="ghost buy" id="getPro" href="#" target="_blank" rel="noreferrer">See what Pro costs</a>
-        <span id="licenceStatus" role="status"></span>
-      </div>
 
       <h2>Your shelf</h2>
       <p class="hint">

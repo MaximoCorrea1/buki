@@ -240,9 +240,37 @@ better, because the licence lives in `proState`'s own storage key instead of ins
       dashboard does not own.
 - [x] **v9 of `.agents/product-marketing.md`**, and the header date corrected: it said v8
       was last updated 2026-08-16 while the v8 entry beneath it is dated 2026-08-17.
+- [x] **TASK 13 STEP 1, the options restructure, GENUINELY DONE.** Third state of that
+      checkbox: ticked once without being done, untick'd as unearned last stretch, and now
+      done and RENDERED in both moods before the tick. Order is lede, the *what this page is
+      for* card, **Your plan** with the licence, buy links, the collapsed own-key block,
+      shelf, log. `optionsPage.test.ts` asserts the order because nothing else in this repo
+      can see order.
+- [x] **Three defects the RENDER found, none of them predicted by the plan.** `#getPro` is
+      an `<a>` and the pill shape came from a rule selecting `button`, so it measured
+      `radius 0, padding 0, height 23.3` beside `999px, 11px 20px, 35.5` - a square box in a
+      row of pills, on the control that leads to paying. The lede still said *"Setup: one
+      field, once."* A heading tried above the buy-links control rendered as the same line
+      twice, because `h2` and `label` are both 12px/700/`--muted` here.
+- [x] **A copy claim the router had already made false.** The page offered *"a proxy that
+      holds its own credential lets you leave the key field blank"*. `visionRoute` branches
+      on the KEY: a blank key goes to Buki's proxy and `settings.endpoint` is never
+      consulted, so that setup would have spent the reader's free catches on us while they
+      believed they were talking to their own proxy.
+- [x] **`.ghost`'s ring, and what happened to it.** Its comment argued at length for a
+      `--muted` ring and rejected `--board` by name at 1.28:1. `git show a40e335` proves the
+      iOS turn deliberately replaced the ring with a filled surface, which `brand.md` allows
+      outright. The comment described the previous decision for a day; OPENWORK item 7 for
+      two. Both corrected.
 
 ## Open, 2026-08-17
 
+- [?] **Is the secondary button filled enough to look filled?** `.ghost` is `--sunk` on
+      `--paper`: **1.08:1 by day, 1.15:1 at night**, on four controls. Not a rule violation
+      (`brand.md` allows a filled surface instead of a 3:1 edge, and Apple's own secondary
+      buttons do not clear 3:1 either), but it is fainter than the `--board` value the old
+      comment rejected by name at 1.28:1. `--board` would give 1.27:1 / 1.79:1. Left alone
+      rather than changed as a side effect of a restructure. `OPENWORK.md` item 25.
 - [?] **The "Read" collision.** The tray now says *Read now / Read next / Read someday*
       while the shelf's fourth pile is called **Read**, meaning finished. Distinguishable in
       context, not distinct words. Renaming that pile to **Finished** would end it. Founder's
