@@ -6,6 +6,7 @@
  * cannot be tested is copy that quietly pluralises wrongly for a year.
  */
 import type { Intent } from './storage';
+import { PRO_MONTHLY_USD, TRIAL_SPELLED } from '../shared/pricing';
 
 /**
  * The heading on a card that found something.
@@ -67,3 +68,33 @@ export const PROVENANCE: Record<string, string> = {
   text: "from the post's words",
   none: 'found',
 };
+
+/**
+ * THE WALL: the ten free cover readings are spent.
+ *
+ * This is the only moment Buki asks anybody for money, and it is the moment a stranger
+ * decides what kind of product this is. Four rules, all asserted in `trayCopy.test.ts`
+ * rather than left to whoever edits next:
+ *
+ * 1. **Say what happened**, in the number the code actually enforces.
+ * 2. **Name the price.** A paywall that hides it reads as a trap, and $4 is small enough
+ *    to be the argument rather than something to soften.
+ * 3. **Offer the free way out as plainly as the paid one.** With your own provider key,
+ *    cover reading is unlimited and free forever. That is genuinely true, so burying it
+ *    would make this a dark pattern instead of an offer.
+ * 4. **Never threaten the shelf.** Nothing already saved is ever at risk. That is the line
+ *    between a limit and a hostage, and the test forbids the words that cross it.
+ *
+ * It also does NOT say "upgrade". Nothing about the shelf improves; what you buy is the
+ * one job Buki cannot do on your own computer.
+ */
+export const WALL = {
+  eyebrow: 'the free covers are used',
+  head: `That was the last of your ${TRIAL_SPELLED} free cover readings.`,
+  body:
+    'Reading a cover from a photograph is the one thing Buki cannot do on your computer. ' +
+    'Your shelf, your piles, export, and any book you catch from a shop link stay free ' +
+    'forever.',
+  act: `Get Buki Pro, $${PRO_MONTHLY_USD} a month`,
+  free: 'Use your own key instead, free',
+} as const;

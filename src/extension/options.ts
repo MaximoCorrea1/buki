@@ -3,6 +3,12 @@ import { createRecognitionLog } from './recognitionLog';
 import { createLibrary, type StorageArea } from './storage';
 import { toGoodreadsCsv, shelfFilename } from './goodreadsCsv';
 import type { BackgroundRequest } from './messages';
+import { createLicense } from './license';
+import { readPro, writePro, standingOf } from './proState';
+import { createTrial } from './trial';
+import { planLabel } from './entitlement';
+import { BUKI_HOST } from '../shared/host';
+import { priceLine } from '../shared/pricing';
 
 const $ = <T extends HTMLElement>(id: string): T | null => document.getElementById(id) as T | null;
 
@@ -14,6 +20,83 @@ const storage: StorageArea = {
 const log = createRecognitionLog({ storage, now: () => Date.now() });
 /** Reads only, for the same reason. The worker is the shelf's single writer. */
 const library = createLibrary({ storage, now: () => Date.now(), newId: () => crypto.randomUUID() });
+
+
+/**
+ * Buki Pro: say what plan this is, and let a licence key be exchanged for a session.
+ *
+ * Wired separately from the provider form and guarded on its own elements, because
+ * `main()` returns early when any provider field is missing and anything sharing that
+ * guard disappears with it. `docs/brand.md` records the two days the theme switch spent
+ * dead behind exactly that.
+ */
+async function wirePro(): Promise<void> {
+  const field = $<HTMLInputElement>('licence');
+  const activate = $<HTMLButtonElement>('activate');
+  const now = $<HTMLElement>('planNow');
+  const status = $<HTMLElement>('licenceStatus');
+  const buy = $<HTMLAnchorElement>('getPro');
+  if (!field || !activate || !now || !status || !buy) return;
+  // Re-bound after the guard: TypeScript cannot carry a narrowing across the closure
+  // boundary of the handlers below, and `!` at every use is a worse answer than binding.
+  const el = { field, activate, now, status, buy };
+
+  buy.href = `${BUKI_HOST}/#pricing`;
+  buy.textContent = `Buki Pro, ${priceLine()}`;
+
+  const trial = createTrial({ storage });
+
+  /** What plan is this, in the words `entitlement.ts` owns. */
+  async function showPlan(): Promise<void> {
+    const [pro, settings, spent] = await Promise.all([
+      readPro(storage),
+      readSettings(),
+      trial.spent(),
+    ]);
+    const standing = standingOf(pro, spent, settings.apiKey, Date.now());
+    el.now.textContent = planLabel(standing);
+    el.now.toggleAttribute('data-pro', standing.pro);
+    // Nothing to sell to somebody already on Pro or paying nothing because they brought
+    // their own key. Hiding the price is the difference between an offer and a nag.
+    el.buy.hidden = standing.pro || standing.ownKey;
+    el.field.value = pro.key;
+  }
+
+  const say = (msg: string): void => {
+    el.status.textContent = msg;
+    el.status.classList.add('shown');
+  };
+
+  activate.addEventListener('click', async () => {
+    el.activate.disabled = true;
+    say('Checking…');
+    try {
+      const license = createLicense({
+        fetch: (url, init) => fetch(url, init),
+        endpoint: `${BUKI_HOST}/api/license`,
+        now: () => Date.now(),
+      });
+      const result = await license.exchange(el.field.value);
+      if (result.ok) {
+        await writePro(storage, { key: el.field.value.trim(), session: result.session });
+        say('Pro is on. Cover reading is unlimited.');
+      } else {
+        // A retryable failure keeps whatever session is already stored: an outage on our
+        // side must not sign a paying customer out.
+        if (!result.retryable) await writePro(storage, { key: el.field.value.trim(), session: null });
+        say(result.message ?? 'That key could not be activated.');
+      }
+    } catch (err) {
+      console.error('[Buki] licence activation failed', err);
+      say('Something went wrong. Try again in a moment.');
+    } finally {
+      el.activate.disabled = false;
+      await showPlan();
+    }
+  });
+
+  await showPlan();
+}
 
 async function main(): Promise<void> {
   const key = $<HTMLInputElement>('key');
@@ -52,6 +135,11 @@ async function main(): Promise<void> {
     if (await chrome.permissions.contains({ origins: [origin] })) return true;
     return chrome.permissions.request({ origins: [origin] });
   }
+
+  // THE PRO SECTION, wired before the provider form and guarded on its own fields.
+  // `main()` returns early if any provider field is missing, and burying the licence
+  // section behind that return is exactly how the theme switch was dead for two days.
+  void wirePro();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

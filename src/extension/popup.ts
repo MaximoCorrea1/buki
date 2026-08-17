@@ -1,10 +1,14 @@
 import { createLibrary, type StorageArea, type SavedBook, type Intent } from './storage';
 import { restoreArgs } from './shelfEdit';
+import { badgeFor } from './planBadge';
+import { BUKI_HOST } from '../shared/host';
+import { readPro, standingOf } from './proState';
+import { readSettings } from './settings';
+import { createTrial } from './trial';
 import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
 import { buyLink, type Store } from './buyLink';
 import { coverFor } from './cover';
 import { pruneCovers, liveCoverDeps } from './coverCache';
-import { readSettings } from './settings';
 import {
   PILES,
   PILE_LABEL,
@@ -482,6 +486,57 @@ function openSheet(saved: SavedBook): void {
  * worth watching, and it costs nothing to produce - deleting a wrong match is already
  * the fix.
  */
+/**
+ * The plan badge, which is usually nothing.
+ *
+ * `planBadge.ts` owns the decision, including the rule that the masthead only ever asks
+ * for something in the last three catches. This just draws whatever it says, and hides
+ * the element outright when the answer is "say nothing" - an empty badge still occupies a
+ * line and moves the wordmark.
+ */
+async function renderPlan(): Promise<void> {
+  const el = document.getElementById('plan');
+  if (!el) return;
+  let badge: ReturnType<typeof badgeFor> = null;
+  try {
+    const [pro, settings] = await Promise.all([readPro(chrome.storage.local), readSettings()]);
+    // The trial counter through `createTrial`, not a second reader: the key name and the
+    // "a corrupt value is zero, never infinity" rule belong to that module, and this is
+    // the third caller. A hand-rolled copy here guessed the wrong key on the first try.
+    const spent = await createTrial({ storage: chrome.storage.local }).spent();
+    badge = badgeFor(standingOf(pro, spent, settings.apiKey, Date.now()));
+  } catch (err) {
+    // A shelf that cannot read its own plan still draws. Saying nothing is the safe
+    // default here: the alternative is telling somebody they are out when they are not.
+    console.error('[Buki] could not read the plan', err);
+  }
+  if (!badge) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  el.textContent = badge.label;
+  el.toggleAttribute('data-pro', badge.label === 'Pro');
+  el.toggleAttribute('data-cta', badge.cta);
+  el.title = badge.cta ? 'See what Pro costs' : '';
+}
+
+/**
+ * The badge leads to the prices, and ONLY when it is an offer.
+ *
+ * Bound once at startup rather than on every render, so a shelf that repaints twenty
+ * times does not accumulate twenty listeners on one button. `planBadge.ts` decides
+ * whether `data-cta` is there; this refuses to act without it, so a badge that is merely
+ * stating a fact cannot be clicked into a shop.
+ */
+function wirePlanBadge(): void {
+  const el = document.getElementById('plan');
+  el?.addEventListener('click', () => {
+    if (!el.hasAttribute('data-cta')) return;
+    void chrome.tabs.create({ url: `${BUKI_HOST}/#pricing` });
+  });
+}
+
 async function renderStats(shelfCount: number): Promise<void> {
   const el = document.getElementById('count');
   if (!el) return;
@@ -544,6 +599,7 @@ function paint(): void {
   const caret = hadFocus ? (active?.selectionStart ?? 0) : 0;
 
   void renderStats(shelf.length);
+  void renderPlan();
   const disclosure = document.getElementById('disclosure');
   if (disclosure) disclosure.hidden = shelf.length === 0;
 
@@ -629,4 +685,5 @@ document.getElementById('settings')?.addEventListener('click', () => {
   void chrome.runtime.openOptionsPage();
 });
 
+wirePlanBadge();
 void refresh();

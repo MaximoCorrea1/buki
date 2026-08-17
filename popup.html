@@ -828,6 +828,34 @@
       .empty { margin: 24px 20px; color: var(--ink); line-height: 1.6; text-align: center; }
       .empty b { display: block; margin-bottom: 3px; color: var(--ink); font-size: 15px; }
 
+      /* --- the plan badge --------------------------------------------------- */
+      /* A fact most of the time, an offer for the last three catches. It is a <button>
+         either way so the two states cannot drift apart in size and shift the masthead;
+         when it is only a fact it simply does not respond to a press. */
+      header .plan {
+        margin-top: 2px;
+        padding: 3px 10px 4px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--fill);
+        color: var(--muted);
+        font: 700 10.5px/1.35 var(--ui);
+        letter-spacing: 0.01em;
+        cursor: default;
+      }
+      header .plan[hidden] { display: none; }
+      /* Pro is the one badge that is a status rather than a countdown, so it is the one
+         that gets the accent. */
+      header .plan[data-pro] { background: var(--accent); color: var(--paper); }
+      header .plan[data-cta] {
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out), background-color 140ms ease;
+      }
+      header .plan[data-cta]:active { transform: scale(0.97); }
+      @media (hover: hover) and (pointer: fine) {
+        header .plan[data-cta]:hover { background: var(--fill-hi); color: var(--ink); }
+      }
+
       /* --- taking a book off the shelf ------------------------------------- */
       /* A badge on the corner of the cover, the way iOS puts one on an app in edit mode.
          Hidden until the tile is hovered OR something inside it has keyboard focus, so it
@@ -959,6 +987,9 @@
         <h1>Buki</h1>
       </div>
       <span class="count" id="count"></span>
+      <!-- The plan, and only when there is something to say. src/extension/planBadge.ts
+           decides; this is where it lands. -->
+      <button class="plan" id="plan" type="button" hidden></button>
       <!-- The first route from the shelf to settings the product has had. Without it the
            export the landing advertises is reachable only by right-clicking the toolbar
            icon, which nobody does. -->

@@ -18,7 +18,13 @@ import type { Intent } from './storage';
  * "one card however many times you press" a property of the data rather than a rule three
  * collaborating maps have to remember to enforce.
  */
-export type CardState = 'looking' | 'found' | 'empty' | 'error' | 'done';
+/**
+ * `wall` is the trial running out. It is a STATE OF THIS CATCH rather than a separate
+ * surface, so it lands where the answer would have landed, keeps the card's id and keeps
+ * the picture it was reading - which is what makes it an answer about this book instead of
+ * an advert that appeared while you were busy.
+ */
+export type CardState = 'looking' | 'found' | 'empty' | 'error' | 'done' | 'wall';
 
 export interface Candidate {
   book: Book;
@@ -80,6 +86,12 @@ export interface CatchTray {
    */
   retry(job: string, text: string): void;
   fail(job: string, text: string): void;
+  /**
+   * The ten free cover readings are spent. Replaces this catch's card in place; does
+   * nothing if the card is gone, because putting a paywall back on screen after somebody
+   * dismissed the catch is the behaviour that gets an extension uninstalled.
+   */
+  wall(job: string): void;
   /** The choice was made. */
   done(job: string, text: string): void;
   /**
@@ -163,6 +175,14 @@ export function createCatchTray(): CatchTray {
       // Candidates cleared: leaving them would offer books from the very answer being
       // replaced, on a card that says it is still looking.
       replace(job, { state: 'looking', text, candidates: [], transient: false });
+    },
+
+    wall(job) {
+      // No text and no candidates: the renderer owns every word of an offer, and a card
+      // with candidates would draw save buttons on a catch nobody is allowed to save.
+      // NOT transient - an offer that removes itself after four seconds is an offer
+      // nobody read, and every other self-dismissing state here carries no decision.
+      replace(job, { state: 'wall', text: '', candidates: [], transient: false });
     },
 
     fail(job, text) {

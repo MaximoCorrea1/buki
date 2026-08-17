@@ -67,6 +67,12 @@ export type ContentRequest =
       tweet: Tweet;
     }
   | { type: 'catchFail'; job: string; text: string }
+  /**
+   * The ten free cover readings are spent, and this catch is the one that met the wall.
+   * Separate from `catchFail` on purpose: a failure is something that went wrong and a
+   * wall is an answer, so the card says something different and never self-dismisses.
+   */
+  | { type: 'catchWall'; job: string }
   /** "which tweet holds this image?" - so a save records the tweet, not the feed URL */
   | { type: 'tweetContextFor'; srcUrl: string }
   /**
@@ -122,6 +128,13 @@ export type BackgroundRequest =
    * Measured 2026-08-17. See coverData.ts.
    */
   | { type: 'coverBytes'; url: string }
+  /**
+   * Open one of Buki's own pages from a content script. The tray cannot call
+   * `chrome.runtime.openOptionsPage` or `chrome.tabs.create` itself - those are worker
+   * APIs - and `window.open` from inside somebody else's page is both blockable by their
+   * popup policy and indistinguishable from that page opening a tab.
+   */
+  | { type: 'openPage'; page: 'options' | 'pricing' }
   | { type: 'logEvent'; event: PendingEvent }
   | { type: 'clearLog' };
 
@@ -137,7 +150,13 @@ export type BackgroundResponse =
    * missing key, a retired model, a revoked credential. `error` is then already phrased
    * for the user, provider explanation included.
    */
-  | { ok: false; needsSetup: boolean; error: string };
+  /**
+   * `wall` means the ten free cover readings are spent. It is NOT a failure and NOT a
+   * setup problem: the caller draws the offer, and must not draw an apology or open the
+   * options page. Kept beside `needsSetup` rather than folded into it precisely because
+   * the two lead to opposite screens.
+   */
+  | { ok: false; needsSetup: boolean; error: string; wall?: boolean };
 
 /** Answer to a shelf write. `saved` is present for saveBook, absent for removeBook. */
 export type ShelfResponse = { ok: true; saved?: SavedBook } | { ok: false; error: string };

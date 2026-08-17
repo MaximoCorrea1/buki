@@ -160,6 +160,27 @@
         color: var(--muted);
       }
 
+      /* --- the plan ---------------------------------------------------------- */
+      /* The current plan, stated before anything is asked for. It is the answer to the
+         question somebody opening this section actually has. */
+      .plan-now {
+        margin: 0 0 6px;
+        font: 700 15px/1.4 var(--ui);
+        color: var(--ink);
+      }
+      .plan-now[data-pro]::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-right: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        vertical-align: 1px;
+      }
+      /* A link that has to sit beside a button without pretending to be one. */
+      a.ghost.buy { text-decoration: none; display: inline-flex; align-items: center; }
+
       /* Reading the cover is the one step that needs an outside service, so the page
          says exactly what it is and what it costs before asking for anything. */
       .why {
@@ -432,6 +453,26 @@
           <span id="status" role="status"></span>
         </div>
       </form>
+
+      <!-- BUKI PRO. The second and last place this product asks for money; the other is
+           the wall. Above the shelf because a licence is setup, and below the provider
+           form because bringing your own key is the free path and should be met first. -->
+      <h2>Buki Pro</h2>
+      <p class="plan-now" id="planNow">Reading your plan&hellip;</p>
+      <p class="hint" id="planWhat">
+        Cover reading is the one thing Buki cannot do on your computer. Pro keeps it
+        unlimited and needs no account: paying issues a licence key you paste here.
+        Your shelf, your piles, export and any book caught from a shop link are free
+        forever on every plan.
+      </p>
+      <label for="licence">Licence key</label>
+      <input id="licence" type="text" autocomplete="off" spellcheck="false"
+             placeholder="paste the key from your receipt" />
+      <div class="actions">
+        <button class="save" type="button" id="activate">Activate</button>
+        <a class="ghost buy" id="getPro" href="#" target="_blank" rel="noreferrer">See what Pro costs</a>
+        <span id="licenceStatus" role="status"></span>
+      </div>
 
       <h2>Your shelf</h2>
       <p class="hint">

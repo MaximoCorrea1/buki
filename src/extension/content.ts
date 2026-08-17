@@ -6,7 +6,7 @@ import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
 import { shotFor } from './coverSource';
 import { shiftOf, travelFrom } from './slotTravel';
-import { foundHeading, INTENT_LABEL, PROVENANCE } from './trayCopy';
+import { foundHeading, INTENT_LABEL, PROVENANCE, WALL } from './trayCopy';
 import manrope from '../../fonts/manrope.woff2';
 import { createCatchTray, type Candidate, type Card } from './catchTray';
 import { postKey } from './lookupMemo';
@@ -401,6 +401,24 @@ const STYLE = `
 .buki-find { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-top: 13px; }
 .buki-find + .buki-find { padding-top: 13px; border-top: 1px solid var(--ring); }
 /* Per book, not per card: a photographed stack can be half yours already. */
+/* The wall's sentence under its headline. It is the only prose on any card, so it gets
+   the reading measure the rest of the tray does not need. */
+.buki-note {
+  margin-top: 6px; font: 13px/1.45 var(--ui); color: var(--ink-2);
+}
+/* The paid action leads, so it is the only FILLED button in the tray. Everything else is
+   a ring on the card's own ground; this one is the accent, which appears nowhere else in
+   this stylesheet as a fill. Black on it measures 7.78:1. */
+.buki-act.buki-buy {
+  background: var(--accent); color: var(--on-accent);
+  box-shadow: none; font-weight: 700;
+}
+@media (hover: hover) and (pointer: fine) {
+  .buki-act.buki-buy:hover { background: #93aaef; box-shadow: none; }
+}
+/* The free way out sits directly under it, same size, no apology. */
+.buki-act + .buki-act { margin-top: 8px; }
+
 .buki-shelf {
   display: inline-block; margin-left: 4px; padding: 2px 8px 3px; border-radius: 999px;
   vertical-align: 1px; background: var(--jade-bg); color: var(--jade);
@@ -510,6 +528,12 @@ async function recognize(tweet: Tweet, job: string, fromText = false): Promise<R
 
   if (!resp) throw new Error('No response from the recognizer');
   if (!resp.ok) {
+    // The wall first: nothing went wrong, so this must not take the failure path.
+    if (resp.wall) {
+      tray.wall(job);
+      paintTray();
+      return null;
+    }
     // Already phrased for the user, and retrying cannot help - say what is wrong rather
     // than throwing it onto the generic "try again in a moment" path.
     if (resp.needsSetup) {
@@ -817,7 +841,13 @@ function paintCard(el: HTMLElement, card: Card): void {
   el.style.setProperty('--cloth', book ? clothFor(book) : '#3a2e4d');
   if (book) el.dataset['book'] = '';
   else delete el.dataset['book'];
-  el.replaceChildren(...(card.state === 'found' ? foundBody(card) : messageBody(card)));
+  el.replaceChildren(
+    ...(card.state === 'found'
+      ? foundBody(card)
+      : card.state === 'wall'
+        ? wallBody(card)
+        : messageBody(card)),
+  );
   el.dataset['sig'] = signature(card);
 }
 
@@ -856,6 +886,65 @@ function foundBody(card: Card): Node[] {
 }
 
 /** Looking, empty, error, done: one line of text and whatever it can be acted on with. */
+/**
+ * THE WALL. The ten free cover readings are spent.
+ *
+ * It is a state of the card that was about to read THIS cover, so it keeps the card's
+ * picture and its dismiss control: it is an answer about this book, not an advert that
+ * appeared while you were busy. Every word is in `trayCopy.ts` and asserted there - what
+ * it may not say matters as much as what it does.
+ *
+ * TWO ACTIONS, AND THE FREE ONE IS NOT A FOOTNOTE. With your own provider key, cover
+ * reading is unlimited and free forever; that is genuinely true, so it gets a real button
+ * rather than a link in small type. The paid one leads.
+ */
+function wallBody(card: Card): Node[] {
+  const head = document.createElement('div');
+  head.className = 'buki-head';
+
+  const thumb = photoThumb(card);
+  if (thumb) head.append(thumb);
+
+  const who = document.createElement('div');
+  who.className = 'buki-who';
+
+  const eye = document.createElement('div');
+  eye.className = 'buki-eyebrow';
+  eye.textContent = WALL.eyebrow;
+
+  const msg = document.createElement('div');
+  msg.className = 'buki-t buki-plain';
+  msg.textContent = WALL.head;
+
+  const note = document.createElement('div');
+  note.className = 'buki-note';
+  note.textContent = WALL.body;
+
+  who.append(eye, msg, note);
+  head.append(who, closeButton(card));
+
+  const go = document.createElement('button');
+  go.className = 'buki-act buki-buy';
+  go.textContent = WALL.act;
+  go.addEventListener('click', () => void openPage('pricing'));
+
+  const own = document.createElement('button');
+  own.className = 'buki-act';
+  own.textContent = WALL.free;
+  own.addEventListener('click', () => void openPage('options'));
+
+  return [head, go, own];
+}
+
+/** Buki's own pages. The worker owns tab creation; a content script cannot. */
+async function openPage(page: 'options' | 'pricing'): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage({ type: 'openPage', page } satisfies BackgroundRequest);
+  } catch {
+    // The worker was asleep and the wake-up raced. Nothing to recover: the card stays.
+  }
+}
+
 function messageBody(card: Card): Node[] {
   const head = document.createElement('div');
   head.className = 'buki-head';
@@ -1316,6 +1405,13 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
 
   if (msg?.type === 'catchFail') {
     tray.fail(msg.job, msg.text);
+    paintTray();
+    sendResponse({ shown: true });
+    return true;
+  }
+
+  if (msg?.type === 'catchWall') {
+    tray.wall(msg.job);
     paintTray();
     sendResponse({ shown: true });
     return true;

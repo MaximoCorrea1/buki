@@ -17,6 +17,10 @@ import { bestQuality, distinctMedia } from './twitterImage';
 import { inlineAll, livePrep } from './inlineImage';
 import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
+import { BUKI_HOST } from '../shared/host';
+import { createGate, WallError } from './gate';
+import { readPro } from './proState';
+import { createTrial } from './trial';
 import { coverDataUrl } from './coverData';
 import { withSignal } from './cancellable';
 import { createLookupMemo, postKey } from './lookupMemo';
@@ -155,7 +159,11 @@ async function recognize(
     async guessBooks(input) {
       const at = Date.now();
       try {
-        return await visionFor(settings, net).guessBooks(input);
+        // THE ONLY PLACE MONEY IS SPENT, so the only place there is a gate. It checks
+        // before the call and accounts for it only after one that happened; a WallError
+        // unwinds the whole recognition and becomes the card's wall state. A catch from a
+        // retailer link never reaches here, which is why it is free at every level.
+        return await gate.run('cover', () => visionFor(settings, net).guessBooks(input));
       } catch (err) {
         if (!(err instanceof NoKeyError)) throw err;
         keyWasMissing = true;
@@ -335,6 +343,13 @@ const openCard = (
 const failCard = (tabId: number | undefined, job: string, text: string): Promise<unknown> =>
   tellTab(tabId, { type: 'catchFail', job, text });
 
+/**
+ * End a catch at the wall. NOT `failCard`: nothing went wrong, so the card carries an
+ * offer instead of an apology and stays until it is dismissed.
+ */
+const wallCard = (tabId: number | undefined, job: string): Promise<unknown> =>
+  tellTab(tabId, { type: 'catchWall', job });
+
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
   const tabId = tab?.id;
@@ -387,6 +402,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
     recognized = await lookUp(tweet, job);
   } catch (err) {
+    // The wall FIRST, and before `needsSetup`: meeting it is not a failure and not a
+    // configuration problem, so it must not open the options page or draw an apology.
+    if (err instanceof WallError) {
+      await wallCard(tabId, job);
+      return;
+    }
     if (needsSetup(err)) {
       if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
       await failCard(tabId, job, setupMessage(err));
@@ -428,6 +449,21 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 // The tweet button asks the worker to recognize, so both flows share one pipeline and
 // the cross-origin calls stay where host_permissions apply.
+
+
+/**
+ * The entitlement gate, built once for the worker.
+ *
+ * `createGate` takes its dependencies so it can be tested without Chrome, which is the
+ * same convention `storage.ts` and `trial.ts` use. Everything it reads is read per call,
+ * so pasting a licence key takes effect on the next catch rather than the next reload.
+ */
+const gate = createGate({
+  readPro: () => readPro(chrome.storage.local),
+  readSettings: async () => ({ apiKey: (await readSettings()).apiKey }),
+  trial: createTrial({ storage: chrome.storage.local }),
+  now: () => Date.now(),
+});
 chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendResponse) => {
   if (msg?.type === 'logEvent') {
     note(msg.event);
@@ -472,6 +508,15 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
         sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
       });
     return true; // async response
+  }
+
+  if (msg?.type === 'openPage') {
+    if (msg.page === 'options') void chrome.runtime.openOptionsPage();
+    // The pricing anchor rather than the bare host: somebody who pressed a price button
+    // should land on the prices, not at the top of a landing page they have to scroll.
+    else void chrome.tabs.create({ url: `${BUKI_HOST}/#pricing` });
+    sendResponse({ ok: true });
+    return false;
   }
 
   if (msg?.type === 'coverBytes') {
@@ -524,13 +569,22 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     .catch((err: unknown) => {
       // Unfinished setup is not a miss - logging it would make the recognizer look bad
       // for something it was never given a chance to do.
-      if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
-      if (!needsSetup(err)) noteFailure(Date.now() - startedAt, 'button');
+      if (!(err instanceof NoKeyError) && !(err instanceof WallError)) {
+        console.error('[Buki] recognition failed', err);
+      }
+      // A wall is an answer, not a miss. Counting it would make the kept rate - the one
+      // number this product reports about itself - drop every time somebody met the offer.
+      if (!needsSetup(err) && !(err instanceof WallError)) {
+        noteFailure(Date.now() - startedAt, 'button');
+      }
 
       sendResponse({
         ok: false,
         needsSetup: needsSetup(err),
         error: needsSetup(err) ? setupMessage(err) : String(err),
+        // The button path answers the page directly, so the wall travels as a flag rather
+        // than as its own message. Same decision, different carrier.
+        ...(err instanceof WallError ? { wall: true } : {}),
       } satisfies BackgroundResponse);
     });
   return true; // async response

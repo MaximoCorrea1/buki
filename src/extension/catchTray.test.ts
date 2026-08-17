@@ -256,3 +256,48 @@ describe('catchTray', () => {
     expect(states(tray)).toEqual(['error', 'error']);
   });
 });
+
+/**
+ * THE WALL: a sixth state of the card that was about to read this cover, not a new
+ * surface. It is decided here and drawn by `content.ts`, so the rule that an offer never
+ * removes itself is testable without a DOM.
+ */
+describe('the wall', () => {
+  it('replaces the looking card in place, keeping its id and its picture', () => {
+    const tray = createCatchTray();
+    tray.open('post-1', 'Reading the cover…', 'https://pbs.twimg.com/a.jpg');
+    const before = tray.list()[0];
+    tray.wall('post-1');
+    const after = tray.list()[0];
+    expect(after?.state).toBe('wall');
+    expect(after?.id).toBe(before?.id);
+    expect(after?.image).toBe('https://pbs.twimg.com/a.jpg');
+    expect(tray.list()).toHaveLength(1);
+  });
+
+  it('is never transient, because it carries a decision', () => {
+    // An offer that removes itself after four seconds is an offer nobody read. Every
+    // other self-dismissing state in this tray carries no decision.
+    const tray = createCatchTray();
+    tray.open('post-1', 'Reading the cover…');
+    tray.wall('post-1');
+    expect(tray.list()[0]?.transient).toBe(false);
+  });
+
+  it('offers no candidates, so the renderer cannot draw save buttons on it', () => {
+    const tray = createCatchTray();
+    tray.open('post-1', 'Reading the cover…');
+    tray.wall('post-1');
+    expect(tray.list()[0]?.candidates).toEqual([]);
+  });
+
+  it('does nothing for a catch that was already dismissed', () => {
+    // The user can dismiss while the lookup runs. Putting a paywall back on screen after
+    // somebody closed the catch is the exact behaviour that gets an extension removed.
+    const tray = createCatchTray();
+    tray.open('post-1', 'Reading the cover…');
+    tray.dismiss(tray.list()[0]!.id);
+    tray.wall('post-1');
+    expect(tray.list()).toHaveLength(0);
+  });
+});

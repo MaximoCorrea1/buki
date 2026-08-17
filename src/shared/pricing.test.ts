@@ -1,0 +1,73 @@
+import { describe, it, expect } from 'vitest';
+import { PRO_MONTHLY_USD, PRO_YEARLY_USD, FREE_USD, priceLine } from './pricing';
+import { TRIAL_CATCHES } from '../extension/entitlement';
+import indexHtml from '../../docs/index.html?raw';
+import pricingMd from '../../docs/pricing.md?raw';
+
+/**
+ * The price, defined once, and the copies refused permission to disagree.
+ *
+ * This is `host.test.ts` for money. That file exists because the production host was
+ * "defined once" and spelled out in seven places, and the plan that renamed it named
+ * three. The price is worse: it appears in the landing's JSON-LD twice, in the pricing
+ * card, in an aside near the fold, in `docs/pricing.md` — and now inside the extension
+ * itself, on the wall, where a stale number is not a typo but a false statement made to
+ * somebody about to pay.
+ *
+ * It cannot inline the value into a static page, so it does what `host.test.ts` does:
+ * finds every price by LOOKING rather than by list, and refuses any that is not declared.
+ */
+
+/** Every `$N` on a surface, as numbers. */
+const dollars = (body: string): number[] =>
+  [...body.matchAll(/\$([0-9]+(?:\.[0-9]+)?)/g)].map((m) => Number(m[1]));
+
+const SURFACES: Record<string, string> = {
+  'docs/index.html': indexHtml,
+  'docs/pricing.md': pricingMd,
+};
+
+describe('the price is one number', () => {
+  it('states a free tier, a monthly and a yearly, and nothing else', () => {
+    expect(FREE_USD).toBe(0);
+    expect(PRO_MONTHLY_USD).toBeGreaterThan(0);
+    // A year has to beat twelve months or the yearly plan is a worse deal stated proudly.
+    expect(PRO_YEARLY_USD).toBeLessThan(PRO_MONTHLY_USD * 12);
+  });
+
+  for (const [name, body] of Object.entries(SURFACES)) {
+    it(`${name} names no price this repo has not declared`, () => {
+      const allowed = new Set([FREE_USD, PRO_MONTHLY_USD, PRO_YEARLY_USD]);
+      const found = dollars(body);
+      // Guard the vacuous pass: a surface that stopped mentioning money would otherwise
+      // report clean, and the landing losing its pricing card is exactly the sort of
+      // thing that should fail loudly.
+      expect(found.length, `${name} states no price at all`).toBeGreaterThan(0);
+      expect(
+        [...new Set(found.filter((n) => !allowed.has(n)))],
+        `${name} states a price that is not in src/shared/pricing.ts`,
+      ).toEqual([]);
+    });
+  }
+
+  it("the landing's structured data offers the same numbers it prints", () => {
+    // Google reads the JSON-LD and a human reads the card. They have drifted apart on
+    // other sites; here they are the same two numbers or the build fails.
+    const offers = [...indexHtml.matchAll(/"price":\s*"([0-9.]+)"/g)].map((m) => Number(m[1]));
+    expect(offers.length, 'no Offer objects found: has the JSON-LD moved?').toBeGreaterThan(0);
+    expect([...new Set(offers)].sort((a, b) => a - b)).toEqual(
+      [FREE_USD, PRO_MONTHLY_USD, PRO_YEARLY_USD].sort((a, b) => a - b),
+    );
+  });
+
+  it('the trial the landing advertises is the trial the code enforces', () => {
+    // "Ten catches free" in the hero, ten in `entitlement.ts`. A landing that promises
+    // more than the gate allows is the one claim a stranger can check in five minutes.
+    expect(TRIAL_CATCHES).toBe(10);
+    expect(indexHtml.toLowerCase()).toContain('ten catches free');
+  });
+
+  it('renders one price line every surface can quote', () => {
+    expect(priceLine()).toBe('$4 a month, or $29 a year');
+  });
+});
