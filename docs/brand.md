@@ -1249,6 +1249,37 @@ loud.
 
 ---
 
+## The motto (LOCKED COPY, 2026-08-18)
+
+Two lines. Maximo's, tightened, and the second one corrected on a matter of fact rather
+than taste.
+
+> **Find any book you see online, instantly.** Buki reads the **cover**, not the caption,
+> and saves it so you never forget a book you wanted to read.
+
+> **Ten catches free.** No account, no sync. Your shelf never leaves your browser.
+
+**The first line carries three things on purpose:** the promise (*find, instantly*), the
+differentiator (*the cover, not the caption* — the whole category above us reads text or
+needs the physical book), and the payoff Maximo asked for by name, *"so you never forget a
+book you wanted to read"*. It sits in the hero lede because the `<h1>` is the loss and this
+is the answer to it.
+
+**The second line was proposed as "self-hosted, no server, no data" and cannot ship that
+way.** Reading a cover contacts a server — ours by default, `visionRoute.ts` routes to
+`PROXY_URL` — so the blanket claim would be false in the store listing and in
+`docs/privacy.html`, which is the specific kind of statement review checks.
+
+**What IS absolute, and is what the line now says:** no account exists, nothing syncs, and
+none of your books, piles or provenance ever leave the machine. Maximo's own framing is the
+precise one: *"the user data never touches our server"*. True. Only a picture you explicitly
+ask to be read does.
+
+**Two places "no server" is literally true**, and either may be said plainly: with your own
+key, `visionRoute` sends the picture straight to your provider and never to us; and the
+source is public, so the proxy can be self-hosted. Say those about the KEY PATH, never
+about the product as a whole.
+
 ## Voice
 
 Write from the reader's side of the screen. Say what happens.

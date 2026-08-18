@@ -1,11 +1,17 @@
 # Product Marketing Context
 
-**Document version:** v9
-**Last updated:** 2026-08-17
+**Document version:** v10
+**Last updated:** 2026-08-18
 
 ## Product Overview
 
 **One-liner:** Catch a book from any image on the web into a shelf that is yours.
+
+**Motto, LOCKED 2026-08-18 (`docs/brand.md` owns the wording; this is a pointer):**
+*Find any book you see online, instantly.* Plus the privacy line, *No account, no sync.
+Your shelf never leaves your browser.* **Do not write "no server" or "no data" about the
+product as a whole** — reading a cover contacts one. Those words are true only of the
+own-key path.
 
 **What it does:** Buki is a Chrome extension that recognises a book from a *photograph*,
 not from the text around it. Right-click any cover image anywhere on the web, or press the
@@ -282,6 +288,11 @@ before building sync.
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
+- v10 (2026-08-18). **The motto is locked**, and one half of it was corrected on a fact.
+  "Self-hosted, no server, no data" cannot ship: `visionRoute` sends a cover to our proxy by
+  default, so the blanket claim would be false in the listing and the privacy policy. The
+  shelf half is absolutely true and is what the line now says. Positioning, audience,
+  pricing and objections are unchanged.
 - v9 (2026-08-17). **A correction, not a change: v8 contradicted itself.** Its changelog
   announced that the three-spine mark was retired while its Visual Identity section went on
   describing three spines, two cords and the caught spine's per-ground values as current —

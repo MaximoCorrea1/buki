@@ -39,8 +39,23 @@ Markers: `[ ]` open · `[x]` done+verified · `[~]` in progress · `[?]` founder
 
 ## Open, 2026-08-18
 
-- [~] **Item 27, the fix.** Activate once, persist the `activation_id`, validate daily.
-- [?] **THE MOTTO, and an honesty problem inside it.** Maximo: *"since all of this is self
+- [x] **ITEM 27 FIXED.** Activate once, persist the `activation_id`, validate daily. The
+      handler branches on whether an id arrived; the id travels back in the response;
+      `ProState` persists it; `ensureSession` and the options page both hand it over.
+      **The two Polar response shapes are inverted** and reading one as the other 403s every
+      renewal, so the schema was fetched rather than assumed.
+      **It was nearly undone at the wiring:** `background.ts` supplied
+      `exchange: (key) => ...` and an arrow with fewer parameters is assignable in
+      TypeScript, so it compiled, passed every test, and dropped the id. Both call sites
+      forward it now, asserted in `proState.test.ts`.
+- [x] **THE MOTTO IS LOCKED** and live in the hero, rendered and looked at.
+      *"Find any book you see online, instantly. Buki reads the cover, not the caption, and
+      saves it so you never forget a book you wanted to read."* Plus
+      *"Ten catches free. No account, no sync. Your shelf never leaves your browser."*
+      `docs/brand.md` owns the wording; `.agents/product-marketing.md` v10 points at it.
+      **Maximo chose the shelf-scoped privacy line** and framed the true version himself:
+      *"the user data never touches our server"*. Correct, and it is what the line says.
+- [x] **The honesty problem inside it, resolved.** Maximo: *"since all of this is self
       hosted. no server, no data. we should add that our motto as well. main one is find any
       book you see online instantly find and save"*. The main line is good. **"No server, no
       data" is not true of the whole product** and must not ship as written: reading a cover
