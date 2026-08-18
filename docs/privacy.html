@@ -45,13 +45,60 @@
         Buki
       </a>
       <h1>Buki Privacy Policy</h1>
-      <p><em>Last updated: 2026-07-29</em></p>
-      <p>Buki keeps your reading list on your own computer. There is no Buki account, no Buki server, and no analytics.</p>
+      <p><em>Last updated: 2026-08-18</em></p>
+      <p>Buki keeps your reading list on your own computer. There is no account, no sign-in, no
+      sync and no analytics. One thing leaves your machine, only when you ask for it, and this
+      page is about exactly what that is.</p>
       <h2>What stays on your computer</h2>
-      <ul><li><strong>Your shelf</strong> every book you save, its intent, and the link to the post you found it   in. Stored in your browser's local extension storage and never transmitted.</li><li><strong>The recognition log</strong> the most recent 200 attempts, so the shelf can show you how   often it identified a book correctly. Never transmitted. Clear it any time from the   options page.</li><li><strong>Your API key</strong>, if you add one. Sent only to the recognition provider you configured.</li></ul>
+      <ul><li><strong>Your shelf</strong> every book you save, its intent, and the link to the post you found it   in. Stored in your browser's local extension storage and never transmitted.</li><li><strong>The recognition log</strong> the most recent 200 attempts, so the shelf can show you how   often it identified a book correctly. Never transmitted. Clear it any time from the   options page.</li><li><strong>Your API key</strong>, if you add one. Sent only to the recognition provider you configured, and never to Buki.</li></ul>
       <h2>What leaves your computer, and where it goes</h2>
-      <ul><li><strong>To your recognition provider</strong> (Google Gemini by default, or any endpoint you   configure): the image you asked Buki to read, and the text of the post it appeared   in. Sent only when you press the book button or use the right-click menu never in the   background, and never for posts you did not act on.</li><li><strong>To openlibrary.org</strong>: the recognized title and author, as a search query, to identify   the book and fetch its cover. OpenLibrary is a project of the Internet Archive.</li></ul>
-      <p>Nothing else is sent anywhere. Buki does not read your timeline, your account, your messages, or any page you have not explicitly asked it to act on.</p>
+      <p>Only when you press the book button on a post or use the right-click menu. Never in
+      the background, and never for a page you did not act on.</p>
+      <ul>
+        <li>
+          <strong>The picture, and the words around it.</strong> Where they go depends on one
+          setting you control.
+          <ul>
+            <li><strong>If you have added your own API key</strong>, they go straight from your
+            browser to the provider you configured. Buki's server is not in the path and never
+            sees the picture.</li>
+            <li><strong>If you have not</strong>, they go to Buki's reader at
+            get-buki.vercel.app, which passes them to Google Gemini and hands the answer back.
+            This is what lets Buki work the moment you install it, with nothing to set up.</li>
+          </ul>
+        </li>
+        <li><strong>The title and author it read</strong>, to openlibrary.org as a search query,
+        to confirm the book exists and fetch its cover. OpenLibrary is a project of the Internet
+        Archive.</li>
+      </ul>
+
+      <h2>What Buki's reader keeps</h2>
+      <p>Nothing about the book, and nothing that names you.</p>
+      <ul>
+        <li><strong>The picture and the words are not stored.</strong> They are passed to the
+        model and the answer is passed back. There is no database, which is also why there is
+        no account.</li>
+        <li><strong>To count the free readings</strong>, the server keeps your IP address in
+        memory with a number beside it. It is never written to disk, the number resets each
+        day, and both are gone when that server instance recycles.</li>
+        <li><strong>If you subscribe</strong>, it keeps a scrambled short form of your licence
+        key the same way and for the same reason: so a key that leaks cannot be used to lock
+        you out of your own subscription. Your licence key itself is not kept.</li>
+        <li>Buki's reader runs on Vercel, which keeps its own request logs the way every web
+        host does.</li>
+      </ul>
+
+      <h2>If you subscribe</h2>
+      <p>Payment is handled by <a href="https://polar.sh">Polar</a>, and Buki never sees your
+      card. Polar issues a licence key, you paste it into the extension, and that is the whole
+      account: no email address, no password, no profile.</p>
+      <p>To check the key is live, Buki's server asks Polar about it. What comes back to your
+      browser is a pass that lasts a day and says only that the licence was good. It carries
+      Polar's id for the licence and nothing about you, and it is what travels with a cover
+      reading, so your licence key stays on your own machine.</p>
+
+      <p>Nothing else is sent anywhere. Buki does not read your timeline, your account, your
+      messages, or any page you have not asked it to act on.</p>
       <h2>Affiliate links</h2>
       <p>The <strong>Buy</strong> link on a saved book is an affiliate link. If you buy through it, Buki may earn a small commission at no extra cost to you.</p>
       <ul><li>The link appears only on books you have already chosen to save.</li><li>It never changes which books Buki shows you, or in what order.</li><li>Nothing about you is sent when the shelf loads only when you choose to click.</li><li>You can pick between Amazon and Bookshop.org in the options page.</li></ul>

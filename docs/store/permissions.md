@@ -1,21 +1,23 @@
 # Permission justifications
 
-> ## ⚠ Half of this file is ready. The Data usage section is NOT.
+> ## Ready to submit, as of 2026-08-18.
 >
-> **Rewritten 2026-08-16.** Every permission in the manifest is now justified here, and the
-> `activeTab` framing a reviewer will look for is stated explicitly. That half is
-> paste-ready.
+> **Rewritten 2026-08-16**, when every permission in the manifest was justified here and the
+> `activeTab` framing a reviewer looks for was stated explicitly. **Finished 2026-08-18**,
+> when the proxy's own host permission, the `generativelanguage` answer and the
+> [Data usage](#data-usage) section were rewritten to describe the world the proxy actually
+> creates: the picture goes to Buki first unless the user brought their own key.
 >
-> **What still waits on the proxy (`OPENWORK.md` Part 1, plan Task 6):** the
-> [Data usage](#data-usage) section, and the `generativelanguage.googleapis.com`
-> justification. Both describe a world where the picture goes straight from the user's
-> machine to the provider they configured. The day `/api/vision` ships, it goes to Buki
-> first, and **an inaccurate data-usage declaration is one of the most reliable ways to
-> fail review.** Do not submit until that section is rewritten in the same commit as the
-> proxy.
+> **An inaccurate data-usage declaration is one of the most reliable ways to fail review**,
+> which is why that section was held back rather than guessed at. It is now written against
+> the code: `visionRoute.ts` decides where a picture goes, `visionHandler.ts` decides what
+> the server does with it, and neither stores it.
 >
-> This split is deliberate. The permission answers do not depend on the proxy, and holding
-> them hostage to it was treating one blocked item as one blocked lump.
+> Rewritten in the same pass: `docs/privacy.html` and `README.md`. The landing's data
+> section was already correct.
+>
+> **One thing still gates submission and it is not this file:** items 1, 2 and 26. Nothing
+> here can be verified by a reviewer until the endpoints answer.
 
 Paste each block into the matching field on the Web Store **Privacy practices** tab.
 Reviewers reject vague answers, so each one names the feature that needs it and says what
@@ -112,16 +114,33 @@ permission for that host and needs none: every hop answers with permissive CORS.
 
 **https://generativelanguage.googleapis.com/\***
 
-> **⚠ This answer changes with the proxy.** Today the default endpoint is Google's and the
-> user brings their own key. When `/api/vision` ships, the default becomes Buki's own host
-> and this block, plus Data usage below, has to say so.
+```
+The vision model that reads a book cover from a photograph, used when the user has
+supplied their own API key on the setup page. The request contains only the image the
+user asked Buki to identify and, on x.com, the text of the post it came from. The user
+may point Buki at any other OpenAI-compatible endpoint instead.
+
+Users who have not supplied a key do not reach this host at all: their request goes to
+Buki's own endpoint below, which holds the credential. Buki also works with no key and
+no subscription for books identified from a retailer link or from a post's own words.
+```
+
+**https://get-buki.vercel.app/\***
 
 ```
-The default vision model that reads a book cover from a photograph. The user supplies
-their own API key on the setup page. The request contains only the image the user asked
-Buki to identify and, on x.com, the text of the post it came from. The user may point
-Buki at any other OpenAI-compatible endpoint instead, and Buki works without a key at all
-for books identified from a retailer link or from a post's own words.
+Buki's own two endpoints, and the only host in this list that belongs to the extension's
+developer.
+
+/api/vision reads a cover for users who have not supplied their own API key. The
+extension holds no credential for the vision model, so the request is made by this
+endpoint, which holds one. This is what makes the extension work with no setup.
+
+/api/license exchanges the licence key a subscriber pastes into the setup page for a
+short-lived pass, so the licence key itself is not sent with every cover reading.
+
+Requested here rather than at run time because both are called by the extension's own
+service worker, on the user's own action, and a permission prompt for the developer's
+own backend would be asking the user to approve the extension working.
 ```
 
 ## Optional host permissions
@@ -155,16 +174,10 @@ at runtime.
 
 ## Data usage
 
-> ## ⚠ DO NOT SUBMIT THIS SECTION AS WRITTEN. It becomes false the day the proxy ships.
->
-> The answers below describe the picture travelling from the user's machine to the
-> provider **they** configured, with no Buki server in between. `OPENWORK.md` items 1, 2
-> and 10 change that: `/api/vision` receives the image first. Rewrite this section, the
-> `generativelanguage` block above, `docs/privacy.html` and the landing's "Your shelf never
-> leaves your computer" section **in the same commit as the proxy**, and state what the
-> server receives, what it keeps, and for how long.
->
-> Everything above this line is current and can be pasted today.
+> **Rewritten 2026-08-18, against the code rather than against the plan.** The previous
+> version described the picture travelling from the user's machine to the provider *they*
+> configured with no Buki server in between, which `/api/vision` made false. What follows
+> names both paths, because both exist and which one runs is the user's choice.
 
 Tick **only** "Website content", and declare:
 
@@ -180,13 +193,32 @@ Tick **only** "Website content", and declare:
 | User activity | Not collected |
 | Website content | **Collected and transferred** |
 
+**On "Authentication information": still Not collected, and that is not a technicality.**
+There is no Buki account, no email address and no password. A subscriber pastes a licence
+key issued by the payment provider; it is a receipt, not a credential tied to an identity.
+
+**On "Financial and payment information": still Not collected.** Payment happens on the
+payment provider's own pages. The extension never sees a card, and neither does the server.
+
 Website content explanation:
 
 ```
-Limited to the image and post text the user explicitly asks Buki to identify, sent to
-the user's configured recognition provider and to OpenLibrary solely to identify the
-book. Not stored on any server, not sold, not used for advertising, and not used to
-determine creditworthiness or for lending.
+Limited to the image and the surrounding post text that the user explicitly asks Buki to
+identify, by pressing the book button on a post or using the right-click menu. Never in
+the background and never for a page the user has not acted on.
+
+Where it goes depends on one setting the user controls. If they have added their own
+recognition API key, the image and text go directly from their browser to the provider
+they configured, and Buki's own server is not in the path. If they have not, the image
+and text are sent to Buki's endpoint at get-buki.vercel.app, which forwards them to
+Google Gemini and returns the model's answer. That endpoint stores neither the image nor
+the text: it holds no database, which is also why the extension has no account.
+
+The recognized title and author are then sent to openlibrary.org as a search query, to
+confirm the book exists and fetch its cover.
+
+Not sold, not used for advertising, not used to determine creditworthiness or for
+lending, and not used for any purpose beyond identifying the book the user asked about.
 ```
 
 Then confirm all three certification checkboxes:
@@ -194,6 +226,14 @@ Then confirm all three certification checkboxes:
 - I do not sell or transfer user data to third parties, outside of the approved use cases
 - I do not use or transfer user data for purposes unrelated to my item's single purpose
 - I do not use or transfer user data to determine creditworthiness or for lending purposes
+
+**What the server holds, stated here so the answer is the same wherever it is asked.**
+Nothing is written to disk and there is no database. Two things sit in the server
+instance's memory and vanish when it recycles: the caller's IP address with a count beside
+it, which is how the free readings are counted, and a scrambled short form of a licence key
+with a count beside it, which is how a leaked key is stopped from being used to exhaust its
+own activations. The licence key itself is not kept. The same wording appears in
+`docs/privacy.html`, and if the two ever disagree the code decides.
 
 ## Note on the affiliate link
 

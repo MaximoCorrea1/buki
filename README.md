@@ -8,22 +8,18 @@ those books a place: it recognizes the book **from the cover photograph**, keeps
 that sold you on it, and files it under **Now / Next / Someday**. Mark a book finished when
 you're done, and every saved book carries a quiet Buy link.
 
-> **Branch note.** `main` is the shipped extension. **`buki-pro`** is an unmerged branch,
-> **69 commits ahead** (`git rev-list --count main..buki-pro`, 2026-08-17), carrying
-> catch-anywhere, shelf export, a landing on the third design generation and an extension
-> on the fourth, **the catcher** (the blue ball with eyes, which replaced the three-spine
-> mark on 2026-08-17), and the whole paid tier. **This file describes
-> `buki-pro`, because that is where the work is.** What is built, what is not, and what is
-> blocked is an ordered checklist in `OPENWORK.md`. Read that first.
+> **State, 2026-08-18.** `buki-pro` was merged into `main` and is history; work happens on
+> `main`. What is built, what is not, and what is blocked is an ordered checklist in
+> `OPENWORK.md`, which opens with THE LANE. **Read that first**, and run its probes rather
+> than trusting the numbers written beside them.
 >
-> **The paid tier is written and is not yet switched on.** As of 2026-08-17 the whole
-> client half exists — the entitlement gate, the trial counter, the wall, the licence
-> exchange, the plan badge — and so do both serverless functions
-> (`src/server/visionHandler.ts` and `licenseHandler.ts`, with four-line shells in `api/`).
-> **What is missing is not code.** It is a Polar product and five Vercel environment
-> variables, both of which are Maximo's and are `OPENWORK.md` items 1 and 2. Until they
-> exist, `${BUKI_HOST}/api/vision` answers nothing, so a user with no key of their own gets
-> no cover reading — which is why the landing's "ten catches free" is still a promise
+> **The paid tier is written and is not yet switched on.** The whole client half exists (the
+> entitlement gate, the trial counter, the wall, the licence exchange, the plan badge) and so
+> do both serverless functions, with four-line shells in `api/`. **What is missing is not
+> code.** It is a Polar product and **six** Vercel environment variables, one of which stays
+> unset on purpose. Those are `OPENWORK.md` items 1 and 2 and they are the critical path.
+> Until they exist `${BUKI_HOST}/api/vision` answers nothing, so a user with no key of their
+> own gets no cover reading, which is why the landing's "ten catches free" is still a promise
 > rather than a fact.
 >
 > Export to Goodreads and StoryGraph **shipped on 2026-08-13** and is free on every tier.
@@ -167,8 +163,9 @@ lookup. A vision model reads the picture instead of the letters.
 - No sync. The shelf lives in one browser and stays there.
 - No keyless setup **yet**. Recognition needs your own key until the proxy is switched on.
   The proxy is **written** — `src/server/visionHandler.ts` and `licenseHandler.ts`, with
-  shells in `api/` — and waits on a Polar product and five Vercel variables, which are
-  `OPENWORK.md` items 1 and 2.
+  shells in `api/` — and waits on a Polar product and **six** Vercel variables, which are
+  `OPENWORK.md` items 1 and 2. The sixth, `BUKI_TRIAL_CLOSED`, is the emergency brake and
+  stays unset.
 
 **Three things that were on this list shipped, and are worth not re-planning.**
 Catch-anywhere landed on 2026-08-12: the right-click menu works on any image on any site,
@@ -183,25 +180,42 @@ the contrast rule and deliberately refuses the transparency and the webfont. `do
 
 ## Privacy
 
-Two things leave your computer, and only when you ask for a catch:
+Two things leave your computer, and only when you ask for a catch.
 
-1. **The picture**, to the vision provider you configured with your own key. Buki resizes
-   it to 768px first, so what is sent is smaller than what is on screen.
-2. **The recognized title and author**, to **openlibrary.org** as a search query, to confirm
-   the book exists.
+**1. The picture, and the words around it.** Where they go is the user's choice, and it is
+the one place the wording has to stay precise:
 
-That is all. No account, no telemetry, no analytics, no Buki server. Your shelf never leaves
-`chrome.storage.local`, and the covers it caches sit in the browser's own Cache API bounded
-by what is on the shelf.
+| Their setting | Where the picture goes |
+| --- | --- |
+| They added their own API key | Straight from their browser to the provider they configured. **Buki's server is not in the path.** |
+| They did not | To `${BUKI_HOST}/api/vision`, which forwards it to Google Gemini and returns the answer. This is what makes the extension work with no setup. |
 
-Buki also keeps the last 200 recognition attempts on your computer: what it guessed, how
-confident it was, and whether you kept the book, so the shelf can show how often it gets it
-right. That log is never transmitted, and you can clear it from the options page.
+Either way it is resized to 768px first, so what is sent is smaller than what is on screen.
 
-> **This section changes when `buki-pro` ships.** A hosted recognition proxy means the
-> picture goes to Buki before it goes to the model. The privacy policy, the store data-usage
-> declaration and this section all have to be rewritten in the same commit as the proxy, and
-> an inaccurate declaration fails Chrome Web Store review. Plan Task 14.
+**2. The recognized title and author**, to **openlibrary.org** as a search query, to confirm
+the book exists.
+
+That is all. No account, no sign-in, no sync, no telemetry, no analytics. The shelf never
+leaves `chrome.storage.local`, and the covers it caches sit in the browser's own Cache API
+bounded by what is on the shelf.
+
+Buki also keeps the last 200 recognition attempts on the user's computer: what it guessed,
+how confident it was, and whether they kept the book, so the shelf can show how often it
+gets it right. That log is never transmitted, and it can be cleared from the options page.
+
+**What the proxy keeps: nothing about the book, and nothing that names anybody.** No
+database, nothing written to disk. Two things sit in the instance's memory and vanish when
+it recycles: the caller's IP with a daily count, which is how free readings are counted, and
+a scrambled short form of a licence key with a daily count, which is what stops a leaked key
+being used to exhaust its owner's activations.
+
+> **"No server" and "no data" are true of the SHELF, and are not true of the product as a
+> whole.** Reading a cover contacts a server, ours by default. The two places the stronger
+> claim holds literally are the own-key path, which never touches us, and the proxy being
+> open source in this repo. `docs/brand.md` owns that wording; do not widen it.
+
+`docs/privacy.html`, `docs/store/permissions.md` and this section were rewritten together on
+2026-08-18 and say the same thing on purpose. If they ever disagree, the code decides.
 
 ## Third-party
 
