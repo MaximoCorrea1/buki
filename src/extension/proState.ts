@@ -60,10 +60,26 @@ export async function readPro(storage: StorageArea): Promise<ProState> {
   const got = await storage.get(PRO_KEY);
   const raw = (got as Record<string, unknown>)[PRO_KEY];
   if (!raw || typeof raw !== 'object') return EMPTY;
-  const { key } = raw as Record<string, unknown>;
+  const { key, activationId } = raw as Record<string, unknown>;
   return {
     key: typeof key === 'string' ? key : '',
     session: sessionFrom((raw as Record<string, unknown>)['session']),
+    // WITHOUT THIS LINE THE WHOLE "activate once, validate forever" FIX IS INERT.
+    //
+    // `writePro` stores the whole state, but this reader rebuilt a two-field subset, so
+    // the id was written on every exchange and dropped on every read. `ensureSession`
+    // then handed `undefined` to the server, the server took the ACTIVATE branch, and a
+    // subscriber went back to spending one of five slots a day. The handler, the client
+    // and both call sites were all correct; the value never survived storage.
+    //
+    // Nothing was red, and it could not have been: `activationId` is optional, so a
+    // literal that omits it is a valid `ProState`. Same permissiveness as the arrow with
+    // fewer parameters that nearly undid this fix at the wiring.
+    //
+    // Omitted rather than empty-stringed when absent, matching every writer's
+    // `...(id ? { activationId: id } : {})`, so a record that never had one round-trips
+    // unchanged instead of gaining a field that means "no id".
+    ...(typeof activationId === 'string' && activationId ? { activationId } : {}),
   };
 }
 

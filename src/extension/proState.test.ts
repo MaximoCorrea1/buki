@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { readPro, writePro, standingOf, ensureSession, PRO_KEY } from './proState';
+import { readPro, writePro, standingOf, ensureSession, PRO_KEY, type ProState } from './proState';
 import { GRACE_MS } from '../server/token';
 import type { StorageArea } from './storage';
 import background from './background.ts?raw';
@@ -37,6 +37,68 @@ describe('what the extension knows about being Pro', () => {
     const session = { token: 'tok', expiresAt: NOW + 86_400_000 };
     await writePro(storage, { key: 'KEY-1', session });
     expect(await readPro(storage)).toEqual({ key: 'KEY-1', session });
+  });
+
+  /**
+   * THE FIXTURE IS TYPED `Required<ProState>` ON PURPOSE, and that is the whole guard.
+   *
+   * The test above round-trips a state with no `activationId`, so it cannot see a reader
+   * that drops one. `Required<ProState>` makes the compiler enumerate the interface for
+   * us: add a fourth field to `ProState` and this fixture stops compiling until it is
+   * named, and then this assertion fails until `readPro` carries it back out.
+   *
+   * That axis matters because `activationId` is OPTIONAL, so an object literal that omits
+   * it is a perfectly valid `ProState` and TypeScript had nothing to say when `readPro`
+   * built one without it. Same shape as the arrow with fewer parameters that nearly undid
+   * this fix at the wiring: the type system is permissive in exactly the direction that
+   * silently drops data.
+   */
+  it('carries the activation id back out of storage', async () => {
+    const storage = fakeStorage();
+    const full: Required<ProState> = {
+      key: 'KEY-1',
+      session: { token: 'tok', expiresAt: NOW + 86_400_000 },
+      activationId: 'act_1',
+    };
+    await writePro(storage, full);
+    expect(await readPro(storage)).toEqual(full);
+  });
+
+  /**
+   * The consequence, asserted at the boundary that spends money.
+   *
+   * `activate` CREATES an activation and burns one of the key's five slots; `validate`
+   * takes the id and creates nothing. The server picks between them purely on whether an
+   * id arrived. So a renewal driven by a state READ FROM STORAGE — which is every renewal,
+   * because the worker is torn down between them — has to carry the id or the subscriber
+   * is back to burning a slot a day and meeting the wall on day five.
+   *
+   * The test above guards the reader; this one guards the outcome, so a regression
+   * anywhere between storage and the exchange fails here whatever shape it takes.
+   */
+  it('renews with the stored activation id, so the server validates instead of activating', async () => {
+    const storage = fakeStorage();
+    await writePro(storage, {
+      key: 'KEY-1',
+      session: { token: 'tok', expiresAt: NOW - 1000 }, // stale: needs renewing
+      activationId: 'act_1',
+    });
+
+    const sent: (string | undefined)[] = [];
+    await ensureSession(await readPro(storage), {
+      exchange: async (_key, activationId) => {
+        sent.push(activationId);
+        return {
+          ok: true,
+          session: { token: 'fresh', expiresAt: NOW + 86_400_000 },
+          activationId: 'act_1',
+        };
+      },
+      save: (state) => writePro(storage, state),
+      now: () => NOW,
+    });
+
+    expect(sent).toEqual(['act_1']);
   });
 
   it('survives a stored value somebody edited by hand', async () => {
