@@ -36,14 +36,15 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800 | item 15 |
-| **17** | agent | `docs/privacy.html` + the landing's data section, in the SAME commit as the proxy | store submission |
+| ~~17~~ | agent | ~~`docs/privacy.html` + the landing's data section~~ **DONE 2026-08-18** (`c0a3e00`). **The landing was already correct**; `privacy.html`, `README.md` and both Web Store answers were not. No DO-NOT-SUBMIT banners remain in `permissions.md` | — |
 | **18** | agent | Task 15 close-the-loop, minus Step 2 which is Maximo's | — |
 | ~~31~~ | decision | ~~Relaying Polar's error text~~ **SETTLED by 28**: the oracle is now bounded at 40 probes per key per day per isolate. The text stays, because it tells a customer what to do | — |
 | **32** | agent | `api/vision.ts` holds its IP counter INLINE and untested, in a file whose header says nothing there needs a test. Same shape `keyCap.ts` just moved out of `api/license.ts` | — |
+| **33** | agent | **Nothing parses `content.ts`.** 583 tests passed on a file with a syntax error, because only `?raw` readers touch it. `tsc` and the build caught it. The largest file in the extension has no import-time guard | — |
 | **25** | decision | Is the secondary button filled enough to look filled | — |
 | — | decision | The **"Read" collision**: the tray says *Read now/next/someday* while the shelf's fourth pile is *Read*, meaning finished. Renaming it *Finished* ends it | — |
 | ~~—~~ | ~~agent~~ | ~~`authorName()` is an N+1~~ **NOT TRUE, checked 2026-08-18.** `groundText` uses `search`, which asks for `author_name` in `FIELDS` and pays no follow-up. The follow-up is reached only from `lookupByIsbn`, once, for ONE book on the retailer-link path. A 20-book photo costs 20 searches and zero follow-ups. Pinned by a test | — |
-| — | agent | The **X button still wears a 📚 glyph** while every other surface wears the catcher. Maximo, 2026-08-18: use the Buki logo, or an open book with the round face emerging from it, kept simple | — |
+| ~~—~~ | ~~agent~~ | ~~The X button wears a book glyph~~ **DONE 2026-08-18** (`2b58df2`). It wears the catcher, at X's own 18px icon box. **The open-book variant was NOT built**: `.agents/product-marketing.md` rules that shape out by name, and two shapes in 18px is a smudge. Overrulable, knowingly | — |
 
 **The critical path is 1, 2, 26.** Until the first two exist the paid tier is written and
 switched off, and until 26 exists nothing bounds what abuse can cost.
@@ -1018,6 +1019,27 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   been a regression:** moving the ISBN lookup back to `search.json?q=isbn:` is the thing
   that was measured timing out for over 20s on 2026-08-04. A named optimisation nobody
   traced is the same shape as a contrast ratio nobody rendered.
+
+- **A GUARD THAT NAMES THE WRONG HOST CANNOT SEE A MISSING ONE.** `host.test.ts` globs the
+  shipped files and fails any that names a DIFFERENT Vercel host. `manifest.json` is in that
+  glob and passed **by naming no host at all** — while `visionRoute` posted every keyless
+  catch to `${BUKI_HOST}/api/vision` and both the worker and the options page posted every
+  licence exchange to `${BUKI_HOST}/api/license`. Chrome treats a request to an undeclared
+  origin as a plain cross-origin request, neither handler sets `Access-Control-Allow-Origin`
+  and `vercel.json` excludes `/api/` from its headers, so **the whole paid tier would have
+  failed on the wire** the day the variables were set. Fixed `b4118cf`. The guard now derives
+  the pattern from `BUKI_HOST`. **Ask what a guard is blind to, not only what it checks.**
+- **A HARNESS THAT AGREES WITH YOU IS THE ONE TO DISTRUST.** The first `x-button-harness`
+  drew X's own action icons at OUR `.72` opacity, when X renders its own at 1. The
+  comparison that decides the design is ours-muted against theirs-solid, and the flattering
+  version would have been read as a pass. **An instrument has to be checked for the way it
+  is kind to you, not only for the way it lies.**
+- **583 TESTS PASSED ON A FILE THAT DOES NOT PARSE.** The backtick-in-a-CSS-comment trap
+  fired a third time in `content.ts`'s `STYLE` literal. Nothing caught it in the suite,
+  because **nothing imports `content.ts` as a module** — it registers listeners at module
+  scope, so `contentChrome.test.ts` reads it as `?raw` TEXT. `tsc --noEmit` and
+  `node build.mjs` caught it. **Green is not the same as parses**, for the largest file in
+  the extension. Item 33.
 
 - **AN OPTIONAL FIELD ADDED TO AN INTERFACE MAKES EVERY EXISTING CONSTRUCTOR OF THAT
   INTERFACE SILENTLY INCOMPLETE.** `cdda054` added `activationId?: string` to `ProState` and
