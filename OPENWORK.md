@@ -93,9 +93,14 @@ unblocks.
 > activation) for every check after that. The `activationId` is already captured — it goes
 > into the signed token claim in `licenseHandler.ts` — and is never sent back to Polar.
 >
-> **Maximo:** confirm the org-scoped `validate` path and that a repeated `activate` with an
-> identical label really does mint a second activation. Two curls and the dashboard settle
-> it. **Do not launch before this is fixed**; it breaks 100% of paying customers.
+> **RE-CHECKED AGAINST POLAR'S DOCS, 2026-08-18, via context7. No longer a hypothesis.**
+> `activate` creates an activation and is *"optional if there is no activation limit"*;
+> `validate` is the *"for each session"* call and takes the `activation_id` that activate
+> returned. The full contract, both endpoint families, and the two ways out are written up
+> in `docs/superpowers/polar-setup.md` §2.1.
+>
+> **Do not launch before this is fixed**; it breaks 100% of paying customers. It is also
+> the same change item 28 wants, since a `validate` probe cannot touch the slot count.
 
 - [ ] **1. Create the Polar product.** **Field by field, with the reasoning and a curl that
       proves it before any code exists: `docs/superpowers/polar-setup.md`.**

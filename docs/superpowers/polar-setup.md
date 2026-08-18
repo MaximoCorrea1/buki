@@ -72,6 +72,58 @@ whole thing functions.
 
 ---
 
+## 2.1 ACTIVATE ONCE, VALIDATE FOREVER. The client protocol, corrected
+
+**Re-checked against Polar's documentation on 2026-08-18 via context7, after a review
+found the extension calling the wrong endpoint on a loop.** This section is the contract;
+`OPENWORK.md` item 27 is the work.
+
+**There are two endpoint families and they are not interchangeable:**
+
+| Path | Auth | For |
+| --- | --- | --- |
+| `/v1/customer-portal/license-keys/*` | **none required**, safe on a public client | a desktop or mobile app calling Polar directly |
+| `/v1/license-keys/*` | organisation token | **a server**, which is us |
+
+Buki uses the server family, and that stays right: `/api/vision` has to verify the licence
+before spending our provider key anyway, so a check made in the extension would be
+decoration. One place decides.
+
+**The three calls, and which one costs a slot:**
+
+| Call | Creates an activation? | When |
+| --- | --- | --- |
+| `activate` | **YES, every time** | **once**, when the customer first pastes the key |
+| `validate` | **no** | **every session**, carrying the `activation_id` from that first activate |
+| `deactivate` | frees one | when the customer retires a device, from their portal |
+
+Polar's own words: *"Activate a license key **if** your setup has a maximum activation
+instance limit. This step is **optional** if there is no activation limit."* and *"Validate
+a user's license key **for each session** of your application."* and *"The activation ID
+from the response can be **stored on the device** and used in the `/validate` endpoint."*
+
+**What Buki does today is call `activate` on every renewal**, which is daily. Five days of
+normal use exhausts a five-slot key and the customer is then shown the wall they paid to
+pass. §7's warning that *"each `curl` consumes one of the five activation slots"* was
+always describing the extension's own daily behaviour; nobody joined the two facts up.
+
+**Two ways out, and the first is better:**
+
+1. **Keep activations (limit 5). Activate once, persist the `activation_id`, validate
+   daily.** Preserves the device cap, which is the only thing discouraging one key on
+   fifty machines. `licenseHandler.ts` already receives the activation id and puts it in
+   the signed token claim; it just never sends it back. This needs a second server path
+   and one more field on `ProState`.
+2. **Turn activation limits off and only ever call `validate`.** Simpler, no id to
+   persist, and Polar says activation is optional without a limit — but a key then works
+   on unlimited machines forever.
+
+**Do not set `increment_usage` on validate.** It meters consumption per key, and §2 leaves
+the benefit's Usage limit empty on purpose; setting it here would create a second, hidden
+limit that disagrees with the one in `entitlement.ts`.
+
+---
+
 ## 3. The two products
 
 Two, because Polar locks the billing cycle to the product.
