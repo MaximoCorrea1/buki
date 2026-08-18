@@ -1,6 +1,6 @@
 # Open work
 
-**State as of 2026-08-17**, verified by running the commands, not from memory:
+**State as of 2026-08-18**, verified by running the commands, not from memory:
 
 | | |
 | --- | --- |
@@ -10,8 +10,8 @@
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
-| Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **79** as this line was written, so the commit carrying it makes 80 |
+| Paid tier | **written, not switched on.** Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16, and **the renewal bug that would have broken every subscriber is fixed** (item 27) |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **81** as this line was written. **MERGED to `main` on 2026-08-18**, so this number is now history rather than status |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -20,6 +20,33 @@ three times now, so the probe is given beside it. Run the probe; do not trust th
 The test count has drifted the same way: it read 345 while the suite was at 375, and on
 2026-08-17 this header was written as 512 and three tests were added before the commit
 landed. **Both numbers here were corrected by the verification gate, not by noticing.**)*
+
+## THE LANE — who does what next, in order
+
+**Read this before anything else.** Every item is numbered across the whole document, so
+"do 28 next" is unambiguous. This table is the ORDER; the items themselves carry the why.
+
+| # | Lane | Item | Blocks |
+| --- | --- | --- | --- |
+| **1** | **Maximo** | Polar product exists (products created 08-17; verify the benefit's activation settings) | everything in Part 3 |
+| **2** | **Maximo** | The six Vercel variables, **one of which stays unset** | `/api/vision`, `/api/license` |
+| **26** | **Maximo** | **Hard spend cap + alert on the Gemini key.** The only control that bounds real money | nothing, but it is the floor under items 28 and 4 |
+| **28** | agent | `/api/license` has no rate limit | — |
+| **29** | agent | `proState` has no write queue around a call that spends a slot | — |
+| **30** | agent | Extract `handleSaveBook` so the `?raw` guard's blind spot closes | — |
+| **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
+| **9** | **Maximo** | Five Web Store screenshots at 1280x800 | item 15 |
+| **17** | agent | `docs/privacy.html` + the landing's data section, in the SAME commit as the proxy | store submission |
+| **18** | agent | Task 15 close-the-loop, minus Step 2 which is Maximo's | — |
+| **31** | decision | Relaying Polar's error text — revisit only if 28 is not done | — |
+| **25** | decision | Is the secondary button filled enough to look filled | — |
+| — | decision | The **"Read" collision**: the tray says *Read now/next/someday* while the shelf's fourth pile is *Read*, meaning finished. Renaming it *Finished* ends it | — |
+| — | agent | `authorName()` is an N+1: one extra OpenLibrary request per book to turn an author key into a name. A 20-book photo means 20 follow-ups | — |
+
+**The critical path is 1, 2, 26.** Until the first two exist the paid tier is written and
+switched off, and until 26 exists nothing bounds what abuse can cost.
+
+---
 
 ## 0. Which doc owns which fact
 
@@ -681,8 +708,10 @@ needs a credential or a dashboard is the shell around it.
       no §1.1, and §2.3 is now the dark-mode contrast record from 2026-08-15, which has
       nothing to do with Task 0. Following it literally would delete a live section. Steps 2
       and 4 wait on items 1 and 2, because Step 2 needs a real Chrome and a Polar test card.
-- [ ] **19. Merge `buki-pro` into `main`.** 37 commits and counting. Use
-      `superpowers:finishing-a-development-branch`.
+- [x] **19. Merge `buki-pro` into `main`. DONE 2026-08-18**, at 81 commits, via
+      `superpowers:finishing-a-development-branch`. The count in this line was written when
+      the branch was 37 ahead and sat stale for days, which is the drift the header warns
+      about; it is now a fact with a date rather than a number that ages.
 
 ---
 
@@ -716,6 +745,32 @@ needs a credential or a dashboard is the shell around it.
 
       `src/extension/contentChrome.test.ts` guards what a screenshot cannot: the rule is
       about every page, not the one you happened to look at.
+
+- [ ] **30. The `?raw` source guard cannot see control flow, and a reviewer PROVED it.**
+      `shelfEdit.test.ts` asserts `expect(background).toContain('markRestored')`. Mutation
+      testing showed it passes with the call wrapped in `if (false && msg.restoreOf)` (dead
+      code) **and passes with the arguments reversed** — which would relink every undo
+      backwards — while all 533 tests stayed green.
+
+      **Fix:** extract `handleSaveBook(msg, deps)` in the `(request, env) => response` shape
+      `src/server/licenseHandler.ts` and `visionHandler.ts` already use, leaving
+      `chrome.runtime.onMessage.addListener` a thin adapter. Then spy on `log.markRestored`
+      and assert `toHaveBeenCalledWith('sb_9', <new id>)` in that order.
+
+      **Why this matters beyond one test:** `background.ts`'s entire message-dispatch
+      surface is untestable by import, and this was the first use of `?raw` against
+      executable code rather than markup or CSS. If the pattern is repeated for the next
+      message type instead of extracting, every new guard inherits the same blind spot.
+      *(testing reviewer, P1)*
+
+- [ ] **31. `/api/license` relays Polar's differentiated error text.** `detail` is returned
+      almost verbatim, so a caller past the Origin gate learns not just whether a key is
+      real but its STATE — unused, fully activated, revoked. That is deliberate and tested
+      (*"passes Polar's own words through, because they say what to do"*), because
+      "Activation limit reached" tells a customer to deactivate a device and "invalid
+      licence" tells them to write to us. It mainly amplifies item 28 rather than standing
+      alone: rate-limiting bounds how many oracle queries anybody gets. **Revisit only if
+      28 is not done.** *(security reviewer, P3)*
 
 - [ ] **29. `proState` has no write queue, and it is the one read-modify-write that costs
       money.** `trial.ts`, `storage.ts` and `recognitionLog.ts` each wrap their storage
@@ -1162,3 +1217,40 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   `docs/store/listing.md` offered a `Name` of `Buki: catch books from X` for a dashboard box
   that does not exist, contradicting the manifest's `Buki`. Copy written for a field nobody
   fills in is copy that never ships and never gets corrected.
+
+---
+
+## 6. Accepted risks, named so nobody rediscovers them
+
+These came out of the 2026-08-18 review. **None is a bug and none is scheduled.** They are
+written down because each one costs a reviewer half an hour to find, and because a risk
+nobody has named reads as an oversight the next time somebody trips over it.
+
+- **A refunded or cancelled subscriber keeps working for up to about eight days.** The
+  session token is stateless with no revocation list, honoured for `TOKEN_TTL_MS` plus
+  `GRACE_MS`. That is the deliberate trade `token.ts` documents: it is what makes a Polar
+  outage our problem rather than the customer's, and it is why this project has no
+  database. The cost is bounded and small at $4/month. **Do not "fix" it with a revocation
+  table** without re-opening that whole decision.
+- **There is no partial brake for Pro traffic.** `BUKI_TRIAL_CLOSED` correctly stops only
+  the trial (that scoping was itself a fix, 2026-08-17). So if Pro-classified traffic ever
+  becomes the cost problem — a replayed token, the grace window above — the only lever is
+  removing `GEMINI_API_KEY`, which 500s the product for everybody including payers. An
+  all-or-nothing kill, not a graceful one. A provider-side spend cap (item 26) is the real
+  answer, because it bounds the money without needing our code to notice anything.
+- **A failed `markRestored` is permanent and never retried.** Deliberate, and the same
+  pattern `rememberCover` uses: the shelf write already succeeded and a failed relink must
+  not fail the undo the user can see. The consequence if it does fail: that attempt stays
+  `wrong: true` for ever, understating the kept rate by one, AND stays linked to a deleted
+  id, so a later genuine removal of that book scores nothing. It recreates the pre-fix bug,
+  gated on a storage write failing.
+- **`restoreOf` is trusted.** It is an optional string on the `saveBook` message and the
+  only thing that flips the worker into the relink path. Today only `restoreArgs` sets it
+  and it always carries `saved.id`. Nothing in the type system stops a future caller
+  passing an arbitrary or stale id. Low stakes — `markRestored` is a no-op when no event
+  matches — and consistent with how every other message contract here is trusted.
+- **The trial counter is forgeable and that is the design.** `trial.ts` says so: defending
+  it needs identity, which needs accounts, which needs a database, to protect a fraction of
+  a cent. **The stronger argument is the escape hatch**: anyone willing to edit extension
+  storage could paste their own key instead and get unlimited cover reading free. Cheating
+  buys them nothing they cannot have by asking.

@@ -78,3 +78,74 @@ the reason it was safe. Now at module scope, asserted at column 0.
   because OpenLibrary's search returns an author *key* rather than a name. A photograph of
   twenty books can mean twenty sequential follow-ups. It already degrades to a nameless book
   rather than failing the catch.
+
+
+---
+
+# The five-agent review, in full
+
+Run 2026-08-18 at Maximo's request ("a light 4 agent review... maybe add 1 more"). Five
+personas, deliberately fewer than `ce-review`'s default: `project-standards-reviewer` and
+`learnings-researcher` were SKIPPED because `OPENWORK.md` §0 records that this repo has no
+`CLAUDE.md`, `AGENTS.md` or `docs/solutions/` for them to read.
+
+**Every finding is listed, including the ones not fixed.** An unrecorded finding is a
+finding that gets rediscovered at the cost of another review.
+
+| # | Reviewer(s) | Severity | Finding | State |
+| --- | --- | --- | --- | --- |
+| 1 | adversarial | **P0** | Daily renewal calls Polar `activate`, spending one of five slots per day; subscriber sees the wall on day five | **FIXED** (`cdda054`) |
+| 2 | security **+** adversarial | P1 | `/api/license` has no rate limit; Origin is forgeable, so five requests exhaust a leaked key's slots | **OPEN — item 28** |
+| 3 | adversarial | P1 | `proState` has no write queue; two catches double-spend a slot and one travels with a stale state | **OPEN — item 29** |
+| 4 | adversarial | P1 | `/api/vision`'s IP cap is per-isolate and leaks by design; only real brake is a provider spend cap | **OPEN — item 26** |
+| 5 | correctness | P2 | `wirePro()` sat inside `main()`, below a guard on seven unrelated provider ids | **FIXED** (`1357c76`) |
+| 6 | kieran-ts **+** correctness | P2 | `markRestored` fire-and-forget before `sendResponse`, where the sibling `markWrong` chains | **FIXED** (`1357c76`) |
+| 7 | testing | P1 | The `?raw` source guard cannot see control flow; an argument swap passed all 533 tests | **OPEN — item 30** |
+| 8 | testing | P2 | `optionsPage.test.ts` order checks ran over raw HTML including comments | **FIXED** (`1357c76`) |
+| 9 | testing | P2 | Pill-shape rule found by a magic padding value rather than by selector | **FIXED** (`1357c76`) |
+| 10 | adversarial **vs** correctness | P2 | `markRestored`/`markWrong` match EVERY event sharing a `savedId`. **Reviewers disagreed** | **DECIDED + tested** |
+| 11 | security | P3 | Polar's differentiated error text relayed through, so a caller learns a key's *state* | **OPEN — item 31** |
+| 12 | security **+** adversarial | — | The grace window keeps a refunded customer served for up to ~8 days | **ACCEPTED — §6** |
+| 13 | adversarial | — | No partial brake for Pro traffic; the only lever is deleting the provider key, which 500s everyone | **ACCEPTED — §6** |
+| 14 | correctness | — | A failed `markRestored` is permanent and un-retried | **ACCEPTED — §6** |
+| 15 | kieran-ts | — | `restoreOf` is an optional string; nothing stops a future caller passing a stale id | **ACCEPTED — §6** |
+
+## The disagreement, and how it was settled
+
+Finding 10 split the panel. **Correctness** called the multi-match clean and consistent with
+`markWrong`. **Adversarial** called it P2 state corruption. **Testing** was right about the
+framing: *"an accident of the map, not a decision."*
+
+Settled in favour of multi-match, and now carrying a test that says so: `library.add` reuses
+an id when `sameBook` matches, so two attempts can legitimately share one shelf slot. A
+`savedId` names a SLOT. If the book in that slot was wrong, then every attempt that produced
+it was wrong; restoring it makes every one of them right again. Flagging one and not its
+twin would be the incoherent state.
+
+## What the reviewers verified CLEAN, which is worth as much as the findings
+
+- No server secret appears under `src/extension/` or in any response body or header, and
+  `visionHandler` strips upstream headers before relaying.
+- `policy.ts`'s null-vs-empty Authorization distinction is intact and still tested.
+- Every refusal path in both handlers lands BEFORE the outbound fetch, so a refusal costs
+  neither quota nor an activation slot.
+- `delete restored.wrong` is sound under `strict` (the field is optional) and is the right
+  idiom for `chrome.storage` — better than `undefined`, which would be stored.
+- The `restoreOf?` addition is an additive property on an existing union member, so no
+  discriminant or narrowing site broke.
+- `licenseHandler` importing `fromExtension` from `policy.ts` is the correct direction with
+  no cycle: `policy.ts` was already the shared module.
+- No `any`, unsafe cast, or non-null assertion was introduced this session.
+- Ruled out by attack: ring-buffer eviction before an undo (safe no-op), double-undo (the
+  button disables synchronously AND `sameBook` makes a duplicate harmless), and
+  `BUKI_TRIAL_CLOSED` failing open (nothing without a verified HMAC can reach `kind: 'pro'`).
+
+## Instruments that lied, this session
+
+| Instrument | How it lied | Instead |
+| --- | --- | --- |
+| `expect(background).toContain('markRestored')` | Passed with the call in `if (false && …)` dead code, and passed with the arguments REVERSED | Extract a handler and spy on the call. Item 30 |
+| `indexOf` over raw `options.html` | One comment naming `id="key"` flipped two order assertions with no element moved | Strip comments and the `<style>` block first |
+| A CSS rule matched on `padding: 11px 20px` | Changing only the padding failed the test with a message about the anchor | Match on the SELECTOR |
+| My own `grep` for the cover sweep | Searched `sweepCovers`/`forgetCover`; the function is `pruneCovers`. Nearly reported a phantom dead declaration | Grep the exported name, not a guess at it |
+| TypeScript, on the renewal adapter | `(key) => …` is assignable to `(key, activationId?) => …`, so dropping the id compiled and passed 548 tests | Assert the parameters, or restructure |

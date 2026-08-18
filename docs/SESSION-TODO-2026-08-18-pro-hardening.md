@@ -66,3 +66,38 @@ Markers: `[ ]` open · `[x]` done+verified · `[~]` in progress · `[?]` founder
 - [ ] **The `?raw` guard's blind spot.** Extract `handleSaveBook(msg, deps)` in the
       `(request, env) => response` shape `src/server/` already uses, so the call can be
       spied on instead of string-matched. `OPENWORK.md` §5.
+
+
+## The five-agent review — every finding, with its home
+
+Full table and the reviewers' clean verdicts: `docs/SESSION-CONTEXT-2026-08-18-pro-hardening.md`,
+section *The five-agent review, in full*. Fifteen findings. Six fixed, one decided, four
+open as numbered items, four accepted and registered.
+
+- [x] **P0 renewal burns a slot a day** → fixed, `cdda054`
+- [x] **`wirePro()` behind `main()`'s guard** → fixed, `1357c76`
+- [x] **`markRestored` fire-and-forget** → chained, `1357c76`
+- [x] **Two brittle tests** (raw-HTML `indexOf`, magic padding value) → rebuilt structurally
+- [x] **`markRestored` multi-match** → reviewers DISAGREED; settled as multi-match with a
+      test that says why, rather than left as an accident of `.map`
+- [ ] **28** `/api/license` has no rate limit
+- [ ] **29** `proState` has no write queue
+- [ ] **30** extract `handleSaveBook` so the `?raw` guard stops being blind
+- [ ] **31** Polar's error text is relayed (decision, gated on 28)
+- [x] **Four accepted risks registered** in `OPENWORK.md` §6 rather than left to be
+      rediscovered: the ~8-day grace after a refund, the absence of a partial brake for Pro
+      traffic, an un-retried `markRestored` failure, and `restoreOf` being trusted.
+
+## Checkpoint log
+
+| When | State |
+| --- | --- |
+| Session start | 536 tests / 53 files, 78 ahead of `main` |
+| After item 27 | 550 tests / 53 files, tsc 0, build clean |
+| After the motto | 550 tests, hero rendered at 1440x900 and looked at |
+| Before merge | 550 tests, tsc 0, build clean, tree clean, 81 ahead, `main` 0 behind |
+
+## Still open at session end
+
+Everything in `OPENWORK.md`'s **THE LANE** table. The critical path is items 1, 2 and 26,
+all Maximo's. The unblocked agent work is 28, 29, 30, then 17 and 18.
