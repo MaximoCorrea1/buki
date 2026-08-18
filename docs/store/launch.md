@@ -18,7 +18,7 @@
 
 | | |
 | --- | --- |
-| Code | Complete. 594 tests across 57 files, `tsc` 0, build clean |
+| Code | Complete. **Run the probe rather than trusting this line** — `./node_modules/.bin/vitest run`, `node node_modules/typescript/bin/tsc --noEmit`, `node build.mjs`. It read 597/57 green when this was written, and `OPENWORK.md`'s header records how many times a count in a document has drifted |
 | Paid tier | Written, tested, **switched off** and **unbuyable** (items 2, 34) |
 | Store documents | Written and clean. No DO-NOT-SUBMIT banners left in `permissions.md` |
 | Screenshots | **Zero** (item 9) |
