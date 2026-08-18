@@ -34,6 +34,8 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~28~~ | agent | ~~`/api/license` has no rate limit~~ **DONE 2026-08-18** (`c5e3f64`) | — |
 | ~~29~~ | agent | ~~`proState` has no write queue around a call that spends a slot~~ **DONE 2026-08-18** (`b1676e9`) | — |
 | ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |
+| **34** | **Maximo**, then agent | **NOBODY CAN BUY.** Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
+| **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800 | item 15 |
 | ~~17~~ | agent | ~~`docs/privacy.html` + the landing's data section~~ **DONE 2026-08-18** (`c0a3e00`). **The landing was already correct**; `privacy.html`, `README.md` and both Web Store answers were not. No DO-NOT-SUBMIT banners remain in `permissions.md` | — |
@@ -54,6 +56,12 @@ switched off, and until 26 exists nothing bounds what abuse can cost.
 > Everything above is Maximo's: **1, 2, 26** (a dashboard and two credentials), then
 > **3** and **9** (a real browser, which no agent can drive because Chrome refuses
 > `--load-extension`), and **Task 15 Step 2**, which needs a Polar test card.
+>
+> **Item 34 is the exception and it is the one that decides whether any of this earns
+> anything.** Its first half is Maximo's — Polar issues the checkout links once item 1's
+> products are configured — and its second half is one agent edit, already specified in
+> `polar-setup.md` §9. **Until it lands, every purchase CTA in the extension leads to a
+> page whose button installs the extension.**
 >
 > **Two launch blockers were found on 2026-08-18 that nothing in this table predicted**,
 > and both were the same shape: written, tested, and inert. `readPro` dropped the
@@ -874,6 +882,42 @@ needs a credential or a dashboard is the shell around it.
       rather than making both endpoints share a signature neither wants. §5 already carries
       the trap this is an instance of: *when one handler has a guard, ask what the sibling
       handler has.*
+
+- [ ] **34. THE CHECKOUT URL HAS NO HOME, AND WITHOUT IT NOBODY CAN PAY.** This is the
+      single biggest gap between "the paid tier is written" and "the paid tier earns".
+
+      Every purchase CTA in the extension — the wall's *Get Buki Pro, $4 a month*, the
+      popup's plan badge, the setup page's *See what Pro costs* — opens
+      `${BUKI_HOST}/#pricing`. That section's Pro button links to **GitHub**, to install the
+      extension the visitor already has. A person who hits the wall is sent in a circle.
+
+      That is not an oversight in the landing: the comment above that button explains the
+      flow correctly (payment issues a licence key, so there is nothing to buy before you
+      have the extension). **What is missing is the Polar checkout link**, which does not
+      exist until item 1's products are configured.
+
+      **`docs/superpowers/polar-setup.md` §9 already specifies the fix and it is one edit:**
+      the two URLs go beside `PRICING_URL` in `src/shared/pricing.ts`, the landing's pricing
+      buttons read from there, and `pricing.test.ts` is extended to assert the landing and
+      the module agree — the same shape as `host.ts`. Nothing is added before the URLs
+      exist, because a constant with no caller is the failure `needsRenewal` already cost
+      this project once.
+
+      **Why it is here now:** it was written in `polar-setup.md` §9 and in
+      `SESSION-TODO-2026-08-16-ios-3.md`, a ledger that has been superseded twice. §5 has an
+      entry saying a lesson recorded only in a superseded document is a lesson you pay for
+      again; this is the same thing about a blocker.
+
+- [ ] **35. The affiliate tags are empty, so every Buy link earns nothing.**
+      `AFFILIATE = { amazonTag: '', bookshopId: '' }` in `src/extension/buyLink.ts`. The
+      links are correct and tested and work without the tags, which is deliberate — a buy
+      link that only functions once an affiliate account exists cannot be tested before it
+      ships. But until an Amazon Associates tag and a Bookshop.org id are pasted in, the
+      second revenue line is zero by construction.
+
+      **The disclosure half is already done**, in the popup footer, the setup page and the
+      privacy policy, because Chrome Web Store policy permits affiliate links only when they
+      are disclosed. So this is one paste, not a feature.
 
 - [ ] **26. Set a hard spend cap and an alert on the Gemini key.** Maximo only, in Google
       Cloud billing, and it is the **only** control that bounds what abuse can cost. Both
