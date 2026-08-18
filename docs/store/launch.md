@@ -1,0 +1,302 @@
+# Launch: the order, the gates, and what to watch
+
+**Written 2026-08-18.** Not served publicly: `docs/store` is in `.vercelignore`.
+
+> **This file owns the SEQUENCE. It does not own status.**
+>
+> What is open and who owns it lives in `OPENWORK.md` → THE LANE, and nowhere else.
+> Every step below points at an item number rather than restating it, because
+> `OPENWORK.md` §0 records what happens when one fact lives in two files: they disagree,
+> and the one you read is the stale one.
+>
+> The copy that goes in each dashboard field is `docs/store/listing.md`. The permission
+> answers are `docs/store/permissions.md`. Neither is repeated here.
+
+---
+
+## What is actually true today
+
+| | |
+| --- | --- |
+| Code | Complete. 594 tests across 57 files, `tsc` 0, build clean |
+| Paid tier | Written, tested, **switched off** and **unbuyable** (items 2, 34) |
+| Store documents | Written and clean. No DO-NOT-SUBMIT banners left in `permissions.md` |
+| Screenshots | **Zero** (item 9) |
+| Users | Zero. Pre-launch. The founder is the only documented user |
+| Revenue | $0 by construction: no checkout link (item 34), no affiliate tags (item 35) |
+
+**Nothing in the code blocks launch.** Everything below needs a dashboard, a credential,
+a browser or a camera.
+
+---
+
+## THE ORDER
+
+Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
+
+| # | Step | Owner | Blocked until |
+| --- | --- | --- | --- |
+| 1 | Polar: verify the benefit's activation settings, on **both** products | Maximo | — |
+| 2 | Gemini key **with billing linked**, and the spend cap in the same sitting (26) | Maximo | — |
+| 3 | The six Vercel variables (item 2) | Maximo | steps 1, 2 |
+| 4 | `vercel deploy --prod`, then probe both endpoints | Maximo | step 3 |
+| 5 | **The checkout URLs → `pricing.ts` (item 34)** | Maximo sends, agent edits | step 1 |
+| 6 | The affiliate tags (item 35) | Maximo | — (parallel) |
+| 7 | The by-hand browser pass, thirteen checks (item 3) | **Maximo only** | steps 4, 5 |
+| 8 | Five screenshots at 1280x800 (item 9) | Maximo | step 7 |
+| 9 | Register the developer account, pay the one-time fee | Maximo | — (do it now, in parallel) |
+| 10 | Submit | Maximo | steps 7, 8, 9 |
+| 11 | Wait. Days to weeks | — | step 10 |
+| 12 | Launch day | both | step 11 |
+
+**Steps 6 and 9 have no blockers and can be done today.** Everything else is a chain.
+
+---
+
+## Step by step, with the check that proves it
+
+### 1. Polar
+
+The products exist. **One field decides whether the entire paid tier functions**, and the
+failure is silent: on the License Key benefit, `Activation limits: enabled` must be **YES**,
+limit **5**, `Enable user to deactivate instances` **YES**, `Usage limit` **empty**,
+`Expiration` **off**. The same benefit must be attached to **both** products, or a yearly
+subscriber pays $29, gets nothing to paste, and refunds rather than filing a bug.
+
+**Prove it rather than reading the dashboard** (`polar-setup.md` §7). With a key from a
+100%-off discount code on the monthly product:
+
+```bash
+curl -i -X POST https://api.polar.sh/v1/license-keys/activate \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"BUKI-XXXX-XXXX-XXXX","organization_id":"<uuid>","label":"curl check"}'
+```
+
+`200` + `"status": "granted"` and step 1 is done. `403`/`404` means activations are off.
+`422` on `organization_id` means you sent the slug. **Each run spends one of that key's five
+slots**, so use a throwaway key or deactivate afterwards.
+
+### 2. Gemini, with billing, and the cap in the same sitting
+
+Billing is not about capacity, it is about a sentence you have already published. The Pro
+card says *"Faster, and it does not throttle."* The free tier **queues rather than
+erroring** — that is what the 12-second hang on 2026-08-12 was. Shipping Pro on the free
+tier makes your own pricing page false.
+
+**Set the spend cap before you leave the page** (item 26). Both endpoints identify the
+caller by an `Origin` header that anything non-browser can set, and the extension id is
+public the moment the item is listed. Everything in the code raises the bar; the provider
+cap is the floor. There is no other control that bounds real money.
+
+**While you are there, check what a catch actually costs.** `policy.ts` rests the whole
+trial threat model on *"about $0.00011"*, a figure that appears exactly once in this repo,
+in the comment that uses it. Never measured.
+
+### 3. The six variables
+
+`polar-setup.md` §8, and `OPENWORK.md` item 2. Project `buki`, **all environments**.
+**None may ever appear in a file under `src/extension/`** — that is a leak, not a shortcut.
+`BUKI_TRIAL_CLOSED` stays unset.
+
+The first three (`GEMINI_API_KEY`, `BUKI_TOKEN_SECRET`, `BUKI_EXTENSION_ID`) are checked
+together and return **500** if any is missing, deliberately: a missing token secret would
+verify every session token as garbage and silently demote every subscriber to the trial. A
+half-configured deploy that looks like it works is the failure being avoided.
+
+### 4. Deploy, then probe
+
+```bash
+vercel deploy --prod
+```
+
+Then check the two things that have never run against a real network:
+
+```bash
+# Should be 403 (not 500). 500 means a variable is missing.
+curl -i -X POST https://get-buki.vercel.app/api/vision -d '{}'
+
+# Should be 403 without the Origin header, 400 with it and no key.
+curl -i -X POST https://get-buki.vercel.app/api/license -d '{}'
+curl -i -X POST https://get-buki.vercel.app/api/license \
+  -H "Origin: chrome-extension://<your-extension-id>" \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+**A 500 from either means step 3 is incomplete.** That is the whole reason they 500 loudly.
+
+### 5. The checkout URLs — the step that decides whether any of this earns
+
+`OPENWORK.md` item 34. Polar gives each product a checkout link. Today all three purchase
+CTAs in the extension open the landing's `#pricing`, whose Pro button links to **GitHub**,
+to install the extension the visitor already has. **Someone who hits the wall is sent in a
+circle.**
+
+Send the two URLs and it is one edit: they go beside `PRICING_URL` in
+`src/shared/pricing.ts`, the landing's pricing buttons read from there, and
+`pricing.test.ts` is extended to assert the landing and the module agree. Same shape as
+`host.ts`. Specified in `polar-setup.md` §9.
+
+### 6. The affiliate tags
+
+`OPENWORK.md` item 35. `AFFILIATE = { amazonTag: '', bookshopId: '' }` in `buyLink.ts`.
+Every Buy link works and earns nothing. The disclosure half is already done in three places
+because store policy requires it. **One paste, no blockers, do it whenever.**
+
+### 7. The by-hand pass — thirteen checks, and no agent can ever do it
+
+`OPENWORK.md` item 3, written out under Task 11 in the plan. Chrome stable refuses
+`--load-extension` and `--disable-extensions-except`, so there is no headless substitute.
+
+**Two of the checks now cover things that have never run anywhere.** Both blockers found on
+2026-08-18 were of the same kind — written, tested, and inert — and both would surface only
+here:
+
+- **Catch on a keyless profile.** Proves the manifest's new host permission actually lets
+  the worker reach `/api/vision`. Until `b4118cf` it could not have.
+- **Paste a licence, then use Buki tomorrow.** Proves `readPro` carries the activation id
+  back out of storage. Until `3012b30` it did not, and the wall would have returned on day
+  five with nothing red anywhere.
+
+### 8. Screenshots
+
+`OPENWORK.md` item 9. Five at 1280x800. The shot list is in `listing.md` and the order
+matters: the shelf leads because it is the one that sells it.
+
+**Shoot against a shelf holding books you actually saved.** A mocked shelf reads as a mock,
+and this is a product whose entire claim is that the list is yours.
+
+### 9. The developer account — do this today
+
+You must register as a Chrome Web Store developer and pay a **one-time** registration fee
+before you can publish anything.
+<https://developer.chrome.com/docs/webstore/register>
+
+**Use a dedicated email you check often. It cannot be changed after the account is
+created**, and it is where every review alert arrives.
+
+### 10–11. Submit, then wait
+
+**Review is the long pole and it is not predictable.** Google: *"For most extensions,
+review is completed within a few days, but it can take up to a few weeks."* If nothing has
+happened after three weeks, contact developer support. As of April 2026 Google also reports
+*a surge in submissions leading to extended review times*, so plan for the top of that
+range rather than the bottom.
+
+**What Google says slows a review, checked against this extension:**
+
+| Trigger | Buki |
+| --- | --- |
+| New developer, new extension | **Yes, both.** Unavoidable and expected |
+| Broad host permissions (`*://*/*`, `<all_urls>`) | **Yes** — `optional_host_permissions: ["https://*/*"]`. **This is the one to expect questions about**, and `permissions.md` already leads with the answer: `activeTab` plus one optional host permission requested on first use, never a broad permission at install |
+| Sensitive permissions (`tabs`, `downloads`, `cookies`, `webRequest`) | **None.** The set is `storage`, `contextMenus`, `scripting`, `activeTab` |
+| Code volume, obfuscation | ~193KB across five bundles, **unminified**, comments intact |
+
+> **Do not "optimise" the build before submitting.** `build.mjs` does not minify, and that
+> is an advantage here rather than an oversight: obfuscation is prohibited and minification
+> is allowed, but *"the more code an extension contains, the more work it takes to verify
+> that code is safe"*, and both complicate review. Readable, commented source is the
+> easiest thing a reviewer can be handed. Shipping 193KB of legible JavaScript is a
+> feature of this submission.
+
+---
+
+## Launch day
+
+Zero users, zero list, one founder. That shapes everything: there is no audience to
+announce to, so **day one is about being findable and being credible**, not about volume.
+
+### The channels Buki actually has
+
+| Kind | What exists | What is missing |
+| --- | --- | --- |
+| **Owned** | The landing, the GitHub repo | **No email list.** Nothing captures somebody who is interested but not ready |
+| **Rented** | X — and it is the product's own home turf, which almost nothing else in this category can say | Nothing else, and nothing else is needed at this size |
+| **Borrowed** | None yet | The book corner of X, and anyone whose audience already talks about what they are reading |
+
+**The owned gap is the one worth closing, and it is small.** Every visitor who is not
+ready to install is currently lost. That is a one-field capture on the landing, and it is
+the difference between a launch that ends on launch day and one that compounds.
+
+### The order on the day
+
+1. **Post on X, from the product's own ground.** Not an announcement, a demonstration:
+   a photograph of a stack of books, caught, landing on the shelf. The differentiator is
+   visual and no competitor screenshot can show it.
+2. **The landing is already the destination.** Every link goes there, not to the store
+   listing, because the landing explains and the listing only installs.
+3. **Answer everything, all day.** At zero users, every reply is a user.
+4. **Product Hunt: not on day one.** It rewards preparation, relationships and a warm
+   audience, and Buki has none of the three yet. It is a second launch moment, and it is
+   better spent once there are real users and one screenshot of a real shelf.
+
+### The one thing to say
+
+The motto is locked and `docs/brand.md` owns the wording. **Find any book you see online,
+instantly.** Do not improvise a new line on the day.
+
+**And do not write "no server" or "no data" about the product as a whole.** Reading a cover
+contacts one, ours by default. It is true of the shelf, and that is what the second line
+says: *No account, no sync. Your shelf never leaves your browser.*
+
+---
+
+## What you can watch, and the honest problem
+
+**You promised no analytics, and you meant it.** There is no telemetry, no error reporting
+and no client instrumentation anywhere in the extension, by design. `privacy.html`, the
+listing and the landing all say so.
+
+**So you are launching with instruments on the server side only.** That is a real trade and
+it is worth naming rather than discovering:
+
+| You can see | You cannot see |
+| --- | --- |
+| Vercel function logs and invocation counts | How many people installed |
+| Gemini spend, which is the truest signal you have | How many caught a book and kept it |
+| Polar: subscriptions, activations, refunds | Where somebody gave up |
+| Chrome Web Store: installs, ratings, reviews | Any error a user hits |
+
+**The spend cap is therefore your primary alarm, not just a brake.** A cost spike is the
+first thing that will tell you something is wrong, because nothing else reports.
+
+**The shelf reports its own kept rate** (`23 caught · 78% kept`) and that number never
+leaves the user's machine. It is the metric that matters most and the one you will only
+ever learn by asking somebody.
+
+---
+
+## If something goes wrong
+
+**An extension cannot be rolled back quickly, and that is the shape of the risk.** A
+published version reaches users on Chrome's own update schedule; pulling it does not
+un-install it. So the levers are server-side, and there are exactly three:
+
+| Lever | Effect | Cost |
+| --- | --- | --- |
+| `BUKI_TRIAL_CLOSED=1` | Stops the free trial answering. **Paying subscribers are unaffected** — that scoping was itself a fix | Trial users see *"The free trial is closed just now"*. No deploy needed |
+| Remove `GEMINI_API_KEY` | Stops all cover reading | **500s the product for everybody, including payers.** All or nothing |
+| Provider spend cap | Bounds the money without our code noticing anything | Same all-or-nothing effect once hit |
+
+**There is no partial brake for Pro traffic.** Registered in `OPENWORK.md` §6 as an
+accepted risk, not an oversight. If Pro-classified traffic ever becomes the cost problem,
+the only lever is the second row.
+
+**A refunded subscriber keeps working for up to about eight days.** The session token is
+stateless with no revocation list, which is the deliberate trade that makes a Polar outage
+our problem rather than the customer's, and is why there is no database. Bounded and small
+at $4/month. **Do not "fix" it with a revocation table** without re-opening that decision.
+
+---
+
+## After the first week
+
+Nothing here is scheduled and none of it blocks launch.
+
+- **Ask the first ten users one question:** what did you catch first. It is the only way to
+  learn the kept rate, and it is the metric the whole product is built on.
+- **The email capture**, if the launch produced anyone who wanted it and could not have it.
+- **Product Hunt**, once there is a real shelf to screenshot and people who would show up.
+- **Item 32's sibling work and anything the first users break.** `OPENWORK.md` stays the
+  authority; add what you learn to §5 rather than to a handoff, because a handoff is read
+  once and superseded.

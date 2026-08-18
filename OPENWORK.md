@@ -105,6 +105,7 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 | What the product does today | `README.md` | `DESIGN.md` |
 | Tier boundaries, machine-readable | `docs/pricing.md` | the landing |
 | Store copy and permission justifications | `docs/store/` | — |
+| **The launch SEQUENCE**: what order, what gate, what to watch | `docs/store/launch.md` | this file, which owns STATUS |
 | The paid-tier implementation, step by step | `docs/superpowers/plans/2026-08-09-buki-pro.md` | — |
 | Polar setup, field by field | `docs/superpowers/polar-setup.md` | — |
 | The competitive landscape | `competitor-profiles/_summary.md` | — |
