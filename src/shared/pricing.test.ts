@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { PRO_MONTHLY_USD, PRO_YEARLY_USD, FREE_USD, priceLine, PRICING_URL } from './pricing';
+import {
+  PRO_MONTHLY_USD,
+  PRO_YEARLY_USD,
+  FREE_USD,
+  priceLine,
+  PRICING_URL,
+  CHECKOUT_MONTHLY_URL,
+  CHECKOUT_YEARLY_URL,
+} from './pricing';
 import { BUKI_HOST } from './host';
 import { TRIAL_CATCHES } from '../extension/entitlement';
 import indexHtml from '../../docs/index.html?raw';
@@ -83,5 +91,61 @@ describe('the price is one number', () => {
 
   it('renders one price line every surface can quote', () => {
     expect(priceLine()).toBe('$4 a month, or $29 a year');
+  });
+});
+
+/**
+ * THE TILL, and until 2026-08-18 there was not one.
+ *
+ * Every purchase CTA in the extension - the wall's *Get Buki Pro*, the popup's plan badge,
+ * the setup page's *See what Pro costs* - opens the landing's `#pricing`. That section's
+ * only button linked to GitHub, to install the extension the visitor already has, so
+ * somebody who hit the wall was sent in a circle. `OPENWORK.md` item 34.
+ *
+ * The two URLs now live in `pricing.ts` for the same reason the price and the host do: a
+ * value spelled out in a static page and a module drifts, and this one drifts into
+ * "nobody can pay" rather than into a typo.
+ *
+ * These are PUBLIC checkout links, not credentials. Polar issues them to be clicked by
+ * customers, which is why they can sit in the repo at all - unlike `POLAR_ACCESS_TOKEN`,
+ * which lives in Vercel and must never appear in a file under `src/`.
+ */
+describe('the checkout', () => {
+  it('names Polar, over TLS, for both intervals', () => {
+    for (const url of [CHECKOUT_MONTHLY_URL, CHECKOUT_YEARLY_URL]) {
+      expect(url).toMatch(/^https:\/\/buy\.polar\.sh\//);
+    }
+  });
+
+  it('is two DIFFERENT links, because they are two products', () => {
+    // Polar locks the billing cycle to the product, so one link cannot sell both. Pasting
+    // the same URL twice would silently sell monthly to somebody who chose yearly.
+    expect(CHECKOUT_MONTHLY_URL).not.toBe(CHECKOUT_YEARLY_URL);
+  });
+
+  it('is reachable from the landing, or the extension leads to a page with no till', () => {
+    // The extension sends every purchase CTA to `#pricing`. If that section stops carrying
+    // the checkout, the circle comes back and nothing else in this repo would notice.
+    expect(indexHtml).toContain(CHECKOUT_MONTHLY_URL);
+    expect(indexHtml).toContain(CHECKOUT_YEARLY_URL);
+  });
+
+  it('is reached from the PRICING section, not from somewhere further down the page', () => {
+    // `PRICING_URL` is an anchor, so a reader arriving from the wall lands at #pricing and
+    // sees whatever is inside that section. A checkout link in the footer would satisfy the
+    // check above and still leave them looking at a card with no way to pay.
+    const start = indexHtml.indexOf('id="pricing"');
+    expect(start, 'the landing lost its #pricing section').toBeGreaterThan(-1);
+    const section = indexHtml.slice(start, indexHtml.indexOf('</section>', start));
+    expect(section).toContain(CHECKOUT_MONTHLY_URL);
+    expect(section).toContain(CHECKOUT_YEARLY_URL);
+  });
+
+  it('is where the extension actually points', () => {
+    // PRICING_URL is what the wall, the plan badge and the setup page open. It has to be an
+    // anchor on the landing rather than a checkout, because the choice between monthly and
+    // yearly belongs to the customer and only the landing shows both.
+    expect(PRICING_URL).toBe(`${BUKI_HOST}/#pricing`);
+    expect(indexHtml).toContain('id="pricing"');
   });
 });

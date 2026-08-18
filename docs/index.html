@@ -1135,12 +1135,28 @@
          2026-08-13, so the rule went with it rather than sitting unused. */
       .plan-foot { font-size: 13.5px; color: var(--ink-2); margin: 14px 0 0; }
       .plan.pro .plan-foot { color: var(--cream-2); }
-      /* BOTH plan buttons are solid, and that is not a hierarchy mistake. They are the same
+      /* BOTH plan BUTTONS are solid, and that is not a hierarchy mistake. They are the same
          action with the same label going to the same place — the tier is chosen by the card
          you read, not by the control you press. A ghost here was worse than weak: on the
          Free card's own 4% tint it composited to a grey pill with dark text, which is what
-         a DISABLED control looks like, on the one button the free tier exists to offer. */
+         a DISABLED control looks like, on the one button the free tier exists to offer.
+         THAT STILL HOLDS, and `.buy-now` below is deliberately not a third button. It is a
+         different action for a different reader: the buttons are for somebody deciding
+         which tier, this is for somebody who decided already and arrived from the wall
+         needing the interval they chose. Giving it a capsule would put three of them on one
+         card and make the install button compete with the one that takes money. */
       .plan .btn { text-align: center; }
+      .buy-now { margin: 12px 0 0; font-size: 14px; line-height: 1.5; text-align: center; color: var(--cream-2); }
+      /* Underlined as well as coloured. Colour alone is not a signal, and this is the only
+         link on the page whose job is to take money. */
+      .buy-now a {
+        color: var(--on-navy-accent); font-weight: 700;
+        text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px;
+        transition: color 140ms ease;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .buy-now a:hover { color: var(--cream); }
+      }
       @media (max-width: 860px) { .plans { grid-template-columns: 1fr; } .amount, .plan-line { min-height: 0; } }
 
       /* Two panels rather than a hairline and a grid. These are the "which one am I"
@@ -1652,6 +1668,25 @@
                    Buki, so there is nothing to buy before you have it. The wall inside the
                    extension is where the money is asked for. -->
               <a class="btn cream" href="https://github.com/MaximoCorrea1/buki">Start free, then activate Pro</a>
+              <!-- THE TILL, added 2026-08-18, and it is here because of who arrives at this
+                   anchor. The wall's "Get Buki Pro", the popup's plan badge and the setup
+                   page's "See what Pro costs" all open #pricing, and until today the only
+                   button in this section installed the extension those people already had.
+                   They were sent in a circle. OPENWORK.md item 34.
+                   A LINE RATHER THAN TWO MORE CAPSULES. Three buttons on one card destroys
+                   the hierarchy it has, and this is a different action for a different
+                   reader: the button above is for somebody deciding, this is for somebody
+                   who has already decided and needs the interval they chose. The links are
+                   underlined as well as coloured, because colour alone is not a signal.
+                   The URLs live in src/shared/pricing.ts and pricing.test.ts fails if this
+                   section stops carrying them. They are PUBLIC checkout links, not
+                   credentials - unlike POLAR_ACCESS_TOKEN, which never leaves Vercel. -->
+              <p class="buy-now">
+                Already have Buki?
+                <a href="https://buy.polar.sh/polar_cl_wT3NT2QA9AWlwXZZ3pYsWNLzt0cXOQyoPKKKi0e3YwA">Buy monthly</a>
+                or
+                <a href="https://buy.polar.sh/polar_cl_KSCaRteIQ91y667sBpWIGBnufV276RNp6Ks4T1p7rKA">buy yearly</a>.
+              </p>
             </div>
           </div>
 

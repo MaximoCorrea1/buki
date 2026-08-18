@@ -34,7 +34,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~28~~ | agent | ~~`/api/license` has no rate limit~~ **DONE 2026-08-18** (`c5e3f64`) | — |
 | ~~29~~ | agent | ~~`proState` has no write queue around a call that spends a slot~~ **DONE 2026-08-18** (`b1676e9`) | — |
 | ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |
-| **34** | **Maximo**, then agent | **NOBODY CAN BUY.** Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
+| ~~34~~ | ~~Maximo, then agent~~ | ~~**NOBODY CAN BUY.**~~ **DONE 2026-08-18.** Both checkout links are in `src/shared/pricing.ts` and on the Pro card, inside `#pricing` where the wall lands. Guarded, and earned with an A/B. Original text: Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
@@ -58,11 +58,16 @@ switched off, and until 26 exists nothing bounds what abuse can cost.
 > **3** and **9** (a real browser, which no agent can drive because Chrome refuses
 > `--load-extension`), and **Task 15 Step 2**, which needs a Polar test card.
 >
-> **Item 34 is the exception and it is the one that decides whether any of this earns
-> anything.** Its first half is Maximo's — Polar issues the checkout links once item 1's
-> products are configured — and its second half is one agent edit, already specified in
-> `polar-setup.md` §9. **Until it lands, every purchase CTA in the extension leads to a
-> page whose button installs the extension.**
+> ~~Item 34 is the exception~~ **CLOSED 2026-08-18.** Maximo sent both checkout links and
+> they are wired, so the funnel has a till. **Item 36 is the new exception**, and it is one
+> agent edit that can only happen on launch day: five install CTAs become the store URL, and
+> three GitHub links must not move.
+>
+> **A NOTE ON WHERE THE VARIABLES GO, checked 2026-08-18 with `vercel env ls`.** The Vercel
+> project is called **`shelfy`**, not `buki` — it serves `get-buki.vercel.app` under its old
+> name — and there is a separate `save-book-extension` project on the same account that
+> looks exactly like the right answer. **The project currently has ZERO environment
+> variables**, so all six of item 2 are outstanding.
 >
 > **Two launch blockers were found on 2026-08-18 that nothing in this table predicted**,
 > and both were the same shape: written, tested, and inert. `readPro` dropped the
@@ -886,54 +891,43 @@ needs a credential or a dashboard is the shell around it.
       the trap this is an instance of: *when one handler has a guard, ask what the sibling
       handler has.*
 
-- [ ] **34. THE CHECKOUT URL HAS NO HOME, AND WITHOUT IT NOBODY CAN PAY.** This is the
-      single biggest gap between "the paid tier is written" and "the paid tier earns".
+- [x] **34. DONE 2026-08-18. The checkout links exist, and until today nobody could pay.**
 
       Every purchase CTA in the extension — the wall's *Get Buki Pro, $4 a month*, the
       popup's plan badge, the setup page's *See what Pro costs* — opens
-      `${BUKI_HOST}/#pricing`. That section's Pro button links to **GitHub**, to install the
-      extension the visitor already has. A person who hits the wall is sent in a circle.
+      `${BUKI_HOST}/#pricing`. That section's only button linked to **GitHub**, to install
+      the extension the visitor already had. A person who hit the wall was sent in a circle.
 
-      That is not an oversight in the landing: the comment above that button explains the
-      flow correctly (payment issues a licence key, so there is nothing to buy before you
-      have the extension). **What is missing is the Polar checkout link**, which does not
-      exist until item 1's products are configured.
+      **`CHECKOUT_MONTHLY_URL` and `CHECKOUT_YEARLY_URL` now live in
+      `src/shared/pricing.ts`**, beside `PRICING_URL`, the same shape as `host.ts`. The Pro
+      card carries both as a line under its button: *"Already have Buki? Buy monthly or buy
+      yearly."*
 
-      **`docs/superpowers/polar-setup.md` §9 already specifies the fix and it is one edit:**
-      the two URLs go beside `PRICING_URL` in `src/shared/pricing.ts`, the landing's pricing
-      buttons read from there, and `pricing.test.ts` is extended to assert the landing and
-      the module agree — the same shape as `host.ts`. Nothing is added before the URLs
-      exist, because a constant with no caller is the failure `needsRenewal` already cost
-      this project once.
+      **A LINE RATHER THAN TWO MORE CAPSULES**, and the reasoning is in the CSS. Three
+      buttons on one card destroys the hierarchy it has, and this is a different action for a
+      different reader: the capsule is for somebody deciding which tier, the line is for
+      somebody who decided already and arrived from the wall needing the interval they chose.
+      The existing comment — *"BOTH plan buttons are solid… the same action with the same
+      label going to the same place"* — was about to stop being true, so it was corrected
+      rather than left to be read as still covering this.
 
-      **Why it is here now:** it was written in `polar-setup.md` §9 and in
-      `SESSION-TODO-2026-08-16-ios-3.md`, a ledger that has been superseded twice. §5 has an
-      entry saying a lesson recorded only in a superseded document is a lesson you pay for
-      again; this is the same thing about a blocker.
+      **The extension still points at `#pricing` on purpose.** Choosing the interval is the
+      customer's decision and the landing is the only surface that shows both, so sending the
+      wall straight to monthly would take the choice away.
 
-- [ ] **36. Every install CTA on the landing points at GitHub, and on launch day five of
-      them must not.** The comment above the hero button says why it is right today: *"there
-      is no Web Store listing yet, so the link goes to the source."*
+      Measured before it was looked at, then looked at: `--on-navy-accent` on the navy card is
+      **6.89:1** and the line around it **10.73:1**, rendered in both moods from the landing's
+      own stylesheet. Underlined as well as coloured, because colour alone is not a signal.
 
-      | Stays GitHub | Becomes the store URL |
-      | --- | --- |
-      | `Source` in the nav | `Get Buki free` in the nav |
-      | `Source` in the footer | `Get Buki free` in the hero, **the primary CTA of the whole funnel** |
-      | `Report a problem` | `Get Buki free` on the Free plan card |
-      | | `Start free, then activate Pro` on the Pro card |
-      | | `Get Buki free` in the closing band |
+      **Guarded four ways** in `pricing.test.ts`: both are Polar over TLS, they are two
+      DIFFERENT links (one URL pasted twice would silently sell monthly to somebody who chose
+      yearly), the landing carries both, and they are inside the `#pricing` SECTION rather
+      than merely somewhere on the page. Earned with an A/B — removing the buy row turns it
+      red.
 
-      **A find-and-replace would send `Source` to the Web Store**, and nobody would notice,
-      because it still goes somewhere plausible.
-
-      The store URL does not exist until the item is published - it carries the extension id
-      - so this is the same shape as item 34 and lands on the same day.
-
-      **Guarded as of 2026-08-18.** `host.test.ts` does not assert WHAT the destination is,
-      because it cannot know yet. It asserts that every install CTA shares ONE, which is the
-      failure that actually happens: five links, three updated, two left behind. This repo
-      has form - the plan that renamed the production host named three files and the real
-      number was seven. Earned with an A/B against exactly that half-migration.
+      **They are public.** Polar issues a checkout link to be clicked, which is why it can
+      sit in the repo at all. `POLAR_ACCESS_TOKEN` cannot, and the two arrive from the same
+      dashboard on the same afternoon.
 
 - [ ] **35. The affiliate tags are empty, so every Buy link earns nothing.**
       `AFFILIATE = { amazonTag: '', bookshopId: '' }` in `src/extension/buyLink.ts`. The

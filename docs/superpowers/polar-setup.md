@@ -342,8 +342,19 @@ afterwards or use a throwaway key.
 
 ## 8. The Vercel variables
 
-Project `buki`, all environments. **`OPENWORK.md` item 2 says five. There are six**; the
-sixth was found on 2026-08-17 by reading `api/vision.ts` rather than the list.
+**THE PROJECT IS CALLED `shelfy`, NOT `buki`.** Checked with `vercel project ls` on
+2026-08-18, because this section said `buki` and no such project exists. The one that serves
+`https://get-buki.vercel.app` is still named `shelfy` from before the domain was renamed;
+`.vercel/project.json` points at it correctly. **There is also a `save-book-extension`
+project on the same account serving `save-book-extension.vercel.app`** — it is a decoy, it
+looks exactly like the right answer, and variables set there would do nothing.
+
+**As of 2026-08-18 the project has ZERO environment variables.** `vercel env ls` returns
+"No Environment Variables found". None of the six is set, including the Polar token and the
+organisation id.
+
+All environments. **`OPENWORK.md` item 2 says five. There are six**; the sixth was found on
+2026-08-17 by reading `api/vision.ts` rather than the list.
 
 | Name | Required? | From |
 | --- | --- | --- |
@@ -428,18 +439,26 @@ by design; its own comment calls it "a brake on a runaway, not an accounting sys
 
 ---
 
-## 9. The one code change, once checkout URLs exist
+## 9. The checkout links. DONE 2026-08-18
 
-Polar gives each product a checkout link. Today the landing's Pro card and the extension
-both point at `https://get-buki.vercel.app/#pricing`, and that page's buttons point at
-GitHub, which is right for "install it first" and a dead end for somebody who arrived from
-the wall with Buki already installed.
+Polar gives each product a checkout link. Until 2026-08-18 neither existed, so the landing's
+Pro card and all three purchase CTAs in the extension pointed at
+`https://get-buki.vercel.app/#pricing`, whose only button pointed at GitHub — right for
+"install it first" and a dead end for somebody who arrived from the wall with Buki already
+installed. `OPENWORK.md` item 34.
 
-**When you have the two URLs, they want exactly one home:** beside the price in
-`src/shared/pricing.ts`, next to `PRICING_URL`, with `docs/index.html`'s pricing buttons
-reading from it and `pricing.test.ts` extended to assert the landing and the module agree.
-That is the same shape as `src/shared/host.ts`, which exists because the production host
-was "defined once" and spelled out in seven places.
+**They now live in `src/shared/pricing.ts` as `CHECKOUT_MONTHLY_URL` and
+`CHECKOUT_YEARLY_URL`**, next to `PRICING_URL`, the same shape as `src/shared/host.ts`.
+`pricing.test.ts` asserts the landing carries both **inside the `#pricing` section** rather
+than merely somewhere on the page: `PRICING_URL` is an anchor, so a reader arriving from the
+wall sees that section and nothing else. Earned with an A/B — removing the buy row turns it
+red.
 
-**Paste the URLs and it is one edit.** Nothing is added before they exist, because a
-constant with no caller is the failure `needsRenewal` already cost this project once.
+**They are PUBLIC.** Polar issues a checkout link to be clicked by customers, which is why
+it belongs in the repo the way the price does. `POLAR_ACCESS_TOKEN` and
+`POLAR_ORGANIZATION_ID` do not, and they arrive from the same dashboard on the same
+afternoon, which is the only reason this paragraph exists.
+
+**The extension still points at `#pricing`, deliberately.** Choosing between monthly and
+yearly is the customer's decision and the landing is the only surface that shows both, so
+sending the wall straight to the monthly checkout would take that choice away.

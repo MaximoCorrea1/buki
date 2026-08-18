@@ -23,7 +23,7 @@
 | Store documents | Written and clean. No DO-NOT-SUBMIT banners left in `permissions.md` |
 | Screenshots | **Zero** (item 9) |
 | Users | Zero. Pre-launch. The founder is the only documented user |
-| Revenue | $0 by construction: no checkout link (item 34), no affiliate tags (item 35) |
+| Revenue | Checkout is wired (item 34, done 2026-08-18). **Still $0 until the affiliate tags are pasted** (item 35) and until anybody can install it |
 
 **Nothing in the code blocks launch.** Everything below needs a dashboard, a credential,
 a browser or a camera.
@@ -40,7 +40,7 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 | 2 | Gemini key **with billing linked**, and the spend cap in the same sitting (26) | Maximo | — |
 | 3 | The six Vercel variables (item 2) | Maximo | steps 1, 2 |
 | 4 | `vercel deploy --prod`, then probe both endpoints | Maximo | step 3 |
-| 5 | **The checkout URLs → `pricing.ts` (item 34)** | Maximo sends, agent edits | step 1 |
+| ~~5~~ | ~~The checkout URLs → `pricing.ts` (item 34)~~ **DONE 2026-08-18** | — | — |
 | 6 | The affiliate tags (item 35) | Maximo | — (parallel) |
 | 7 | The by-hand browser pass, thirteen checks (item 3) | **Maximo only** | steps 4, 5 |
 | 8 | Five screenshots at 1280x800 (item 9) | Maximo | step 7 |
@@ -96,7 +96,13 @@ in the comment that uses it. Never measured.
 
 ### 3. The six variables
 
-`polar-setup.md` §8, and `OPENWORK.md` item 2. Project `buki`, **all environments**.
+**THE PROJECT IS CALLED `shelfy`, NOT `buki`.** Checked on 2026-08-18: the project serving
+`get-buki.vercel.app` still carries its old name, and there is a separate
+`save-book-extension` project on the same account that looks exactly like the right answer
+and is not. `vercel env ls` currently returns **no environment variables at all**, so all
+six are outstanding.
+
+`polar-setup.md` §8, and `OPENWORK.md` item 2. **All environments.**
 **None may ever appear in a file under `src/extension/`** — that is a leak, not a shortcut.
 `BUKI_TRIAL_CLOSED` stays unset.
 

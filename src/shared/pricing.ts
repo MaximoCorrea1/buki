@@ -29,6 +29,35 @@ import { BUKI_HOST } from './host';
  */
 export const PRICING_URL = `${BUKI_HOST}/#pricing`;
 
+/**
+ * WHERE SOMEBODY ACTUALLY PAYS. Two links, because Polar locks the billing cycle to the
+ * product, so one cannot sell both.
+ *
+ * These are PUBLIC. Polar issues a checkout link to be clicked by customers, so it belongs
+ * in the repo the way the price does - unlike `POLAR_ACCESS_TOKEN` and
+ * `POLAR_ORGANIZATION_ID`, which live in Vercel and must never appear in a file under
+ * `src/`. The distinction is worth stating because they arrive from the same dashboard on
+ * the same afternoon.
+ *
+ * THEY LIVE HERE RATHER THAN IN THE LANDING for the reason `host.ts` exists. Before
+ * 2026-08-18 the landing's Pro card was the only thing in the funnel that could have
+ * carried them, and it linked to GitHub - so the wall's *Get Buki Pro*, the popup's plan
+ * badge and the setup page's *See what Pro costs* all opened a page whose only button
+ * installed the extension the reader already had. `OPENWORK.md` item 34.
+ *
+ * `pricing.test.ts` asserts the landing carries both, INSIDE the `#pricing` section rather
+ * than merely somewhere on the page: `PRICING_URL` is an anchor, so a reader arriving from
+ * the wall sees that section and nothing else.
+ *
+ * The extension deliberately does NOT link to either of these directly. It sends people to
+ * `#pricing`, because choosing between monthly and yearly is the customer's decision and
+ * the landing is the only surface that shows both.
+ */
+export const CHECKOUT_MONTHLY_URL =
+  'https://buy.polar.sh/polar_cl_wT3NT2QA9AWlwXZZ3pYsWNLzt0cXOQyoPKKKi0e3YwA';
+export const CHECKOUT_YEARLY_URL =
+  'https://buy.polar.sh/polar_cl_KSCaRteIQ91y667sBpWIGBnufV276RNp6Ks4T1p7rKA';
+
 export const FREE_USD = 0;
 export const PRO_MONTHLY_USD = 4;
 export const PRO_YEARLY_USD = 29;
