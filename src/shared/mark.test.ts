@@ -7,6 +7,7 @@ import options from '../../options.html?raw';
 import iconSvg from '../../icons/icon.svg?raw';
 import markSvg from '../../icons/mark.svg?raw';
 import docsIcon from '../../docs/icon.svg?raw';
+import contentScript from '../extension/content.ts?raw';
 
 /**
  * THE MARK IS THE CATCHER, as of 2026-08-17: a blue ball with two eyes.
@@ -31,6 +32,10 @@ const SURFACES: Record<string, string> = {
   'icons/icon.svg': iconSvg,
   'icons/mark.svg': markSvg,
   'docs/icon.svg': docsIcon,
+  // The SEVENTH copy, added 2026-08-18 when the X button stopped being a book emoji. It is
+  // the only one that is TypeScript rather than markup: the content script has no
+  // `web_accessible_resources`, so it cannot load the drawing and has to spell it.
+  'src/extension/content.ts': contentScript,
 };
 
 type Ground = { ground: string };
@@ -114,7 +119,7 @@ describe('the mark', () => {
 
   it('is drawn with the same coordinates everywhere it appears', () => {
     // Guard the vacuous pass: a renamed file would match nothing and report clean.
-    expect(Object.keys(SURFACES).length).toBe(6);
+    expect(Object.keys(SURFACES).length).toBe(7);
 
     const eyes = MARK.eyes as { cx: number; ry: number }[];
     const lights = MARK.catchlights as { cx: number }[];

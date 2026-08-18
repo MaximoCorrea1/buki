@@ -32,7 +32,7 @@ OpenLibrary. This is the one that works on a photo with no link and no title in 
 and it is no longer scoped to X: the worker injects the catch tray on demand under
 `activeTab`, and asks for one host origin only when the picture needs one.
 
-**Hit 📚 on a post.** Same recognition: link, then cover and words together, then the
+**Press the Buki mark on a post.** It sits in the action bar beside reply and like, at X's own icon size. Same recognition: link, then cover and words together, then the
 post's text.
 
 Either way a card appears in the corner with what it found, and **nothing reaches the shelf
@@ -101,6 +101,7 @@ gitignored `zzz-*.html`; regenerate rather than commit.
 | `node tools/popup-harness.mjs` | The shelf, with a stubbed `chrome` and a believable set of books. `popup.html` is `<main id="app">` and draws nothing outside an extension host |
 | `node tools/tray-harness.mjs` | The catch tray, on the five grounds it actually has to survive: a white docs site, X in daylight, X at night, a black photo essay, a photograph. Chrome stable refuses `--load-extension`, so this is the only way to see it |
 | `node tools/mark-sizes.mjs` | The mark at every size it ships at, on every ground in `tools/mark.mjs`. Pass `--extra "#hex"` to try a candidate. Written because a caught-spine value was argued about twice from a contrast ratio without anyone rendering it |
+| `node tools/x-button-harness.mjs` | The save button in X's action bar, on X's three grounds, beside approximations of X's own reply/retweet/like/share glyphs. The mark alone was never the question: a filled disc among thin outline icons is, and only the row answers it |
 
 The build typechecks first and refuses to bundle on a type error, because esbuild only
 strips types, it never checks them.

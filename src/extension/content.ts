@@ -1,5 +1,5 @@
 // Buki content script: inject a Save button on tweets, scrape + recognize, and render the
-// catch tray - the extension's only in-page surface. Both flows (the 📚 button and the
+// catch tray - the extension's only in-page surface. Both flows (the mark button and the
 // worker's right-click menu) put their catches in the same tray.
 import type { Book, RecognitionSource, Tweet } from '../recognizer/types';
 import { identityOf, type Intent, type SavedSource } from './storage';
@@ -112,10 +112,20 @@ const trace = (...args: unknown[]): void => {
 const STYLE = `
 .buki-btn {
   cursor: pointer; background: transparent; border: 0; padding: 4px 6px;
-  margin-left: 4px; border-radius: 999px; font-size: 15px; line-height: 1;
+  margin-left: 4px; border-radius: 999px;
   opacity: .72; transition: opacity 140ms cubic-bezier(.23,1,.32,1),
     transform 140ms cubic-bezier(.23,1,.32,1), background-color 140ms ease;
 }
+/* 18px is X's OWN icon box, not a number we liked. The mark sits in a row of five host
+   controls, so it takes the host's grid; sizing it to us would make it the one thing in
+   the bar that is a different size, which reads as a plugin rather than as a button.
+   The svg is a block because an inline one sits on the text baseline and leaves a few
+   pixels of descender gap under it, which would put the mark off-centre in a row whose
+   other icons are centred. The font size and line height went with the emoji they were
+   sizing: a declaration that no longer does anything still reads as deliberate.
+   NO BACKTICKS IN HERE. This is a template literal, and a backtick in a CSS comment ends
+   it with a parse error a hundred lines away. Third time, 2026-08-18. Prose, not code. */
+.buki-btn svg { display: block; width: 18px; height: 18px; }
 .buki-btn:active { transform: scale(.9); }
 .buki-btn:focus-visible { outline: 2px solid #7f9bea; outline-offset: 1px; opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
@@ -1272,6 +1282,57 @@ function nudge(job: string): void {
 
 let injected = 0;
 
+/**
+ * THE MARK, and this is the seventh copy of one drawing.
+ *
+ * The button wore a 📚 emoji, which was the last surface still carrying a book glyph after
+ * the catcher replaced the three spines on 2026-08-17. It was also the wrong picture for
+ * what the button does: the thing Buki does is SEE a book in a photograph, and a stack of
+ * books says "reading list", which is the category it is trying not to be in.
+ *
+ * MAXIMO'S SECOND IDEA, an open book with the face emerging from it, is deliberately not
+ * built. `.agents/product-marketing.md` rules it out by name — the mark "must never become
+ * a book glyph, an open book, a bookmark ribbon, or a letter B" — and at 18px in somebody
+ * else's action bar, two shapes in eighteen pixels is a smudge. The eyes are tall ovals
+ * precisely because that is what survives 16px.
+ *
+ * The coordinates are `tools/mark.mjs`'s, and `src/shared/mark.test.ts` now counts this
+ * file among the surfaces it fails when a copy disagrees. It cannot IMPORT the definition:
+ * this script has no `web_accessible_resources`, which is the same trade the tray already
+ * makes by refusing Manrope, so the drawing has to be inline.
+ *
+ * BUILT THROUGH `DOMParser`, NOT `innerHTML`. This runs inside somebody else's page, and a
+ * page carrying `require-trusted-types-for 'script'` turns an `innerHTML` assignment into a
+ * thrown error. Parsing a string this file wrote and importing the node is not a sink, so
+ * it is one fewer way for a strict site to break the button. The tray's typeface already
+ * cost this repo one lesson about strict CSP.
+ */
+let markSeq = 0;
+
+function markNode(): SVGElement {
+  // UNIQUE PER BUTTON. X recycles feed nodes in place, and every `url(#id)` in a document
+  // resolves to the FIRST match — so one shared gradient id means every other ball on the
+  // page loses its fill the moment the node that happened to carry the <defs> is removed.
+  const id = `buki-ball-${++markSeq}`;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">` +
+    `<defs><linearGradient id="${id}" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse">` +
+    `<stop offset="0" stop-color="#7bcdfc"/>` +
+    `<stop offset="0.46" stop-color="#4aa3f9"/>` +
+    `<stop offset="1" stop-color="#013ebf"/>` +
+    `</linearGradient></defs>` +
+    `<circle cx="50" cy="50" r="50" fill="url(#${id})"/>` +
+    `<ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/>` +
+    `<ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/>` +
+    `<circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd"/>` +
+    `<circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd"/>` +
+    `</svg>`;
+  // `importNode` rather than appending the parsed node straight in. Insertion adopts a
+  // foreign node automatically, but saying so costs one call and removes the question.
+  const parsed = new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement;
+  return document.importNode(parsed, true) as unknown as SVGElement;
+}
+
 function addButton(article: HTMLElement): void {
   if (article.querySelector(`.${BTN_CLASS}`)) return;
   const actions = article.querySelector('[role="group"]');
@@ -1279,7 +1340,10 @@ function addButton(article: HTMLElement): void {
 
   const btn = document.createElement('button');
   btn.className = `${BTN_CLASS} buki-btn`;
-  btn.textContent = '📚';
+  // The label lives on the button, and the drawing is hidden from the accessibility tree:
+  // a screen reader announcing "image" beside "Save this book to your shelf" is one thing
+  // said twice.
+  btn.append(markNode());
   btn.title = 'Save this book to your shelf';
   btn.setAttribute('aria-label', 'Save this book to your shelf');
 
