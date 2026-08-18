@@ -42,7 +42,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **32** | agent | `api/vision.ts` holds its IP counter INLINE and untested, in a file whose header says nothing there needs a test. Same shape `keyCap.ts` just moved out of `api/license.ts` | — |
 | **25** | decision | Is the secondary button filled enough to look filled | — |
 | — | decision | The **"Read" collision**: the tray says *Read now/next/someday* while the shelf's fourth pile is *Read*, meaning finished. Renaming it *Finished* ends it | — |
-| — | agent | `authorName()` is an N+1: one extra OpenLibrary request per book to turn an author key into a name. A 20-book photo means 20 follow-ups | — |
+| ~~—~~ | ~~agent~~ | ~~`authorName()` is an N+1~~ **NOT TRUE, checked 2026-08-18.** `groundText` uses `search`, which asks for `author_name` in `FIELDS` and pays no follow-up. The follow-up is reached only from `lookupByIsbn`, once, for ONE book on the retailer-link path. A 20-book photo costs 20 searches and zero follow-ups. Pinned by a test | — |
 | — | agent | The **X button still wears a 📚 glyph** while every other surface wears the catcher. Maximo, 2026-08-18: use the Buki logo, or an open book with the round face emerging from it, kept simple | — |
 
 **The critical path is 1, 2, 26.** Until the first two exist the paid tier is written and
@@ -1008,6 +1008,16 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
 - **A trap recorded only in a handoff is a trap you will pay for again.** Handoffs are
   superseded and stop being read. §5 is the place a lesson survives; when a session finds
   something that cost time, it goes HERE, not only in the ledger pair.
+
+- **A PERFORMANCE CLAIM IS A CLAIM, AND THIS ONE WAS NEVER TRACED.** Three documents
+  carried *"`authorName()` is an N+1 ... a 20-book photo means 20 follow-ups"*. The call
+  graph says otherwise: the multi-book path is `groundText` -> `search`, and `search.json`
+  is asked for `author_name` in `FIELDS`, so it costs one request per title and no
+  follow-up. `authorName()` is reached only from `lookupByIsbn`, from a single `if (isbn)`
+  branch, for ONE book, on the path that skips vision entirely. **The fix would also have
+  been a regression:** moving the ISBN lookup back to `search.json?q=isbn:` is the thing
+  that was measured timing out for over 20s on 2026-08-04. A named optimisation nobody
+  traced is the same shape as a contrast ratio nobody rendered.
 
 - **AN OPTIONAL FIELD ADDED TO AN INTERFACE MAKES EVERY EXISTING CONSTRUCTOR OF THAT
   INTERFACE SILENTLY INCOMPLETE.** `cdda054` added `activationId?: string` to `ProState` and

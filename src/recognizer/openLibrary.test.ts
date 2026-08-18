@@ -25,6 +25,48 @@ describe('createOpenLibraryClient', () => {
     });
   });
 
+  it('names the author from the search itself, so the multi-book path has NO follow-up', async () => {
+    /**
+     * THE N+1 THAT IS NOT ONE, pinned so it stops being re-raised.
+     *
+     * `OPENWORK.md` and two handoffs carried *"`authorName()` is an N+1: one extra
+     * OpenLibrary request per book to turn an author key into a name. A 20-book photo
+     * means 20 follow-ups."* Traced against the call graph, that is false in the part that
+     * matters:
+     *
+     *   groundText  ->  search()          asks for `author_name` in FIELDS. One request.
+     *   retailer link -> lookupByIsbn()   reads an EDITION record, which names authors by
+     *                                     key only, so it pays one follow-up. For ONE book,
+     *                                     from a single `if (isbn)` branch, never a loop.
+     *
+     * So a twenty-book photo costs twenty searches and zero follow-ups. The follow-up
+     * exists on the cheapest path in the product, the one that skips vision entirely.
+     *
+     * AND IT MUST NOT BE "FIXED" BY MOVING THE ISBN LOOKUP BACK TO `search.json?q=isbn:`.
+     * That was tried and measured: on 2026-08-04 the search index timed out on every query
+     * for over 20s while `/isbn/<isbn>.json` answered in about two. The comment above the
+     * next test is the record of it.
+     */
+    const seen: string[] = [];
+    const fetch: FetchLike = async (url) => {
+      seen.push(url);
+      return {
+        async json() {
+          return docResponse;
+        },
+      };
+    };
+
+    const books = await createOpenLibraryClient({ fetch }).search({ title: 'Dune' });
+
+    expect(books[0]?.author).toBe('Frank Herbert');
+    expect(seen).toHaveLength(1);
+    expect(seen.filter((url) => url.includes('/authors/'))).toEqual([]);
+    // The field is what makes the single request enough. Drop it from FIELDS and the
+    // author arrives empty, which is the mutation this assertion exists to catch.
+    expect(seen[0]).toContain('author_name');
+  });
+
   // The ISBN lookup used to go through `search.json?q=isbn:...`. Resolving an EXACT key
   // through a full-text relevance index was always the weaker choice, and on 2026-08-04
   // it became a broken one: the search index timed out on every query for over 20s while
