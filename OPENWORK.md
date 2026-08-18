@@ -930,6 +930,17 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
 
 ## 5. Traps that have already cost time
 
+- **A LARGE HEREDOC THROUGH BASH BREAKS ON QUOTING. Fourth occurrence 2026-08-18**, writing
+  the handoff: `bash: unexpected EOF while looking for matching quote`, with nothing written.
+  It has now cost time in four separate sessions and **had never been written down here** —
+  it lived only in handoff documents, which are read once and superseded. That is exactly
+  why it kept recurring. **Write the file with the Write tool.** Short quoted heredocs
+  (`git commit -F - <<'MSG'`) are fine and are used throughout this repo; the failure is
+  length plus mixed quoting.
+- **A trap recorded only in a handoff is a trap you will pay for again.** Handoffs are
+  superseded and stop being read. §5 is the place a lesson survives; when a session finds
+  something that cost time, it goes HERE, not only in the ledger pair.
+
 - **A retokening that changes an accent's LIGHTNESS invalidates every hardcoded colour
   sitting on it.** Moving `--accent` from amber to cobalt left the options save button at
   `#241705` on `#1231a8`, which measures 1.69:1 and is an unlabelled button. Grep for hex
