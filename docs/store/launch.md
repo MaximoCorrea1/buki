@@ -47,7 +47,8 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 | 9 | Register the developer account, pay the one-time fee | Maximo | — (do it now, in parallel) |
 | 10 | Submit | Maximo | steps 7, 8, 9 |
 | 11 | Wait. Days to weeks | — | step 10 |
-| 12 | Launch day | both | step 11 |
+| 12 | **Switch the landing's five install CTAs to the store URL (item 36)** | agent | step 11 |
+| 13 | Launch day | both | step 12 |
 
 **Steps 6 and 9 have no blockers and can be done today.** Everything else is a chain.
 
@@ -198,6 +199,22 @@ range rather than the bottom.
 > that code is safe"*, and both complicate review. Readable, commented source is the
 > easiest thing a reviewer can be handed. Shipping 193KB of legible JavaScript is a
 > feature of this submission.
+
+---
+
+## Step 12. The CTA switch, and it is the first thing on launch day
+
+`OPENWORK.md` item 36. Every install CTA on the landing points at GitHub, which is honest
+while there is no listing. **The moment the item is published, five of them become the store
+URL and three must not move:** the two `Source` links and `Report a problem` stay GitHub.
+
+**Do not find-and-replace.** It would send `Source` to the Web Store and nobody would
+notice, because it still goes somewhere plausible. `host.test.ts` fails a half-migration -
+five links where three got updated - but it cannot tell you that `Source` went to the wrong
+place, because that link is deliberately outside the set it checks.
+
+The store URL carries the extension id, so it does not exist until publication. Same shape
+as item 34, same day.
 
 ---
 

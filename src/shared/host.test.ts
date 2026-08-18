@@ -101,3 +101,47 @@ describe('the production host', () => {
     }
   });
 });
+
+/**
+ * WHERE "INSTALL" POINTS, and why this will be wrong on exactly one day.
+ *
+ * Every install CTA on the landing points at GitHub today, which is honest: there is no Web
+ * Store listing yet, so the link goes to the source. **The moment the item is published,
+ * all five have to become the store URL** - and that URL does not exist until publication,
+ * because it contains the extension id.
+ *
+ * There are FIVE of them and there are also THREE GitHub links that must NOT move: two
+ * "Source" links and "Report a problem". A find-and-replace on the day would send Source to
+ * the Web Store, and nobody would notice because it still goes somewhere plausible.
+ *
+ * So this does not assert WHAT the destination is. It asserts that every install CTA shares
+ * ONE, which is the failure that actually happens: five links, three updated, two left
+ * behind. This repo has form - the plan that renamed the production host named three files
+ * and the real number was seven.
+ *
+ * A `.btn` anchor whose href is a fragment is an in-page jump ("See it catch a book") and
+ * is not an install CTA.
+ */
+describe('the install CTA', () => {
+  const ctas = [...indexHtml.matchAll(/<a class="btn[^"]*" href="([^"]+)"/g)]
+    .map((m) => m[1]!)
+    .filter((href) => !href.startsWith('#'));
+
+  it('is on the page more than once, so a single stale link cannot hide', () => {
+    // The hero, the nav, both plan cards and the closing band. If this count collapses,
+    // the check below starts passing vacuously.
+    expect(ctas.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('sends everybody to the SAME place', () => {
+    expect([...new Set(ctas)]).toHaveLength(1);
+  });
+
+  it('does not drag the Source and issue links along with it', () => {
+    // These three are GitHub on purpose and stay GitHub after launch. They are excluded
+    // from the set above by not carrying `.btn`, and this says so out loud so that the day
+    // somebody reaches for a find-and-replace, the reason is written down.
+    expect(indexHtml).toContain('>Source<');
+    expect(indexHtml).toContain('/issues">Report a problem<');
+  });
+});

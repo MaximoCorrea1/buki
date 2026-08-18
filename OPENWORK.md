@@ -35,6 +35,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~29~~ | agent | ~~`proState` has no write queue around a call that spends a slot~~ **DONE 2026-08-18** (`b1676e9`) | — |
 | ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |
 | **34** | **Maximo**, then agent | **NOBODY CAN BUY.** Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
+| **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800. **The frames, the headlines and the staging are done** (`docs/store/assets.md`, `tools/store-shots.mjs`); what is left is capturing five real ones and re-running the tool | item 15 |
@@ -909,6 +910,30 @@ needs a credential or a dashboard is the shell around it.
       `SESSION-TODO-2026-08-16-ios-3.md`, a ledger that has been superseded twice. §5 has an
       entry saying a lesson recorded only in a superseded document is a lesson you pay for
       again; this is the same thing about a blocker.
+
+- [ ] **36. Every install CTA on the landing points at GitHub, and on launch day five of
+      them must not.** The comment above the hero button says why it is right today: *"there
+      is no Web Store listing yet, so the link goes to the source."*
+
+      | Stays GitHub | Becomes the store URL |
+      | --- | --- |
+      | `Source` in the nav | `Get Buki free` in the nav |
+      | `Source` in the footer | `Get Buki free` in the hero, **the primary CTA of the whole funnel** |
+      | `Report a problem` | `Get Buki free` on the Free plan card |
+      | | `Start free, then activate Pro` on the Pro card |
+      | | `Get Buki free` in the closing band |
+
+      **A find-and-replace would send `Source` to the Web Store**, and nobody would notice,
+      because it still goes somewhere plausible.
+
+      The store URL does not exist until the item is published - it carries the extension id
+      - so this is the same shape as item 34 and lands on the same day.
+
+      **Guarded as of 2026-08-18.** `host.test.ts` does not assert WHAT the destination is,
+      because it cannot know yet. It asserts that every install CTA shares ONE, which is the
+      failure that actually happens: five links, three updated, two left behind. This repo
+      has form - the plan that renamed the production host named three files and the real
+      number was seven. Earned with an A/B against exactly that half-migration.
 
 - [ ] **35. The affiliate tags are empty, so every Buy link earns nothing.**
       `AFFILIATE = { amazonTag: '', bookshopId: '' }` in `src/extension/buyLink.ts`. The
