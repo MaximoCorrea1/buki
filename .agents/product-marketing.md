@@ -16,7 +16,7 @@ own-key path.
 **What it does:** Buki is a Chrome extension that recognises a book from a *photograph*,
 not from the text around it. Right-click any cover image anywhere on the web, or press the
 book icon on a post on X, and Buki reads the picture, confirms the book against
-OpenLibrary, and files it on a face-out shelf under Now, Next, Someday or Read. It keeps
+OpenLibrary, and files it on a face-out shelf under Now, Next, Someday or Finished. It keeps
 the post you caught it from, so months later you can see not just which book you saved but
 why you wanted it. The shelf lives in the browser and is never synced anywhere.
 
@@ -168,7 +168,7 @@ book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/
 | --- | --- |
 | Catch | One act of recognising and saving a book. The unit of value and of price. |
 | Shelf | The user's whole collection, face out, in the popup. |
-| Pile | Now, Next, Someday, Read. A place you stand in, not a label. |
+| Pile | Now, Next, Someday, Finished. A place you stand in, not a label. The fourth was called *Read* until 2026-08-18, which collided with the tray's *Read now / next / someday*, where the same word is a verb. The stored value is still `read`. |
 | The post that sold you | The source a book was caught from, kept with it. |
 | Cloth / binding | The generated cover drawn when no art exists. |
 

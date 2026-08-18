@@ -45,6 +45,17 @@
         --paper: light-dark(#f2f2f7, #000000);
         --card: light-dark(#ffffff, #1c1c1e);
         --board: light-dark(#d8d8de, #38383a);
+        /* One step further from the ground, for a control that is already filled with
+           --board. Added 2026-08-18 with item 25: the ghost's REST state moved to --board
+           and its hover was ALREADY --board, so rest and hover became the same colour and
+           the feedback vanished. Caught before it shipped by reading the rules below the
+           one being changed, which is the whole lesson.
+           The next Apple system grey up, so this stays the same language as the rest of
+           the page rather than a value picked to be different. The step is 1.19:1 by day
+           and 1.28:1 at night, and it moves AWAY from the ground in both moods, which is
+           the direction every other hover on this page goes. Naming follows the pair this
+           system already uses twice: --accent / --accent-hi, --fill / --fill-hi. */
+        --board-hi: light-dark(#c7c7cc, #48484a);
         --hairline: light-dark(rgba(60, 60, 67, 0.29), rgba(84, 84, 88, 0.65));
         --ink: light-dark(#111114, #ffffff);
         /* Darkened with popup.html on 2026-08-15, and the sentences that wore it went to
@@ -307,15 +318,23 @@
          docs/brand.md records for the landing: a filled surface needs no boundary to read
          as a control. brand.md's checklist allows exactly this, in as many words: "a
          control's boundary clears 3:1, OR it has a filled surface instead of an edge".
-         MEASURED 2026-08-17, because nobody had: `--sunk` against `--paper` is 1.08:1 by
-         day and 1.15:1 at night. The comment that used to sit here rejected `--board` BY
-         NAME at 1.28:1 as "a boundary you cannot see", and the fill that replaced it is
-         fainter than the value it rejected. The rule permits it; whether it is filled
-         enough to look filled is a taste call, and it is logged as one rather than changed
-         here, because retouching a deliberate design decision as a side effect of a
-         restructure is how unrelated regressions get in. */
+         SETTLED 2026-08-18, by rendering it rather than by arguing from the ratio.
+         `--sunk` on `--paper` measured 1.08:1 by day and 1.15:1 at night. Night read
+         fine - true black is a strong ground - but by DAY the control read as bold text
+         with a faint halo rather than as a pill. `--board` is 1.27:1 by day and 1.79:1 at
+         night: better in both, and it is the value the comment here rejected BY NAME at
+         1.28:1 before the iOS turn replaced it with something fainter still, which was the
+         awkward fact that kept this open.
+         Neither reaches 3:1 and neither has to. brand.md's checklist reads: a control's
+         boundary clears 3:1, OR it has a filled surface instead of an edge. This is the
+         second branch, and the question was only ever whether the fill is filled enough to
+         read as one. Rendered in both moods at the real padding and radius, then decided.
+         ONE MORE THING THE RENDER SHOWED, which no ratio would have: three of these four
+         sit on `--card`, not on `--paper`, and at night `--sunk` is DARKER than `--card`
+         while on `--paper` it is lighter. The same token flipped from raised to inset
+         depending on what was under it. `--board` is lighter than both. */
       .ghost {
-        background: var(--sunk); color: var(--ink);
+        background: var(--board); color: var(--ink);
       }
       /* Gated, per the checklist in docs/brand.md. This page carried NO hover gate at all
          while the popup carried five: an ungated :hover sticks after a tap on a touch
@@ -324,7 +343,7 @@
         .save:not(:disabled):hover {
           background: var(--accent-hi); box-shadow: 0 3px 14px -4px var(--shadow-deep);
         }
-        .ghost:not(:disabled):hover { background: var(--board); }
+        .ghost:not(:disabled):hover { background: var(--board-hi); }
       }
 
       #status, #logStatus {

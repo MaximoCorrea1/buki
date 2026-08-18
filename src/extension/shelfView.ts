@@ -21,7 +21,19 @@ export const PILE_LABEL: Record<Intent, string> = {
   now: 'Now',
   next: 'Next',
   someday: 'Someday',
-  read: 'Read',
+  /**
+   * FINISHED, not "Read", decided by Maximo on 2026-08-18 after looking at both rendered.
+   *
+   * The tray offers *Read now*, *Read next* and *Read someday*, where "read" is the VERB.
+   * This pile meant "read" as in done. Same word, two grammars, distinguishable only by
+   * position — and a first-time user meets the tray before they ever open the shelf.
+   *
+   * THE STORED VALUE IS STILL `read` and must stay that way. `Intent` is what is written
+   * into `chrome.storage.local` and into the Goodreads export, so renaming it would be a
+   * migration of every shelf in existence to fix a word on a button. This map is the only
+   * place the label and the value are allowed to differ, which is what it is for.
+   */
+  read: 'Finished',
 };
 
 /** Every pile, including the empty ones: the control draws all four regardless. */

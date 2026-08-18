@@ -36,10 +36,12 @@ export function foundHeading(count: number): string {
  * said what pressing one would do. The verb is the whole difference between a label and a
  * control.
  *
- * NOTE FOR WHOEVER TOUCHES THE PILES: the shelf's fourth pile is called "Read", meaning
- * finished. "Read now" here is the verb; "Read" there is a place. They are distinguishable
- * in context but they are not distinct words, and renaming the finished pile to "Finished"
- * would remove the collision permanently. That is a founder decision, not a refactor.
+ * THE COLLISION THIS NOTE USED TO WARN ABOUT IS GONE, 2026-08-18. The shelf's fourth pile
+ * was called "Read", meaning finished, while "Read now" here is the verb: the same word in
+ * two grammars, told apart only by position, and a first-time user meets this tray before
+ * they ever open the shelf. Maximo renamed the pile to "Finished" after looking at both
+ * rendered. The label lives in `shelfView.ts`; the STORED value is still `read`, because
+ * renaming that would migrate every shelf in existence to fix a word on a button.
  */
 /** The three the tray offers. `Intent` has a fourth, `read`, which is the finished pile
     and is reached from the shelf rather than from a catch. */
