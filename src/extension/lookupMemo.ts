@@ -1,7 +1,8 @@
 /**
  * One lookup per post.
  *
- * Pressing 📚 twice on the same post used to run recognition twice - two vision calls, two
+ * Pressing the save button twice on the same post used to run recognition twice - two vision
+ * calls, two
  * sets of OpenLibrary queries, and two pickers for one book. The button's `disabled` flag
  * only covered its own press; a second press after the first finished, or a press on the
  * same image from the right-click menu, paid for the whole pipeline again.

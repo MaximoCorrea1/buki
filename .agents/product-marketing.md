@@ -15,7 +15,7 @@ own-key path.
 
 **What it does:** Buki is a Chrome extension that recognises a book from a *photograph*,
 not from the text around it. Right-click any cover image anywhere on the web, or press the
-book icon on a post on X, and Buki reads the picture, confirms the book against
+Buki button on a post on X, and Buki reads the picture, confirms the book against
 OpenLibrary, and files it on a face-out shelf under Now, Next, Someday or Finished. It keeps
 the post you caught it from, so months later you can see not just which book you saved but
 why you wanted it. The shelf lives in the browser and is never synced anywhere.

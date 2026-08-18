@@ -80,7 +80,7 @@ that interaction. Buki requests no broad host permission to make this work.
 **https://twitter.com/\*, https://x.com/\***
 
 ```
-On x.com and twitter.com, Buki's content script adds a book icon to a post's action bar
+On x.com and twitter.com, Buki's content script adds its own button to a post's action bar
 and reads the text and links of the post the user acted on. That text is sent together
 with the cover image, because the caption is often what makes an unreadable cover
 legible, and a retailer link in the post identifies the book outright with no image
@@ -204,7 +204,7 @@ Website content explanation:
 
 ```
 Limited to the image and the surrounding post text that the user explicitly asks Buki to
-identify, by pressing the book button on a post or using the right-click menu. Never in
+identify, by pressing the Buki button on a post or using the right-click menu. Never in
 the background and never for a page the user has not acted on.
 
 Where it goes depends on one setting the user controls. If they have added their own

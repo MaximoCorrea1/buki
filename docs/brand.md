@@ -1216,9 +1216,9 @@ than its measure just because the page is.
 
 ## Motion
 
-Rationed by how often a surface is seen. This is the whole rule, and it is why the 📚
-button has no entrance animation while a catch card does: the button is pressed dozens of
-times a day and the card appears once per catch.
+Rationed by how often a surface is seen. This is the whole rule, and it is why the save
+button in a post's action bar has no entrance animation while a catch card does: the button
+is pressed dozens of times a day and the card appears once per catch.
 
 | Curve | Value | Used for |
 | --- | --- | --- |

@@ -160,3 +160,78 @@ describe('the mark', () => {
     expect(wrong).toEqual([]);
   });
 });
+
+/**
+ * THE PROSE HAS TO AGREE WITH THE DRAWING, and nothing checked that until 2026-08-18.
+ *
+ * The tests above assert GEOMETRY and COLOUR across seven surfaces. Neither can see a
+ * sentence, and this repo has now paid for that twice. When the three-spine mark was
+ * retired, `docs/brand.md`'s own banner went on pointing at it for a day and
+ * `.agents/product-marketing.md`'s body described three spines while its changelog
+ * announced the catcher. When the X button stopped being a book emoji, FIVE LIVE SURFACES
+ * still called it a book icon - including the popup's EMPTY STATE, the first thing a new
+ * user reads, telling them to press a control that does not exist. Two of the five were
+ * written hours earlier in the same session as the change itself.
+ *
+ * `OPENWORK.md` section 5 already carries the general form: the comment and the code are
+ * two artefacts, and nothing checks that they agree. This is that check.
+ *
+ * It works because ABSENCE is the one thing a source-text guard proves cleanly. It cannot
+ * confirm the prose is right; it can refuse the specific wrong word, which is the failure
+ * that actually happened.
+ */
+const FORBIDDEN = /\bbook (icon|button|glyph)\b|\u{1F4DA}/giu;
+
+/**
+ * The LIVE copy only. Dated records are supposed to describe the mark that shipped when
+ * they were written: `DESIGN.md` carries its own superseded banner and the plans under
+ * `docs/superpowers/` are a log rather than a contract. Striking history to satisfy a guard
+ * is how a record stops being one.
+ */
+const LIVE_COPY = import.meta.glob(
+  [
+    '../../docs/*.html',
+    '../../docs/store/*.md',
+    '../../docs/brand.md',
+    '../../.agents/*.md',
+    '../../README.md',
+    '../../popup.html',
+    '../../options.html',
+    '../extension/*.ts',
+  ],
+  { query: '?raw', import: 'default', eager: true },
+) as Record<string, string>;
+
+describe('what the copy calls the mark', () => {
+  it('reads real files, rather than passing on a glob that matched nothing', () => {
+    // The vacuous pass this repo has been bitten by twice.
+    expect(Object.keys(LIVE_COPY).length).toBeGreaterThan(15);
+  });
+
+  it("never calls Buki's control a book, on any live surface", () => {
+    const wrong: string[] = [];
+    for (const [path, body] of Object.entries(LIVE_COPY)) {
+      // COMMENTS ARE STRIPPED FIRST, which is the same fix `optionsPage.test.ts` needed when
+      // one comment naming an element id flipped two order assertions. A comment explaining
+      // WHY the emoji was replaced is a record worth keeping rather than drift, and the
+      // failure this guard exists for was in a string a USER reads, not in a comment.
+      const prose = body
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+        .replace(/<!--[\s\S]*?-->/g, '');
+      for (const line of prose.split('\n')) {
+        // The one legitimate use is the RULE that forbids the shape. `brand.md` and the
+        // positioning doc both say the mark "must never become a book glyph", and a guard
+        // that failed the sentence forbidding the thing would be its own joke.
+        if (/never become|must not become|FORBIDDEN/i.test(line)) continue;
+        const found = line.match(FORBIDDEN);
+        if (found) {
+          wrong.push(`${path.replace(/^(\.\.\/)+/, '')} says "${found[0]}"`);
+        }
+      }
+    }
+    // Named, not counted. The five that were wrong on 2026-08-18 sat in five different
+    // files, and "five surfaces are stale" would only have sent somebody hunting.
+    expect(wrong).toEqual([]);
+  });
+});

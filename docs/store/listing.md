@@ -1,6 +1,6 @@
 # Chrome Web Store listing
 
-> ## ⛔ DO NOT SUBMIT until both of these are true
+> ## ⛔ DO NOT SUBMIT until all three of these are true
 >
 > The copy below describes the product **as it will be at submission**, which is not what a
 > user gets today. `OPENWORK.md` item 22 records the decision that Buki ships only once the
@@ -8,22 +8,30 @@
 >
 > | Gate | Where |
 > | --- | --- |
-> | The Polar product exists | `OPENWORK.md` item 1, field by field in `docs/superpowers/polar-setup.md` |
-> | The five Vercel variables are set and `/api/vision` answers | `OPENWORK.md` item 2 |
+> | The Polar products exist, with the License Key benefit on **both** and activations enabled | `OPENWORK.md` item 1, field by field in `docs/superpowers/polar-setup.md` |
+> | The **six** Vercel variables are set and `/api/vision` answers | `OPENWORK.md` item 2 |
+> | **A customer can actually pay** | `OPENWORK.md` item 34 |
 >
-> Until then, *"Ten catches from a photograph are free"* is a promise rather than a fact,
-> because a user with no key of their own gets no cover reading at all. **Submitting before
-> that is shipping a listing that misdescribes the product**, which is the one thing store
-> review reliably catches.
+> Until the first two, *"Ten catches from a photograph are free"* is a promise rather than a
+> fact, because a user with no key of their own gets no cover reading at all. **Submitting
+> before that is shipping a listing that misdescribes the product**, which is the one thing
+> store review reliably catches.
 >
-> One more gate, and it is not optional: **`docs/privacy.html` and the landing's data
-> section still describe the picture going straight to the provider the user configured.**
-> The proxy makes that false. They are rewritten in the same commit as the proxy, per
-> `docs/store/permissions.md`.
+> **The third gate is new on 2026-08-18 and it is the one a reviewer will hit by hand.**
+> Every purchase CTA in the extension opens the landing's `#pricing`, whose Pro button links
+> to GitHub — to install the extension the reviewer already has. A reviewer testing "Buki
+> Pro is $4 a month" follows that button and finds no way to pay. The listing describes a
+> paid tier; the product has to have a till.
+>
+> ~~One more gate: `docs/privacy.html` and the landing's data section still describe the
+> picture going straight to the provider the user configured.~~ **CLEARED 2026-08-18**
+> (`c0a3e00`). `docs/privacy.html`, `README.md` and both Web Store answers in
+> `permissions.md` now name both paths and say what the server keeps. `permissions.md` has
+> no DO-NOT-SUBMIT banners left.
 
 **Rewritten 2026-08-17.** The previous version described the X-only, bring-your-own-key,
 no-server product and had been stale since 2026-08-12. Positioning is
-`.agents/product-marketing.md` v9; the differentiator is in `competitor-profiles/_summary.md`.
+`.agents/product-marketing.md` v10; the differentiator is in `competitor-profiles/_summary.md`.
 
 ---
 
@@ -83,14 +91,14 @@ reads the picture together with the words around it, checks the answer against
 OpenLibrary, and files it. That is the one that works on a photograph with no link and no
 title written anywhere.
 
-On X there is a book icon in the post's action bar that does the same thing in one press.
+On X, Buki's own mark sits in the post's action bar and does the same thing in one press.
 
 A photograph holding several books gives you several books, not just the clearest one.
 
 NOW, NEXT, OR SOMEDAY
 
 Every book gets an intention, so something you mean to read next month does not sit in the
-same pile as something you saved on a whim. Mark it read when you finish it.
+same pile as something you saved on a whim. Mark it finished when you are done.
 
 Nothing reaches your shelf until you pick a pile. Buki never saves a book for you.
 
@@ -174,7 +182,7 @@ contradiction a reviewer looks for, and it reads as an extension asking for more
 admits to.
 
 The statement above is one purpose, not two, and it covers every entry point the manifest
-actually has: the context menu on any page, the book icon in a post's action bar on X, and
+actually has: the context menu on any page, Buki's mark in a post's action bar on X, and
 the shelf in the popup. Saving is not a second purpose; it is what identifying is *for*.
 
 **Permission justifications go in the dashboard's own fields, and they are written already
@@ -195,7 +203,11 @@ Vercel serves `docs/` as the site root (see `vercel.json`). Redeploy with
 `vercel deploy --prod`. Use the production domain, never a raw deployment URL: those are
 SSO-protected on this account and a reviewer would hit a login wall.
 
-**Its contents are currently false.** See the second gate in the banner at the top.
+**Rewritten 2026-08-18** (`c0a3e00`) and no longer false. It now names both paths - own
+key goes straight to the provider, no key goes to Buki's endpoint - and states what the
+server keeps: nothing on disk, no database, an IP and a scrambled licence-key digest in
+instance memory with daily counts. The same words appear in `permissions.md` and `README.md`
+on purpose. **If the three ever disagree, the code decides.**
 
 ## Screenshots: 1280x800, at least one, up to five
 
@@ -209,7 +221,8 @@ against a shelf holding books actually saved. A mocked shelf reads as a mock.
    competitor screenshot can show it.
 3. **A catch somewhere that is not X**, so the breadth in the single-purpose statement is
    visible rather than asserted.
-4. **The book icon** in a post's action bar, so people see where it lives.
+4. **Buki's mark** in a post's action bar, beside reply and like, so people see where it
+   lives. It is the catcher at 18px, X's own icon size.
 5. **The masthead count** (`23 caught, 87% kept`). Nothing else in this category publishes
    its own accuracy.
 

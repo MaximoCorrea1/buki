@@ -566,7 +566,7 @@ function renderEmpty(app: HTMLElement): void {
   empty.append(
     lead,
     document.createTextNode(
-      'Hit the book icon on a post, or right-click a cover image, and it lands here.',
+      'Press the Buki button on a post, or right-click any cover image, and it lands here.',
     ),
   );
   app.replaceChildren(empty);
