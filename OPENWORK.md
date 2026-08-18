@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **581 across 55 files**, all passing |
+| Tests | **592 across 57 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -12,7 +12,7 @@
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | `buki-hardening`, off `main` at `d3e5923`. `buki-pro` was merged to `main` on 2026-08-18 and is history. **Run the probe, do not trust a number written here** |
-| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
+| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** steps done, **17** left. Task 15 is closed except Step 2, which needs a real Chrome and a Polar test card |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -37,10 +37,10 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800 | item 15 |
 | ~~17~~ | agent | ~~`docs/privacy.html` + the landing's data section~~ **DONE 2026-08-18** (`c0a3e00`). **The landing was already correct**; `privacy.html`, `README.md` and both Web Store answers were not. No DO-NOT-SUBMIT banners remain in `permissions.md` | — |
-| **18** | agent | Task 15 close-the-loop, minus Step 2 which is Maximo's | — |
+| ~~18~~ | agent | ~~Task 15 close-the-loop~~ **DONE 2026-08-18** for every part an agent can do. **Step 2 is Maximo's**: a real Chrome, a fresh profile and a Polar test card. Step 3's strikes were NOT executed and must not be | — |
 | ~~31~~ | decision | ~~Relaying Polar's error text~~ **SETTLED by 28**: the oracle is now bounded at 40 probes per key per day per isolate. The text stays, because it tells a customer what to do | — |
-| **32** | agent | `api/vision.ts` holds its IP counter INLINE and untested, in a file whose header says nothing there needs a test. Same shape `keyCap.ts` just moved out of `api/license.ts` | — |
-| **33** | agent | **Nothing parses `content.ts`.** 583 tests passed on a file with a syntax error, because only `?raw` readers touch it. `tsc` and the build caught it. The largest file in the extension has no import-time guard | — |
+| ~~32~~ | agent | ~~`api/vision.ts` holds its IP counter inline and untested~~ **DONE 2026-08-18** (`8e9816f`). `src/server/ipCap.ts`, 7 tests, four of them on the `x-forwarded-for` chain rule. That file is 39 lines again | — |
+| ~~33~~ | agent | ~~Nothing parses `content.ts`~~ **DONE 2026-08-18** (`30a4685`). `entryPoints.test.ts` runs esbuild's transform over all four unimportable files. Earned against the REAL failure: putting the backtick back turns the suite red | — |
 | ~~25~~ | decision | ~~Is the secondary button filled enough to look filled~~ **DECIDED 2026-08-18** (`1a65357`): no, by day. Moved to `--board`, hover to a new `--board-hi`. Rendered in both moods first | — |
 | ~~—~~ | decision | ~~The **"Read" collision**~~ **DECIDED 2026-08-18** (`1a65357`): renamed to **Finished**. One word in `PILE_LABEL`; the stored `Intent` is still `read`, so no migration and the export is untouched | — |
 | ~~—~~ | ~~agent~~ | ~~`authorName()` is an N+1~~ **NOT TRUE, checked 2026-08-18.** `groundText` uses `search`, which asks for `author_name` in `FIELDS` and pays no follow-up. The follow-up is reached only from `lookupByIsbn`, once, for ONE book on the retailer-link path. A 20-book photo costs 20 searches and zero follow-ups. Pinned by a test | — |
@@ -48,6 +48,18 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 
 **The critical path is 1, 2, 26.** Until the first two exist the paid tier is written and
 switched off, and until 26 exists nothing bounds what abuse can cost.
+
+> ### THERE IS NO AGENT WORK LEFT IN THIS TABLE, as of 2026-08-18.
+>
+> Everything above is Maximo's: **1, 2, 26** (a dashboard and two credentials), then
+> **3** and **9** (a real browser, which no agent can drive because Chrome refuses
+> `--load-extension`), and **Task 15 Step 2**, which needs a Polar test card.
+>
+> **Two launch blockers were found on 2026-08-18 that nothing in this table predicted**,
+> and both were the same shape: written, tested, and inert. `readPro` dropped the
+> activation id so item 27's fix never ran, and the manifest never granted the proxy host
+> so neither endpoint could be reached at all. **Both would have surfaced only on the day
+> the variables were set** — which is item 2, and is why item 3 exists.
 
 > ### ⚠ 27 WAS FIXED TWICE, and the second half is the one worth reading. 2026-08-18.
 >
