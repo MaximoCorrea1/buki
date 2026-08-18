@@ -30,6 +30,13 @@ const ENTRIES = import.meta.glob(
     '../extension/background.ts',
     '../extension/popup.ts',
     '../extension/options.ts',
+    // The tools too, as of the FOURTH occurrence of the backtick trap. tsconfig includes
+    // only `src` and `api`, so nothing typechecks or parses a `tools/*.mjs` - the only
+    // thing that catches a broken one is running it, and three of these are run by hand
+    // once a month. `store-shots.mjs` was written hours after the trap was recorded in
+    // OPENWORK.md §5 and fell into it anyway, because the warning lived inside the file
+    // that already had the problem and a new file inherits nothing.
+    '../../tools/*.mjs',
   ],
   { query: '?raw', import: 'default', eager: true },
 ) as Record<string, string>;
@@ -38,9 +45,9 @@ describe('the files no test can import', () => {
   it('reads real files, rather than passing on a glob that matched nothing', () => {
     // The vacuous pass this repo has been bitten by twice: a renamed file matches nothing
     // and the check below reports clean on an empty set.
-    expect(Object.keys(ENTRIES)).toHaveLength(4);
+    expect(Object.keys(ENTRIES).length).toBeGreaterThanOrEqual(10);
     for (const [path, body] of Object.entries(ENTRIES)) {
-      expect(body.length, `${path} is empty`).toBeGreaterThan(1000);
+      expect(body.length, `${path} is empty`).toBeGreaterThan(400);
     }
   });
 
@@ -48,7 +55,7 @@ describe('the files no test can import', () => {
     const broken: string[] = [];
     for (const [path, body] of Object.entries(ENTRIES)) {
       try {
-        await transform(body, { loader: 'ts' });
+        await transform(body, { loader: path.endsWith('.mjs') ? 'js' : 'ts' });
       } catch (err) {
         // Named, not counted. "One file is broken" sends you hunting; esbuild's own message
         // gives the line and the reason, and for the backtick case the reason lands a

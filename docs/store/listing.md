@@ -214,6 +214,12 @@ on purpose. **If the three ever disagree, the code decides.**
 `OPENWORK.md` item 9, and it waits on item 3 so these show the current product. Shoot
 against a shelf holding books actually saved. A mocked shelf reads as a mock.
 
+**The staging for each one, what ruins it, and the video script are in
+`docs/store/assets.md`.** The frames are built by `node tools/store-shots.mjs`, because the
+store wants 1280x800 and the popup is 560px wide: every shot is composed rather than
+cropped, and upscaling a 560px capture to fill the frame softens the type on a listing whose
+whole claim is craft.
+
 1. **The shelf**, face out: eight to twelve books across two or three boards, with the pile
    control visible above them. This is the one that sells it, so lead with it.
 2. **A catch on a photograph holding several books**, showing the card with more than one

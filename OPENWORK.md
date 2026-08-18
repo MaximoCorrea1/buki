@@ -37,7 +37,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **34** | **Maximo**, then agent | **NOBODY CAN BUY.** Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
-| **9** | **Maximo** | Five Web Store screenshots at 1280x800 | item 15 |
+| **9** | **Maximo** | Five Web Store screenshots at 1280x800. **The frames, the headlines and the staging are done** (`docs/store/assets.md`, `tools/store-shots.mjs`); what is left is capturing five real ones and re-running the tool | item 15 |
 | ~~17~~ | agent | ~~`docs/privacy.html` + the landing's data section~~ **DONE 2026-08-18** (`c0a3e00`). **The landing was already correct**; `privacy.html`, `README.md` and both Web Store answers were not. No DO-NOT-SUBMIT banners remain in `permissions.md` | — |
 | ~~18~~ | agent | ~~Task 15 close-the-loop~~ **DONE 2026-08-18** for every part an agent can do. **Step 2 is Maximo's**: a real Chrome, a fresh profile and a Polar test card. Step 3's strikes were NOT executed and must not be | — |
 | ~~31~~ | decision | ~~Relaying Polar's error text~~ **SETTLED by 28**: the oracle is now bounded at 40 probes per key per day per isolate. The text stays, because it tells a customer what to do | — |
@@ -106,6 +106,7 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 | Tier boundaries, machine-readable | `docs/pricing.md` | the landing |
 | Store copy and permission justifications | `docs/store/` | — |
 | **The launch SEQUENCE**: what order, what gate, what to watch | `docs/store/launch.md` | this file, which owns STATUS |
+| **How to capture the store assets**: staging per shot, and the video script | `docs/store/assets.md` | `listing.md`, which owns the shot LIST and the copy |
 | The paid-tier implementation, step by step | `docs/superpowers/plans/2026-08-09-buki-pro.md` | — |
 | Polar setup, field by field | `docs/superpowers/polar-setup.md` | — |
 | The competitive landscape | `competitor-profiles/_summary.md` | — |
