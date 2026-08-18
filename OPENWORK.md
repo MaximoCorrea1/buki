@@ -41,8 +41,8 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~31~~ | decision | ~~Relaying Polar's error text~~ **SETTLED by 28**: the oracle is now bounded at 40 probes per key per day per isolate. The text stays, because it tells a customer what to do | — |
 | **32** | agent | `api/vision.ts` holds its IP counter INLINE and untested, in a file whose header says nothing there needs a test. Same shape `keyCap.ts` just moved out of `api/license.ts` | — |
 | **33** | agent | **Nothing parses `content.ts`.** 583 tests passed on a file with a syntax error, because only `?raw` readers touch it. `tsc` and the build caught it. The largest file in the extension has no import-time guard | — |
-| **25** | decision | Is the secondary button filled enough to look filled | — |
-| — | decision | The **"Read" collision**: the tray says *Read now/next/someday* while the shelf's fourth pile is *Read*, meaning finished. Renaming it *Finished* ends it | — |
+| ~~25~~ | decision | ~~Is the secondary button filled enough to look filled~~ **DECIDED 2026-08-18** (`1a65357`): no, by day. Moved to `--board`, hover to a new `--board-hi`. Rendered in both moods first | — |
+| ~~—~~ | decision | ~~The **"Read" collision**~~ **DECIDED 2026-08-18** (`1a65357`): renamed to **Finished**. One word in `PILE_LABEL`; the stored `Intent` is still `read`, so no migration and the export is untouched | — |
 | ~~—~~ | ~~agent~~ | ~~`authorName()` is an N+1~~ **NOT TRUE, checked 2026-08-18.** `groundText` uses `search`, which asks for `author_name` in `FIELDS` and pays no follow-up. The follow-up is reached only from `lookupByIsbn`, once, for ONE book on the retailer-link path. A 20-book photo costs 20 searches and zero follow-ups. Pinned by a test | — |
 | ~~—~~ | ~~agent~~ | ~~The X button wears a book glyph~~ **DONE 2026-08-18** (`2b58df2`). It wears the catcher, at X's own 18px icon box. **The open-book variant was NOT built**: `.agents/product-marketing.md` rules that shape out by name, and two shapes in 18px is a smudge. Overrulable, knowingly | — |
 
@@ -873,25 +873,27 @@ needs a credential or a dashboard is the shell around it.
       model on "about $0.00011" and that number appears once in this repo, in the comment
       that uses it. Never measured.
 
-- [ ] **25. Is the secondary button filled enough to look filled? MEASURED 2026-08-17, not
-      changed.** `.ghost` on the setup page is `--sunk` on `--paper`: **1.08:1 by day,
-      1.15:1 at night.** Four controls wear it (*Reset provider*, *Export the shelf*,
-      *Clear the log*, *See what Pro costs*).
+- [x] **25. DECIDED 2026-08-18 (`1a65357`): it was not, by day.** `.ghost` was `--sunk` on
+      `--paper`: **1.08:1 by day, 1.15:1 at night.** Rendered in both moods at the real
+      padding and radius, which is what settled it — night read fine, because true black is
+      a strong ground, and by day the control read as bold text with a faint halo rather
+      than as a pill.
 
-      **This is not a rule violation.** `docs/brand.md`'s checklist says a control's
-      boundary clears 3:1 **or** it has a filled surface instead of an edge, and Apple's own
-      secondary buttons do not clear 3:1 against a grouped background either. The iOS turn
-      chose the fill deliberately.
+      Moved to **`--board`**: 1.27:1 by day, 1.79:1 at night, better in both. That is also
+      the value the comment above the rule had rejected **by name** at 1.28:1 before the iOS
+      turn replaced it with something fainter still, which is the contradiction that kept
+      this open.
 
-      **It is a taste call with an awkward fact attached:** the comment that used to sit
-      above that rule rejected `--board` **by name** at 1.28:1 as "a boundary you cannot
-      see", and the fill that replaced it is fainter than the value it rejected. `--board`
-      is the obvious alternative at **1.27:1 by day, 1.79:1 at night**, which is better in
-      both moods and still not 3:1.
+      **A REGRESSION WAS CAUGHT ON THE WAY.** `.ghost:not(:disabled):hover` was ALREADY
+      `--board`, so moving the rest state there would have made rest and hover the same
+      colour and deleted the feedback on four controls, silently, with nothing red. Hover
+      now takes a new **`--board-hi`** (the next Apple system grey), stepping 1.19:1 by day
+      and 1.28:1 at night, away from the ground in both moods. Naming follows the pair this
+      system already uses twice.
 
-      Left alone rather than changed, because retouching a deliberate design decision as a
-      side effect of a restructure is exactly how the unrelated regressions in §5 got in.
-      Look at it in a real browser and say.
+      **The popup's `--fill`/`--fill-hi` were considered and rejected on a measurement:**
+      composited, Apple's translucent material lands FAINTER than `--board` in both moods,
+      which is the problem being fixed.
 
 - [x] **22. Ship free-first, or wait for the paid tier? DECIDED 2026-08-13 by Maximo:
       wait.** The landing copy therefore stays as written and stays true on the day it
@@ -1019,6 +1021,19 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   been a regression:** moving the ISBN lookup back to `search.json?q=isbn:` is the thing
   that was measured timing out for over 20s on 2026-08-04. A named optimisation nobody
   traced is the same shape as a contrast ratio nobody rendered.
+
+- **WHEN YOU CHANGE A VALUE, THE RULES THAT REFERENCE IT ARE PART OF THE CHANGE.** Item 25
+  moved `.ghost`'s rest fill from `--sunk` to `--board`. Eleven lines below,
+  `.ghost:not(:disabled):hover` was ALREADY `--board` — so the edit would have made rest and
+  hover identical and deleted the hover feedback on four controls, silently, with nothing
+  red anywhere. This is the mirror of *"a guard at the top of a script owns everything below
+  it"*: **read the rules BELOW the one you are editing, not only the one you are editing.**
+- **A CONTRAST RATIO IS ABOUT THE PAIR YOU CHOSE, AND THE CONTROL MAY NOT SIT ON IT.** Item
+  25 was measured for a year as "`--sunk` against `--paper`". Three of the four controls
+  wearing it sit on `--card`. Rendered, `--sunk` is DARKER than `--card` at night and
+  LIGHTER than `--paper`, so the same token flipped from inset to raised depending on what
+  was under it. Nobody measuring the named pair would ever have found that. **Ask what the
+  control actually sits on before you measure it against the page.**
 
 - **A GUARD THAT NAMES THE WRONG HOST CANNOT SEE A MISSING ONE.** `host.test.ts` globs the
   shipped files and fails any that names a DIFFERENT Vercel host. `manifest.json` is in that
