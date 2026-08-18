@@ -29,6 +29,9 @@ const env = (over: Partial<LicenseEnv> = {}): LicenseEnv => ({
   validateUrl: 'https://api.polar.test/v1/license-keys/validate',
   fetch: vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 })),
   now: () => NOW,
+  // Open by default, so every test above measures what it is about. The cap has its own
+  // describe block at the bottom.
+  keyCap: () => false,
   ...over,
 });
 
@@ -274,5 +277,84 @@ describe('who may ask for a session', () => {
     // credential, and `visionHandler` already treats it that way.
     const res = await handleLicense(post({ key: 'KEY-1' }), env({ extensionId: '' }));
     expect(res.status).toBe(500);
+  });
+});
+
+/**
+ * THE CAP, and what it is honestly for.
+ *
+ * `/api/vision` has always paired its Origin check with a per-IP cap. This endpoint had
+ * the Origin check and nothing else, which two reviewers raised independently. `Origin` is
+ * a header any script sets and the extension id is public the moment the item is listed,
+ * so the check closes the casual path and nothing more.
+ *
+ * TWO NUMBERS, because the two branches cost different things and one number cannot bound
+ * both. `validate` is cheap and creates nothing, so its ceiling is about how much a caller
+ * can learn from an oracle. `activate` CREATES an activation and spends one of the key's
+ * five slots for ever, so a single number generous enough for five installs renewing daily
+ * would also be generous enough to burn every slot the customer has.
+ *
+ * A legitimate activation is genuinely rare: once per install, and only while no activation
+ * id is held. A refused attempt creates nothing, and a re-paste of a key already held
+ * validates. So the activate ceiling can be far below the renewal one without touching
+ * anybody real.
+ */
+describe('the cap', () => {
+  it('refuses before Polar is called, so a refusal cannot spend a slot', async () => {
+    // The rule this endpoint already follows everywhere else: every refusal lands BEFORE
+    // the outbound fetch. A cap that answered 429 after calling Polar would have burned
+    // the activation it was there to protect.
+    const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));
+
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ fetch, keyCap: () => true }));
+
+    expect(res.status).toBe(429);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('tells the two branches apart, because only one of them spends a slot', async () => {
+    const seen: string[] = [];
+    const keyCap = (_key: string, kind: string) => {
+      seen.push(kind);
+      return false;
+    };
+
+    await handleLicense(post({ key: 'KEY-1' }), env({ keyCap }));
+    await handleLicense(post({ key: 'KEY-1', activationId: 'act_1' }), env({ keyCap }));
+
+    expect(seen).toEqual(['activate', 'validate']);
+  });
+
+  it('counts the key, not the request, so one key cannot be probed through many callers', async () => {
+    const keys: string[] = [];
+    const keyCap = (key: string) => {
+      keys.push(key);
+      return false;
+    };
+
+    await handleLicense(post({ key: '  KEY-1  ' }), env({ keyCap }));
+
+    // The TRIMMED key. Keys arrive pasted out of an email, and counting `KEY-1 ` and
+    // `KEY-1` as two different keys would hand an attacker a fresh allowance per space.
+    expect(keys).toEqual(['KEY-1']);
+  });
+
+  it('is not consulted for a request that never names a key', async () => {
+    // Nothing to count against, and no slot at risk. A 400 is the honest answer and it
+    // must not consume somebody else's allowance.
+    const keyCap = vi.fn(() => false);
+    const res = await handleLicense(post({}), env({ keyCap }));
+
+    expect(res.status).toBe(400);
+    expect(keyCap).not.toHaveBeenCalled();
+  });
+
+  it('says what to do, because a customer can meet this too', async () => {
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ keyCap: () => true }));
+    const { error } = (await res.json()) as { error: string };
+
+    // Never vague, and never an apology. The one thing that fixes it is waiting.
+    expect(error).toMatch(/try again/i);
+    expect(error).not.toMatch(/sorry|something went wrong/i);
   });
 });

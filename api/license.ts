@@ -7,6 +7,7 @@
  * NONE OF THESE VARIABLES MAY EVER APPEAR IN A FILE UNDER `src/extension/`.
  */
 import { handleLicense } from '../src/server/licenseHandler';
+import { createKeyCap } from '../src/server/keyCap';
 
 export const config = { runtime: 'edge' };
 
@@ -24,6 +25,12 @@ export const config = { runtime: 'edge' };
 const POLAR_ACTIVATE = 'https://api.polar.sh/v1/license-keys/activate';
 const POLAR_VALIDATE = 'https://api.polar.sh/v1/license-keys/validate';
 
+/**
+ * ONE counter for this isolate. The rule, the two ceilings and the eviction are all in
+ * `src/server/keyCap.ts`, where they are tested — this file stays a shell.
+ */
+const keyCap = createKeyCap();
+
 export default async function handler(request: Request): Promise<Response> {
   return handleLicense(request, {
     secret: process.env['BUKI_TOKEN_SECRET'] ?? '',
@@ -36,5 +43,6 @@ export default async function handler(request: Request): Promise<Response> {
     validateUrl: POLAR_VALIDATE,
     fetch: (url, init) => fetch(url, init),
     now: () => Date.now(),
+    keyCap,
   });
 }

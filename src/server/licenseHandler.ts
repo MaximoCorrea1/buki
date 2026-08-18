@@ -23,6 +23,15 @@ export interface LicenseEnv {
   validateUrl: string;
   fetch: (url: string, init?: RequestInit) => Promise<Response>;
   now: () => number;
+  /**
+   * True when this key has had too many of THIS KIND of request today.
+   *
+   * Takes the branch because the two cost different things: `validate` creates nothing, so
+   * its ceiling is about how much an oracle can be probed; `activate` spends one of the
+   * key's five slots for ever, so one number generous enough for five installs renewing
+   * daily would also be generous enough to burn every slot the customer has.
+   */
+  keyCap: (key: string, kind: 'activate' | 'validate', now: number) => boolean;
 }
 
 /** `activate`'s answer. The top-level `id` is the ACTIVATION. */
@@ -91,6 +100,31 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
   }
   if (!key) return json({ error: 'No licence key' }, 400);
 
+  const renewing = Boolean(activationId);
+
+  // THE CAP, and it lands HERE for two reasons.
+  //
+  // BEFORE the outbound fetch, like every other refusal in this handler: a 429 answered
+  // after calling Polar would have burned the activation it exists to protect.
+  //
+  // AFTER the key is parsed and trimmed, because the key is what it counts. Counting the
+  // request instead would hand an attacker a fresh allowance per caller, and counting the
+  // untrimmed string would hand them one per trailing space.
+  //
+  // `/api/vision` has always paired its Origin check with a per-IP cap. This endpoint had
+  // the Origin check and nothing else, which two reviewers raised independently: `Origin`
+  // is a header any script sets, and the extension id is public the moment the item is
+  // listed. Five forged requests with a leaked key exhaust a customer's five slots.
+  //
+  // It is a brake, not an accounting system — the counter behind it is per-isolate, so a
+  // caller spread across isolates gets more than one allowance. It bounds the casual and
+  // the accidental. What bounds real money is the provider-side spend cap.
+  if (env.keyCap(key, renewing ? 'validate' : 'activate', env.now())) {
+    // States the fact and names the one thing that fixes it. A customer can meet this too
+    // — five installs on a bad network day — so it never reads as an accusation.
+    return json({ error: 'Too many licence checks for this key today. Try again tomorrow.' }, 429);
+  }
+
   /**
    * ACTIVATE ONCE, VALIDATE FOREVER.
    *
@@ -108,7 +142,6 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
    * `entitlement.ts`, on the machine. Two meters would disagree and nobody would know which
    * one had fired.
    */
-  const renewing = Boolean(activationId);
 
   let res: Response;
   try {
