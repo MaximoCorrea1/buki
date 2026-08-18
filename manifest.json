@@ -11,7 +11,8 @@
     "https://pbs.twimg.com/*",
     "https://openlibrary.org/*",
     "https://covers.openlibrary.org/*",
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://get-buki.vercel.app/*"
   ],
   "optional_host_permissions": ["https://*/*"],
   "background": {

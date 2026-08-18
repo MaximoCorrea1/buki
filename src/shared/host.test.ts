@@ -3,6 +3,7 @@ import { BUKI_HOST } from './host';
 import indexHtml from '../../docs/index.html?raw';
 import sitemapXml from '../../docs/sitemap.xml?raw';
 import robotsTxt from '../../docs/robots.txt?raw';
+import manifestJson from '../../manifest.json?raw';
 
 /**
  * `host.ts` says it is the one definition of the production host. Nothing imports it, and
@@ -63,6 +64,32 @@ describe('the production host', () => {
   it("is the landing's canonical URL", () => {
     const canonical = /<link\s+rel="canonical"\s+href="([^"]+)"/.exec(indexHtml)?.[1];
     expect(canonical).toBe(`${BUKI_HOST}/`);
+  });
+
+  it('is GRANTED by the manifest, not merely spelled the same everywhere', () => {
+    // THE AXIS THE CHECK ABOVE CANNOT CROSS. It fails a file that names the WRONG host, so
+    // `manifest.json` satisfies it by naming no host at all — which is exactly the state
+    // that shipped: `visionRoute` posts every keyless catch to `${BUKI_HOST}/api/vision`
+    // and both the worker and the options page post every licence exchange to
+    // `${BUKI_HOST}/api/license`, and the manifest granted permission for neither.
+    //
+    // Chrome, on cross-origin network requests: "A script executing in an extension service
+    // worker or foreground tab can talk to remote servers outside of its origin, AS LONG AS
+    // the extension requests host permissions", and a request to another origin "will be
+    // treated as a cross-origin request unless the extension has host permissions".
+    // https://developer.chrome.com/docs/extensions/develop/concepts/network-requests
+    //
+    // Neither `/api/` handler sets `Access-Control-Allow-Origin` and `vercel.json`
+    // deliberately excludes `/api/` from its headers block, so without this entry the
+    // paid tier and the ten free catches fail on the wire rather than degrading.
+    //
+    // `optional_host_permissions: ["https://*/*"]` does NOT cover it: that one is requested
+    // per image origin by `originPatternFor`, and nothing ever asks for this host.
+    const manifest = JSON.parse(manifestJson) as {
+      host_permissions?: string[];
+      optional_host_permissions?: string[];
+    };
+    expect(manifest.host_permissions).toContain(`${new URL(BUKI_HOST).origin}/*`);
   });
 
   it('is actually named by the files whose whole job is an absolute URL', () => {
