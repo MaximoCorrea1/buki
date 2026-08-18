@@ -77,14 +77,34 @@ async function wirePro(): Promise<void> {
         endpoint: `${BUKI_HOST}/api/license`,
         now: () => Date.now(),
       });
-      const result = await license.exchange(el.field.value);
+      // Re-pressing Activate on the SAME key must not spend a second activation slot, so
+      // the stored id is offered back and the server validates instead. A DIFFERENT key
+      // gets no id: that is a genuinely new pairing and has to activate.
+      const pasted = el.field.value.trim();
+      const held = await readPro(storage);
+      const reuse = held.key === pasted ? held.activationId : undefined;
+
+      const result = await license.exchange(pasted, reuse);
       if (result.ok) {
-        await writePro(storage, { key: el.field.value.trim(), session: result.session });
+        const id = result.activationId || reuse;
+        await writePro(storage, {
+          key: pasted,
+          session: result.session,
+          ...(id ? { activationId: id } : {}),
+        });
         say('Pro is on. Cover reading is unlimited.');
       } else {
         // A retryable failure keeps whatever session is already stored: an outage on our
         // side must not sign a paying customer out.
-        if (!result.retryable) await writePro(storage, { key: el.field.value.trim(), session: null });
+        if (!result.retryable) {
+          // The session goes; the activation stays. This install is still paired, and
+          // forgetting the id would make the next success activate a second time.
+          await writePro(storage, {
+            key: pasted,
+            session: null,
+            ...(reuse ? { activationId: reuse } : {}),
+          });
+        }
         say(result.message ?? 'That key could not be activated.');
       }
     } catch (err) {

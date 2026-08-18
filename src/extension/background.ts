@@ -166,12 +166,16 @@ async function recognize(
   // without a licence, and it never throws - a renewal that fails keeps the token we hold
   // and rides the server's grace window.
   const pro = await ensureSession(held, {
-    exchange: (key) =>
+    // BOTH parameters, and the second one is the whole point. An arrow taking fewer
+    // parameters is assignable in TypeScript, so `(key) => ...exchange(key)` compiled and
+    // passed every test while silently dropping the activation id — which would make each
+    // renewal ACTIVATE again and spend one of the licence's five slots per day.
+    exchange: (key, activationId) =>
       createLicense({
         fetch: (url, init) => fetch(url, init),
         endpoint: `${BUKI_HOST}/api/license`,
         now: () => Date.now(),
-      }).exchange(key),
+      }).exchange(key, activationId),
     save: (state) => writePro(chrome.storage.local, state),
     now: () => Date.now(),
   });

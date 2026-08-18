@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { readPro, writePro, standingOf, ensureSession, PRO_KEY } from './proState';
 import { GRACE_MS } from '../server/token';
 import type { StorageArea } from './storage';
+import background from './background.ts?raw';
+import optionsSrc from './options.ts?raw';
 
 const NOW = Date.UTC(2026, 7, 17, 12, 0, 0);
 
@@ -109,6 +111,9 @@ describe('ensureSession', () => {
     exchange: vi.fn(async () => ({
       ok: true as const,
       session: { token: 'new', expiresAt: NOW2 + 86_400_000 },
+      // '' because this fixture predates the activation id; a real first exchange
+      // gets one back from Polar and `ensureSession` persists it.
+      activationId: '',
     })),
     save: vi.fn(async () => undefined),
     now: () => NOW2,
@@ -171,5 +176,93 @@ describe('ensureSession', () => {
     });
     const got = await ensureSession({ key: 'K', session: nearlyDone }, d);
     expect(got.session).toBe(nearlyDone);
+  });
+});
+
+/**
+ * THE ACTIVATION ID HAS TO SURVIVE, or the fix is undone on the next renewal.
+ *
+ * `ensureSession` is the only thing that renews, and it renews daily. If it does not hand
+ * the stored activation id to `exchange`, the server activates again and spends another of
+ * the key's five slots — which is the whole defect this exists to close.
+ */
+describe('ensureSession keeps the activation', () => {
+  const stale = { token: 'old', expiresAt: NOW - 1 };
+
+  it('hands the stored activation id to exchange, so the server validates', async () => {
+    const exchange = vi.fn(async () => ({
+      ok: true as const,
+      session: { token: 'new', expiresAt: NOW + 86_400_000 },
+      activationId: 'act_1',
+    }));
+
+    await ensureSession({ key: 'KEY-1', session: stale, activationId: 'act_1' }, {
+      exchange,
+      save: async () => {},
+      now: () => NOW,
+    });
+
+    expect(exchange).toHaveBeenCalledWith('KEY-1', 'act_1');
+  });
+
+  it('persists the activation id it gets back', async () => {
+    // Without this the first renewal works and every one after it activates again.
+    const saved: unknown[] = [];
+    await ensureSession({ key: 'KEY-1', session: null }, {
+      exchange: async () => ({
+        ok: true as const,
+        session: { token: 'new', expiresAt: NOW + 86_400_000 },
+        activationId: 'act_1',
+      }),
+      save: async (s) => {
+        saved.push(s);
+      },
+      now: () => NOW,
+    });
+
+    expect(saved[0]).toMatchObject({ key: 'KEY-1', activationId: 'act_1' });
+  });
+
+  it('keeps the activation id when the licence is refused', async () => {
+    // The session goes, the key stays, and the activation must stay too: the customer is
+    // still paired with this install, and dropping it would make the next successful
+    // exchange activate a SECOND time for the same machine.
+    const saved: { activationId?: string }[] = [];
+    await ensureSession({ key: 'KEY-1', session: stale, activationId: 'act_1' }, {
+      exchange: async () => ({ ok: false as const, retryable: false }),
+      save: async (s) => {
+        saved.push(s);
+      },
+      now: () => NOW,
+    });
+
+    expect(saved[0]).toMatchObject({ session: null, activationId: 'act_1' });
+  });
+});
+
+/**
+ * THE WIRING, which is where a fix like this dies quietly.
+ *
+ * `ensureSession` calls `deps.exchange(pro.key, pro.activationId)`. The worker supplies
+ * that dep as an arrow, and **an arrow taking fewer parameters is perfectly assignable in
+ * TypeScript** — so `(key) => license.exchange(key)` compiles, passes every unit test, and
+ * silently throws the activation id away. The renewal then activates again and spends a
+ * slot a day, which is the entire defect this was meant to close.
+ *
+ * Asserted as SOURCE because `background.ts` and `options.ts` register listeners and call
+ * `main()` at module scope, so neither can be imported. `OPENWORK.md` §5 records what this
+ * kind of guard cannot see: it proves the parameters are declared, not that they arrive.
+ */
+describe('the callers actually forward the activation id', () => {
+  it('the worker’s renewal adapter takes BOTH parameters', () => {
+    expect(background, 'background.ts must forward activationId into license.exchange').toMatch(
+      /exchange:\s*\(key,\s*activationId\)\s*=>/,
+    );
+  });
+
+  it('the options page reuses a stored activation instead of activating again', () => {
+    // Pressing Activate on a key you already hold must not spend a second slot, and
+    // writePro must not drop the id it already had.
+    expect(optionsSrc).toContain('activationId');
   });
 });

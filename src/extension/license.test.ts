@@ -60,9 +60,13 @@ describe('createLicense', () => {
   it('exchanges a key for a session', async () => {
     const fetch = vi.fn(async () => ok({ token: 'tok', expiresAt: NOW + 86_400_000 }));
     const license = createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW });
+    // Still `toEqual` rather than a loosened matcher: the exchange's whole shape is the
+    // contract. `activationId` is '' here because this fixture's response carries none,
+    // which is the pre-Polar-activation case and must not read as a real activation.
     expect(await license.exchange('KEY-1')).toEqual({
       ok: true,
       session: { token: 'tok', expiresAt: NOW + 86_400_000 },
+      activationId: '',
     });
   });
 
@@ -126,5 +130,47 @@ describe('createLicense', () => {
     const license = createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW });
     expect(await license.exchange('   ')).toMatchObject({ ok: false, retryable: false });
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ACTIVATE ONCE, VALIDATE FOREVER — the client's half.
+ *
+ * Polar's `activate` spends one of a key's five activation slots every time it is called,
+ * and this module was the thing calling it, once a day, for ever. Carrying the
+ * `activationId` back and forth is what lets the server validate instead.
+ */
+describe('exchange carries the activation id', () => {
+  const ok = (body: unknown) =>
+    vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+  const session = { token: 'tok', expiresAt: NOW + 86_400_000 };
+
+  it('sends no activation id the first time, so the server activates', async () => {
+    const fetch = ok({ ...session, activationId: 'act_1' });
+    const license = createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW });
+
+    await license.exchange('KEY-1');
+
+    const body = String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body);
+    expect(body).not.toContain('activationId');
+  });
+
+  it('returns the activation id so the caller can persist it', async () => {
+    const fetch = ok({ ...session, activationId: 'act_1' });
+    const license = createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW });
+
+    const result = await license.exchange('KEY-1');
+
+    expect(result).toMatchObject({ ok: true, activationId: 'act_1' });
+  });
+
+  it('sends the activation id once it has one, so the server validates', async () => {
+    const fetch = ok({ ...session, activationId: 'act_1' });
+    const license = createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW });
+
+    await license.exchange('KEY-1', 'act_1');
+
+    const body = String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body);
+    expect(JSON.parse(body)).toMatchObject({ key: 'KEY-1', activationId: 'act_1' });
   });
 });

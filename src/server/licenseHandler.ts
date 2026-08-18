@@ -19,13 +19,38 @@ export interface LicenseEnv {
   /** Who is allowed to ask. See the origin check below. */
   extensionId: string;
   activateUrl: string;
+  /** Polar's per-session check. Takes an activation_id and creates NOTHING. */
+  validateUrl: string;
   fetch: (url: string, init?: RequestInit) => Promise<Response>;
   now: () => number;
 }
 
+/** `activate`'s answer. The top-level `id` is the ACTIVATION. */
 interface PolarActivation {
   id: string;
   license_key: { id: string; status: string; expires_at: string | null };
+}
+
+/**
+ * `validate`'s answer, and it is INVERTED from activate's — this is the trap.
+ *
+ *   activate   { id: <activation>,  license_key: { id: <key>, status } }
+ *   validate   { id: <key>, status, activation: { id: <activation> } }
+ *
+ * Read one as the other and `status` is `undefined`, so every renewal 403s with "That
+ * licence is not active" and looks exactly like a revoked subscription.
+ */
+interface PolarValidation {
+  id: string;
+  status: string;
+  activation?: { id: string };
+}
+
+/** What both shapes are normalised to, so one branch decides below. */
+interface Claim {
+  licenseKeyId: string;
+  activationId: string;
+  status: string;
 }
 
 const json = (body: unknown, status: number): Response =>
@@ -56,25 +81,51 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
   }
 
   let key: string;
+  let activationId: string;
   try {
-    key = ((await request.json()) as { key?: string }).key?.trim() ?? '';
+    const body = (await request.json()) as { key?: string; activationId?: string };
+    key = body.key?.trim() ?? '';
+    activationId = body.activationId?.trim() ?? '';
   } catch {
     return json({ error: 'Bad request' }, 400);
   }
   if (!key) return json({ error: 'No licence key' }, 400);
 
+  /**
+   * ACTIVATE ONCE, VALIDATE FOREVER.
+   *
+   * `activate` CREATES an activation and spends one of the key's five slots. Calling it on
+   * every renewal — which is what this handler used to do, once a day per subscriber —
+   * exhausts a five-slot key in five days and then shows a paying customer the wall.
+   *
+   * So: no activation id means this is a first pairing, and we activate. An activation id
+   * means the extension has been here before, and we validate, which creates nothing.
+   * Polar's own words: activate is "optional if there is no activation limit", validate is
+   * "for each session of your application".
+   *
+   * `increment_usage` is deliberately NOT sent. It meters consumption per key, and the
+   * benefit's Usage limit is left empty on purpose because catches are counted in
+   * `entitlement.ts`, on the machine. Two meters would disagree and nobody would know which
+   * one had fired.
+   */
+  const renewing = Boolean(activationId);
+
   let res: Response;
   try {
-    res = await env.fetch(env.activateUrl, {
+    res = await env.fetch(renewing ? env.validateUrl : env.activateUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.polarToken}` },
-      body: JSON.stringify({
-        key,
-        organization_id: env.organizationId,
-        // Which install this is. Polar shows it in the dashboard and it is the only way
-        // to tell one activation of a licence from another.
-        label: 'Buki for Chrome',
-      }),
+      body: JSON.stringify(
+        renewing
+          ? { key, organization_id: env.organizationId, activation_id: activationId }
+          : {
+              key,
+              organization_id: env.organizationId,
+              // Which install this is. Polar shows it in the dashboard and it is the only
+              // way to tell one activation of a licence from another.
+              label: 'Buki for Chrome',
+            },
+      ),
     });
   } catch (err) {
     // Polar is unreachable. 503, NOT 403: a 4xx makes the extension throw its session
@@ -98,22 +149,36 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
     );
   }
 
-  let activation: PolarActivation;
+  let claim: Claim;
   try {
-    activation = (await res.json()) as PolarActivation;
+    const parsed: unknown = await res.json();
+    claim = renewing
+      ? {
+          licenseKeyId: (parsed as PolarValidation).id,
+          activationId: (parsed as PolarValidation).activation?.id ?? activationId,
+          status: (parsed as PolarValidation).status,
+        }
+      : {
+          licenseKeyId: (parsed as PolarActivation).license_key?.id,
+          activationId: (parsed as PolarActivation).id,
+          status: (parsed as PolarActivation).license_key?.status,
+        };
   } catch {
     return json({ error: 'Buki got an unexpected answer from the payment provider.' }, 502);
   }
 
-  if (activation.license_key?.status !== 'granted') {
+  if (claim.status !== 'granted') {
     return json({ error: 'That licence is not active.' }, 403);
   }
 
   const now = env.now();
   const token = await sign(
-    { licenseKeyId: activation.license_key.id, activationId: activation.id },
+    { licenseKeyId: claim.licenseKeyId, activationId: claim.activationId },
     env.secret,
     now,
   );
-  return json({ token, expiresAt: now + TOKEN_TTL_MS }, 200);
+  // `activationId` travels back so the extension can persist it and stop activating. It
+  // was always in the signed claim and never came out, which is why the client had no way
+  // to renew without spending another slot.
+  return json({ token, expiresAt: now + TOKEN_TTL_MS, activationId: claim.activationId }, 200);
 }

@@ -26,6 +26,7 @@ const env = (over: Partial<LicenseEnv> = {}): LicenseEnv => ({
   organizationId: 'org_1',
   extensionId: EXT,
   activateUrl: 'https://api.polar.test/v1/license-keys/activate',
+  validateUrl: 'https://api.polar.test/v1/license-keys/validate',
   fetch: vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 })),
   now: () => NOW,
   ...over,
@@ -153,6 +154,93 @@ describe('exchanging a licence for a session', () => {
  * the same reason it is worth having there: it removes the casual path completely, and on
  * this endpoint there was previously nothing at all.
  */
+/**
+ * ACTIVATE ONCE, VALIDATE FOREVER.
+ *
+ * Polar's `activate` CREATES an activation and spends one of the key's five slots. It was
+ * the only endpoint this handler ever called, and `ensureSession` calls the handler daily,
+ * so every subscriber burned a slot a day and met the wall they had paid to pass on day
+ * five. `validate` is the per-session call: it takes the `activation_id` that activate
+ * returned and creates nothing.
+ *
+ * THE TWO RESPONSE SHAPES ARE INVERTED, which is the trap:
+ *
+ *   activate   { id: <activation>,  license_key: { id: <key>, status } }
+ *   validate   { id: <key>, status, activation: { id: <activation> } }
+ *
+ * Read one as the other and `status` is `undefined`, so every renewal 403s with "That
+ * licence is not active" — the failure would look exactly like a revoked subscription.
+ */
+describe('activating once and validating after', () => {
+  const validated = {
+    id: 'lk_1',
+    status: 'granted',
+    activation: { id: 'act_1', license_key_id: 'lk_1', label: 'Buki for Chrome' },
+  };
+  const called = (fetch: ReturnType<typeof vi.fn>): string[] =>
+    fetch.mock.calls.map((c) => String(c[0]));
+
+  it('activates when the caller has no activation id yet', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ fetch }));
+
+    expect(res.status).toBe(200);
+    expect(called(fetch)).toEqual(['https://api.polar.test/v1/license-keys/activate']);
+  });
+
+  it('hands the activation id back so the extension can stop activating', async () => {
+    // Without this the client has nothing to send next time and is condemned to activate
+    // for ever. The id already existed inside the signed token; it just never came out.
+    const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ fetch }));
+
+    expect((await res.json()) as { activationId: string }).toMatchObject({ activationId: 'act_1' });
+  });
+
+  it('VALIDATES instead of activating once it is given an activation id', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(validated), { status: 200 }));
+    const res = await handleLicense(
+      post({ key: 'KEY-1', activationId: 'act_1' }),
+      env({ fetch }),
+    );
+
+    expect(res.status).toBe(200);
+    // The whole fix in one assertion: activate must not be touched on a renewal.
+    expect(called(fetch)).toEqual(['https://api.polar.test/v1/license-keys/validate']);
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(String(init.body)).toContain('act_1');
+  });
+
+  it("reads validate's own shape, where status is top level", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(validated), { status: 200 }));
+    const res = await handleLicense(post({ key: 'KEY-1', activationId: 'act_1' }), env({ fetch }));
+
+    // Parsed as activate's shape this is `undefined` and the branch below 403s.
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { activationId: string }).toMatchObject({ activationId: 'act_1' });
+  });
+
+  it('refuses a validate whose status is not granted', async () => {
+    const fetch = vi.fn(
+      async () => new Response(JSON.stringify({ ...validated, status: 'revoked' }), { status: 200 }),
+    );
+    const res = await handleLicense(post({ key: 'KEY-1', activationId: 'act_1' }), env({ fetch }));
+
+    expect(res.status).toBe(403);
+  });
+
+  it('never sends increment_usage, which would be a second hidden limit', async () => {
+    // `polar-setup.md` §2 leaves the benefit's Usage limit empty on purpose: catches are
+    // metered in `entitlement.ts`, on the machine. Metering here as well would create a
+    // second ceiling that disagrees with the first and nobody would know which one hit.
+    const fetch = vi.fn(async () => new Response(JSON.stringify(validated), { status: 200 }));
+    await handleLicense(post({ key: 'KEY-1', activationId: 'act_1' }), env({ fetch }));
+
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(String(init.body)).not.toContain('increment_usage');
+  });
+});
+
 describe('who may ask for a session', () => {
   it('refuses a request that did not come from our extension', async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));

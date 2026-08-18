@@ -16,7 +16,12 @@ export interface Session {
 }
 
 export type Exchange =
-  | { ok: true; session: Session }
+  /**
+   * `activationId` is Polar's id for THIS install. Persist it: sending it back on the next
+   * exchange is what makes the server validate rather than activate, and activating spends
+   * one of the key's five slots every single time.
+   */
+  | { ok: true; session: Session; activationId: string }
   | { ok: false; retryable: boolean; message?: string };
 
 export interface LicenseDeps {
@@ -70,10 +75,10 @@ function sessionFrom(body: unknown): Session | null {
 }
 
 export function createLicense(deps: LicenseDeps): {
-  exchange: (key: string) => Promise<Exchange>;
+  exchange: (key: string, activationId?: string) => Promise<Exchange>;
 } {
   return {
-    async exchange(rawKey: string): Promise<Exchange> {
+    async exchange(rawKey: string, activationId?: string): Promise<Exchange> {
       // Keys arrive pasted out of an email, which is where the trailing newline comes
       // from. Trimming here rather than at every call site.
       const key = rawKey.trim();
@@ -86,7 +91,10 @@ export function createLicense(deps: LicenseDeps): {
           headers: { 'content-type': 'application/json' },
           // In the BODY, never the URL: a query string lands in server logs, browser
           // history and every proxy in between, and this is a bearer credential.
-          body: JSON.stringify({ key }),
+          // The activation id is OMITTED rather than sent empty on a first pairing: the
+          // server branches on its presence, and `{ activationId: '' }` would read as a
+          // renewal and validate an activation that does not exist yet.
+          body: JSON.stringify(activationId ? { key, activationId } : { key }),
         });
       } catch {
         // Offline, DNS, a captive portal. The caller must keep whatever session it has.
@@ -121,7 +129,15 @@ export function createLicense(deps: LicenseDeps): {
           message: 'Buki got an unexpected answer. Try again, or write to us.',
         };
       }
-      return { ok: true, session };
+      // Falls back to what we already had: a validate response echoes the activation, but
+      // if it ever does not, forgetting the id would silently activate again next time and
+      // spend another slot.
+      const back = (body as { activationId?: unknown })?.activationId;
+      return {
+        ok: true,
+        session,
+        activationId: typeof back === 'string' && back ? back : (activationId ?? ''),
+      };
     },
   };
 }

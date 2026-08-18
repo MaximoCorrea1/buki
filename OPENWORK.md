@@ -4,14 +4,14 @@
 
 | | |
 | --- | --- |
-| Tests | **536 across 53 files**, all passing |
+| Tests | **550 across 53 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, not switched on.** Every client and server module exists and is tested; a Polar product (item 1) and five Vercel variables (item 2) are all that stand between it and working. See items 10–16 |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **77** as this line was written, so the commit carrying it makes 78 |
+| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **79** as this line was written, so the commit carrying it makes 80 |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -64,7 +64,7 @@ unblocks.
 
 ## Part 1. Maximo only. Nothing in Part 3 can start until 1 and 2 are done
 
-> ### ⛔ 27 IS NOW THE FIRST THING. It outranks 1 and 2.
+> ### ✅ 27 IS FIXED, 2026-08-18. Kept because the shape of it is worth not repeating.
 >
 > **Every paying customer's licence self-destructs in about five days.** Found by the
 > adversarial reviewer on 2026-08-17 and then CONFIRMED against Polar's own documentation,
@@ -99,8 +99,19 @@ unblocks.
 > returned. The full contract, both endpoint families, and the two ways out are written up
 > in `docs/superpowers/polar-setup.md` §2.1.
 >
-> **Do not launch before this is fixed**; it breaks 100% of paying customers. It is also
-> the same change item 28 wants, since a `validate` probe cannot touch the slot count.
+> **FIXED 2026-08-18.** The handler branches: no activation id means a first pairing and it
+> ACTIVATES; an id means it VALIDATES, which creates nothing. The id travels back in the
+> response, `ProState` persists it, and `ensureSession` hands it over on every renewal.
+>
+> **The two response shapes are inverted and that is the trap** — activate answers
+> `{ id: <activation>, license_key: { id, status } }`, validate answers
+> `{ id: <key>, status, activation: { id } }`. Read one as the other and `status` is
+> `undefined`, so every renewal 403s and looks exactly like a revoked subscription.
+>
+> **The fix was nearly undone at the wiring.** `background.ts` supplied the dep as
+> `exchange: (key) => ...` and **an arrow with fewer parameters is assignable in
+> TypeScript**, so it compiled, passed every test, and dropped the id. Both call sites now
+> forward it, asserted in `proState.test.ts`.
 
 - [ ] **1. Create the Polar product.** **Field by field, with the reasoning and a curl that
       proves it before any code exists: `docs/superpowers/polar-setup.md`.**

@@ -23,6 +23,18 @@ export interface ProState {
   key: string;
   /** The session it was last exchanged for, or null if never/failed. */
   session: Session | null;
+  /**
+   * Polar's id for THIS install, from the one and only `activate` call.
+   *
+   * Its presence is what tells the server to VALIDATE rather than activate on every later
+   * exchange. Activating spends one of the key's five slots each time, and `ensureSession`
+   * renews daily, so without this a subscriber exhausted their own licence in five days and
+   * was then shown the wall they had paid to pass.
+   *
+   * Optional because every record written before 2026-08-18 lacks it. A missing id is not
+   * an error: it means "activate once more, then keep what comes back."
+   */
+  activationId?: string;
 }
 
 const EMPTY: ProState = { key: '', session: null };
@@ -100,7 +112,7 @@ export function standingOf(
 export async function ensureSession(
   pro: ProState,
   deps: {
-    exchange: (key: string) => Promise<Exchange>;
+    exchange: (key: string, activationId?: string) => Promise<Exchange>;
     save: (state: ProState) => Promise<void>;
     now: () => number;
   },
@@ -110,20 +122,36 @@ export async function ensureSession(
 
   let result: Exchange;
   try {
-    result = await deps.exchange(pro.key);
+    // The stored id, so the server validates instead of burning another slot.
+    result = await deps.exchange(pro.key, pro.activationId);
   } catch {
     return pro; // keep what we have and ride the grace window
   }
 
   if (result.ok) {
-    const next: ProState = { key: pro.key, session: result.session };
+    // Keep whichever id we now hold. Preferring the fresh one matters on the FIRST
+    // exchange, where we had none and Polar has just issued it.
+    const next: ProState = {
+      key: pro.key,
+      session: result.session,
+      ...(result.activationId || pro.activationId
+        ? { activationId: result.activationId || pro.activationId }
+        : {}),
+    };
     await deps.save(next);
     return next;
   }
 
   if (result.retryable) return pro;
 
-  const next: ProState = { key: pro.key, session: null };
+  // The session goes and the key stays — and so does the activation. This install is
+  // still paired with Polar, so dropping the id would make the next successful exchange
+  // activate a SECOND time for the same machine.
+  const next: ProState = {
+    key: pro.key,
+    session: null,
+    ...(pro.activationId ? { activationId: pro.activationId } : {}),
+  };
   await deps.save(next);
   return next;
 }
