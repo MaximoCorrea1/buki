@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { restoreArgs } from './shelfEdit';
-import background from './background.ts?raw';
+import { handleSaveBook } from './saveBook';
 import type { SavedBook } from './storage';
 
 /**
@@ -53,17 +53,40 @@ describe('putting a removed book back', () => {
     expect(restoreArgs(saved({ id: 'sb_9' })).restoreOf).toBe('sb_9');
   });
 
-  it('is actually used by the worker to put the recognition back', () => {
-    // THE POINT OF THE WHOLE THING, and the link no unit test can reach: `background.ts`
-    // registers chrome listeners at module scope, so importing it throws before any test
-    // runs. Read as source instead, the way contentChrome.test.ts reads the tray's CSS.
+  it('is actually used by the worker to put the recognition back', async () => {
+    // THE POINT OF THE WHOLE THING: the whole loop, from the button's arguments to the
+    // relink, with no source-text guard anywhere in it.
     //
-    // This guard exists because of a dated failure. On 2026-08-17 `needsRenewal` was
-    // written, tested and left with NO CALLER, and a Pro session would have expired on a
-    // paying subscriber with nothing red anywhere. `markRestored` is the same shape of
-    // thing: correct, tested, and worth nothing until the worker calls it.
-    expect(background).toContain('markRestored');
-    expect(background).toContain('restoreOf');
+    // This assertion used to read `expect(background).toContain('markRestored')`, because
+    // `background.ts` registers chrome listeners at module scope and cannot be imported.
+    // A reviewer mutated the source and proved what that could not see: it passed with the
+    // relink wrapped in `if (false && ...)` and passed with the ARGUMENTS REVERSED, which
+    // relinks every undo backwards, while all 533 tests stayed green. Both arguments are
+    // strings, so TypeScript was silent too.
+    //
+    // The decision now lives in `handleSaveBook`, so it can be called for real. That the
+    // worker dispatches through it is asserted on the import line in `saveBook.test.ts`,
+    // where absence in an import is the one thing a `?raw` guard proves cleanly.
+    //
+    // The dated failure this all guards against still stands: on 2026-08-17 `needsRenewal`
+    // was written, tested and left with NO CALLER, and a Pro session would have expired on
+    // a paying subscriber with nothing red anywhere. Correct and tested is worth nothing
+    // until something calls it.
+    const markRestored = vi.fn(async () => {});
+    const removed = saved({ id: 'sb_9' });
+
+    const res = await handleSaveBook(
+      { type: 'saveBook', ...restoreArgs(removed) },
+      {
+        add: async () => saved({ id: 'sb_new' }),
+        rememberCover: () => {},
+        markRestored,
+      },
+    );
+
+    expect(res).toEqual({ ok: true, saved: saved({ id: 'sb_new' }) });
+    // The id it HAD, then the id it has now. Reversed, every undo relinks backwards.
+    expect(markRestored).toHaveBeenCalledWith('sb_9', 'sb_new');
   });
 
   it('omits what was never there rather than sending undefined', () => {

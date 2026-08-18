@@ -19,6 +19,7 @@ import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
 import { PRICING_URL } from '../shared/pricing';
 import { createGate, WallError } from './gate';
+import { handleSaveBook, type SaveBookDeps } from './saveBook';
 import { readPro, writePro, createSessionKeeper, type ProState } from './proState';
 import { createLicense } from './license';
 import { BUKI_HOST } from '../shared/host';
@@ -521,6 +522,19 @@ const gate = createGate({
   trial: createTrial({ storage: chrome.storage.local }),
   now: () => Date.now(),
 });
+
+/**
+ * The live half of `handleSaveBook`. Bindings only; every decision is in that module.
+ *
+ * `rememberCover` is voided here rather than inside the handler, which is where the
+ * fire-and-forget contract is actually made good: the handler's type says the dependency
+ * returns nothing, so nothing it does can reject into a save.
+ */
+const liveSaveBook: SaveBookDeps = {
+  add: (book, intent, source, shot) => library.add(book, intent, source, shot),
+  rememberCover: (url) => void rememberCover(url, liveCoverDeps()),
+  markRestored: (previousId, savedId) => log.markRestored(previousId, savedId),
+};
 chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendResponse) => {
   if (msg?.type === 'logEvent') {
     note(msg.event);
@@ -529,39 +543,15 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
   }
 
   // The worker is the only writer of `savedBooks`. Other contexts ask; they never write.
+  //
+  // EVERY DECISION IS IN `handleSaveBook`, not here, so the relink can be spied on instead
+  // of string-matched. This listener cannot be imported by a test — it registers at module
+  // scope — and a reviewer proved what a `?raw` guard over it cannot see: the old inline
+  // version passed `toContain('markRestored')` with the call in dead code AND with its
+  // arguments reversed. Keep this adapter thin, and give the next message type its own
+  // handler rather than inlining one here.
   if (msg?.type === 'saveBook') {
-    library
-      .add(msg.book, msg.intent, msg.source, msg.shot)
-      .then((saved) => {
-        // Both. The catalogue's art is what the shelf draws first as of 2026-08-16;
-        // the picture is kept anyway, because it is what a book gets when OpenLibrary
-        // holds no art, and because keeping the bytes means the shelf survives the post
-        // being deleted - which is the whole point of having caught it.
-        void rememberCover(saved.shot, liveCoverDeps());
-        void rememberCover(msg.book.coverUrl, liveCoverDeps());
-        // AN UNDO, not a fresh save. `removeBook` flagged this attempt as a wrong match on
-        // the way out; putting the book back has to put the recognition back too, and
-        // relink the event to the id `add` just issued. Without the relink the event names
-        // a book that is not on the shelf and a later genuine removal flags nothing.
-        // CHAINED, not fire-and-forget, and the distinction cost a review to see. A
-        // failed relink must not fail the undo the user can see — that is what the inner
-        // `.catch` is for — but "must not fail" is not "must not be awaited". `removeBook`
-        // two blocks below already proves you get both: it chains `markWrong` before
-        // responding, under a comment about the day this exact race left the kept rate
-        // stale. The popup holds its OWN read-only log instance and there is no
-        // `chrome.storage.onChanged` listener anywhere, so a stale read after Undo does
-        // not self-correct — it sits there until something unrelated refreshes.
-        const relink = msg.restoreOf
-          ? log
-              .markRestored(msg.restoreOf, saved.id)
-              .catch((err: unknown) => console.error('[Buki] could not restore the match', err))
-          : Promise.resolve();
-        void relink.then(() => sendResponse({ ok: true, saved } satisfies ShelfResponse));
-      })
-      .catch((err: unknown) => {
-        console.error('[Buki] save failed', err);
-        sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
-      });
+    void handleSaveBook(msg, liveSaveBook).then(sendResponse);
     return true; // async response
   }
 
