@@ -4,14 +4,14 @@
 
 | | |
 | --- | --- |
-| Tests | **550 across 53 files**, all passing |
+| Tests | **581 across 55 files**, all passing |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
-| Paid tier | **written, not switched on.** Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16, and **the renewal bug that would have broken every subscriber is fixed** (item 27) |
-| Branch | `buki-pro`, **not merged**. `git rev-list --count main..buki-pro` read **81** as this line was written. **MERGED to `main` on 2026-08-18**, so this number is now history rather than status |
+| Paid tier | **written, not switched on.** Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
+| Branch | `buki-hardening`, off `main` at `d3e5923`. `buki-pro` was merged to `main` on 2026-08-18 and is history. **Run the probe, do not trust a number written here** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **66** steps done, **19** left |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -31,20 +31,41 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **1** | **Maximo** | Polar product exists (products created 08-17; verify the benefit's activation settings) | everything in Part 3 |
 | **2** | **Maximo** | The six Vercel variables, **one of which stays unset** | `/api/vision`, `/api/license` |
 | **26** | **Maximo** | **Hard spend cap + alert on the Gemini key.** The only control that bounds real money | nothing, but it is the floor under items 28 and 4 |
-| **28** | agent | `/api/license` has no rate limit | — |
-| **29** | agent | `proState` has no write queue around a call that spends a slot | — |
-| **30** | agent | Extract `handleSaveBook` so the `?raw` guard's blind spot closes | — |
+| ~~28~~ | agent | ~~`/api/license` has no rate limit~~ **DONE 2026-08-18** (`c5e3f64`) | — |
+| ~~29~~ | agent | ~~`proState` has no write queue around a call that spends a slot~~ **DONE 2026-08-18** (`b1676e9`) | — |
+| ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800 | item 15 |
 | **17** | agent | `docs/privacy.html` + the landing's data section, in the SAME commit as the proxy | store submission |
 | **18** | agent | Task 15 close-the-loop, minus Step 2 which is Maximo's | — |
-| **31** | decision | Relaying Polar's error text — revisit only if 28 is not done | — |
+| ~~31~~ | decision | ~~Relaying Polar's error text~~ **SETTLED by 28**: the oracle is now bounded at 40 probes per key per day per isolate. The text stays, because it tells a customer what to do | — |
+| **32** | agent | `api/vision.ts` holds its IP counter INLINE and untested, in a file whose header says nothing there needs a test. Same shape `keyCap.ts` just moved out of `api/license.ts` | — |
 | **25** | decision | Is the secondary button filled enough to look filled | — |
 | — | decision | The **"Read" collision**: the tray says *Read now/next/someday* while the shelf's fourth pile is *Read*, meaning finished. Renaming it *Finished* ends it | — |
 | — | agent | `authorName()` is an N+1: one extra OpenLibrary request per book to turn an author key into a name. A 20-book photo means 20 follow-ups | — |
+| — | agent | The **X button still wears a 📚 glyph** while every other surface wears the catcher. Maximo, 2026-08-18: use the Buki logo, or an open book with the round face emerging from it, kept simple | — |
 
 **The critical path is 1, 2, 26.** Until the first two exist the paid tier is written and
 switched off, and until 26 exists nothing bounds what abuse can cost.
+
+> ### ⚠ 27 WAS FIXED TWICE, and the second half is the one worth reading. 2026-08-18.
+>
+> `cdda054` fixed "activate once, validate forever" in four places — the handler branches,
+> the id travels back in the response, `writePro` stores it, both call sites forward it.
+> **`readPro` never read it back out**, so the id was written on every exchange and dropped
+> on every read, `ensureSession` handed `undefined` to the server, and the server took the
+> ACTIVATE branch. A subscriber was still burning a slot a day. Fixed in `3012b30`.
+>
+> **Nothing was red and nothing could have been.** `activationId` is optional, so a literal
+> that omits it is a valid `ProState` and `tsc` had nothing to say. The round-trip test's
+> fixture had no `activationId`, so it could not see a reader that drops one. Every
+> `ensureSession` test passed the id in as an ARGUMENT, bypassing storage — the id flowed
+> perfectly in all 550 tests and never once in production. And
+> `expect(optionsSrc).toContain('activationId')` is item 30's blind spot, protecting the P0.
+>
+> The new fixture is typed `Required<ProState>`, which makes the COMPILER enumerate the
+> interface: a fourth field stops it compiling until it is named, and then the assertion
+> fails until `readPro` carries it out.
 
 ---
 
@@ -746,7 +767,7 @@ needs a credential or a dashboard is the shell around it.
       `src/extension/contentChrome.test.ts` guards what a screenshot cannot: the rule is
       about every page, not the one you happened to look at.
 
-- [ ] **30. The `?raw` source guard cannot see control flow, and a reviewer PROVED it.**
+- [x] **30. DONE 2026-08-18 (`99d6cae`). The `?raw` source guard cannot see control flow, and a reviewer PROVED it.**
       `shelfEdit.test.ts` asserts `expect(background).toContain('markRestored')`. Mutation
       testing showed it passes with the call wrapped in `if (false && msg.restoreOf)` (dead
       code) **and passes with the arguments reversed** — which would relink every undo
@@ -763,7 +784,16 @@ needs a credential or a dashboard is the shell around it.
       message type instead of extracting, every new guard inherits the same blind spot.
       *(testing reviewer, P1)*
 
-- [ ] **31. `/api/license` relays Polar's differentiated error text.** `detail` is returned
+      **Done.** `src/extension/saveBook.ts` holds `handleSaveBook(msg, deps)` in the
+      `(request, env) => response` shape; the listener is a four-line adapter.
+      **Mutation-tested rather than assumed:** both mutations that previously passed all
+      533 tests now fail — reversing the arguments fails 2 tests, `if (false && ...)` fails
+      3. The old `toContain('markRestored')` was REPLACED, not kept beside the new one: it
+      had stopped meaning anything the moment `restoreOf` left `background.ts`, and a dead
+      guard reads as a considered decision. **This is the pattern the next message type
+      should follow** rather than inlining a handler and inheriting the blind spot.
+
+- [x] **31. SETTLED 2026-08-18 by item 28 landing. `/api/license` relays Polar's differentiated error text.** `detail` is returned
       almost verbatim, so a caller past the Origin gate learns not just whether a key is
       real but its STATE — unused, fully activated, revoked. That is deliberate and tested
       (*"passes Polar's own words through, because they say what to do"*), because
@@ -772,8 +802,8 @@ needs a credential or a dashboard is the shell around it.
       alone: rate-limiting bounds how many oracle queries anybody gets. **Revisit only if
       28 is not done.** *(security reviewer, P3)*
 
-- [ ] **29. `proState` has no write queue, and it is the one read-modify-write that costs
-      money.** `trial.ts`, `storage.ts` and `recognitionLog.ts` each wrap their storage
+- [x] **29. DONE 2026-08-18 (`b1676e9`). `proState` had no write queue, and it is the one
+      read-modify-write that costs money.** `trial.ts`, `storage.ts` and `recognitionLog.ts` each wrap their storage
       read-modify-write in `createWriteQueue()`, each with a comment saying two overlapping
       writes would silently drop one. `readPro`/`writePro` do not, and `ensureSession` is
       exactly that pattern with a **Polar call that spends an activation slot** in the
@@ -785,7 +815,15 @@ needs a credential or a dashboard is the shell around it.
       Fix: single-flight the exchange, the way `createLookupMemo` already dedupes concurrent
       recognitions. *(adversarial reviewer, P1)*
 
-- [ ] **28. `/api/license` has no rate limit.** The Origin check added on 2026-08-17 closed
+      **Done, and single-flight rather than a queue.** A queue would make the second caller
+      wait and then re-read to discover the work was done; sharing the one promise means
+      there is no second exchange to serialise and no losing caller left holding a stale
+      state, so both halves close together. Keyed on the licence key, because two keys are
+      two pairings with two slot counts. **`createSessionKeeper` is at MODULE SCOPE in
+      `background.ts` and that is load-bearing** — built inside `recognize()` it would be a
+      fresh latch per catch, which is the same as no latch.
+
+- [x] **28. DONE 2026-08-18 (`c5e3f64`). `/api/license` had no rate limit.** The Origin check added on 2026-08-17 closed
       the zero-effort path and nothing more: `Origin` is a header any script sets, and the
       extension id is public the moment the item is listed. `/api/vision` at least pairs its
       check with a per-IP cap; `LicenseEnv` carries no rate-limit dependency at all. Five
@@ -793,6 +831,36 @@ needs a credential or a dashboard is the shell around it.
       raised this independently** (security P2, adversarial P0). Fix: throttle per licence
       key before calling Polar, and prefer `validate` over `activate` for probes so an
       attempt cannot touch the slot count — which is the same change item 27 needs.
+
+      **Done, and with TWO ceilings rather than one**, because the branches cost different
+      things and one number cannot bound both. `validate` creates nothing, so its ceiling is
+      only about oracle probing: **40/day**. `activate` spends a slot for ever, so its
+      ceiling is **3/day** — a legitimate activation happens once per install and only while
+      no id is held, so the tight number costs nobody real anything. A single number
+      generous enough for five installs renewing daily would also be generous enough to burn
+      every slot the customer has.
+
+      The check lands **before the outbound fetch** (a 429 after calling Polar would burn
+      the activation it protects) and **after the key is trimmed** (counting the untrimmed
+      string hands an attacker a fresh allowance per trailing space). Both tested; the
+      ordering guard was earned with an A/B.
+
+      **Honest about what it is:** the counter is per-isolate, so a caller spread across
+      isolates gets more than one allowance. It bounds the casual and the accidental. Item
+      26 is still the floor under real money.
+
+- [ ] **32. `api/vision.ts` holds its IP counter inline and untested.** The same shape
+      `keyCap.ts` was moved out of `api/license.ts` for on 2026-08-18: a day rollover and a
+      ceiling, living in a file whose own header says it is "the shell only ... deliberately
+      short enough that nothing here needs a test". It is a working path and was left alone
+      on purpose so item 28 stayed one change.
+
+      **Two differences to keep when it moves.** Vision's counter tracks IPs, which real
+      callers bound for us, so it needs no eviction rule the way the licence one does; and
+      it takes a `Request` rather than a string, so the extraction should keep that shape
+      rather than making both endpoints share a signature neither wants. §5 already carries
+      the trap this is an instance of: *when one handler has a guard, ask what the sibling
+      handler has.*
 
 - [ ] **26. Set a hard spend cap and an alert on the Gemini key.** Maximo only, in Google
       Cloud billing, and it is the **only** control that bounds what abuse can cost. Both
@@ -940,6 +1008,39 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
 - **A trap recorded only in a handoff is a trap you will pay for again.** Handoffs are
   superseded and stop being read. §5 is the place a lesson survives; when a session finds
   something that cost time, it goes HERE, not only in the ledger pair.
+
+- **AN OPTIONAL FIELD ADDED TO AN INTERFACE MAKES EVERY EXISTING CONSTRUCTOR OF THAT
+  INTERFACE SILENTLY INCOMPLETE.** `cdda054` added `activationId?: string` to `ProState` and
+  fixed the four places that WRITE it. `readPro` rebuilds a sanitised subset of that
+  interface and was never extended, so the id was stored on every exchange and dropped on
+  every read — and the P0 it was added to fix went on happening. **`tsc` cannot help**: the
+  field is optional, so a literal that omits it is a valid `ProState`. This is the same
+  permissiveness as *"an arrow taking fewer parameters is assignable"*, one commit apart, in
+  the same feature. **When you add a field to an interface, grep for every function whose
+  return type is that interface** — the writers are obvious and the readers are not.
+- **A ROUND-TRIP TEST IS ONLY AS COMPLETE AS ITS FIXTURE, and `Required<T>` fixes that for
+  free.** `writePro` → `readPro` had a round-trip test. Its fixture was `{ key, session }`,
+  so it could not see a third field being dropped. Typing the fixture `Required<ProState>`
+  makes the COMPILER enumerate the interface: a new field stops the fixture compiling until
+  it is named, and then the assertion fails until the reader carries it out. Types are
+  erased at runtime so a test cannot enumerate an interface itself — this is the one way to
+  make it, and it costs one annotation.
+- **EVERY TEST OF A FUNCTION THAT TAKES STATE AS AN ARGUMENT IS BLIND TO HOW THAT STATE IS
+  LOADED.** All seven `ensureSession` tests passed `activationId` in directly, so the value
+  flowed perfectly in every test and never in production. **When a function's input comes
+  from storage, at least one test has to start at the storage.**
+- **A GUARD CAN PROVE ABSENCE EVEN WHEN IT CANNOT PROVE PRESENCE.** §5 records at length
+  that a `?raw` source guard cannot see control flow. It follows that `toContain('x')` is
+  weak — but `not.toContain('x')` **on an import statement** is strong: imports have no
+  branches, and prose in a comment cannot satisfy it. `background.ts` importing
+  `createSessionKeeper` and NOT `ensureSession` is the actual mechanism that keeps the
+  renewal inside the latch, so that is what is asserted. Earned with an A/B both times.
+- **A COUNTER IS LOGIC, AND A FILE THAT SAYS "NOTHING HERE NEEDS A TEST" MUST NOT GROW ONE.**
+  The `/api/license` cap was first written inside `api/license.ts`, whose own header says it
+  is the shell only and deliberately short enough to need no test — and it immediately held
+  a day rollover, two ceilings and an eviction rule. Moved to `src/server/keyCap.ts` as a
+  factory, so a test gets a fresh counter. **`api/vision.ts` still has the same shape**
+  (item 32), which is the sibling this file already has a trap about.
 
 - **A retokening that changes an accent's LIGHTNESS invalidates every hardcoded colour
   sitting on it.** Moving `--accent` from amber to cobalt left the options save button at
