@@ -171,3 +171,55 @@ export async function ensureSession(
   await deps.save(next);
   return next;
 }
+
+/**
+ * ONE RENEWAL PER MOMENT, however many catches ask for it at once.
+ *
+ * `ensureSession` is a read-modify-write with a Polar call in the middle, and that call
+ * spends one of a licence's five activation slots — the only finite resource this
+ * extension can burn. `trial.ts`, `storage.ts` and `recognitionLog.ts` all wrap their
+ * read-modify-write in `createWriteQueue()`; this path had nothing, and it is the one
+ * where an overlap costs money rather than a record.
+ *
+ * Two catches clicked in the same second both read the same stale state, both see
+ * `needsRenewal`, and both exchange: two slots for one user action. The invisible half is
+ * worse — if one succeeds and the other hits a retryable error, the loser returns the
+ * ORIGINAL stale object, so that catch travels with no token, is classified `trial` by the
+ * server, and is billed to an allowance the customer already paid to pass.
+ *
+ * SINGLE-FLIGHT, not a queue, and the distinction is the point. `createLookupMemo` already
+ * does this for concurrent recognitions. A queue would make the second caller wait and
+ * then re-read to discover the work was done; sharing the one promise means there is no
+ * second exchange to serialise and no losing caller left holding a stale state. Both
+ * halves close together, because there is only ever one answer.
+ *
+ * Keyed on the licence key: two keys are two pairings with two slot counts, and handing
+ * key B the answer to key A's exchange would give it a session nobody paid for.
+ *
+ * The latch is for one moment, not for the life of the worker. It clears on settle — and
+ * only if it is still ours, so a flight for another key cannot clear a live one. A latch
+ * that stuck would be worse than the double-spend: every later renewal would join a
+ * finished promise, and the subscriber would ride out the grace window into the wall.
+ */
+export function createSessionKeeper(deps: {
+  exchange: (key: string, activationId?: string) => Promise<Exchange>;
+  save: (state: ProState) => Promise<void>;
+  now: () => number;
+}): (pro: ProState) => Promise<ProState> {
+  let flight: { key: string; run: Promise<ProState> } | null = null;
+
+  return function keep(pro: ProState): Promise<ProState> {
+    // Both of `ensureSession`'s own early returns, restated here so a caller that needs
+    // nothing never touches the latch and never waits behind somebody else's exchange.
+    if (!pro.key) return Promise.resolve(pro);
+    if (!needsRenewal(pro.session, deps.now())) return Promise.resolve(pro);
+
+    if (flight && flight.key === pro.key) return flight.run;
+
+    const run: Promise<ProState> = ensureSession(pro, deps).finally(() => {
+      if (flight?.run === run) flight = null;
+    });
+    flight = { key: pro.key, run };
+    return run;
+  };
+}

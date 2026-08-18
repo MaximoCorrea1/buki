@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { readPro, writePro, standingOf, ensureSession, PRO_KEY, type ProState } from './proState';
+import {
+  readPro,
+  writePro,
+  standingOf,
+  ensureSession,
+  createSessionKeeper,
+  PRO_KEY,
+  type ProState,
+} from './proState';
 import { GRACE_MS } from '../server/token';
 import type { StorageArea } from './storage';
 import background from './background.ts?raw';
@@ -326,5 +334,152 @@ describe('the callers actually forward the activation id', () => {
     // Pressing Activate on a key you already hold must not spend a second slot, and
     // writePro must not drop the id it already had.
     expect(optionsSrc).toContain('activationId');
+  });
+
+  it('the worker cannot renew outside the latch', () => {
+    // ASSERTED ON THE IMPORT LINE, not on the call, and that is deliberate. §5 records
+    // that a `?raw` guard cannot see control flow — `toContain('markRestored')` passed
+    // with the call in dead code and with its arguments reversed. ABSENCE in an import
+    // statement is the one thing this kind of guard proves cleanly: there are no branches
+    // in an import, and prose about `ensureSession` in a comment cannot satisfy it.
+    //
+    // It is also the real mechanism rather than a proxy for it. Renewing outside the
+    // module-scope latch would mean importing `ensureSession` back into the worker, and
+    // that is exactly what fails here.
+    const named = background.match(/import\s*\{([^}]*)\}\s*from\s*'\.\/proState'/)?.[1] ?? '';
+    expect(named, 'background.ts must import from ./proState').not.toBe('');
+    expect(named).toContain('createSessionKeeper');
+    expect(named).not.toContain('ensureSession');
+  });
+});
+
+/**
+ * TWO CATCHES IN THE SAME SECOND MUST NOT SPEND TWO SLOTS.
+ *
+ * `ensureSession` is a read-modify-write with a Polar call in the middle, and the Polar
+ * call is the one operation in this extension that costs a finite resource: five
+ * activation slots per licence, for ever. `trial.ts`, `storage.ts` and `recognitionLog.ts`
+ * each wrap their read-modify-write in `createWriteQueue()` under a comment saying two
+ * overlapping writes would silently drop one. This path had nothing, and it is the one
+ * where an overlap costs money rather than a record.
+ *
+ * Click two catches in the same second and both read the same stale `ProState`, both see
+ * `needsRenewal`, and both exchange: two slots for one user action, on a key that only
+ * has five.
+ *
+ * The second half is worse and is invisible. If one exchange succeeds and the other hits
+ * a retryable error, the loser returns the ORIGINAL stale object rather than re-reading —
+ * so that catch travels with no token, is classified `trial` by the server, and is billed
+ * to a free allowance the customer already paid to pass.
+ *
+ * SINGLE-FLIGHT rather than a queue, which is what `createLookupMemo` already does for
+ * concurrent recognitions. A queue would serialise the second caller and then have to
+ * re-read to notice the work was already done; sharing the one promise means there is no
+ * second exchange to serialise and no losing caller to leave holding a stale state. Both
+ * halves of the defect close at once, because there is only ever one answer.
+ */
+describe('createSessionKeeper', () => {
+  const stale = { token: 'old', expiresAt: NOW - 1 };
+  const live = { token: 'live', expiresAt: NOW + 20 * 3_600_000 };
+  const renewed = { token: 'new', expiresAt: NOW + 86_400_000 };
+
+  it('exchanges ONCE for two catches clicked in the same moment', async () => {
+    let calls = 0;
+    let release!: () => void;
+    const held = new Promise<void>((r) => {
+      release = r;
+    });
+
+    const keep = createSessionKeeper({
+      exchange: async () => {
+        calls++;
+        await held; // still in flight while the second catch arrives
+        return { ok: true as const, session: renewed, activationId: 'act_1' };
+      },
+      save: async () => {},
+      now: () => NOW,
+    });
+
+    const first = keep({ key: 'KEY-1', session: stale, activationId: 'act_1' });
+    const second = keep({ key: 'KEY-1', session: stale, activationId: 'act_1' });
+    release();
+    const [a, b] = await Promise.all([first, second]);
+
+    expect(calls).toBe(1);
+    // Both catches carry the FRESH token. The loser of a race must never travel with the
+    // stale state, or the server classifies a paying subscriber as a trial.
+    expect(a.session).toEqual(renewed);
+    expect(b.session).toEqual(renewed);
+  });
+
+  it('never joins a flight for a DIFFERENT licence key', async () => {
+    // Two keys are two pairings with two slot counts. Handing key B the answer to key A's
+    // exchange would give it a session it never paid for.
+    const asked: string[] = [];
+    const keep = createSessionKeeper({
+      exchange: async (key) => {
+        asked.push(key);
+        return { ok: true as const, session: renewed, activationId: 'act_1' };
+      },
+      save: async () => {},
+      now: () => NOW,
+    });
+
+    await Promise.all([
+      keep({ key: 'KEY-1', session: stale }),
+      keep({ key: 'KEY-2', session: stale }),
+    ]);
+
+    expect(asked.sort()).toEqual(['KEY-1', 'KEY-2']);
+  });
+
+  it('does not exchange at all for a session that is still fresh', async () => {
+    const exchange = vi.fn();
+    const keep = createSessionKeeper({ exchange, save: async () => {}, now: () => NOW });
+    expect(await keep({ key: 'KEY-1', session: live })).toEqual({ key: 'KEY-1', session: live });
+    expect(exchange).not.toHaveBeenCalled();
+  });
+
+  it('renews again on a later catch, once the flight has settled', async () => {
+    // The latch is for one moment, not for the life of the worker. If it never cleared,
+    // tomorrow's renewal would be skipped and the session would die inside the grace
+    // window with nothing trying to save it.
+    let calls = 0;
+    const keep = createSessionKeeper({
+      exchange: async () => {
+        calls++;
+        return { ok: true as const, session: renewed, activationId: 'act_1' };
+      },
+      save: async () => {},
+      now: () => NOW,
+    });
+
+    await keep({ key: 'KEY-1', session: stale });
+    await keep({ key: 'KEY-1', session: stale });
+
+    expect(calls).toBe(2);
+  });
+
+  it('clears the latch when the exchange throws, so the next catch can still renew', async () => {
+    // A wedged latch would be worse than the double-spend: every later renewal would join
+    // a promise that already rejected, and the subscriber would ride out the grace window
+    // and meet the wall.
+    let calls = 0;
+    const keep = createSessionKeeper({
+      exchange: async () => {
+        calls++;
+        if (calls === 1) throw new Error('network');
+        return { ok: true as const, session: renewed, activationId: 'act_1' };
+      },
+      save: async () => {},
+      now: () => NOW,
+    });
+
+    const first = await keep({ key: 'KEY-1', session: stale });
+    expect(first.session).toEqual(stale); // kept what we had, rode the grace
+
+    const second = await keep({ key: 'KEY-1', session: stale });
+    expect(second.session).toEqual(renewed);
+    expect(calls).toBe(2);
   });
 });
