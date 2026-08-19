@@ -4,15 +4,15 @@
 
 | | |
 | --- | --- |
-| Tests | **592 across 57 files**, all passing |
+| Tests | **602 across 57 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-18 end of session) |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
-| Paid tier | **written, not switched on.** Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
-| Branch | `buki-hardening`, off `main` at `d3e5923`. `buki-pro` was merged to `main` on 2026-08-18 and is history. **Run the probe, do not trust a number written here** |
-| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** steps done, **17** left. Task 15 is closed except Step 2, which needs a real Chrome and a Polar test card |
+| Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
+| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **23 commits landed on 2026-08-18** (`git rev-list --count d3e5923..HEAD`). Run the probe |
+| Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -119,6 +119,17 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 | The competitive landscape | `competitor-profiles/_summary.md` | — |
 | This session's reasoning and what was measured | `docs/SESSION-CONTEXT-<date>-<label>.md` | — |
 | This session's forget-nothing ledger | `docs/SESSION-TODO-<date>-<label>.md` | — |
+| The launch SEQUENCE: what order, what gate, what to watch | `docs/store/launch.md` | this file, which owns STATUS |
+| How to capture the store assets: staging per shot, the video script | `docs/store/assets.md` | `listing.md`, which owns the shot LIST |
+
+> ### ⚠ TWO SESSIONS SHARE 2026-08-18. Filename order is not a reading order.
+>
+> | Pair | What it covers |
+> | --- | --- |
+> | `...-2026-08-18-pro-hardening` | **Earlier.** The five-agent review, the item-27 renewal P0, the merge of `buki-pro` into `main` |
+> | `...-2026-08-18-launch-readiness` | **Later, and the one to read first.** Three launch blockers found and fixed, items 17/25/28/29/30/31/32/33/34/18 closed, items 34–37 filed, the launch sequence and store assets written |
+>
+> They are sequential, not alternatives. The later pair carries the live state.
 
 **`DESIGN.md` is a dated record, not a contract.** It is the 2026-07-20 design session,
 kept because the reasoning explains the product's shape, and it carries its own
@@ -205,7 +216,16 @@ unblocks.
       stores no subscription state, which is why there is no database.
       *Unblocks: item 2, then Tasks 6, 7, 9.*
 
-- [ ] **2. Set the environment variables** in Vercel, project `buki`, all environments.
+- [ ] **2. Set the environment variables** in Vercel, **project `shelfy`** — not `buki` —
+      all environments. **CHECKED 2026-08-18 with `vercel project ls`: there is no project
+      called `buki`.** The one serving `https://get-buki.vercel.app` still carries its old
+      name. `.vercel/project.json` points at it correctly, so `vercel env add` from the repo
+      root lands in the right place. A sibling `save-book-extension` project existed and
+      looked exactly like the right answer; **Maximo deleted it on 2026-08-18**, so the
+      decoy is gone.
+
+      **`vercel env ls` on 2026-08-18 returned "No Environment Variables found".** All six
+      are outstanding, including the Polar token and the organisation id.
       **None of these may ever appear in a file under `src/extension/`.** That is a leak,
       not a shortcut. **Field by field, with the reasoning: `docs/superpowers/polar-setup.md` §8.**
 
@@ -533,9 +553,17 @@ Maximo's items 1 and 2.
       the definition, it declares `#2f7fd6` for every cream ground, and three of the four
       already agreed.
 
-- [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Do 8 first**, and item 3,
-      so they show the redesigned product doing catch-anywhere rather than the X-only one.
-      Shoot against a shelf of books actually saved; a mocked shelf reads as a mock.
+- [ ] **9. Screenshots for the Web Store.** Five at 1280x800. **Item 8 is done**, so the
+      remaining blocker is item 3 (and now item 37, which must come first or the by-hand
+      pass runs under an id nobody will ever have). Shoot against a shelf of books actually
+      saved; a mocked shelf reads as a mock.
+
+      **THE FRAMING IS DONE as of 2026-08-18.** The store wants 1280x800 and the popup is
+      560px wide, so every shot is COMPOSED rather than cropped — upscaling a 560px capture
+      softens the type on a listing whose whole claim is craft. `tools/store-shots.mjs`
+      builds the five frames from the mark's own ramp; `docs/store/assets.md` carries the
+      staging for each shot, what RUINS each one, and the 45-second video script.
+      What is left is capturing five real ones and re-running the tool.
       *Unblocks item 15.*
 
 ### 2.6 There was no light mode, and it was a coupling bug
@@ -879,11 +907,19 @@ needs a credential or a dashboard is the shell around it.
       isolates gets more than one allowance. It bounds the casual and the accidental. Item
       26 is still the floor under real money.
 
-- [ ] **32. `api/vision.ts` holds its IP counter inline and untested.** The same shape
-      `keyCap.ts` was moved out of `api/license.ts` for on 2026-08-18: a day rollover and a
-      ceiling, living in a file whose own header says it is "the shell only ... deliberately
-      short enough that nothing here needs a test". It is a working path and was left alone
-      on purpose so item 28 stayed one change.
+- [x] **32. DONE 2026-08-18 (`8e9816f`). `api/vision.ts` held its IP counter inline and
+      untested.** The same shape `keyCap.ts` was moved out of `api/license.ts` for the same
+      day: a day rollover and a ceiling, living in a file whose own header says it is "the
+      shell only ... deliberately short enough that nothing here needs a test".
+
+      **Now `src/server/ipCap.ts`, 7 tests**, four of them on the `x-forwarded-for` chain
+      rule, which is the half that decides WHO gets counted. `api/vision.ts` is 39 lines
+      again. Behaviour unchanged: 40/IP/day, still gated inside `if (access.kind ===
+      'trial')`.
+
+      **This item's body sat unticked while THE LANE showed it struck**, and was caught on
+      2026-08-18 by reconciling the two. It is the drift `maintaining-project-docs` exists
+      for, inside the file that is supposed to be the authority.
 
       **Two differences to keep when it moves.** Vision's counter tracks IPs, which real
       callers bound for us, so it needs no eviction rule the way the licence one does; and
@@ -957,6 +993,40 @@ needs a credential or a dashboard is the shell around it.
       by-hand pass.** Doing it the other way round means testing an id nobody will ever have.
 
       <https://developer.chrome.com/docs/extensions/reference/manifest/key>
+
+- [ ] **36. Every install CTA on the landing points at GitHub, and on launch day five of
+      them must not.** The comment above the hero button says why it is right today: *"there
+      is no Web Store listing yet, so the link goes to the source."*
+
+      **Eight GitHub links. Five change, three must not.**
+
+      | Stays GitHub | Becomes the store URL |
+      | --- | --- |
+      | `Source` in the nav | `Get Buki free` in the nav |
+      | `Source` in the footer | `Get Buki free` in the hero, **the primary CTA of the whole funnel** |
+      | `Report a problem` (issues) | `Get Buki free` on the Free plan card |
+      | | `Start free, then activate Pro` on the Pro card |
+      | | `Get Buki free` in the closing band |
+
+      **A find-and-replace would send `Source` to the Web Store**, and nobody would notice,
+      because it still goes somewhere plausible.
+
+      The store URL carries the extension id, so it does not exist until the item is
+      published. Same shape as item 34 was, and it now pairs with item 37: pinning the id
+      with a manifest `key` means the URL is knowable at the DRAFT upload rather than only
+      after publication.
+
+      **Guarded.** `host.test.ts` does not assert WHAT the destination is — it cannot know
+      yet. It asserts every install CTA shares ONE, which is the failure that actually
+      happens: five links, three updated, two left behind. This repo has form; the plan that
+      renamed the production host named three files and the real number was seven. A `.btn`
+      anchor whose href is a fragment is an in-page jump, not an install CTA, which is what
+      separates *See it catch a book* from the five. Earned with an A/B against exactly that
+      half-migration.
+
+      **This item had a LANE row and no body until 2026-08-18**, the mirror of item 32
+      having a body and no lane tick. Both were found by reconciling the two halves of this
+      file against each other.
 
 - [ ] **35. The affiliate tags are empty, so every Buy link earns nothing.**
       `AFFILIATE = { amazonTag: '', bookshopId: '' }` in `src/extension/buyLink.ts`. The
@@ -1140,6 +1210,37 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   LIGHTER than `--paper`, so the same token flipped from inset to raised depending on what
   was under it. Nobody measuring the named pair would ever have found that. **Ask what the
   control actually sits on before you measure it against the page.**
+
+- **A VALUE CAN BE CORRECT IN EVERY ENVIRONMENT EXCEPT THE ONE THAT MATTERS, and this
+  project has now found THREE of them in one day.** `readPro` carried the activation id
+  correctly through four modules and dropped it at the storage boundary. The manifest
+  declared six hosts and not the one the product actually calls. `BUKI_EXTENSION_ID` is
+  right on the developer's machine and wrong for every customer, because Chrome derives an
+  extension id from a hash of its public key and the Web Store signs with a different one.
+  **None could fail a test, because in each case the TEST environment supplies the value the
+  PRODUCTION environment withholds** — a fixture carrying the field, a stubbed `fetch` with
+  no CORS, a dev profile with a dev key. **The tell is a value that crosses a boundary the
+  test suite never crosses.** Item 3's by-hand pass is the only instrument that sees any of
+  them, which is why it cannot be skipped.
+- **THE LANE AND THE ITEM BODIES ARE TWO HALVES AND THEY DRIFT APART IN BOTH DIRECTIONS.**
+  On 2026-08-18 item 32 was struck in THE LANE and still `[ ]` in its body, and item 36 had
+  a LANE row and no body at all. Neither was visible from inside one half. **Reconcile the
+  table against the items whenever either is touched**; the count at the top of a grep
+  (`grep -c '^- \[ \] \*\*[0-9]'`) is the cheapest way to notice.
+- **A PROJECT'S NAME IN A DOC IS A CLAIM LIKE ANY OTHER.** `polar-setup.md` §8 said
+  "Project `buki`" for weeks. `vercel project ls` says the project serving
+  `get-buki.vercel.app` is still called **`shelfy`** from before the domain was renamed, and
+  a sibling `save-book-extension` project sat beside it looking exactly like the right
+  answer. Setting six variables on the wrong project is a half-configured deploy that looks
+  like it works, which is the failure the 500-loudly design already defends against, one
+  level up. **`vercel env ls` prints names without values** and is the safe way to check.
+- **A PLATFORM DEFAULT CAN BILL YOU ACROSS PROJECTS YOU WERE NOT THINKING ABOUT.** Vercel's
+  Observability Plus is `$1.20 per 1 million events`, enabled by DEFAULT for teams created or
+  upgraded to Paid Pro on or after 2026-04-03, and it applies to **every project on the team**
+  unless excluded. A zero-user project is not the one generating the bill; its busy siblings
+  are. **Exclude the noisy projects rather than disabling the feature** — turning it off drops
+  Pro retention to one day, and on a launch where the client is deliberately uninstrumented
+  the server logs are most of what you have.
 
 - **A GUARD THAT NAMES THE WRONG HOST CANNOT SEE A MISSING ONE.** `host.test.ts` globs the
   shipped files and fails any that names a DIFFERENT Vercel host. `manifest.json` is in that
