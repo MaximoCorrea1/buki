@@ -1613,6 +1613,19 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   states a rule is not exempt from it**, and appending is the edit least likely to notice a
   duplicate. Probe:
   `sed -n '/^## 0\./,/^---/p' OPENWORK.md | grep -o '\`docs/[a-zA-Z/.-]*\`' | sort | uniq -d`
+- **AN ERROR MESSAGE CAN NAME THE WRONG BINARY, AND THIS ONE DOES.** `npx` from Git Bash on
+  this machine fails with a cmd.exe error - in the OS language, so Spanish here -
+  `""node"" no se reconoce como un comando interno o externo`. It reads as *node is not
+  installed*. **Node is installed and on the PATH:** `which node` gives
+  `/c/Program Files/nodejs/node`, `node build.mjs` runs, and `./node_modules/.bin/vitest run`
+  passes all 602. What breaks is the `npx.cmd` shim's own quoting of a node path containing a
+  space, and it blames its payload rather than itself. **The same `npx` works from
+  PowerShell** - both `npx vitest run` and `npx tsc --noEmit` were run there this session.
+  So: Git Bash gets `node` and the `./node_modules/.bin/` shims; PowerShell gets `npx`.
+  This trap has already been paid twice - once as the environment note in the handoff, once
+  on 2026-08-19 when the error was read at face value and the diagnosis "node is not on the
+  Bash PATH" was stated before it was probed. **`which` costs nothing; a misread error costs
+  a wrong note in a doc the next session plans against.**
 
 ---
 
