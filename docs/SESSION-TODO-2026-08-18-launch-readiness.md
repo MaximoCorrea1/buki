@@ -153,7 +153,7 @@ everything this session touched:
 | Merge to `main`, pushed | 15 commits, re-run ON the merge before pushing |
 | After the launch docs + store assets | 597 / 57 |
 | After item 34, the till | **602 / 57**, tsc 0, build clean |
-| Session end | **602 / 57**, `main` = `origin/main`, tree clean, 23 commits, plan 68/17 |
+| Session end | **602 / 57**, `main` = `origin/main`, tree clean, **25** commits (re-probed 2026-08-19; read 23 before the two closing commits landed), plan 68/17 |
 
 ---
 

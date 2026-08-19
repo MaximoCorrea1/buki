@@ -11,7 +11,7 @@
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
-| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **23 commits landed on 2026-08-18** (`git rev-list --count d3e5923..HEAD`). Run the probe |
+| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **25 commits landed on 2026-08-18** (probed 2026-08-19; it read 23 because it was written INTO the commit that changed it — the FOURTH such drift) (`git rev-list --count d3e5923..HEAD`). Run the probe |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -119,8 +119,6 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 | The competitive landscape | `competitor-profiles/_summary.md` | — |
 | This session's reasoning and what was measured | `docs/SESSION-CONTEXT-<date>-<label>.md` | — |
 | This session's forget-nothing ledger | `docs/SESSION-TODO-<date>-<label>.md` | — |
-| The launch SEQUENCE: what order, what gate, what to watch | `docs/store/launch.md` | this file, which owns STATUS |
-| How to capture the store assets: staging per shot, the video script | `docs/store/assets.md` | `listing.md`, which owns the shot LIST |
 
 > ### ⚠ TWO SESSIONS SHARE 2026-08-18. Filename order is not a reading order.
 >
@@ -135,8 +133,8 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 kept because the reasoning explains the product's shape, and it carries its own
 `PARTLY SUPERSEDED` banner naming what stopped being true. Do not update it; supersede it.
 
-**The newest handoff** is `%TEMP%uki-handoff-2026-08-18-launch-readiness.md` (2026-08-18,
-launch readiness). It supersedes `buki-handoff-2026-08-18-review-and-merge.md`. Handoffs are
+**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-18-launch-readiness.md`
+(2026-08-18, launch readiness). **Forward slashes deliberately** — see §5. It supersedes `buki-handoff-2026-08-18-review-and-merge.md`. Handoffs are
 written to the OS temp directory rather than the repo, and they are read once and superseded
 — **a lesson recorded only in a handoff is a lesson you will pay for again.** §5 is where
 things survive.
@@ -1589,6 +1587,32 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   `docs/store/listing.md` offered a `Name` of `Buki: catch books from X` for a dashboard box
   that does not exist, contradicting the manifest's `Buki`. Copy written for a field nobody
   fills in is copy that never ships and never gets corrected.
+- **A BACKSLASH IN A PATH IS AN ESCAPE SEQUENCE TO WHATEVER WRITES THE FILE.** The pointer to
+  the newest handoff was written as `%TEMP%\buki-handoff-...` and the `\b` was consumed: what
+  landed in this file was a raw **backspace byte, 0x08**. Markdown renders it as nothing, so
+  every reading of the paragraph looked correct; `cat -A` showed `^H`, and `file` reported
+  *"with overstriking"*. **It shipped in `5534ff9`, whose entire purpose was to point at the
+  handoff** - the pointer was the payload and the payload was corrupt, so the one document
+  meant to carry the session forward had no working address. Nothing could have caught it: no
+  test reads this file, and Markdown has no parse gate the way `entryPoints.test.ts` is one
+  for JavaScript. **Write paths into docs with FORWARD slashes** - Windows accepts them
+  everywhere, and they carry no escape meaning. Probe:
+  `git ls-files -z | xargs -0 grep -nP '[\x00-\x08\x0B\x0C\x0E-\x1F]'`, which found exactly
+  one hit across every tracked text file.
+- **THAT IS THE BACKTICK TRAP AGAIN, WEARING A DIFFERENT CHARACTER.** The backtick one fired
+  FOUR times: inside a template literal, in prose, in files nothing imported. The family is
+  bigger than either instance. **A character that means something to the tool writing the
+  file will mean it, whatever you intended the content to say** - backtick to esbuild,
+  backslash to the shell, `%` to cmd. The defence is not vigilance. It is choosing the form
+  with no special character in it, or writing through something that does not interpret at
+  all: the Write tool, or a quoted heredoc (`<<'EOF'`, never `<<EOF`).
+- **THE TABLE THAT SAYS "PUT A FACT IN ONE PLACE" HELD TWO FACTS TWICE.** §0's ownership
+  table carried `docs/store/launch.md` and `docs/store/assets.md` on two rows each - one pair
+  bolded, one not, and the un-bolded pair was the staler wording. Both were added the day the
+  section was extended, by appending rather than by reading the table first. **A doc that
+  states a rule is not exempt from it**, and appending is the edit least likely to notice a
+  duplicate. Probe:
+  `sed -n '/^## 0\./,/^---/p' OPENWORK.md | grep -o '\`docs/[a-zA-Z/.-]*\`' | sort | uniq -d`
 
 ---
 

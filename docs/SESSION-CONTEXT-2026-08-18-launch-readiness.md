@@ -43,7 +43,7 @@ in the routing receipt rather than skipping silently.** `superpowers:brainstormi
 | Test suite, session end | same | **602 / 57 files** |
 | Typecheck | `node node_modules/typescript/bin/tsc --noEmit` | exit 0 throughout |
 | Build | `node build.mjs` | exit 0 throughout |
-| Commits this session | `git rev-list --count d3e5923..HEAD` | **23** |
+| Commits this session | `git rev-list --count d3e5923..HEAD` | **25** (re-probed 2026-08-19; **this table said 23**, because the two closing commits — the ledgers and the handoff pointer — landed after it was written) |
 | Plan progress | `grep -c '^- \[x\]'` / `'^- \[ \]'` on `2026-08-09-buki-pro.md` | **68 done / 17 left** |
 | Open numbered items | `grep -c '^- \[ \] \*\*[0-9]' OPENWORK.md` | **8**: 1, 2, 3, 9, 26, 35, 36, 37 |
 | Vercel env vars set | `vercel env ls` | **zero.** "No Environment Variables found" |
