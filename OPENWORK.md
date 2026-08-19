@@ -37,6 +37,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~34~~ | ~~Maximo, then agent~~ | ~~**NOBODY CAN BUY.**~~ **DONE 2026-08-18.** Both checkout links are in `src/shared/pricing.ts` and on the Pro card, inside `#pricing` where the wall lands. Guarded, and earned with an A/B. Original text: Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
+| **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800. **The frames, the headlines and the staging are done** (`docs/store/assets.md`, `tools/store-shots.mjs`); what is left is capturing five real ones and re-running the tool | item 15 |
 | ~~17~~ | agent | ~~`docs/privacy.html` + the landing's data section~~ **DONE 2026-08-18** (`c0a3e00`). **The landing was already correct**; `privacy.html`, `README.md` and both Web Store answers were not. No DO-NOT-SUBMIT banners remain in `permissions.md` | — |
@@ -928,6 +929,34 @@ needs a credential or a dashboard is the shell around it.
       **They are public.** Polar issues a checkout link to be clicked, which is why it can
       sit in the repo at all. `POLAR_ACCESS_TOKEN` cannot, and the two arrive from the same
       dashboard on the same afternoon.
+
+- [ ] **37. THE EXTENSION ID YOU TEST WITH IS NOT THE ID THAT SHIPS, unless you pin it.**
+
+      `BUKI_EXTENSION_ID` is the value both endpoints check the `Origin` header against:
+      `policy.ts` compares `origin === 'chrome-extension://' + extensionId`, and a mismatch
+      is a **403 for every real user**, on both `/api/vision` and `/api/license`.
+
+      Chrome: *"The extension ID is generated based on a hash of the public key."* An
+      unpacked extension is signed with a key Chrome makes up locally; the Web Store signs
+      the published one with a different key. **So the id from `chrome://extensions` during
+      item 3 is not the id your customers will have**, `manifest.json` has no `key` field,
+      and nothing in this repo would notice. Same shape as the two blockers found on
+      2026-08-18: written, tested, and inert on the one day it matters.
+
+      **THE FIX IS A SEQUENCING CHANGE, not code.** Chrome's documented procedure:
+
+      1. Register the developer account and zip the extension directory.
+      2. **Upload it as a new item and do NOT publish.** The id is assigned on upload.
+      3. Package tab → **View public key** → copy everything between
+         `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----`, strip the newlines.
+      4. Add it to `manifest.json` as `"key"`. The unpacked build now loads under the
+         SHIPPED id.
+      5. Only then set `BUKI_EXTENSION_ID`, and only then run item 3.
+
+      **This moves the developer account from "parallel, whenever" to a prerequisite of the
+      by-hand pass.** Doing it the other way round means testing an id nobody will ever have.
+
+      <https://developer.chrome.com/docs/extensions/reference/manifest/key>
 
 - [ ] **35. The affiliate tags are empty, so every Buy link earns nothing.**
       `AFFILIATE = { amazonTag: '', bookshopId: '' }` in `src/extension/buyLink.ts`. The

@@ -38,19 +38,32 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 | --- | --- | --- | --- |
 | 1 | Polar: verify the benefit's activation settings, on **both** products | Maximo | — |
 | 2 | Gemini key **with billing linked**, and the spend cap in the same sitting (26) | Maximo | — |
-| 3 | The six Vercel variables (item 2) | Maximo | steps 1, 2 |
-| 4 | `vercel deploy --prod`, then probe both endpoints | Maximo | step 3 |
-| ~~5~~ | ~~The checkout URLs → `pricing.ts` (item 34)~~ **DONE 2026-08-18** | — | — |
-| 6 | The affiliate tags (item 35) | Maximo | — (parallel) |
-| 7 | The by-hand browser pass, thirteen checks (item 3) | **Maximo only** | steps 4, 5 |
-| 8 | Five screenshots at 1280x800 (item 9) | Maximo | step 7 |
-| 9 | Register the developer account, pay the one-time fee | Maximo | — (do it now, in parallel) |
-| 10 | Submit | Maximo | steps 7, 8, 9 |
-| 11 | Wait. Days to weeks | — | step 10 |
-| 12 | **Switch the landing's five install CTAs to the store URL (item 36)** | agent | step 11 |
-| 13 | Launch day | both | step 12 |
+| 3 | **Register the developer account, pay the one-time fee** | Maximo | — (do it first, it now gates more than submission) |
+| 4 | **Zip and upload as a DRAFT. Do not publish.** Copy the public key into `manifest.json` as `key` (item 37) | Maximo, then agent | step 3 |
+| 5 | The six Vercel variables (item 2) — `BUKI_EXTENSION_ID` is now the SHIPPED id | Maximo | steps 1, 2, 4 |
+| 6 | `vercel deploy --prod`, then probe both endpoints | Maximo | step 5 |
+| ~~7~~ | ~~The checkout URLs → `pricing.ts` (item 34)~~ **DONE 2026-08-18** | — | — |
+| 8 | The affiliate tags (item 35) | Maximo | — (parallel) |
+| 9 | The by-hand browser pass, thirteen checks (item 3) | **Maximo only** | steps 4, 6 |
+| 10 | Five screenshots at 1280x800 (item 9) | Maximo | step 9 |
+| 11 | Publish the draft | Maximo | steps 9, 10 |
+| 12 | Wait. Days to weeks | — | step 11 |
+| 13 | **Switch the landing's five install CTAs to the store URL (item 36)** | agent | step 12 |
+| 14 | Launch day | both | step 13 |
 
-**Steps 6 and 9 have no blockers and can be done today.** Everything else is a chain.
+> **WHY STEP 4 MOVED, and it is the third "inert on day one" blocker this project has
+> found.** `BUKI_EXTENSION_ID` is what both endpoints check `Origin` against, and Chrome
+> derives an extension's id from **a hash of its public key**. Unpacked, Chrome invents that
+> key locally; published, the Web Store signs with a different one. So the id from
+> `chrome://extensions` during the by-hand pass is **not the id your customers get**, and
+> both endpoints would 403 for everybody on the day it went live.
+>
+> Uploading a draft first assigns the real id and exposes the public key. Pinning it in
+> `manifest.json` makes the unpacked build load under the shipped id, so item 3 tests the
+> thing that ships. Item 37.
+
+**Steps 1, 2, 3 and 8 have no blockers and can be done today.** Everything else is a chain,
+and step 3 now sits near the front rather than beside submission.
 
 ---
 
@@ -132,17 +145,28 @@ curl -i -X POST https://get-buki.vercel.app/api/license \
 
 **A 500 from either means step 3 is incomplete.** That is the whole reason they 500 loudly.
 
-### 5. The checkout URLs — the step that decides whether any of this earns
+### 4 and 5. The draft upload, then the variables
 
-`OPENWORK.md` item 34. Polar gives each product a checkout link. Today all three purchase
-CTAs in the extension open the landing's `#pricing`, whose Pro button links to **GitHub**,
-to install the extension the visitor already has. **Someone who hits the wall is sent in a
-circle.**
+**Do the draft upload before you set `BUKI_EXTENSION_ID`.** Item 37, and the reason is in
+the banner above: the id you see in `chrome://extensions` for an unpacked build is not the
+id the Web Store will assign, and `policy.ts` compares the `Origin` header against exactly
+that string.
 
-Send the two URLs and it is one edit: they go beside `PRICING_URL` in
-`src/shared/pricing.ts`, the landing's pricing buttons read from there, and
-`pricing.test.ts` is extended to assert the landing and the module agree. Same shape as
-`host.ts`. Specified in `polar-setup.md` §9.
+```
+1. zip the extension directory
+2. Developer Dashboard -> Add new item -> upload -> DO NOT PUBLISH
+3. Package tab -> View public key
+4. copy between BEGIN/END PUBLIC KEY, strip the newlines
+5. manifest.json:  "key": "<that one line>"
+6. reload unpacked -> chrome://extensions now shows the SHIPPED id
+```
+
+Only then set the variables. `polar-setup.md` §8 has the six with their sources.
+
+**The checkout URLs that used to be this step are done** (item 34, 2026-08-18):
+`CHECKOUT_MONTHLY_URL` and `CHECKOUT_YEARLY_URL` live in `src/shared/pricing.ts` and the Pro
+card carries both, inside `#pricing`, which is where every purchase CTA in the extension
+lands.
 
 ### 6. The affiliate tags
 
@@ -173,10 +197,12 @@ matters: the shelf leads because it is the one that sells it.
 **Shoot against a shelf holding books you actually saved.** A mocked shelf reads as a mock,
 and this is a product whose entire claim is that the list is yours.
 
-### 9. The developer account — do this today
+### 3. The developer account — do this FIRST, not last
 
 You must register as a Chrome Web Store developer and pay a **one-time** registration fee
-before you can publish anything.
+before you can publish anything. **It used to sit beside submission in this list. It moved to
+the front because item 37 needs a draft upload before the by-hand pass**, and you cannot
+upload anything without an account.
 <https://developer.chrome.com/docs/webstore/register>
 
 **Use a dedicated email you check often. It cannot be changed after the account is
@@ -272,6 +298,15 @@ listing and the landing all say so.
 
 **So you are launching with instruments on the server side only.** That is a real trade and
 it is worth naming rather than discovering:
+
+**One thing to check before launch day, because it is billed per event across EVERY project
+on the team:** Vercel's **Observability Plus** is `$1.20 per 1 million events` and is enabled
+by DEFAULT for teams created or upgraded to Paid Pro on or after 2026-04-03. It applies to
+all projects unless you exclude them. Buki at zero users generates almost nothing; a busy
+sibling project on the same team does not. **Exclude the noisy ones rather than turning it
+off**, because 30-day retention is worth having on a launch where the client is deliberately
+uninstrumented, and the free tier drops Pro retention to **one day**.
+<https://vercel.com/docs/observability/observability-plus>
 
 | You can see | You cannot see |
 | --- | --- |
