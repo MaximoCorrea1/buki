@@ -228,8 +228,13 @@ unblocks.
       looked exactly like the right answer; **Maximo deleted it on 2026-08-18**, so the
       decoy is gone.
 
-      **`vercel env ls` on 2026-08-18 returned "No Environment Variables found".** All six
-      are outstanding, including the Polar token and the organisation id.
+      **STATUS 2026-08-19, reported by Maximo: every variable is set EXCEPT
+      `BUKI_EXTENSION_ID`,** which is correct and is not a gap - it is item 37. That value
+      cannot be known until the draft upload assigns the real id, and setting it early from
+      `chrome://extensions` is the third launch blocker, not a head start.
+      (Superseded: `vercel env ls` on 2026-08-18 returned "No Environment Variables found",
+      all six outstanding. **Re-probe with `vercel env ls` before trusting this line** - it
+      is a report, not a measurement this file made.)
       **None of these may ever appear in a file under `src/extension/`.** That is a leak,
       not a shortcut. **Field by field, with the reasoning: `docs/superpowers/polar-setup.md` §8.**
 
@@ -240,7 +245,7 @@ unblocks.
       | --- | --- | --- |
       | `GEMINI_API_KEY` | **yes, 500 without it** | Create at https://aistudio.google.com/apikey then link billing at https://aistudio.google.com/plan_information. The free tier queues rather than erroring, which is what the 12-second hang on 2026-08-12 looked like, and "it does not throttle" is a line on the pricing page. **No model is pinned**, on purpose. |
       | `BUKI_TOKEN_SECRET` | **yes, 500 without it** | 32+ random bytes, `openssl rand -base64 32` |
-      | `BUKI_EXTENSION_ID` | **yes, 500 without it** | from `chrome://extensions` with the extension loaded unpacked |
+      | `BUKI_EXTENSION_ID` | **yes, 500 without it** | **SET THIS LAST. See item 37.** NOT from `chrome://extensions` on an unpacked build - that id is invented locally and is not the one customers get. Upload the zip as a DRAFT, take the public key from the Package tab into `manifest.json`, and only then read the id. This row said "from `chrome://extensions` with the extension loaded unpacked" until 2026-08-19, which is the exact instruction item 37 exists to overturn |
       | `POLAR_ACCESS_TOKEN` | yes, for `/api/license` | from item 1 |
       | `POLAR_ORGANIZATION_ID` | yes, for `/api/license` | Polar settings, the **UUID** |
       | `BUKI_TRIAL_CLOSED` | **no. leave unset** | The emergency brake: `1` stops the free trial answering, with no deploy. Anything else is the same as unset. |

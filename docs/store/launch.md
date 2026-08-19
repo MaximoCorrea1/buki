@@ -189,6 +189,21 @@ here:
   back out of storage. Until `3012b30` it did not, and the wall would have returned on day
   five with nothing red anywhere.
 
+**The unpacked build is a valid instrument here, but only AFTER item 37.** Pinning `key` in
+`manifest.json` makes Chrome derive the same id for the unpacked build that the Web Store
+will derive for the signed one - that is the whole point of the item. Run this pass before
+the key is in and you are exercising an id no customer will ever have, against a `policy.ts`
+that compares `Origin` to exactly that string.
+
+**What the unpacked pass still cannot see is the signed package over the real install
+path.** Publishing at **Private** visibility first, with yourself as a trusted tester, would
+cover that: a real store install of the real artefact. It is optional, and it is NOT what
+item 37 needs.
+
+> **UNVERIFIED: whether a Private-visibility publish requires its own review cycle.** If it
+> does, this costs days-to-weeks twice and is not worth it before a first launch. Check in
+> the dashboard before choosing it; do not assume either way on the strength of this note.
+
 ### 8. Screenshots
 
 `OPENWORK.md` item 9. Five at 1280x800. The shot list is in `listing.md` and the order

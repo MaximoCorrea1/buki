@@ -8,9 +8,9 @@
 >
 > | Gate | Where |
 > | --- | --- |
-> | The Polar products exist, with the License Key benefit on **both** and activations enabled | `OPENWORK.md` item 1, field by field in `docs/superpowers/polar-setup.md` |
-> | The **six** Vercel variables are set and `/api/vision` answers | `OPENWORK.md` item 2 |
-> | **A customer can actually pay** | `OPENWORK.md` item 34 |
+> | Gate 1: the Polar products exist, with the License Key benefit on **both** and activations enabled | **OPEN.** `OPENWORK.md` item 1, field by field in `docs/superpowers/polar-setup.md` |
+> | Gate 2: the **six** Vercel variables are set and `/api/vision` answers | **NEARLY.** Five set 2026-08-19; `BUKI_EXTENSION_ID` waits on item 37 by design. `/api/vision` unprobed |
+> | Gate 3: **a customer can actually pay** | **CLEARED 2026-08-18** (`1e29a7a`). Both Polar checkout links are on the Pro card inside `#pricing`, where every in-extension CTA lands |
 >
 > Until the first two, *"Ten catches from a photograph are free"* is a promise rather than a
 > fact, because a user with no key of their own gets no cover reading at all. **Submitting
@@ -161,7 +161,26 @@ invent one; the positioning doc says so in as many words.
 
 ## Category
 
-`Productivity`
+`Workflow & Planning`
+
+**Not `Productivity`, which this file said until 2026-08-19 and which no longer exists.**
+The Chrome Web Store split its categories in mid-2023 and `Productivity` was one of the ones
+that went; the dropdown will not offer it. Verified against
+https://developer.chrome.com/docs/webstore/best-practices rather than recalled. The eighteen
+current categories are Accessibility, Art & Design, Communication, Developer Tools,
+Education, Entertainment, Functionality & UI, Games, Household, Just for Fun, News & Weather,
+Privacy & Security, Shopping, Social Media & Networking, Tools, Travel, Well-being, and
+Workflow & Planning.
+
+`Workflow & Planning` is Google's own home for *"extensions that help users perform their
+tasks more efficiently... to-do list managers"*, and the piles ARE that: Now, Next and
+Someday exist so a book you mean to read next month does not sit beside one you saved on a
+whim. **`Tools` is the fallback and would be a mistake** - it is explicitly *"tools that
+don't fit into other categories"*, which is the shelf nobody browses.
+
+**Do NOT pick `Social Media & Networking`**, however well X converts. The single-purpose
+statement below deliberately covers any picture on the web, and a category scoped to social
+media re-opens exactly the contradiction that field exists to close.
 
 ## Language
 
@@ -241,3 +260,136 @@ before you forget them."
 once in `tools/mark.mjs` and every number in it was sampled from `icons/mark-source.png`.
 Do not redraw it for the tile, and do not use the three-spine mark: that drawing is retired
 on every surface. `docs/brand.md`, *The mark: THE CATCHER*.
+
+---
+
+## The dashboard fields this file did not cover until 2026-08-19
+
+Maximo reached the real form and half of it was not written down anywhere. Every spec below
+is quoted from Google's own documentation rather than recalled - the two pages that matter
+are https://developer.chrome.com/docs/webstore/cws-dashboard-listing and
+https://developer.chrome.com/docs/webstore/images.
+
+### Store icon, 128x128 - AND OURS IS WRONG
+
+> *"The actual icon size should be 96x96 (for square icons); an additional 16 pixels per
+> side should be transparent padding, adding up to 128x128 total image size."*
+
+`icons/icon128.png` is the **toolbar** icon and it is correct as a toolbar icon: the ball is
+drawn full-bleed on transparency, 128 across, because `tools/make-icons.mjs` renders the mark
+into the whole 0-100 space at every size and a toolbar icon wants no padding.
+
+**The store icon is a different asset with a different rule, and uploading the toolbar one
+puts our mark noticeably larger than every neighbour in a grid** - which in a listing whose
+claim is craft reads as not knowing the spec rather than as confidence.
+
+Do not "fix" `icons/icon128.png`; that would shrink the toolbar icon Chrome actually draws.
+Produce a SEPARATE padded file. The rasteriser already isolates the geometry, so this is an
+inset parameter, not a redraw. **The mark is a circle and 96 is Google's number for a
+square**: a circle at the same bounding box reads smaller, so ~104 across, centred in 128,
+is the honest optical match. Anything in 96-108 is defensible; 128 is not.
+
+Alpha matters here: *"If you upload an image that has no alpha, it will be placed in a frame
+with rounded corners (12-pixel corner radius)."* Ours is RGBA (colour type 6, verified by
+reading the IHDR), so it will not be framed - which is right for a circle that would look
+absurd inside a rounded square.
+
+### Small promotional tile, 440x280 - AND GOOGLE CONTRADICTS THIS FILE
+
+Google's guidance is two words: **"Avoid text."** Plus *"Make sure your image works even
+when shrunk to half size."*
+
+This file specified *the catcher on a light ground, wordmark to the right, one line beneath:
+"Catch books before you forget them."* **The tagline goes.** At 220x140 a forty-character
+sentence is a grey smear, which is the exact failure the half-size rule is about.
+
+**The wordmark stays**, knowingly and against the letter of the rule. "Avoid text" is aimed
+at marketing copy; a wordmark is identity, every recognisable tile in the store carries one,
+and a nameless blue ball teaches a browsing reader nothing. So: **mark + wordmark, no
+sentence.** Recorded as a deliberate deviation rather than an oversight.
+
+### Marquee promotional tile, 1400x560
+
+**Optional**, and the only one of the four assets that is. It is used for featured
+placements, which are editorial and which a zero-user extension will not get on day one.
+**Skip it at first submission.** If it is ever made: same rule, mark and wordmark, no
+sentence, and it must survive being shown very wide and short.
+
+### Screenshots, 1280x800
+
+Already specified above and staged in `docs/store/assets.md`. One point from the spec that
+the composed frames satisfy and a raw capture would not:
+
+> *"Square corners, no padding (full bleed)"*
+
+`tools/store-shots.mjs` outputs a full 1280x800 image with the ground running edge to edge,
+so the frame IS the bleed. **A raw 560px popup capture dropped into the field is what that
+rule forbids**, and it is what almost everybody does.
+
+### Promotional video (YouTube URL)
+
+**Optional. Leave it blank at first submission.** The 45-second script is written in
+`docs/store/assets.md` and the video is worth having, but the field takes a real YouTube URL
+and a listing is better with no video than with a placeholder. Add it after launch; the
+field is editable without a new review of the package.
+
+### Official URL
+
+> *"Linked, official URL under the listing title"*, and it **requires site verification
+> through Google Search Console.**
+
+This is the verified-publisher line under the title and it is worth having: it is the one
+signal on the page that says a real person owns the domain. `get-buki.vercel.app` can be
+verified as a URL-prefix property because we serve `docs/` at the site root - drop Search
+Console's HTML verification file into `docs/`, add it to `.vercelignore` **in the same
+commit** (it is not a page), and redeploy.
+
+**Not a launch blocker.** Leave it `None` if the account is not verified yet and add it
+later.
+
+### Homepage URL
+
+```
+https://get-buki.vercel.app
+```
+
+### Support URL
+
+```
+https://github.com/MaximoCorrea1/buki/issues
+```
+
+The landing's *Report a problem* already points here, and `OPENWORK.md` item 36 records that
+this link and the two `Source` links **must not** move to the store URL on launch day. Using
+the same destination keeps the promise in one place.
+
+### Mature content
+
+**No.** For the record on what the toggle costs if it is ever set by mistake: *"Extensions
+with mature content will not appear in Chrome Web Store search for users that are not logged
+in."*
+
+### Item support
+
+**On.** The toggle only makes sense with a real destination behind it, and there is one.
+
+### Visibility
+
+Three options, and the names matter because the launch sequence uses two of them:
+
+| Option | What it does |
+| --- | --- |
+| **Public** | *"lists your item on the Chrome Web Store for all users to see and install"* |
+| **Unlisted** | *"does not create a listing... but does allow anyone to install your item if they know its Chrome Web Store URL"* |
+| **Private** | *"limits installation of your item to specified users only. This is typically used for testing before public launch"* - trusted testers, and optionally a Google Group |
+
+**Public at launch.** `Private` is worth knowing about but is NOT needed for item 37: pinning
+`key` in `manifest.json` makes the unpacked id equal the published one, which is the entire
+point of that item, so the by-hand pass on an unpacked build is valid once the key is in.
+What `Private` would additionally buy is a test of the SIGNED package over the real install
+path - a different instrument, not a required one. See `docs/store/launch.md` step 7.
+
+There is also a separate publishing control worth knowing: *"If you uncheck the checkbox,
+your item will not be published immediately after its review is complete. Instead, you'll be
+able to manually publish it at a time of your choosing."* **Uncheck it**, so review passing
+does not put us live on a random weekday morning before the landing CTAs move (item 36).
