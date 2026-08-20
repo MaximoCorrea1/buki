@@ -100,17 +100,27 @@ text and Category C needs the physical book.
 **What ruins it:** two books (looks like a coincidence rather than a capability), or a card
 caught mid-load with a spinner.
 
-### 3. A catch somewhere that is not X · *"Anywhere there is a picture."*
+### 3. The search, then the find · *"You saw it. Now you have it."*
 
-**This one proves the single-purpose statement rather than asserting it**, which matters
-because that field sits beside a manifest asking for `scripting`, `activeTab` and an
-optional host permission.
+**A `split` frame, not a hero: two captures side by side with the mark between them.**
+Decided 2026-08-20. It replaced *A catch somewhere that is not X*, which showed only that
+the menu opens on another site. This shows a catch HAPPENING and its result, which is the
+same claim made in motion. The breadth argument the old shot carried is already made twice,
+in the single-purpose statement and in the host justification, and neither needed a picture
+to be true.
 
-- Reddit, a newsletter in a browser tab, a blog, a video thumbnail.
-- The right-click menu **open**, with *Save book to shelf* visible, or the card just landed.
-- Somewhere obviously not a social feed. A recognisable site is worth more than a pretty one.
+**Two files, not one:** `zzz-shot-3a.png` (left) and `zzz-shot-3b.png` (right). There is no
+`zzz-shot-3.png` and the tool will not ask for one.
 
-**What ruins it:** a site whose own design is louder than the card.
+- **Left, the reading state.** The *Reading the cover...* toast with the source thumbnail in
+  it. It has to be legible as a THING HAPPENING, so catch it while the bar is part way.
+- **Right, the result.** The card with the evidence line *read from the cover*, one book
+  resolved, and the pile buttons, with one pile already showing *on your shelf*.
+- **Same site, same book, both halves.** They are one moment split in two, and two different
+  books reads as two screenshots that happen to be adjacent.
+
+**What ruins it:** a left panel that does not obviously show work in progress, and a right
+panel for a different book than the left. **Shoot them seconds apart, on the same catch.**
 
 ### 4. The button in the action bar · *"One press, where you already are."*
 

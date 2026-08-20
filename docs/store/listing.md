@@ -244,8 +244,10 @@ whole claim is craft.
 2. **A catch on a photograph holding several books**, showing the card with more than one
    book found and the three pile buttons unpressed. This is the differentiator and no
    competitor screenshot can show it.
-3. **A catch somewhere that is not X**, so the breadth in the single-purpose statement is
-   visible rather than asserted.
+3. **The search, then the find**, as a two-panel `split` frame: the *Reading the cover...*
+   toast on the left, the resolved card on the right, the mark between them. Replaced *a
+   catch somewhere that is not X* on 2026-08-20. **Two capture files, `zzz-shot-3a.png` and
+   `zzz-shot-3b.png`**; there is no `zzz-shot-3.png`.
 4. **Buki's mark** in a post's action bar, beside reply and like, so people see where it
    lives. It is the catcher at 18px, X's own icon size.
 5. **The masthead count** (`23 caught, 87% kept`). Nothing else in this category publishes
@@ -362,6 +364,16 @@ https://github.com/MaximoCorrea1/buki/issues
 The landing's *Report a problem* already points here, and `OPENWORK.md` item 36 records that
 this link and the two `Source` links **must not** move to the store URL on launch day. Using
 the same destination keeps the promise in one place.
+
+### Support and contact, and why there is no email
+
+**Decided 2026-08-20: the GitHub issues page, and no email address anywhere.** The privacy
+policy's Contact section points there too, deliberately.
+
+A reviewer always has a route to the developer regardless: the Web Store shows the developer
+account's own email on the listing, so adding one to a public, indexed page buys nothing a
+reviewer needs and costs a permanently scrapeable address. **Revisit only if a real user
+cannot reach us**, which is a problem that will announce itself.
 
 ### Mature content
 

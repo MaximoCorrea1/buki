@@ -39,7 +39,7 @@
  *   node tools/store-shots.mjs          writes zzz-store-shots.html
  *   1. capture the raw shots by hand, per docs/store/assets.md
  *   2. drop them in the repo root as zzz-shot-1.png ... zzz-shot-5.png
- *      split layouts also take zzz-shot-Na.png and zzz-shot-Nb.png
+ *      split layouts take zzz-shot-Na.png and zzz-shot-Nb.png INSTEAD of zzz-shot-N.png
  *      detail layouts also take zzz-shot-Nz.png for the magnified crop
  *   3. re-run, then screenshot each .frame at 1280x800
  *
@@ -112,11 +112,18 @@ const SHOTS = [
     note: 'The differentiator. No competitor screenshot can show this.',
   },
   {
+    // WAS "Anywhere there is a picture", a single hero capture of a catch on a non-X site.
+    // Maximo replaced it on 2026-08-20 and the trade is a good one: this shows a catch
+    // HAPPENING and its result, where the old one showed only that the menu opens somewhere
+    // else. The breadth argument it carried is made twice already, in the single-purpose
+    // statement and in the host justification, and neither needed a screenshot to be true.
     n: 3,
-    layout: 'hero',
-    head: 'Anywhere there is a picture.',
-    sub: 'Reddit, a newsletter, a blog, a video thumbnail. Right-click and it is caught.',
-    note: 'Proves the single-purpose statement rather than asserting it.',
+    layout: 'split',
+    head: 'You saw it. Now you have it.',
+    sub: 'Right-click the picture. Buki reads the cover and files the book.',
+    note: 'The search, then the find. Needs zzz-shot-3a.png and zzz-shot-3b.png.',
+    a: 'The picture you found',
+    b: 'The book, on your shelf',
   },
   {
     n: 4,
@@ -152,15 +159,6 @@ const ALTERNATES = [
     head: 'Find any book you see online, instantly.',
     sub: 'A picture is enough. No title, no link, no typing.',
     note: 'The brand frame. Also the source for the 440x280 tile: crop to the pair.',
-  },
-  {
-    id: 'split',
-    layout: 'split',
-    head: 'You saw it. Now you have it.',
-    sub: 'Right-click the picture. Buki reads the cover and files the book.',
-    note: 'The search, then the find. Offer as an alternate for shot 2 or 3.',
-    a: 'The picture you found',
-    b: 'The book, on your shelf',
   },
 ];
 
@@ -203,14 +201,14 @@ const pairStage = (s) => `
 const splitStage = (s) => `
     <div class="stage split">
       <div class="panel">
-        ${capture(`zzz-shot-${s.id}a.png`, 'the picture, before')}
+        ${capture(`zzz-shot-${s.n ?? s.id}a.png`, 'the picture, before')}
         <span class="tag">${s.a}</span>
       </div>
       <div class="arrow" aria-hidden="true">
-        ${mark(`split-${s.id}`, 54)}
+        ${mark(`split-${s.n ?? s.id}`, 54)}
       </div>
       <div class="panel">
-        ${capture(`zzz-shot-${s.id}b.png`, 'the shelf, after')}
+        ${capture(`zzz-shot-${s.n ?? s.id}b.png`, 'the shelf, after')}
         <span class="tag">${s.b}</span>
       </div>
     </div>`;
@@ -366,11 +364,13 @@ ${ALTERNATES.map((s) => `<p class="label">${s.id} &nbsp;·&nbsp; ${s.layout} &nb
 `;
 
 writeFileSync('zzz-store-shots.html', html);
-const missing = SHOTS.filter((s) => !existsSync(`zzz-shot-${s.n}.png`)).map((s) => s.n);
+// A split shot has no zzz-shot-N.png and never will, so asking for one reports a file that
+// is not missing, it is not the filename. Each layout is asked for its own slots.
+const slotsFor = (s) =>
+  s.layout === 'split' ? [`zzz-shot-${s.n}a.png`, `zzz-shot-${s.n}b.png`] : [`zzz-shot-${s.n}.png`];
+const missing = SHOTS.flatMap(slotsFor).filter((f) => !existsSync(f));
 console.log('wrote zzz-store-shots.html');
 console.log(
-  missing.length
-    ? `waiting on real captures: ${missing.map((n) => `zzz-shot-${n}.png`).join(', ')}`
-    : 'all five captures present',
+  missing.length ? `waiting on real captures: ${missing.join(', ')}` : 'every slot filled',
 );
 console.log('alternates need no capture:', ALTERNATES.map((a) => a.id).join(', '));
