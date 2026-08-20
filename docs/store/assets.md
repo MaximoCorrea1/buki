@@ -43,6 +43,23 @@ is one of the two things `.agents/product-marketing.md` records as crossing that
 
 ## Before you capture anything
 
+> ### ⚠ CAPTURE AT 2x. This is the one that cannot be fixed downstream.
+>
+> The first four real captures, 2026-08-20, came in at **561x600, 353x90, 350x160 and
+> 346x538**. They are the right CONTENT and the wrong RESOLUTION. The frame is 1280x800 and
+> `tools/store-shots.mjs` deliberately does not upscale, so a 350px capture sits at 350px in
+> a 1280px frame: correct, sharp, and far too small to read on a listing.
+>
+> **Set the device pixel ratio to 2 before capturing** (Chrome DevTools, device toolbar, DPR
+> 2), or capture on a HiDPI display. A 560px popup then yields a 1120px image, which fills
+> the frame properly and stays crisp on the high-resolution screens the store's own
+> guidance says 1280x800 is preferred for.
+>
+> Everything else about those four was right: a real shelf at **119 books**, a genuine
+> **19-book** multi-catch, the reading state and the result card. Do not restage them. Just
+> shoot them again at 2x.
+
+
 | | |
 | --- | --- |
 | **A real shelf** | Fifteen to twenty-five books you actually caught. Fewer than twelve looks like a demo; a half-empty board is the single most damaging thing in shot 1 |
@@ -113,6 +130,34 @@ optional host permission.
 
 **What ruins it:** a kept rate of 100%, which reads as fake, or of 40%, which is true but
 is not the shot. If the number is bad, the answer is more catches, not a different crop.
+
+---
+
+## The ground: cobalt for product, cream for the mark
+
+**Measured 2026-08-20, and it inverts the rule.** The frame ground is the mark's own ramp,
+so on any frame containing the MARK, `contrast(deep, deep)` is **1.00:1** - not low
+contrast, the identical colour. The first render of the pair composition came back with half
+the ball dissolved into the background.
+
+| Ground | vs the mark's deep stop | vs its light stop |
+| --- | --- | --- |
+| landing, day `#fbf7ec` | **8.03:1** | 1.64:1 |
+| toolbar, light `#ffffff` | 8.60:1 | 1.75:1 |
+| landing, night `#080d20` | 2.24:1 | 11.00:1 |
+| extension night `#000000` | 2.44:1 | 11.98:1 |
+| **the frame's cobalt** `#013ebf` | **1.00:1** | 4.90:1 |
+
+A gradient ball always merges one end into any flat ground; what matters is that the other
+end separates hard. **Cobalt is right when the content is a popup panel and wrong when the
+content is the mark.** The pair frame is on cream for that reason, and a dark cover gains
+from it rather than losing.
+
+**The same mistake happened twice in one composition.** The connector between cover and mark
+was painted with the cream token, on a cream ground, and vanished. It uses `currentColor`
+now, which inherits from the frame and flips with the ground, so neither frame can repeat
+it. **If an element has a colour written into it rather than inherited, ask what it is
+sitting on.**
 
 ---
 

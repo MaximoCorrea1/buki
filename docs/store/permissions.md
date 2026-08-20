@@ -77,6 +77,48 @@ that interaction. Buki requests no broad host permission to make this work.
 
 ## Host permissions
 
+> ### PASTE THIS ONE. 953 characters.
+>
+> **The dashboard gives host permissions ONE justification field with a 1000-character
+> limit, not one field per host.** The five blocks below total 2,669 characters and will
+> not fit. They stay, because each is the honest long answer if a reviewer asks about a
+> specific host, and because they are where the reasoning lives.
+>
+> Measured, not estimated: 953 characters with LF endings, 965 if the field counts CRLF.
+> Both clear 1000 with room, and the room is deliberate - a justification trimmed in the
+> browser gets trimmed at the END, and the end is where the wildcard answer lives.
+
+```
+Buki identifies books in pictures and saves them to a list in the user's browser.
+
+x.com, twitter.com: Buki's button sits in a post's action bar and reads that post's text and links. A caption or retailer link often identifies a book an unreadable cover cannot.
+
+pbs.twimg.com: where x.com serves cover images; only the right-clicked one is fetched.
+
+openlibrary.org, covers.openlibrary.org: recognised titles are checked for canonical title, author, ISBN and cover, so a misread is not saved as a real book.
+
+generativelanguage.googleapis.com: the vision model, used only when the user supplied their own key.
+
+get-buki.vercel.app: the developer's own endpoints. One reads a cover for users with no key; one exchanges a licence key for a short-lived pass.
+
+The optional https://*/* is never granted at install: Buki requests one host at a time, derived from the right-clicked image's own URL, because covers usually sit on a CDN activeTab cannot reach.
+```
+
+**What survived the cut.** Every host keeps a reason a reviewer can check, and the optional
+wildcard keeps ALL THREE of its clauses: never granted at install, requested one host at a
+time, and derived from the right-clicked image's own URL. That third clause is the whole
+defence - it is the difference between *this extension wants every site* and *this extension
+asks for one image host when you right-click an image on it*. **If this ever has to be
+shortened again, cut a named host, never that sentence.**
+
+**What went**, and nothing load-bearing did: the intro's duplication of the Single Purpose
+field sitting directly above it in the form, the word "OpenLibrary" repeated beside the
+openlibrary.org hostname, and "used only when the user has supplied their own API key" down
+to "their own key".
+
+---
+
+
 **https://twitter.com/\*, https://x.com/\***
 
 ```
