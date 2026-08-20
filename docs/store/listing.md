@@ -78,17 +78,17 @@ does not guard this string; check it by eye when the manifest moves.
 ## Detailed description
 
 ```
-You see a book in a picture, save the post, and never find it again. It sinks under
-everything you saved after it, and months later you cannot tell the ones you meant from
-the impulse saves.
+You see a book on X, on Reddit, on Pinterest. You save the post, and never find it
+again. It sinks under everything you saved after it, and months later you cannot tell the
+ones you meant from the impulse saves.
 
 Buki gives those books a place.
 
 IT READS THE PICTURE, NOT THE CAPTION
 
-Right-click any cover image anywhere on the web and choose "Save book to shelf". Buki
-reads the picture together with the words around it, checks the answer against
-OpenLibrary, and files it. That is the one that works on a photograph with no link and no
+Right-click any cover image and choose "Save book to shelf". X, Reddit, Pinterest, a
+newsletter, a blog, anywhere there is a picture. Buki reads the picture together with the
+words around it, checks the answer against OpenLibrary, and files it. That is the one that works on a photograph with no link and no
 title written anywhere.
 
 On X, Buki's own mark sits in the post's action bar and does the same thing in one press.
@@ -147,6 +147,18 @@ no extra cost to you. It appears only on books you already saved, and it never c
 what Buki shows you. You can choose Amazon or Bookshop.org, which supports independent
 bookshops.
 ```
+
+**Named platforms, added 2026-08-19.** The description said *anywhere on the web* twice
+where the landing has always said *"You see a book on X, on Reddit, in a newsletter"*
+(`docs/index.html`), and `.agents/product-marketing.md` targets exactly those readers. The
+abstraction was a specificity failure, not a voice decision, so the platforms were brought
+across and nothing else moved. **Pinterest is the one addition that is NOT yet in the
+positioning doc** - it is a good fit and it works the same way, by right-click, but it has
+not been through the by-hand pass. `OPENWORK.md` item 3 should cover it before launch.
+
+**The X button stays described as X-only**, which it is. Naming three platforms in one
+breath risks implying a Buki button on all three; the sentence beneath keeps the mark in
+the action bar on X and the right-click everywhere else, which is the truth.
 
 **Why it is ordered this way.** The Web Store's long description is indexed, and the first
 lines are what a browsing reader actually reads, so the problem goes first and the

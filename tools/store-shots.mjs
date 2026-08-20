@@ -89,6 +89,18 @@ const mark = (id, px) =>
 /**
  * One headline per shot, and they are not captions.
  *
+ * SIMPLIFIED 2026-08-20 on Maximo's brief: *"the language idk, should be simple. more
+ * straightforward."* Every sub is now under eight words, because a sub is read in a store
+ * grid at a glance and *"a stack on a desk gets a row and a decision each"* is a nice
+ * sentence nobody finishes. The platforms are named rather than implied, which is not a new
+ * direction: `docs/index.html` has said *"You see a book on X, on Reddit, in a newsletter"*
+ * all along and `.agents/product-marketing.md` targets exactly those readers. The store copy
+ * was the only surface that went abstract.
+ *
+ * SHOT 4 SAYS "ON X" AND MEANS IT. The button is X-only; Reddit and Pinterest are
+ * right-click, which is what shot 3 says. Naming a platform in one frame and a gesture in
+ * the other is what keeps the pair honest.
+ *
  * The store shows these at size and a listing is read by someone deciding in about four
  * seconds, so each frame gets ONE claim in the product's own voice. They are drawn from
  * `.agents/product-marketing.md`'s differentiators rather than written fresh, because the
@@ -101,14 +113,14 @@ const SHOTS = [
     n: 1,
     layout: 'hero',
     head: 'A shelf, not a folder.',
-    sub: 'Face out, four to a board, in your browser. Nothing is synced anywhere.',
+    sub: 'Every book you caught, face out, in your browser.',
     note: 'The one that sells it. Lead with it.',
   },
   {
     n: 2,
     layout: 'hero',
-    head: 'One photograph, several books.',
-    sub: 'It reads the cover, not the caption. A stack on a desk gets a row and a decision each.',
+    head: 'One photo. Every book in it.',
+    sub: 'It reads the cover, not the caption.',
     note: 'The differentiator. No competitor screenshot can show this.',
   },
   {
@@ -119,8 +131,8 @@ const SHOTS = [
     // statement and in the host justification, and neither needed a screenshot to be true.
     n: 3,
     layout: 'split',
-    head: 'You saw it. Now you have it.',
-    sub: 'Right-click the picture. Buki reads the cover and files the book.',
+    head: 'You saw a book. Now you have it.',
+    sub: 'On X, on Reddit, on Pinterest. Right-click it.',
     note: 'The search, then the find. Needs zzz-shot-3a.png and zzz-shot-3b.png.',
     a: 'The picture you found',
     b: 'The book, on your shelf',
@@ -128,16 +140,16 @@ const SHOTS = [
   {
     n: 4,
     layout: 'detail',
-    head: 'One press, where you already are.',
-    sub: 'Buki sits in the post’s own row, beside reply and like.',
+    head: 'On X, it is one tap.',
+    sub: 'Buki sits beside reply and like.',
     note: 'Shows people where it lives. The inset is why this is a detail layout.',
     zoomLabel: 'Actual size: 18px, X’s own icon box',
   },
   {
     n: 5,
     layout: 'hero',
-    head: 'It tells you how often it is right.',
-    sub: 'Every catch names its evidence, and the shelf publishes its own kept rate.',
+    head: 'It shows you where it looked.',
+    sub: 'Every catch says where the answer came from.',
     note: 'Nothing else in this category publishes its own accuracy.',
   },
 ];
