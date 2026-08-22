@@ -146,6 +146,29 @@ export function createRecognitionLog(deps: { storage: StorageArea; now: () => nu
  * The one number worth watching: of the books this put on your shelf, how many did you
  * keep? Pure, so the popup renders it and the tests check the maths without storage.
  */
+/**
+ * The masthead's one line: `28 books caught`.
+ *
+ * IT USED TO CARRY THE KEPT RATE and no longer does, on Maximo's call, 2026-08-22. It read
+ * `28 caught | 93% kept`, which is a precision figure and a good one, but it asked a reader
+ * to interpret a percentage in a masthead before they had any reason to care. The count is
+ * the number somebody is pleased to see; the rate is the number somebody has to think about.
+ *
+ * `summarize` still computes `keptPct` and the log still records `wrong`. **That is now a
+ * signal with no reader** and it should get one rather than rot - the store screenshot is
+ * the obvious home, since a product publishing its own miss rate is a rare thing and the
+ * masthead was the wrong place to spend it.
+ *
+ * Lives here, beside `summarize`, rather than in `popup.ts`, because nothing can import
+ * `popup.ts` - see `src/shared/entryPoints.test.ts`. Inline, this string was the one piece
+ * of copy in the product no test could assert on.
+ */
+export function mastheadLine(caught: number, shelfCount: number): string {
+  // A shelf that predates the log would otherwise read "0 books caught" beside real books.
+  if (!caught) return shelfCount ? String(shelfCount) : '';
+  return `${caught} book${caught === 1 ? '' : 's'} caught`;
+}
+
 export function summarize(events: RecognitionEvent[]): { caught: number; keptPct: number | null } {
   const saved = events.filter((e) => e.outcome === 'auto-saved' || e.outcome === 'confirmed');
   const kept = saved.filter((e) => !e.wrong).length;

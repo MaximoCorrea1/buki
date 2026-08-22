@@ -65,7 +65,7 @@ is one of the two things `.agents/product-marketing.md` records as crossing that
 | **A real shelf** | Fifteen to twenty-five books you actually caught. Fewer than twelve looks like a demo; a half-empty board is the single most damaging thing in shot 1 |
 | **Real covers** | A mix of catalogue art and a few generated cloths is GOOD. It is honest, and the cloth is a piece of design worth showing |
 | **Mixed piles** | Every pile with something in it. `Now 6 · Next 9 · Someday 4 · Finished 3` reads as used; `Now 20 · Next 0` reads as unsorted |
-| **The masthead count** | It should say something believable. `23 caught · 87% kept` is the proof point |
+| **The masthead count** | `28 books caught`. **It stopped carrying a kept rate on 2026-08-22**, so a shot staged around `87% kept` is staging a masthead that no longer exists |
 | **Dark or light?** | **Dark.** The extension is true black at night and it sits better on the cobalt ground. Shoot light only if you prefer it, and then shoot all five that way |
 | **Crop to content** | The popup panel and nothing else. Empty space below the last board is dead pixels the frame cannot rescue |
 | **No personal data** | Check the source URLs on any detail sheet, and the browser chrome if any is visible |
@@ -138,8 +138,13 @@ panel for a different book than the left. **Shoot them seconds apart, on the sam
   rate in the same frame if you can get both.
 - If not, the masthead count on its own with a full shelf behind it.
 
-**What ruins it:** a kept rate of 100%, which reads as fake, or of 40%, which is true but
-is not the shot. If the number is bad, the answer is more catches, not a different crop.
+**What ruins it:** a detail sheet whose evidence line says *from the post's own words*, the
+weakest of the three signals. **Shoot one that says `read from the cover`** - that is the
+capability nothing else in the category has, and it is the whole reason this shot exists.
+
+*(This previously warned about a kept rate of 100% or 40%. The masthead stopped showing a
+rate on 2026-08-22; the per-catch evidence line is the surviving trust signal and the one
+to stage.)*
 
 ---
 

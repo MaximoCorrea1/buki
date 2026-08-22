@@ -333,9 +333,12 @@ uninstrumented, and the free tier drops Pro retention to **one day**.
 **The spend cap is therefore your primary alarm, not just a brake.** A cost spike is the
 first thing that will tell you something is wrong, because nothing else reports.
 
-**The shelf reports its own kept rate** (`23 caught · 78% kept`) and that number never
-leaves the user's machine. It is the metric that matters most and the one you will only
-ever learn by asking somebody.
+**The kept rate is still computed and now shown nowhere.** The masthead reads
+`28 books caught` as of 2026-08-22; `summarize()` still returns `keptPct` and the log still
+flags a delete inside ten minutes as wrong. It never left the user's machine, so you could
+only ever have learned it by asking - that has not changed. What changed is that the USER
+cannot see it either, so asking is now the only path for both of you. It is still the metric
+that matters most. **If you want it back, put it on the options page, not the masthead.**
 
 ---
 

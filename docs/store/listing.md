@@ -105,8 +105,10 @@ Nothing reaches your shelf until you pick a pile. Buki never saves a book for yo
 IT TELLS YOU WHERE THE ANSWER CAME FROM
 
 Every catch names its evidence: read from the cover, from the link in the post, or from
-the post's own words. Buki also keeps a private count of how often you kept what it found,
-so you can decide how much to trust it. That count never leaves your computer.
+the post's own words. So you can see how it got there, and decide for yourself whether it
+is right. Buki keeps a private record of its own attempts on your computer, to grade itself
+against real use. That record never leaves your machine and you can clear it whenever you
+like.
 
 IT KEEPS THE POST THAT SOLD YOU
 
@@ -262,8 +264,10 @@ whole claim is craft.
    `zzz-shot-3b.png`**; there is no `zzz-shot-3.png`.
 4. **Buki's mark** in a post's action bar, beside reply and like, so people see where it
    lives. It is the catcher at 18px, X's own icon size.
-5. **The masthead count** (`23 caught, 87% kept`). Nothing else in this category publishes
-   its own accuracy.
+5. **The evidence line on a book's detail sheet**, showing where the answer came from.
+   Nothing else in this category tells you which signal it used. The masthead reads
+   `28 books caught` as of 2026-08-22; **it no longer carries a kept rate**, so do not
+   stage a shot around one.
 
 ## Promotional tile: 440x280
 

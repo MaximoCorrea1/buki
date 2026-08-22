@@ -258,8 +258,14 @@ Full rules in `docs/brand.md`.
 
 ## Proof Points
 
-**Metrics:** The shelf reports its own kept rate on the masthead (`23 caught · 78% kept`),
-which is a rare thing for a recognition product to publish about itself. Local OCR
+**Metrics:** ~~The shelf reports its own kept rate on the masthead (`23 caught · 78% kept`)~~
+**REMOVED FROM THE MASTHEAD 2026-08-22**, which now reads `28 books caught`. The rate is
+still computed and still recorded locally; it is simply displayed nowhere. **This retired a
+proof point** - publishing your own accuracy is a rare thing for a recognition product and
+it was ours. The surviving trust signal is per-catch rather than aggregate: every catch
+still names its evidence (*read from the cover*, *from the link*, *from the post's words*),
+which is the claim the store screenshots now carry. If the aggregate is ever wanted back,
+the options page is its home, not the masthead. Local OCR
 (Tesseract) measured ~5% on real covers, which is why a vision model is used instead.
 
 **Customers:** None yet. Pre-launch, zero users. Do not fabricate any.

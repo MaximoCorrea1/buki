@@ -5,7 +5,12 @@ import { PRICING_URL } from '../shared/pricing';
 import { readPro, standingOf } from './proState';
 import { readSettings } from './settings';
 import { createTrial } from './trial';
-import { createRecognitionLog, summarize, type RecognitionEvent } from './recognitionLog';
+import {
+  createRecognitionLog,
+  summarize,
+  mastheadLine,
+  type RecognitionEvent,
+} from './recognitionLog';
 import { buyLink, type Store } from './buyLink';
 import { coverFor } from './cover';
 import { pruneCovers, liveCoverDeps } from './coverCache';
@@ -548,14 +553,10 @@ async function renderStats(shelfCount: number): Promise<void> {
     console.error('[Buki] could not read the log', err);
   }
 
-  const { caught, keptPct } = summarize(events);
-
-  // A shelf that predates the log would otherwise read "0 caught" next to real books.
-  if (!caught) {
-    el.textContent = shelfCount ? `${shelfCount}` : '';
-    return;
-  }
-  el.textContent = keptPct === null ? `${caught} caught` : `${caught} caught · ${keptPct}% kept`;
+  // The line itself is `mastheadLine`, in recognitionLog.ts, so it can be tested: nothing
+  // can import this file. summarize() still returns keptPct and this deliberately ignores
+  // it - see the note on mastheadLine for where that number should go instead.
+  el.textContent = mastheadLine(summarize(events).caught, shelfCount);
 }
 
 function renderEmpty(app: HTMLElement): void {

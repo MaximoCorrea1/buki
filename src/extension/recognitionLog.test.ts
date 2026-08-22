@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   createRecognitionLog,
   summarize,
+  mastheadLine,
   MAX_EVENTS,
   MIN_FOR_RATE,
   WRONG_WINDOW_MS,
@@ -173,6 +174,45 @@ describe('summarize', () => {
 
   it('reports nothing at all for an empty log', () => {
     expect(summarize([])).toEqual({ caught: 0, keptPct: null });
+  });
+});
+
+/**
+ * THE MASTHEAD LINE, which lived inline in `popup.ts` and was therefore untestable.
+ *
+ * `popup.ts` does work at module scope, so no test can import it - see
+ * `src/shared/entryPoints.test.ts`. The string it rendered was the one piece of copy in
+ * this product that nobody could assert on, which is how it stayed a template literal
+ * inside a render function while every number feeding it had tests.
+ *
+ * Extracted 2026-08-22 when Maximo dropped the kept rate from the masthead. Same move as
+ * `handleSaveBook` in item 30: pull the decision out of the unimportable file and the
+ * guard becomes possible.
+ */
+describe('the masthead line', () => {
+  it('counts books, and says so', () => {
+    expect(mastheadLine(28, 119)).toBe('28 books caught');
+  });
+
+  it('says book, singular, for one', () => {
+    // A masthead reading "1 books caught" is the kind of thing nobody notices until it is
+    // in a screenshot on a store listing.
+    expect(mastheadLine(1, 4)).toBe('1 book caught');
+  });
+
+  it('no longer reports the kept rate', () => {
+    // The whole point of the change. It read `28 caught | 93% kept` until 2026-08-22.
+    expect(mastheadLine(28, 119)).not.toMatch(/kept|%/);
+  });
+
+  it('falls back to the shelf count for a shelf that predates the log', () => {
+    // Deliberate and unchanged: those books were never CAUGHT as far as the log knows, so
+    // claiming them would be a lie told by an off-by-one.
+    expect(mastheadLine(0, 119)).toBe('119');
+  });
+
+  it('says nothing at all when there is nothing to say', () => {
+    expect(mastheadLine(0, 0)).toBe('');
   });
 });
 
