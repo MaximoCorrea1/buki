@@ -18,3 +18,8 @@ docs/brand.md
 # open blockers and internal reasoning, and docs/ is the public site root.
 docs/SESSION-CONTEXT-*
 docs/SESSION-TODO-*
+
+# The pre-launch review (2026-08-24). Names every open vulnerability in the product by
+# file and line, with attack paths. It is the single worst file in this repo to serve
+# publicly, and docs/ is the site root.
+docs/REVIEW-*

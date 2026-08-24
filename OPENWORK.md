@@ -1,17 +1,17 @@
 # Open work
 
-**State as of 2026-08-18**, verified by running the commands, not from memory:
+**State as of 2026-08-24**, verified by running the commands, not from memory:
 
 | | |
 | --- | --- |
-| Tests | **602 across 57 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-18 end of session) |
+| Tests | **620 across 58 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-24). **Green is not the same as covered**: the 2026-08-24 review mutation-tested six behaviours and FIVE survived this suite untouched. See `docs/REVIEW-2026-08-24-prelaunch.md` section 3 |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
-| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **25 commits landed on 2026-08-18** (probed 2026-08-19; it read 23 because it was written INTO the commit that changed it — the FOURTH such drift) (`git rev-list --count d3e5923..HEAD`). Run the probe |
+| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **33 commits since `d3e5923`, 2026-08-18 through 08-24** (was 25 at the end of 08-18) (probed 2026-08-19; it read 23 because it was written INTO the commit that changed it — the FOURTH such drift) (`git rev-list --count d3e5923..HEAD`). Run the probe |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -38,6 +38,12 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
+| **38** | agent | **`/api/vision` forwards the body verbatim.** Caller picks the model and token budget on our Gemini key, reachable from our own options page. Measured 25,000x cost ratio | item 26's cap means nothing without it |
+| **39** | agent | **A Polar 5xx becomes 403 and the extension deletes a paying subscriber's session.** Both halves, server and client | every subscriber, during any Polar wobble |
+| **40** | agent | **No rate limit at all on the licensed path.** An 8-day unrevocable bearer with no ceiling | bounds a leaked token |
+| **41** | agent | **A hostile page can drive the tray.** Zero `isTrusted` in `src/`; substring host filter | the user's shelf and our key |
+| **42** | agent | **The card's x is a free-read button.** Abort skips the spend; the server never cancels Gemini | the trial's only real ceiling |
+| **43** | agent | **The options page's slot reuse is deletable with 620/620 green.** MUTATION-PROVEN. Fix by extraction | five presses lock a paying customer out |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800. **The frames, the headlines and the staging are done** (`docs/store/assets.md`, `tools/store-shots.mjs`); what is left is capturing five real ones and re-running the tool | item 15 |
 | ~~17~~ | agent | ~~`docs/privacy.html` + the landing's data section~~ **DONE 2026-08-18** (`c0a3e00`). **The landing was already correct**; `privacy.html`, `README.md` and both Web Store answers were not. No DO-NOT-SUBMIT banners remain in `permissions.md` | — |
@@ -53,7 +59,14 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 **The critical path is 1, 2, 26.** Until the first two exist the paid tier is written and
 switched off, and until 26 exists nothing bounds what abuse can cost.
 
-> ### THERE IS NO AGENT WORK LEFT IN THIS TABLE, as of 2026-08-18.
+> ### ~~THERE IS NO AGENT WORK LEFT IN THIS TABLE~~ — TRUE ON 2026-08-18, FALSE SINCE 2026-08-24.
+>
+> The pre-launch review filed **six P0s (items 38-43), all agent work, all unblocked.** They are
+> the front of the queue: item 38 in particular must land BEFORE item 37 completes, because the
+> day `BUKI_EXTENSION_ID` becomes the shipped id is the day `/api/vision` is reachable by anyone
+> who reads the store URL. See `docs/REVIEW-2026-08-24-prelaunch.md` section 8.
+>
+> The paragraph below is kept because its reasoning about MAXIMO's items is still exactly right:
 >
 > Everything above is Maximo's: **1, 2, 26** (a dashboard and two credentials), then
 > **3** and **9** (a real browser, which no agent can drive because Chrome refuses
@@ -119,6 +132,7 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 | The competitive landscape | `competitor-profiles/_summary.md` | — |
 | This session's reasoning and what was measured | `docs/SESSION-CONTEXT-<date>-<label>.md` | — |
 | This session's forget-nothing ledger | `docs/SESSION-TODO-<date>-<label>.md` | — |
+| **The 2026-08-24 pre-launch review**: every finding, its evidence, its attack path, its fix | **`docs/REVIEW-2026-08-24-prelaunch.md`** | this file, which owns the ORDER and the STATUS |
 
 > ### ⚠ TWO SESSIONS SHARE 2026-08-18. Filename order is not a reading order.
 >
@@ -314,6 +328,88 @@ unblocks.
 ---
 
 ## Part 2. Unblocked. An agent can start any of these right now
+
+> ### THE SIX P0s FROM THE 2026-08-24 PRE-LAUNCH REVIEW — items 38 to 43
+>
+> Ten reviewers, ~1.5M tokens, ~100 findings. **Full evidence, attack paths, measured costs
+> and the fix for each: `docs/REVIEW-2026-08-24-prelaunch.md`.** That file is the record; these
+> items are the ORDER. Every one below was VERIFIED against source, not taken on an agent's word.
+>
+> **Nothing was fixed.** Maximo's instruction on the day: *"we solve them on next session."*
+>
+> **They share one shape**, and it is worth knowing before touching any of them: *the correct
+> rule is written down, in a comment, within twenty lines of the code that breaks it.* Eight
+> instances are tabulated in the review's section 1. The tests inherited the habit - every
+> guard asserts a STRING IS PRESENT rather than a BEHAVIOUR HOLDS, which is exactly what a good
+> comment already guarantees. **Five mutations survived a fully green 620-test suite.**
+
+- [ ] **38. `/api/vision` FORWARDS THE REQUEST BODY VERBATIM.** The caller picks the model and
+      the token budget, billed to `GEMINI_API_KEY`. `visionHandler.ts:98` is
+      `body: await request.text()` and that is the entire body handling on the money path: no
+      parse, no model allowlist, no size cap, no `max_tokens` clamp.
+      **This is not only an attack.** `options.html:537` is a free-text model field;
+      `background.ts:164`'s `model: route.model || settings.model` puts it back on the proxy
+      path under a comment claiming it only falls back "when we are talking to a provider
+      directly" - the `||` never checks the endpoint. **A keyless user typing `gemini-2.5-pro`
+      into settings bills us for Pro-tier inference, through our own UI.**
+      Measured: honest catch **$0.000135**, attacker request **~$3.46**. A **25,000x ratio** -
+      and `policy.ts:17` justifies its forgeable-Origin design by citing the honest number.
+      **FIX SERVER-SIDE ONLY.** Correcting the `||` closes the UI path and NOT the
+      vulnerability; the client is not the thing being defended. Found by FOUR independent
+      reviewers. **Ship this WITH item 26, not instead of it.**
+
+- [ ] **39. A POLAR NON-2xx BECOMES 403, AND THE EXTENSION DELETES THE SESSION.**
+      `licenseHandler.ts:170` returns 403 for every `!res.ok` including 500/502/503/429. Eight
+      lines above, the `catch` branch returns 503 with a comment saying exactly why 403 is
+      wrong. **The rarer outage shape is handled; the commoner one is not.**
+      Cascade: 403 -> `license.ts:118` `retryable: status >= 500` is false -> `proState.ts:166`
+      writes `session: null` -> no Authorization header -> classified `trial` -> `WallError`.
+      **A paying subscriber meets the wall they paid to pass, during a third party's bad
+      minute**, and the seven-day grace window that exists to prevent exactly this is defeated
+      because the evidence it needs has been erased. Three triggers, not one - our own `keyCap`
+      429 does it too. `grep -c 'status: 5' licenseHandler.test.ts` -> **0**. Found by FOUR
+      independent reviewers. **Both halves must land, or it is half a fix.**
+
+- [ ] **40. NO RATE LIMIT OF ANY KIND ON THE LICENSED PATH.** Both brakes sit inside
+      `if (access.kind === 'trial')` at `visionHandler.ts:80`, and `policy.ts` skips the Origin
+      check entirely when a token is present. `decideAccess` returns `licenseKeyId` and
+      `handleVision` reads only `.kind` - **the field a per-licence cap would key on is
+      computed and discarded.** The token is an 8-day (24h + 7d grace) unrevocable bearer bound
+      to no device and no IP. Chained with 38: pay $4 once, read the token out of unminified
+      `chrome.storage.local`, hold an uncapped arbitrary-prompt Gemini proxy for a week, and
+      share it. Grace is UNCONDITIONAL - the server never learns whether Polar was actually down.
+
+- [ ] **41. A HOSTILE PAGE CAN DRIVE THE INJECTED TRAY.** Three facts compose:
+      `grep -rc isTrusted src/` -> **ZERO in all of `src/`**; the image filter is
+      `src.includes('twimg.com/media')`, a SUBSTRING match, so
+      `https://attacker.example/twimg.com/media/x.png` passes; and the scanner arms permanently
+      on any page after one right-click, with no `clearInterval` anywhere.
+      Chain: forged `<article data-testid="tweet">` + a synthetic `.click()` spends the user's
+      free catch, sends attacker content to the model on our key, and **persists an
+      attacker-controlled URL as the book's `shot`** - which `cover.ts:49` then fetches on every
+      popup open, forever. **The correct hostname check is three lines away in
+      `twitterImage.ts:51`.** Found by the threat model ONLY. Three small edits.
+
+- [ ] **42. THE CARD'S x IS A FREE-READ BUTTON.** `gate.ts:64` spends the trial credit only
+      after `work()` RESOLVES, and `grep -c signal src/server/visionHandler.ts` -> **0**, so a
+      client abort never reaches Gemini. **The money is committed; the counter does not move.**
+      Press catch, press "Stop looking" after two seconds, repeat - no forgery, no storage
+      editing. The same path fires unintentionally on any 12s timeout.
+      `trial.ts:6` accepts that the counter is forgeable because "whoever resets storage every
+      ten books was never going to pay four dollars", and `ipCap.ts:11` calls it "the trial
+      count that matters". **Both statements are false on this path.**
+
+- [ ] **43. THE OPTIONS PAGE'S ACTIVATION-SLOT REUSE IS DELETABLE WITH 620/620 GREEN.**
+      MUTATION-PROVEN: replacing `options.ts:85`'s `reuse` with `undefined` makes every Activate
+      press spend one of the licence's **five permanent slots**, and the suite stays fully green.
+      The only guard is `proState.test.ts:336` `toContain('activationId')`, which passes on the
+      identifier surviving in a spread and four comments. **This is character-for-character the
+      failure section 5 already records** for `toContain('markRestored')`.
+      **Five presses lock the person who paid out of their own licence, with no self-service
+      fix** - and the Activate button is exactly what a human presses repeatedly when a key does
+      not take. Fix by extraction (`activateKey.ts`), the way `saveBook.ts` did it, not by
+      another string guard.
+
 
 Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8, 23 and 24
 are all done.** The landing is finished top to bottom, the extension has caught up to it,
