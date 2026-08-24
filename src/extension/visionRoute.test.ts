@@ -49,7 +49,13 @@ describe('where a cover read is sent', () => {
   it('carries the SESSION token for a subscriber, never the licence key', () => {
     // The licence key is long-lived and is what a thief actually wants. It is exchanged
     // once a day for a token that expires; only the token travels with a catch.
-    const route = visionRoute(settings(''), { key: 'LICENCE-KEY-SECRET', session: live });
+    // NOW IS PASSED, and it was not until 2026-08-24. Its two sibling tests below both
+    // hand `visionRoute` the third argument; this one did not, so it read `Date.now()` and
+    // measured `live` against the real wall clock. `live` expires an hour after
+    // 2026-08-17, so this passed for seven days and then began failing on its own, with no
+    // code change, on a suite that had been green the day before.
+    // A fixture named NOW that is never injected is the ambient clock wearing a costume.
+    const route = visionRoute(settings(''), { key: 'LICENCE-KEY-SECRET', session: live }, NOW);
     expect(route.apiKey).toBe('session-token');
     expect(route.apiKey).not.toContain('LICENCE-KEY-SECRET');
   });

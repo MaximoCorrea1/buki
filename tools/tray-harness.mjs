@@ -28,6 +28,30 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
+/**
+ * The mark, for the fixture. `content.ts` builds this with `markNode()`; this file's markup
+ * is hand-kept, so a card here without it would be a card the product does not have.
+ * Unique gradient id per instance for the same reason markNode has one: every url(#id) in
+ * a document resolves to the FIRST match, so a shared id means every ball after the first
+ * loses its fill the moment that node is removed.
+ */
+let markSeq = 0;
+const MK = () => {
+  // ONE READ, INTO A VARIABLE. This was `${++markSeq}` written directly into both the id
+  // and the url, and a template interpolates each occurrence separately: the counter ran
+  // twice per call, so the gradient was declared as h1 and referenced as h2. The ball then
+  // had a fill pointing at nothing and vanished, leaving two eyes floating on the card.
+  //
+  // It cost a real detour, because it looked exactly like a design problem: the mark read
+  // as two dots, which is precisely what a mark whose light end is 1.64:1 on white WOULD
+  // look like. Two plausible causes, and the measurement pointed at the wrong one.
+  // `markNode()` in content.ts has always done it this way, so THE PRODUCT WAS CORRECT AND
+  // THIS HARNESS WAS THE THING THAT LIED.
+  const n = ++markSeq;
+  return `<svg class="buki-mk" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="h${n}" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7bcdfc"/><stop offset="0.46" stop-color="#4aa3f9"/><stop offset="1" stop-color="#013ebf"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#h${n})"/><ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/><ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/><circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd"/><circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd"/></svg>`;
+};
+
+
 const src = readFileSync('src/extension/content.ts', 'utf8');
 
 // The same slice contentChrome.test.ts takes, so the two cannot disagree about what the
@@ -136,6 +160,7 @@ const TRAY = [
   card(
     `<div class="buki-head">
         <div class="buki-who">
+          ${MK()}
           <div class="buki-eyebrow">read from the cover</div>
           <div class="buki-count">Buki found 3 books in this picture</div>
         </div>${closeBtn}
@@ -154,6 +179,7 @@ const TRAY = [
   card(
     `<div class="buki-head">
         <div class="buki-who">
+          ${MK()}
           <div class="buki-eyebrow">read from the post</div>
           <div class="buki-count">Buki found 20 books in this picture</div>
         </div>${closeBtn}
@@ -186,6 +212,7 @@ const TRAY = [
   card(
     `<div class="buki-head">
         <div class="buki-who">
+          ${MK()}
           <div class="buki-eyebrow">read from the cover</div>
           <div class="buki-t buki-plain">No book on that cover.</div>
         </div>${closeBtn}
@@ -199,6 +226,7 @@ const TRAY = [
   card(
     `<div class="buki-head">
         <div class="buki-who">
+          ${MK()}
           <div class="buki-eyebrow">${wallWord('eyebrow')}</div>
           <div class="buki-t buki-plain">${wallWord('head')}</div>
           <div class="buki-note">${wallWord('body')}</div>
@@ -230,6 +258,18 @@ const GROUNDS = [
   ],
 ];
 
+/**
+ * BOTH MOODS, on every ground, since 2026-08-24.
+ *
+ * The tray had one mood, so this rendered one tray per ground and that was the whole
+ * matrix. It now follows the extension's choice, which means the interesting cell is not
+ * "the card on a photograph" any more, it is A LIGHT CARD ON A WHITE PAGE and A DARK CARD
+ * ON A BLACK ONE. Those two are measured at 1.00:1 and 1.10:1 against the page: the ring
+ * and the shadow are the only things separating card from document, and there is no way to
+ * check that except by looking at it.
+ */
+const MOODS = ['dark', 'light'];
+
 const panels = GROUNDS.map(
   ([label, bg, fg, image]) => `
 <section style="position:relative;height:840px;overflow:hidden;background:${bg};background-image:${image};color:${fg};padding:22px">
@@ -240,7 +280,14 @@ const panels = GROUNDS.map(
     which is the whole decision recorded in docs/brand.md under
     <i>The one surface with no ground of its own</i>.
   </p>
-  <div class="buki-tray" style="position:absolute">${TRAY.join('')}</div>
+  ${MOODS.map(
+    (mood, i) => `
+  <div class="buki-tray" data-theme="${mood}" style="--mood-x:${18 + i * 372}px">
+    <p style="margin:0 0 6px;font:600 11px/1 system-ui,sans-serif;letter-spacing:.12em;
+       text-transform:uppercase;opacity:.7;pointer-events:none">${mood}</p>
+    ${TRAY.join('')}
+  </div>`,
+  ).join('')}
 </section>`,
 ).join('');
 
@@ -265,7 +312,10 @@ writeFileSync(
      only thing overridden; everything else is content.ts's own stylesheet. */
   .buki-tray {
     position: absolute !important;
-    inset: auto 18px 18px auto !important;
+    /* --mood-x, not a literal, because this rule is !important and the two moods have to
+       sit SIDE BY SIDE. Setting right inline lost to this and stacked one exactly on top
+       of the other, which looked like a single tray and hid the whole light mode. */
+    inset: auto var(--mood-x, 18px) 18px auto !important;
     max-height: calc(100% - 36px) !important;
   }
 ${STYLE}
@@ -273,6 +323,6 @@ ${STYLE}
 <body>${panels}</body>`,
 );
 console.log(
-  `zzz-tray-harness.html written: ${TRAY.length} card states on ${GROUNDS.length} grounds. ` +
+  `zzz-tray-harness.html written: ${TRAY.length} card states x ${MOODS.length} moods on ${GROUNDS.length} grounds. ` +
     `Stylesheet read from content.ts (${STYLE.length} chars), markup is a fixture.`,
 );

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { resolveTheme, THEME_KEY } from './theme';
+import { describe, it, expect, vi } from 'vitest';
+import { resolveTheme, rememberTheme, THEME_KEY } from './theme';
 import popup from '../../popup.html?raw';
 import options from '../../options.html?raw';
 import popupSource from './popup.ts?raw';
@@ -72,5 +72,79 @@ describe('where the mood is decided', () => {
         /getElementById\(\s*['"]theme['"]\s*\)/,
       );
     }
+  });
+});
+
+/**
+ * THE TRAY CANNOT SEE localStorage, and that is not a bug in the tray.
+ *
+ * `popup.html` and `options.html` are extension-origin pages, so they share one
+ * `localStorage`. The catch tray is a content script: its `localStorage` belongs to x.com,
+ * or to whatever page it landed on. Reading the mood from there would hand Buki whatever
+ * the HOST SITE happened to store under the same key, which is a stranger's data deciding
+ * our colours.
+ *
+ * So the choice is MIRRORED into `chrome.storage.local`, which every extension context
+ * shares. localStorage stays authoritative for the pages, because it is synchronous and
+ * `theme.ts` exists to settle the mood before first paint - `chrome.storage` is async and
+ * would reintroduce exactly the flash this module was written to remove.
+ *
+ * Two stores, one direction, and the mirror is written only when somebody CHOOSES.
+ */
+describe('rememberTheme', () => {
+  it('writes the choice where the extension pages read it', () => {
+    const store: Record<string, string> = {};
+    const local = { get: vi.fn(), set: vi.fn().mockResolvedValue(undefined) };
+
+    rememberTheme('dark', {
+      setLocal: (k, v) => {
+        store[k] = v;
+      },
+      area: local,
+    });
+
+    expect(store[THEME_KEY]).toBe('dark');
+  });
+
+  it('ALSO mirrors it where the tray reads it', () => {
+    // The whole point. Without this the tray has no way to know the mood at all.
+    const local = { get: vi.fn(), set: vi.fn().mockResolvedValue(undefined) };
+
+    rememberTheme('light', { setLocal: () => {}, area: local });
+
+    expect(local.set).toHaveBeenCalledWith({ [THEME_KEY]: 'light' });
+  });
+
+  it('still writes the page store when the mirror is unavailable', () => {
+    // A content script is not the only context without chrome.storage: a test, a harness,
+    // and a page whose extension APIs were torn down mid-unload all hit this. Losing the
+    // mirror must never cost the user the choice they just made.
+    const store: Record<string, string> = {};
+
+    rememberTheme('dark', {
+      setLocal: (k, v) => {
+        store[k] = v;
+      },
+      area: undefined,
+    });
+
+    expect(store[THEME_KEY]).toBe('dark');
+  });
+
+  it('survives a page store that refuses to write', () => {
+    // Storage disabled on the origin throws rather than returning. The mirror must still
+    // be attempted: the two stores fail independently.
+    const local = { get: vi.fn(), set: vi.fn().mockResolvedValue(undefined) };
+
+    expect(() =>
+      rememberTheme('dark', {
+        setLocal: () => {
+          throw new Error('storage disabled');
+        },
+        area: local,
+      }),
+    ).not.toThrow();
+
+    expect(local.set).toHaveBeenCalledWith({ [THEME_KEY]: 'dark' });
   });
 });

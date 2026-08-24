@@ -7,6 +7,7 @@ import { clothFor } from './cloth';
 import { shotFor } from './coverSource';
 import { shiftOf, travelFrom } from './slotTravel';
 import { foundHeading, INTENT_LABEL, PROVENANCE, WALL } from './trayCopy';
+import { resolveTheme, THEME_KEY } from './themeChoice';
 import manrope from '../../fonts/manrope.woff2';
 import { createCatchTray, type Candidate, type Card } from './catchTray';
 import { postKey } from './lookupMemo';
@@ -152,26 +153,9 @@ const STYLE = `
      Measured on --bg: --ink 17.01:1, --ink-2 7.21:1, --jade 10.54:1. --accent is a FILL
      and a RING in this stylesheet and never body text, so its bar is its label's: black
      on it is 7.78:1, where the old #0a0f33 would be 6.30:1. */
-  --bg: #1c1c1e; --lift: #2c2c2e; --ring: rgba(255,255,255,.18);
-  /* --ink-2 raised from #a8a8b0 on 2026-08-17, to the value popup.html re-derived the
-     same day, so the author line and the eyebrow read the same on both surfaces. 8.35:1
-     on this card where it was 7.21:1 - still muted, no longer faint. */
-  --ink: #ffffff; --ink-2: #b5b5bd; --accent: #7f9bea;
-
-  /* A CONTROL'S GROUND IS A FILL, and this is the one place the tray is allowed a
-     translucent surface. The CARD stays opaque forever, because it lands on somebody
-     else's page and a translucent card has its contrast decided by a photograph nobody
-     has seen - docs/brand.md, The one surface with no ground of its own. But a control
-     sitting ON the card has a ground WE own, so it can take the same Apple systemFill the
-     popup's segmented track does, and the two surfaces stop being two products.
-     Composited on the card it is #39393d, with a white label at 11.50:1. */
-  --fill: rgba(120,120,128,.32); --fill-hi: rgba(120,120,128,.46);
-  /* The label on a filled accent. Named, because the literal it replaced was #0a0f33 and
-     it no longer clears the bar on this ground - exactly the retokening trap. */
-  --on-accent: #000000;
-  /* The one status colour. It appears nowhere else in that role, which is how it earns
-     being a colour rather than a word. */
-  --jade: #6fe0b6; --jade-bg: #10352a;
+  /* COLOUR MOVED OUT OF HERE ON 2026-08-24. Every colour token now lives in one of the
+     two mood blocks below; only the shape, motion and type tokens stay in this rule.
+     A colour left behind here would be a colour that cannot answer the second mood. */
 
   --ease: cubic-bezier(.23,1,.32,1);
   --drawer: cubic-bezier(.32,.72,0,1);
@@ -197,18 +181,69 @@ const STYLE = `
 .buki-tray, .buki-tray * { font-synthesis: none; }
 /* Bottom-aligned by margin, not justify-content: a flex-end column clips its own
    overflow at the TOP, which hides the oldest card instead of letting you scroll to it. */
+/* THE TWO MOODS, added 2026-08-24 on Maximo's call.
+   The tray used to have one, and theme.ts said in as many words that it must never follow
+   the extension's choice, because it owns its ground in every mood. What that argument
+   actually requires is that the card stay OPAQUE and carry its own ring and shadow, and
+   that is still true - it is now true twice, once per mood.
+   MEASURED, because the trade is real and symmetric. A dark card on a black essay is
+   1.10 to 1 against the page; a light card on a white docs site is 1.00 to 1, the
+   identical colour. Each mood vanishes into exactly one ground and the ring is what
+   carries it there, which is why the light ring is heavier than a hairline would be.
+   Dark is also the default: an unthemed tray is the one that already shipped, never an
+   unstyled flash. */
+.buki-tray,
+.buki-tray[data-theme="dark"] {
+  /* Darker than the #1c1c1e it replaced. Still not #000: this is a CARD on somebody
+     else's page, and true black has nothing left to separate it from a black one. */
+  --bg: #0f0f11; --lift: #1c1c1e; --ring: rgba(255,255,255,.16);
+  /* NO GREYS. --ink-2 was #b5b5bd and read as faded beside white; at #e6e6ea it is
+     15.38 to 1 on this card and still ranks below the title by size and weight, which is
+     how brand.md says hierarchy is carried. */
+  --ink: #ffffff; --ink-2: #e6e6ea;
+  --accent: #8fb0ff; --accent-hi: #a8c2ff; --on-accent: #000000;
+  /* A control DARKER than the card it sits on, which is the iOS grouped-list move and the
+     opposite of the translucent systemFill this used to take. Composited it is #0a0a0b,
+     with a white label at 19.79 to 1. */
+  --fill: rgba(0,0,0,.34); --fill-hi: rgba(0,0,0,.52);
+  --fill-ring: rgba(255,255,255,.13);
+  --jade: #6fe0b6; --jade-bg: #10352a;
+  --shade: 0 1px 2px rgba(0,0,0,.30), 0 8px 20px -6px rgba(0,0,0,.55),
+           0 28px 60px -22px rgba(0,0,0,.85);
+}
+.buki-tray[data-theme="light"] {
+  --bg: #ffffff; --lift: #f2f2f7;
+  /* Heavier than the dark ring on purpose: on a white page this hairline is the ONLY
+     thing separating the card from the document, since the two are the same colour. */
+  --ring: rgba(0,0,0,.18);
+  --ink: #000000; --ink-2: #1c1c1e;
+  --accent: #2f5fd8; --accent-hi: #244cb4; --on-accent: #ffffff;
+  --fill: rgba(0,0,0,.075); --fill-hi: rgba(0,0,0,.13);
+  --fill-ring: rgba(0,0,0,.10);
+  /* Jade darkened from the dark mood's #6fe0b6, which is 1.55 to 1 on white and would
+     have been a label nobody could read. This one is 5.33 to 1. */
+  --jade: #0f7a56; --jade-bg: #d8f3e7;
+  --shade: 0 1px 2px rgba(0,0,0,.07), 0 8px 20px -6px rgba(0,0,0,.13),
+           0 28px 60px -22px rgba(0,0,0,.22);
+}
+
 .buki-slot:first-child { margin-top: auto; }
 .buki-slot { width: 100%; pointer-events: auto; }
 
 .buki-card {
   position: relative; width: 100%;
-  padding: 13px 32px 14px 21px; /* left inset for the spine, right for the dismiss */
+  /* SYMMETRIC SINCE 2026-08-24. It was 13px 32px 14px 21px: 21 on the left to clear the
+     spine, 32 on the right to clear the dismiss. So a head that set text-align center was
+     centred on a box whose own centre sat 5.5px right of the card's. The spine is gone and
+     the dismiss is already out of flow, so neither reserve is owed. */
+  padding: 16px 18px 16px;
   background: var(--bg); color: var(--ink);
   border-radius: var(--r-lg);
-  /* A ring rather than a border, so the card's height never shifts by a pixel, and a
-     shadow deep enough to lift off a white page as well as a black one. */
-  box-shadow: inset 0 0 0 1px var(--ring), 0 2px 6px rgba(0,0,0,.28),
-    0 18px 44px -16px rgba(0,0,0,.85);
+  /* A ring rather than a border, so the card's height never shifts by a pixel.
+     THE DROP IS THREE LAYERS AND LIVES IN THE MOOD BLOCKS. One deep shadow tuned for a
+     dark card smears a light one into a grey cloud: contact, lift and ambient each need
+     their own falloff, and both moods need their own alphas. */
+  box-shadow: inset 0 0 0 1px var(--ring), var(--shade);
   font: 14px/1.45 var(--ui);
   opacity: 0; transform: translateY(10px) scale(.985);
   /* Transitions, not keyframes: catches arrive in bursts, and a keyframe restarts from
@@ -224,29 +259,34 @@ const STYLE = `
    changing rather than two cards crossfading through each other. */
 .buki-card.buki-swap { filter: blur(3px); opacity: .45; }
 
-/* THE SIGNATURE: the mark's own spine, down the edge of the card, with the mark's own two
-   cords stamped across it. The card and the logo are the same object at two sizes, which
-   is the same claim the generated covers make. */
-.buki-card::before {
-  content: ''; position: absolute; left: 8px; top: 13px; bottom: 13px; width: 5px;
-  border-radius: 999px; background: var(--cloth, var(--accent));
-}
-/* THE CORDS ARE IN THE SPINE'S OWN GRADIENT, at the fractions tools/mark.mjs puts them
-   at: 0.646 and 0.729 of the height. They used to be a pseudo-element pinned 22px from
-   the top with the second faked by a box-shadow offset, and both of those are ABSOLUTE.
-   A card holding two books is three times the height of one holding a message, so the
-   cords bunched at the collar instead of sitting in the lower third where a binding's
-   cords actually are. A gradient scales with whatever the card turns out to be. */
-.buki-card[data-book]::before {
-  background: linear-gradient(
-    180deg,
-    var(--cloth, var(--accent)) 0 64.6%,
-    #ffffff 64.6% 66.5%,
-    var(--cloth, var(--accent)) 66.5% 72.9%,
-    #ffffff 72.9% 74.8%,
-    var(--cloth, var(--accent)) 74.8% 100%
-  );
-}
+/* THE SPINE IS GONE, 2026-08-24. It drew a 5px bar down the left edge with two white
+   cords stamped across it at 0.646 and 0.729 of the height, and its own comment said "the
+   card and the logo are the same object at two sizes".
+   THAT STOPPED BEING TRUE ON 2026-08-17, when the mark became the catcher: a blue ball
+   with two eyes. It replaced three spines and two stamped cords, and this rule went on
+   drawing the retired drawing's signature for a week. Removing it is a correction and not
+   only a preference, and the card carries the REAL mark now instead. See .buki-mk. */
+
+/* THE MARK, ON THE CARD. Maximo asked for the logo on the toast, and the spine this
+   replaces was already claiming to BE the logo, seven days after the logo changed.
+   It is drawn by markNode(), the same builder the X action-bar button uses, so there is
+   exactly one catcher in this file and it cannot drift from tools/mark.mjs.
+   22px and on the axis, above the eyebrow: a found card's head is already centred, and
+   this is that head's masthead. It carries its own colour in both moods, which is the
+   whole reason the drawing survives a card that flips from near-black to white. */
+.buki-mk { width: 26px; height: 26px; display: block; margin: 0 auto 9px; flex: none;
+  border-radius: 50%; }
+/* A HAIRLINE ON THE WHITE CARD ONLY. The ramp runs #7bcdfc to #013ebf: the deep end is
+   8.03 to 1 on white, but the LIGHT end is 1.64 to 1, so the ball's top-left softens into
+   the card. The hairline gives it a clean edge without retinting a drawing that is defined
+   once in tools/mark.mjs and is not ours to change per surface. The dark card needs none:
+   the light end is 19 to 1 there.
+   THE FIRST VERSION OF THIS COMMENT WAS WRONG and is corrected rather than deleted. It
+   claimed the mark "read as two dots" and blamed that contrast. It did read as two dots,
+   and the cause was a broken gradient reference in tools/tray-harness.mjs, not this ramp.
+   The measurement was real and pointed at the wrong culprit, which is the more dangerous
+   kind of evidence: it made a plausible story out of a genuine number. */
+.buki-tray[data-theme="light"] .buki-mk { box-shadow: 0 0 0 1px rgba(0,0,0,.13); }
 
 .buki-head { display: flex; gap: 12px; align-items: flex-start; }
 /* A found card's head is the card's own masthead: where the answer came from, and how
@@ -329,11 +369,14 @@ const STYLE = `
      forced to the SAME width and the longest label - "Read someday" - is handed less room
      than its own text and clips. Growing from the content basis lets them share the spare
      space without any of them ending up narrower than what is written on it. */
-  flex: 1 1 auto; cursor: pointer; border: 0; border-radius: 999px;
+  /* Corners, not pills, so the three intents and the stacked actions read as one family
+     of controls. 10px against the action's 12px: a smaller control takes a smaller radius
+     or it starts to look like a lozenge. */
+  flex: 1 1 auto; cursor: pointer; border: 0; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  min-height: 34px; padding: 0 6px; white-space: nowrap; background: var(--fill); color: var(--ink);
-  font: 600 13px/1 var(--ui); letter-spacing: -.004em;
-  box-shadow: inset 0 0 0 1px var(--ring);
+  min-height: 36px; padding: 0 8px; white-space: nowrap; background: var(--fill); color: var(--ink);
+  font: 600 13px/1 var(--ui); letter-spacing: -.006em;
+  box-shadow: inset 0 0 0 1px var(--fill-ring);
   transition: background-color 140ms ease, color 140ms ease,
     box-shadow 140ms ease, transform 140ms var(--ease);
 }
@@ -357,11 +400,15 @@ const STYLE = `
 .buki-act {
   /* Full width so its label sits on the card's own axis, and centred on its own box for
      the same reason .buki-intent is: it carried 11px above and 12px below. */
-  width: 100%; margin: 13px 0 0; cursor: pointer; border: 0; border-radius: 999px;
+  /* FILLED, NOT OUTLINED, and cornered rather than pilled. An outline on a transparent
+     ground is a web button; iOS gives a stacked action a filled surface and a 12px corner,
+     and reserves the full pill for a single inline chip. 42px clears the 44px touch target
+     once the 2px focus ring is counted. */
+  width: 100%; margin: 10px 0 0; cursor: pointer; border: 0; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  min-height: 38px; padding: 0 16px; background: transparent; color: var(--ink);
-  font: 600 13px/1 var(--ui); letter-spacing: -.004em;
-  box-shadow: inset 0 0 0 1px var(--ring);
+  min-height: 42px; padding: 0 16px; background: var(--fill); color: var(--ink);
+  font: 600 14px/1 var(--ui); letter-spacing: -.01em;
+  box-shadow: inset 0 0 0 1px var(--fill-ring);
   transition: background-color 140ms ease, box-shadow 140ms ease,
     transform 140ms var(--ease);
 }
@@ -430,7 +477,11 @@ const STYLE = `
   box-shadow: none; font-weight: 700;
 }
 @media (hover: hover) and (pointer: fine) {
-  .buki-act.buki-buy:hover { background: #93aaef; box-shadow: none; }
+  /* A TOKEN, not color-mix. contentChrome.test.ts forbids color-mix on this surface
+     outright, beside backdrop-filter, and the reason is the same for both: neither
+     resolves to a value the guard can compute, so a see-through result could hide inside
+     one. The tray is the one surface where "I cannot check this" is disqualifying. */
+  .buki-act.buki-buy:hover { background: var(--accent-hi); box-shadow: none; }
 }
 /* The free way out sits directly under it, same size, no apology. */
 .buki-act + .buki-act { margin-top: 8px; }
@@ -679,12 +730,49 @@ const leaving = new Map<number, number>();
 
 const motion = (): boolean => !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/**
+ * THE TRAY'S MOOD, and why it takes two reads to settle.
+ *
+ * The choice lives in `localStorage` on the EXTENSION's origin, which a content script
+ * cannot see: our `localStorage` here belongs to x.com. `theme.ts` mirrors every choice
+ * into `chrome.storage.local`, which every extension context shares, and this reads that.
+ *
+ * Synchronously first, from the operating system, so the card never paints in the wrong
+ * mood and then flips - the same flash `theme.ts` exists to prevent on the pages. Then
+ * asynchronously from the mirror, which outranks the OS whenever a choice was actually
+ * made. `resolveTheme` is the same pure function the pages use, so the two surfaces cannot
+ * disagree about what a stored value means.
+ */
+function applyTrayTheme(el: HTMLElement): void {
+  const dark = (): boolean =>
+    typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
+
+  el.dataset.theme = resolveTheme(null, dark());
+
+  void chrome.storage?.local
+    ?.get(THEME_KEY)
+    .then((got: Record<string, unknown>) => {
+      const stored = got?.[THEME_KEY];
+      el.dataset.theme = resolveTheme(typeof stored === 'string' ? stored : null, dark());
+    })
+    .catch(() => {
+      // No mirror yet, or the API went away mid-navigation. The OS answer already applied.
+    });
+}
+
 function trayHost(): HTMLElement {
   if (!trayEl) {
     ensureFont();
     trayEl = document.createElement('div');
     trayEl.className = 'buki-tray';
     trayEl.setAttribute('aria-live', 'polite');
+    applyTrayTheme(trayEl);
+    // A toggle in the popup repaints trays that are already on screen. Registered with
+    // the element rather than at module scope, so a page that never catches anything
+    // never subscribes to anything.
+    chrome.storage?.onChanged?.addListener((changes, area) => {
+      if (area === 'local' && changes[THEME_KEY] && trayEl) applyTrayTheme(trayEl);
+    });
     document.body.appendChild(trayEl);
   }
   return trayEl;
@@ -878,7 +966,10 @@ function foundBody(card: Card): Node[] {
 
   const who = document.createElement('div');
   who.className = 'buki-who';
-  who.append(provenanceOf(card));
+  // The mark leads the head, above where it came from and how many it found.
+  const mk = markNode();
+  mk.classList.add('buki-mk');
+  who.append(mk, provenanceOf(card));
   if (card.candidates.length > 1) {
     const count = document.createElement('div');
     count.className = 'buki-count';

@@ -56,20 +56,38 @@ const GROUNDS = ['.buki-card', '.buki-intent', '.buki-act', '.buki-shelf', '.buk
  * who wrote the guard. A rule that only inspects the surface syntax is not checking the
  * colour.
  */
-function tokens(): Record<string, string> {
-  const block = STYLE.replace(/\/\*[\s\S]*?\*\//g, '').match(/\.buki-tray\s*\{([^{}]*)\}/)?.[1] ?? '';
+/**
+ * IT NOW READS TWO MOODS, since 2026-08-24, and that is the whole reason this note grew.
+ *
+ * The tray had one set of colours on one `.buki-tray` rule, so this matched that rule and
+ * was done. It now has a base rule plus one block per mood, and the dark block's selector
+ * is `.buki-tray, .buki-tray[data-theme="dark"]` - a comma before the brace, which the old
+ * `\.buki-tray\s*\{` could not match at all. The guard did not loosen quietly: it stopped
+ * resolving `--fill` entirely, and its own self-test below is what said so.
+ *
+ * A see-through value in EITHER mood is a leak, so the caller checks both.
+ */
+function tokens(mood: 'dark' | 'light'): Record<string, string> {
+  const withoutComments = STYLE.replace(/\/\*[\s\S]*?\*\//g, '');
   const out: Record<string, string> = {};
-  for (const decl of block.split(';')) {
-    const [name, ...rest] = decl.split(':');
-    const key = (name ?? '').trim();
-    if (key.startsWith('--')) out[key] = rest.join(':').trim();
+  for (const m of withoutComments.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selector = (m[1] ?? '').trim().replace(/\s+/g, ' ');
+    if (!selector.includes('.buki-tray')) continue;
+    // A block applies to this mood if it names it, or if it names no mood at all.
+    const named = selector.match(/\[data-theme="(\w+)"\]/g) ?? [];
+    if (named.length && !named.some((n) => n.includes(`"${mood}"`))) continue;
+    for (const decl of (m[2] ?? '').split(';')) {
+      const [name, ...rest] = decl.split(':');
+      const key = (name ?? '').trim();
+      if (key.startsWith('--')) out[key] = rest.join(':').trim();
+    }
   }
   return out;
 }
 
-/** A declaration value with its `var(--x)` references resolved one level. */
-function resolved(value: string): string {
-  const table = tokens();
+/** A declaration value with its `var(--x)` references resolved one level, in one mood. */
+function resolved(value: string, mood: 'dark' | 'light' = 'dark'): string {
+  const table = tokens(mood);
   return value.replace(/var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)/g, (whole, name: string) => table[name] ?? whole);
 }
 
@@ -87,6 +105,7 @@ describe('the catch tray, which lives on a page we do not control', () => {
     // Values are resolved through the tray's own tokens first, because they were not, and
     // `background: var(--fill)` sailed past this on the day `--fill` became an rgba.
     const leaks: string[] = [];
+    for (const mood of ['dark', 'light'] as const)
     for (const { selector, body } of rules()) {
       if (!GROUNDS.some((g) => selector.includes(g))) continue;
       const onTheCard = /\.buki-card(?![\w-])/.test(selector);
@@ -94,19 +113,19 @@ describe('the catch tray, which lives on a page we do not control', () => {
         const [rawProp, ...rest] = decl.split(':');
         const prop = (rawProp ?? '').trim();
         if (!/^(background|background-color)$/.test(prop)) continue;
-        const value = resolved(rest.join(':'));
+        const value = resolved(rest.join(':'), mood);
 
         // On the CARD itself nothing see-through is allowed, `transparent` included: the
         // host page is directly behind it.
         if (onTheCard) {
-          if (SEE_THROUGH.test(value)) leaks.push(`${selector} { ${prop}:${value.trim()} }`);
+          if (SEE_THROUGH.test(value)) leaks.push(`[${mood}] ${selector} { ${prop}:${value.trim()} }`);
           continue;
         }
         // A control sits ON the card, so its ground is ours and an alpha composites to a
         // value we can compute. What is still forbidden is a BLUR, which samples whatever
         // the browser has behind the whole stack.
         if (/\bbackdrop-filter\b|\bcolor-mix\(/.test(value)) {
-          leaks.push(`${selector} { ${prop}:${value.trim()} }`);
+          leaks.push(`[${mood}] ${selector} { ${prop}:${value.trim()} }`);
         }
       }
     }
@@ -117,8 +136,14 @@ describe('the catch tray, which lives on a page we do not control', () => {
     // Proves the resolver discriminates rather than passing everything. Without this the
     // rule above is a guard nobody has watched catch anything, which is the state it was
     // in for exactly one day.
-    expect(SEE_THROUGH.test(resolved('var(--fill)'))).toBe(true);
-    expect(SEE_THROUGH.test(resolved('var(--bg)'))).toBe(false);
+    for (const mood of ['dark', 'light'] as const) {
+      // The control fill is translucent in both moods, and the card's ground is not.
+      expect(SEE_THROUGH.test(resolved('var(--fill)', mood))).toBe(true);
+      expect(SEE_THROUGH.test(resolved('var(--bg)', mood))).toBe(false);
+      // And the mood actually resolved: an unknown token comes back untouched, so a
+      // block this could not find would make every check above vacuously pass.
+      expect(resolved('var(--bg)', mood)).not.toContain('var(');
+    }
   });
 
   it('gates every hover, because a tap on a phone leaves one stuck on', () => {
@@ -229,5 +254,51 @@ describe('the catch tray, which lives on a page we do not control', () => {
     for (const control of CONTROLS) {
       expect(STYLE, `${control} has no :active`).toContain(`${control}:active`);
     }
+  });
+});
+
+/**
+ * THE CONTENT SCRIPT MUST NOT IMPORT A MODULE THAT TOUCHES documentElement AT IMPORT.
+ *
+ * Caught on 2026-08-24, in the build, minutes after being introduced. Wiring the tray to
+ * the extension's mood needed `resolveTheme` and `THEME_KEY`, and the obvious import was
+ * `./theme` - which ends with `if (typeof document !== 'undefined') start(document);` and
+ * whose `applyTheme` does `doc.documentElement.setAttribute('data-theme', theme)`.
+ *
+ * In the popup that line is the entire point. In a content script `document` is X.COM'S
+ * DOCUMENT. Buki would have set `data-theme` on the host page's own root element, which on
+ * any site using that extremely common convention flips the whole site's theme just by
+ * having the extension installed. It also reads the HOST's localStorage under our key.
+ *
+ * `tsc` and the bundler were both perfectly happy; the only evidence was
+ * `setAttribute("data-theme")` appearing in `dist/content.js`. So the pure half moved to
+ * `themeChoice.ts`, which has no DOM and no side effect, and this fails the build if the
+ * entry point is ever imported back in.
+ *
+ * Same shape as `background.ts`, which theme.ts's own comment already names as the
+ * cautionary tale for module-scope side effects. It was true of theme.ts too.
+ */
+describe('what the content script is allowed to import', () => {
+  it('takes the theme from the pure module, never the entry point', () => {
+    expect(content).toMatch(/from '\.\/themeChoice'/);
+  });
+
+  it('does not import ./theme, which writes to documentElement on import', () => {
+    // Anchored on the quote so it cannot be satisfied by './themeChoice' as a prefix.
+    expect(content).not.toMatch(/from '\.\/theme'/);
+  });
+
+  it('never reaches for the host page root element', () => {
+    // Narrowed on first run: the blunt version forbade documentElement outright and
+    // caught the DOMParser call below, which is the root of a document THIS FILE just
+    // parsed in memory and is exactly right.
+    //
+    // toContain, not toMatch. Writing this as a regex is what mangled it the first
+    // time: the word-boundary escape passed through three decoders on its way to disk
+    // and arrived as a literal backspace byte, 0x08 - the same trap that put one in
+    // OPENWORK.md four days ago. A plain string has nothing to decode.
+    expect(content).not.toContain('document.documentElement');
+    // And the legitimate one is still there, so this is not passing by absence.
+    expect(content).toContain('.documentElement');
   });
 });

@@ -1632,6 +1632,48 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   Bash PATH" was stated before it was probed. **`which` costs nothing; a misread error costs
   a wrong note in a doc the next session plans against.**
 
+- **A COUNTER INTERPOLATED TWICE IS INCREMENTED TWICE.** `tools/tray-harness.mjs` built the
+  mark with `id="h${++markSeq}"` and `fill="url(#h${++markSeq})"` in one template. A
+  template evaluates each `${}` separately, so the gradient was declared `h1` and referenced
+  `h2`: the ball had a fill pointing at nothing and vanished, leaving two eyes on the card.
+  **The tell was in the output and legible**: `grep -o 'id="h[0-9]*"' | sort | uniq -c` gave
+  odd numbers only. **What made it expensive was that the symptom had a plausible innocent
+  cause already measured** - the mark's light ramp end is 1.64:1 on white, so "it reads as
+  two dots" was exactly what a contrast problem WOULD look like, and a real number pointed
+  at the wrong culprit. `markNode()` in `content.ts` reads the counter once into a variable
+  and always did, so **the product was correct and the harness was the thing that lied.**
+  Read the counter once, into a const, then interpolate the const.
+- **A FIXTURE NAMED `NOW` THAT IS NEVER INJECTED IS THE AMBIENT CLOCK WEARING A COSTUME.**
+  `visionRoute.test.ts` declared `const NOW = Date.UTC(2026, 7, 17, 12, 0, 0)` and a `live`
+  session expiring an hour later, then called `visionRoute(settings, pro)` **without the
+  third argument** - so it measured that session against `Date.now()`. `visionRoute` takes
+  `now: number = Date.now()` and its two sibling tests both pass it. This one forgot, passed
+  for seven days, and began failing on 2026-08-24 with no code change, on a suite that had
+  been green the day before. **A test that fails with the passage of time fails during
+  somebody else's work**, which is where the cost is: it arrived in the middle of an
+  unrelated redesign and looked like collateral damage from it. Grep a clock fixture for its
+  own call sites before trusting that it is injected.
+- **A MODULE THAT TOUCHES `document` AT IMPORT IS UNSAFE FOR THE CONTENT SCRIPT, and
+  `theme.ts` was the file that already knew.** Wiring the tray to the extension's mood
+  needed `resolveTheme`, and the obvious import was `./theme` - which ends
+  `if (typeof document !== 'undefined') start(document);` and sets `data-theme` on
+  `document.documentElement`. **In a content script that is x.com's root element**, so Buki
+  would have flipped the theme of any site using that convention merely by being installed,
+  and read the host's `localStorage` under our key. `tsc` and the bundler were both happy;
+  the only evidence was `setAttribute("data-theme")` appearing in `dist/content.js`. The
+  pure half is now `themeChoice.ts` and `contentChrome.test.ts` fails the build if the entry
+  point comes back. **`theme.ts`'s own header calls `background.ts` the cautionary tale for
+  module-scope side effects** - the file naming the lesson was the file that had not applied
+  it, which is the second time that exact shape has appeared in this section.
+- **A GUARD'S MODEL OF THE FILE CAN GO STALE WITHOUT THE GUARD FAILING.**
+  `contentChrome.test.ts` resolved tray tokens by matching `\.buki-tray\s*\{`. Splitting the
+  tray into two moods made the dark selector `.buki-tray, .buki-tray[data-theme="dark"]` - a
+  comma before the brace - so the matcher found neither block. It did not error; it resolved
+  every `var()` to itself and would have passed anything. **Its own self-test is what caught
+  it**, because that test asserts the resolver still detects a see-through value rather than
+  merely asserting no leaks were found. A guard that only proves absence cannot tell you it
+  has stopped looking.
+
 ---
 
 ## 6. Accepted risks, named so nobody rediscovers them
