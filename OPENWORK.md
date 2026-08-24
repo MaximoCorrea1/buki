@@ -147,8 +147,8 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 kept because the reasoning explains the product's shape, and it carries its own
 `PARTLY SUPERSEDED` banner naming what stopped being true. Do not update it; supersede it.
 
-**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-18-launch-readiness.md`
-(2026-08-18, launch readiness). **Forward slashes deliberately** — see §5. It supersedes `buki-handoff-2026-08-18-review-and-merge.md`. Handoffs are
+**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-24-prelaunch-review.md`
+(2026-08-24, the pre-launch review). **Forward slashes deliberately** — see §5. It supersedes `buki-handoff-2026-08-18-launch-readiness.md`. Handoffs are
 written to the OS temp directory rather than the repo, and they are read once and superseded
 — **a lesson recorded only in a handoff is a lesson you will pay for again.** §5 is where
 things survive.
