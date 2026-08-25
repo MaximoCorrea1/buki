@@ -36,14 +36,14 @@ each independently revertable.
 | Measurement | Probe | Value |
 | --- | --- | --- |
 | Test suite, session start | `./node_modules/.bin/vitest run` | 620 / 58 files |
-| Test suite, session end | same | **772 / 65 files** |
+| Test suite, session end | same | **808 / 66 files** |
 | Typecheck | `node node_modules/typescript/bin/tsc --noEmit` | exit 0 throughout |
 | Build | `node build.mjs` | exit 0 throughout |
 | Commits since `d3e5923` | `git rev-list --count d3e5923..HEAD` | **41** |
-| Open numbered items | `grep -c '^- \[ \] \*\*[0-9]' OPENWORK.md` | **9** (was 14) |
+| Open numbered items | `grep -c '^- \[ \] \*\*[0-9]' OPENWORK.md` | **20** — 8 Maximo's, 12 newly filed from the review (items 45-56). It read 14 at session start, dropped to 8 as the P0s closed, then rose as the rest of the review was filed rather than left inside it |
 | P0s open | `grep -cE '^- \[ \] \*\*(38\|39\|40\|41\|42\|43)\.' OPENWORK.md` | **0** |
-| Mutations run against the new guards | by hand, one file at a time | **47** |
-| Mutations caught immediately | same | **44** |
+| Mutations run against the new guards | by hand, one file at a time | **55** |
+| Mutations caught immediately | same | **52** |
 | **Mutations that SURVIVED** | same | **3 — all three real holes** |
 | The review's §3 mutation table, re-run | each mutation applied, suite re-run, reverted | **6 of 6 now caught** (was 1 of 6) |
 | Gemini OpenAI-compat base URL | `ai.google.dev/gemini-api/docs/openai`, fetched live | `…/v1beta/openai/` + `/chat/completions` |

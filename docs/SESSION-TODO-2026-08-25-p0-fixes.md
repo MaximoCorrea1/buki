@@ -28,6 +28,18 @@ Markers: `[ ]` open · `[x]` done+verified · `[~]` in progress · `[?]` founder
 | **42** The card's × is a free-read button | `[x]` **DONE** `2b023a8`. Abort reaches Gemini; attempts bounded. Nine mutations, **one survived and found a real hole** |
 | **43** Options-page slot reuse deletable, green | `[x]` **DONE** `f344127`. Extraction of the arithmetic AND the order. Five mutations, five caught |
 | **44** The wire contract closes at publication | `[x]` **DONE, same day it was filed.** All four findings plus the fifth the review did not file. Eight mutations, eight caught |
+| **45** The price guard sees 2 of 5 surfaces (M-4) | `[ ]` **agent, FRONT OF THE NEW QUEUE.** Store copy cannot be edited after submission. Do it before item 9 |
+| **46** Four false privacy/permission claims | `[ ]` agent. TM-4 is falsifiable with DevTools in 30s; TM-8 is a live CSV-injection vector |
+| **47** Re-catching destroys the good record + 5 identity collisions | `[ ]` agent. **ADV-6 is VERIFIED.** One-line fix, six siblings |
+| **48** The activation lifecycle's last 3 holes | `[ ]` agent. ADV-3 is **item 27's P0 re-opened**. All three burn the five permanent slots |
+| **49** Four reliability holes on the catch path | `[ ]` agent. R-2 partly expired by item 39 — the session loss is gone, the allowance burn is not |
+| **50** The measured performance set | `[ ]` agent. **Every number came off a probe.** PERF-1/2/3 are what a first user feels |
+| **51** The server's remaining contract + edge gaps | `[ ]` agent. 9 findings. SEC-3 can lock out every subscriber at once |
+| **52** The tray in the host page’s light DOM | `[ ]` agent. TM-10 is the SAME substring shape item 41 just fixed, one file over |
+| **53** Types that do not type | `[ ]` agent. **TS-7 is the flag that would have made the `activationId` bug red.** Expect a wave |
+| **54** Dead code, stale comments, one graph edge | `[ ]` agent. **All re-confirmed by grep on 08-25**, not read off the review. `README.md` currently lies |
+| **55** The two surfaces no test can reach | `[ ]` agent. M-5 and M-6. This session moved four decisions out of `background.ts`; the orchestration is still unreachable |
+| **56** The CORS redirect chain, never probed | `[!]` **Maximo, one curl.** Wrong = every shelf cover silently falls back to a drawn board |
 | **26** Gemini spend cap | `[!]` **Maximo. Now the FLOOR, not a second ceiling.** 38 and 40 bound one caller; only the provider cap bounds the aggregate. `launch.md` step 4.5 is half clear and this is the other half |
 | **1** Polar benefit activation settings | `[!]` Maximo. Unchanged |
 | **2** The six Vercel variables | `[!]` Maximo. `BUKI_EXTENSION_ID` still waits on 37 by design. **Re-probe with `vercel env ls` — that is a report, not a measurement** |
@@ -91,6 +103,13 @@ mutation results are in the commit message.
 
 ## Open, and who owns it
 
+**ITEMS 45-56 ARE THE REST OF THE REVIEW**, filed into `OPENWORK.md` on 2026-08-25 on
+Maximo's instruction: *"capture all this review, all points with its context. all of them.
+we solve them on next session."* Every remaining P1, the whole P2/P3 catalogue and §7 now
+have a number, an owner and an order. **They are listed above by pointer — the bodies are
+in `OPENWORK.md` Part 2 and the evidence is in the review.** Nothing from that document is
+now unfiled.
+
 - [!] **26 · The spend cap.** Maximo, a dashboard, and it gates `launch.md` step 5.
 - [ ] **Everything else in the review.** AC-3, AC-4, AC-7 and AC-8 closed with item 44; the
       REST of the P1s and the whole P2/P3 catalogue are untouched. The review remains the
@@ -129,6 +148,9 @@ In commit order, which is the real order.
 | 9 | This pair written | — |
 | 10 | **The review's §3 mutation table closed** — theme, storage, both visionHandler mutations, and the launch-day find-and-replace | `0733ef4` · 772/65. **All six now fail; five used to pass** |
 | 11 | **Item 44**, the wire contract, filed and closed the same day | 808/66. AC-3, AC-4, AC-7, AC-8 and the extension-id blind spot. **Eight mutations, eight caught** |
+| 12 | **The whole rest of the review filed as items 45-56** — every remaining P1, the entire P2/P3 catalogue, §7. Eleven findings re-confirmed by grep rather than transcribed | `OPENWORK.md` Part 2; 20 open numbered items |
+| 13 | **The review given a §0.0 STATUS section**, so it stops saying "nothing was fixed" — kept above the original line, not replacing it | `docs/REVIEW-2026-08-24-prelaunch.md` |
+| 14 | Pushed to `origin/main` | see the handoff |
 
 ---
 

@@ -8,7 +8,99 @@ THE LANE says "see the review", it means here.
 > `.vercelignore`'s `docs/REVIEW-*` glob, added in the same commit.
 
 **State when the review ran:** `46b62fb`, 620 tests / 58 files, `tsc` 0, build 0, tree clean.
-Nothing was fixed. Maximo's instruction: *"we solve them on next session."*
+~~Nothing was fixed.~~ **True for one day.** Maximo's instruction was *"we solve them on next
+session"*, and that session was 2026-08-25: **all six P0s, four P1s and the whole of §3's
+mutation table are closed.** See §0.0 immediately below, and `OPENWORK.md` THE LANE for status.
+
+---
+
+## 0.0 STATUS, 2026-08-25 — what has been fixed since this was written
+
+> **This file was written on 2026-08-24 with nothing fixed.** That sentence is still in the
+> header below and was TRUE for one day. This section is the correction, kept above the
+> original rather than replacing it, because **the evidence below is the reason the fixes
+> look the way they do** and deleting the "nothing was fixed" framing would lose that.
+>
+> **`OPENWORK.md` THE LANE remains the authority on status.** This section exists so that
+> nobody reads a finding here, believes it is live, and re-audits something already closed —
+> which is exactly what §6's twenty clean bills exist to prevent for the other direction.
+
+### The six P0s: ALL CLOSED
+
+| | Finding | Closed by | Evidence it cannot silently return |
+| --- | --- | --- | --- |
+| **P0-1** | `/api/vision` forwards the body verbatim | item 38, `99a2e4e` | `src/server/visionBody.ts` REBUILDS the request. **6 mutations, 6 caught** |
+| **P0-2** | A Polar non-2xx becomes 403, extension deletes the session | item 39, `05bee90` | Rule shared in `src/shared/retry.ts`. **6 mutations caught in BOTH directions** |
+| **P0-3** | No rate limit on the licensed path | item 40, `11f2d6f` | `src/server/proCap.ts` + `BUKI_REVOKED_KEY_IDS`. **6 mutations, 6 caught** |
+| **P0-4** | A hostile page can drive the injected tray | item 41, `16e257f` | 3 seams extracted; `contentSafety.test.ts` proves the ABSENCE of a second way in. **7 mutations, 7 caught** |
+| **P0-5** | The card's × is a free-read button | item 42, `2b023a8` | `request.signal` upstream + `TRIAL_ATTEMPTS`. **9 mutations, 1 survived and found a real hole** |
+| **P0-6** | Options-page slot reuse deletable with 620/620 green | item 43, `f344127` | `src/extension/activateKey.ts`. **This review's own mutation now fails 6 tests** |
+
+### §3's mutation table: 5 of 6 used to survive a green suite. ALL SIX NOW FAIL.
+
+| Mutation | 2026-08-24 | 2026-08-25 |
+| --- | --- | --- |
+| `options.ts` activation reuse → `undefined` | 620/620 green | **6 fail** |
+| `theme.ts` click handler deleted | 620/620 green | **2 fail** |
+| `storage.ts` `shot` + `source` carry removed | 620/620 green | **2 fail** |
+| `visionHandler.ts` bearer `empty→null` collapsed | 620/620 green | **1 fails** |
+| `visionHandler.ts` upstream headers passed through | 620/620 green | **2 fail** |
+| `docs/index.html` launch-day find-and-replace | 620/620 green | **1 fails** |
+| `TRIAL_SPELLED` drift | caught | caught |
+
+**The `index.html` guard was widened past what §3 prescribed.** It named the three GitHub
+links; the same find-and-replace also catches the **two Polar checkout URLs**, and a replace
+that caught those sends every purchase to a 404 on launch day. Both sets are now counted.
+
+### P1s closed: AC-3, AC-4, AC-7, AC-8 — filed together as item 44 and closed the same day
+
+Not because they were the most severe, but because **all four say *"cannot be added to
+clients already in the wild"*, and there are none until publication.** That deadline was the
+item. `dff79ce`.
+
+**A fifth landed with them that this review did not file.** A mismatched `BUKI_EXTENSION_ID`
+refuses every renewal with 403 from the Origin check, while `/api/vision` keeps serving
+token-bearing requests because it skips that check when a token is present — **so the failure
+is invisible for eight days**, and by the time anyone notices, every subscriber has been
+signed out by a status that was never about them. That is **P0-2's trigger (c)**, which P0-2
+could not close from either half. Every `/api/license` refusal now carries a `code`, and
+`origin` vs `licence` are two 403s that mean opposite things.
+
+### Also closed, as a side effect rather than as an item
+
+- **PERF-9** — catch-anywhere installed X's feed scanner on every third-party page,
+  permanently, with no `clearInterval`. Same root as P0-4's third edit; gone with the host gate.
+- **AC-4's claim-shape half** landed a commit early, with item 40, because `proCap` keys a
+  rate limit on `licenseKeyId` and **a cap keyed on `undefined` is a cap on nobody.**
+- **`storage.ts`'s `shot`/`source` carry** is now guarded — but **ADV-6's `book` half is
+  NOT**, and that is the one that destroys a good record. See item 47.
+
+### Two of this review's own prescriptions were DECLINED, with arithmetic
+
+- **P0-1's `max_tokens` 256–512.** `max_tokens` maps to Gemini's `maxOutputTokens`, which on a
+  THINKING model is a **combined reasoning-and-output budget** — and `llmVision.ts` already
+  records that the pinned alias can be repointed at one that thinks. Twenty books is
+  `MAX_BOOKS` and twenty entries is ~400 tokens, so **512 would truncate a real answer into
+  invalid JSON that `parseGuesses` reads as "no books found"** — a silent failure, which is
+  this codebase's signature. **Set to 2,048**: ~5x headroom, and still 64,000 → 2,048.
+- **P0-3's `GRACE_MS` → 48h, and its tighter grace-traffic ceiling.** Once the per-licence cap
+  exists, seven days versus two is **$0.54 versus $0.135** of exposure per leaked token.
+  Thirty-four cents is not worth weakening the outage protection P0-2 was filed to strengthen,
+  and the grace sub-ceiling's wall would fall on a real subscriber **during a real outage**.
+
+### One number in this review was re-derived rather than taken
+
+**The $3.46 is a MODEL-choice figure, not a token-budget one.** 1M input + 64k output is
+**$0.126** at flash-lite rates and **$3.46** at Pro long-context rates ($2.50/M in, $15/M out).
+So the model pin is ~95% of P0-1's fix and the input caps are the rest — which is why the pin,
+not the clamp, is the thing that must never regress.
+
+### Everything else in this file is OPEN, and now has a number
+
+Every remaining P1, the whole §5 P2/P3 catalogue and §7 were filed on 2026-08-25 as
+**`OPENWORK.md` items 45–56**, ordered by what it costs to ship without them rather than by
+the severity labels here. **§6's twenty clean bills stand unchanged.**
+
 
 ---
 

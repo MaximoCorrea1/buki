@@ -14,6 +14,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **41 commits since `d3e5923`, 2026-08-18 through 08-25** (was 33 at the end of 08-24) (`git rev-list --count d3e5923..HEAD`). **The figure beside it is written INTO the commit that changes it and is therefore wrong by one the moment it lands — that has happened four times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
+| Open items | **20**, and the number went UP on purpose. It read 14 at the start of 2026-08-25, fell to 8 as the six P0s and item 44 closed, then rose to 20 when **the entire rest of the 2026-08-24 review was filed as items 45-56** rather than left inside a 593-line document. **Eight are Maximo's (1, 2, 3, 9, 26, 35, 37, 56); twelve are agent work.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`) |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -37,6 +38,18 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |
 | ~~34~~ | ~~Maximo, then agent~~ | ~~**NOBODY CAN BUY.**~~ **DONE 2026-08-18.** Both checkout links are in `src/shared/pricing.ts` and on the Pro card, inside `#pricing` where the wall lands. Guarded, and earned with an A/B. Original text: Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
+| **45** | agent | **The price is spelled in three places `pricing.test.ts` cannot see**, and one of them is store copy that cannot be edited after submission without another review cycle (M-4) | items 9 and 11, irreversibly |
+| **46** | agent | **Four privacy and permission claims that are not true**, one falsifiable with DevTools in thirty seconds (TM-4, TM-7, TM-8, TM-11, TM-14) | store review |
+| **47** | agent | **Re-catching a book destroys the good record** (ADV-6, VERIFIED), plus five ways two books become one | the shelf, which is the product |
+| **48** | agent | **The activation lifecycle's last three holes** (ADV-3 VERIFIED, ADV-8, C-3). All three burn the five permanent slots | every subscriber, eventually |
+| **49** | agent | **Four reliability holes on the path somebody is waiting on** (R-1 to R-4) | a catch that hangs, on someone else’s page |
+| **50** | agent | **The measured performance set** — PERF-1/2/3 are the three a first user feels. Every number came off a probe | the first impression |
+| **51** | agent | **The server's remaining contract and edge gaps** (AC-5, AC-6, AC-10, AC-12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12) | — |
+| **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
+| **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
+| **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
+| **55** | agent | **The two surfaces no test can reach** (M-5 the context-menu orchestration, M-6 the whole card renderer including the paywall) | — |
+| **56** | **Maximo** | **The CORS redirect chain has never been probed** (review §7). One curl. If it is wrong every shelf cover silently falls back to a drawn board | item 3 |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
 | ~~38~~ | agent | ~~`/api/vision` forwards the body verbatim.~~ **DONE 2026-08-25.** The body is REBUILT, not relayed: `src/server/visionBody.ts` pins the model, clamps `max_tokens`, caps bytes/images/prompt, and emits a three-key allowlist so `n`, `service_tier`, `stream` and `extra_body` have nowhere to go. Six mutations run against the new guards, **six caught** | — |
@@ -76,7 +89,11 @@ switched off, and until 26 exists nothing bounds what abuse can cost.
 > plus the fifth the review did not file — the extension-id blind spot that made item 39's
 > trigger (c) invisible for eight days.
 >
-> **So the agent queue is item 36 alone**, and it can only happen on launch day.
+> **ITEMS 45-56 ARE THE REST OF THE REVIEW, filed 2026-08-25 on Maximo's instruction:**
+> *"capture all this review, all points with its context. all of them. we solve them on
+> next session."* Every remaining P1, the whole P2/P3 catalogue and §7 now have a number,
+> an owner and an order, so none of them lives only inside a 593-line document. **Nothing
+> security-shaped is open; items 45 and 46 lead because they are irreversible at a date.**
 >
 > The paragraph below is kept because its reasoning about MAXIMO's items is still exactly right:
 >
@@ -680,6 +697,271 @@ unblocks.
 
       **Do this before step 5 of `launch.md`, beside item 38's gate.** After publication
       every one of these becomes a permanent property of whatever is already installed.
+
+---
+
+## THE REST OF THE 2026-08-24 REVIEW — items 45 to 56, filed 2026-08-25
+
+> **Read this before picking anything up.** The six P0s and item 44 are closed. What follows
+> is **every remaining finding in `docs/REVIEW-2026-08-24-prelaunch.md`**, filed so that none
+> of them lives only inside a 593-line document nobody re-reads. Maximo's instruction on
+> 2026-08-25: *"capture all this review, all points with its context. all of them. we solve
+> them on next session."*
+>
+> **The review still owns the EVIDENCE** — the attack path, the measured cost, the file and
+> line. These items own the ORDER and the STATUS, exactly as §0 requires. Each line carries
+> enough to decide whether to pick it up; the review carries enough to fix it.
+>
+> **Ordered by what it costs to ship without it**, not by the review's own severity labels.
+> Two things outrank everything else because they are IRREVERSIBLE at a date: store copy
+> cannot be edited after submission without re-review (item 45), and a privacy claim a
+> reviewer can falsify in thirty seconds is a rejection (item 46).
+>
+> **VERIFIED** below means the review's author re-read the code themselves. **MEASURED**
+> means a number came off a running probe. Everything else is an agent's claim with evidence
+> cited — good, and not the same thing. **Probe before you plan around any of it.**
+
+- [ ] **45. THE PRICE IS SPELLED IN THREE PLACES THE GUARD CANNOT SEE, AND ONE OF THEM
+      CANNOT BE EDITED AFTER SUBMISSION.** *(review §4, M-4)*
+
+      `pricing.test.ts:34` guards exactly two surfaces: the landing and `docs/pricing.md`.
+      **The Web Store listing, the launch runbook and `llms.txt` all spell the price and all
+      sit outside it.** `host.test.ts` already globs all three files for the production
+      domain; the price guard does not glob them.
+
+      **Why this is first.** `docs/store/listing.md` is the copy pasted into the store form,
+      and **store copy cannot be changed after submission without another review cycle** —
+      days to weeks, per `launch.md`. A price that drifts between `pricing.ts` and the store
+      listing is a false statement made to somebody at the moment they decide to pay, and it
+      is the one class of error you cannot quietly fix the next morning.
+
+      Fix: widen `pricing.test.ts`'s glob to the three files `host.test.ts` already covers.
+      Same shape, same mechanism, one line. **Do it before item 9's screenshots**, because a
+      screenshot showing a stale price is a fourth uneditable copy.
+
+- [ ] **46. FOUR PRIVACY AND PERMISSION CLAIMS THAT ARE NOT TRUE, AND ONE A REVIEWER CAN
+      FALSIFY IN THIRTY SECONDS.** *(review §5, Client/privacy)*
+
+      | ID | The claim | What actually happens |
+      | --- | --- | --- |
+      | **TM-4** | `privacy.html:55` — *"Never in the background"* | **Opening the popup fetches every saved book's cover**, disclosing the reader's IP to `pbs.twimg.com`, `openlibrary.org` and `archive.org` with no user action. **The one claim a reviewer can falsify with DevTools open on the popup** |
+      | **TM-7** | `permissions.md:36` — storage holds settings and *"none of it is transmitted"* | `visionSettings` contains `apiKey`, transmitted as a Bearer on every cover read. `privacy.html:53` gets this RIGHT; the store answer does not — so the two disagree and the store one is the one a reviewer reads |
+      | **TM-8** | — | **Prompt injection → CSV formula injection.** `goodreadsCsv` quotes on `/[",\n\r]/` but writes the title raw, so `=HYPERLINK(...)` survives into the export and executes in Excel |
+      | **TM-11** | — | **Host grants accumulate and are never revoked.** There is no "forget this site" path; a permission granted once for one cover is held for ever |
+      | **TM-14** | `manifest.json` | `https://twitter.com/*` and `https://x.com/*` in `host_permissions` are **unnecessary** — nothing fetches either host, and `content_scripts.matches` needs no host permission in MV3. **Two fewer entries a reviewer can ask about** |
+
+      **TM-4 and TM-7 are store-review risk, not just honesty risk**, and TM-14 removes two
+      questions before they are asked. TM-8 is the only one that is a live vulnerability
+      rather than a false sentence.
+
+- [ ] **47. RE-CATCHING A BOOK DESTROYS THE GOOD RECORD, AND FIVE WAYS TWO BOOKS BECOME
+      ONE.** *(review §5, Data integrity)*
+
+      - **ADV-6 · VERIFIED.** `storage.ts:96` takes `book` WHOLESALE while defending
+        `source: source ?? previous?.source` and `shot: shot ?? previous?.shot` on the two
+        lines below. **When OpenLibrary is down the recogniser correctly emits a bare guess
+        with no `isbn` and no `coverUrl`, and saving it destroys both on disk.** Buy links
+        fall back to a title search; the cover falls back to a photograph. The user is told
+        *"Moved · Dune → now"*. **Fix: `book: previous ? {...previous.book, ...book} : book`.**
+        *(The `shot`/`source` half of this line is now guarded — see the §3 mutation table
+        work of 2026-08-25 — but `book` itself is not.)*
+      - **C-5 · `bookKey` drops everything after the first colon.** *"The Lord of the Rings:
+        The Two Towers"* and *"…: The Return of the King"* are the same book. **Differing
+        ISBNs cannot veto** — the ISBN check can only ADD a match. Saving the second
+        overwrites the first.
+      - **C-6 · `normAuthor` takes the longest token, not the surname.** *"Gabriel García
+        Márquez"* → `gabriel`; *"G. García Márquez"* → `marquez`. Two spellings, two keys,
+        one book filed twice.
+      - **C-7 · `postKey` drops the host**, so on catch-anywhere two images with the same
+        path on different sites are one catch.
+      - **C-8 · Removing a book prunes its cached cover before the 8s undo window closes.**
+      - **C-9 · `shotFor` guards on the number of BOOKS, not the number of IMAGES.** A
+        four-photo post yielding one book stores photograph one as that book's cover.
+      - **ADV-7 · The two catch flows derive different job keys for a multi-image post** —
+        two cards, two vision calls, **two trial spends for one post**.
+
+- [ ] **48. THE ACTIVATION LIFECYCLE'S LAST THREE HOLES.** *(review §4)*
+
+      - **ADV-3 · VERIFIED. The licence server mints a session without proving the claim
+        carries an activation id.** On the ACTIVATE path there is no fallback: if Polar's
+        response lacks a top-level `id`, `JSON.stringify` drops the key, the client's `?? ''`
+        yields `''`, `writePro`'s `&& activationId` guard omits the field, **and the next
+        renewal ACTIVATES again**. `licenseHandler.ts:196`. **This is item 27's P0,
+        re-opened** — the client comment eleven lines up names the hazard and the fallback
+        has nothing to fall back TO.
+      - **ADV-8 · `ensureSession` is documented as never throwing; both `deps.save` calls are
+        outside the `try`.** `proState.ts:126`. A storage-quota failure rejects into the
+        catch. Worse: it happens AFTER `exchange` returned ok, **so on a first pairing Polar
+        has already spent a slot and the id was never persisted.**
+      - **C-3 · A dead `activationId` is never cleared.** `proState.ts:166`. If the id becomes
+        invalid at Polar (the customer deactivates that install to free a slot), every
+        exchange validates a nonexistent activation and re-stores the same dead id.
+        **Re-pasting the key does not help** — `activateKey.activationFor` reuses it by
+        design. **The only escape is clearing extension storage.**
+
+      All three are about the five permanent slots, which is the only finite resource this
+      product can burn. `activateKey.ts` (item 43) made the CLIENT half testable; none of
+      these three is fixed by it.
+
+- [ ] **49. FOUR RELIABILITY HOLES ON THE PATH SOMEBODY IS WAITING ON.** *(review §4)*
+
+      - **R-1 · The licence exchange runs on the catch path with no timeout**, outside the
+        catch's abort signal. `keepSession` is awaited at `background.ts:200`, BEFORE the
+        `AbortController` exists at `:206`. `licenseHandler.ts:9` claims it is *"never during
+        a catch"* — **false, `background.ts:200` calls it there by design.**
+      - **R-2 · A failed renewal retries on every catch** with no backoff, no cooldown, no
+        breaker. `proState.ts:141`. Burns `CHECKS_PER_KEY_PER_DAY = 40`; then our own 429
+        reads as… **retryable now, since item 39** — so this no longer wipes the session, but
+        it still burns the whole allowance in one bad afternoon. *(Premise partly expired
+        2026-08-25; the burn survives, the session loss does not.)*
+      - **R-3 · A `looking` card has no watchdog in either direction.** `catchTray.ts:152`. If
+        the worker dies mid-catch on the context-menu flow, *"Reading the cover…"* sits on
+        someone else's page permanently, **dismissible only by hand.**
+      - **R-4 · The image download every catch blocks on has an abort signal but no timeout.**
+        `inlineImage.ts:97`.
+
+- [ ] **50. THE MEASURED PERFORMANCE SET — every number here came off a running probe.**
+      *(review §4 and §5)*
+
+      | ID | What | MEASURED |
+      | --- | --- | --- |
+      | **PERF-1** | Grounding fan-out waits for the slowest of N queries. `Promise.all` samples the p95 on every catch. `recognizer.ts:56` | 20 concurrent OpenLibrary searches: **median 1,215ms, wall 6,072ms** |
+      | **PERF-2** | The tray re-fetches every candidate cover on every card repaint — N + N² round trips. `coverData.ts` has `store.match` and **no `store.put`**, so every candidate is a cache miss by construction. `content.ts:1162` | Filing 20 books one at a time = **420 `coverBytes` messages, ~10MB** of cross-process payload |
+      | **PERF-3** | OpenLibrary search asks for full ISBN arrays and uses one entry | `'Dune Frank Herbert'` with `isbn` → **8,320 bytes**; without → **398**. **20.9x.** Across five titles, 14.4x. In one 20-query burst: 70KB downloaded, **~93% discarded** |
+      | **PERF-4** | `popup.paint()` issues four storage reads per keystroke — under a comment reading `// synchronous: no storage read, no await, no render race`. **All three clauses are false** | — |
+      | **PERF-5** | Every keystroke rebuilds the whole shelf DOM, no cap, no memo | `weaveOf`: 119 books **5.12ms** · 500 **15.98ms** · 2000 **58.80ms** |
+      | **PERF-7** | `shelvedAmong` is O(candidates × shelf) with both identity keys recomputed per comparison, **on the catch's response path** | 2000 books = 40,000 calls, **179ms**. A Map makes it **36x** faster |
+      | **PERF-8** | `/api/vision` buffers the entire image payload before opening the upstream connection | ~55-138KB per image, **two copies in flight** |
+      | **PERF-10** | The licence renewal and entitlement reads sit serially in front of the image download, **though nothing about downloading the picture depends on the session** | — |
+
+      **Second-order, and worth knowing before touching PERF-1:** `withBreaker` calls
+      `failed()` per query, so **three tail timeouts inside ONE catch open the 120s breaker.**
+
+      **PERF-1, PERF-2 and PERF-3 are the three a first user actually feels.** PERF-9 is
+      closed — it was the same root as item 41's host gate.
+
+- [ ] **51. THE SERVER'S REMAINING CONTRACT AND EDGE GAPS.** *(review §4 and §5)*
+
+      - **AC-5 · The client compiles the server's `TOKEN_TTL_MS` and `GRACE_MS` into its
+        bundle.** `license.ts:10`. Change either server-side and **every shipped client
+        desynchronises.** *(Item 44 closed the version marker; this is the other half of the
+        same class and is NOT closed.)*
+      - **AC-6 · A response-shape change on `/api/vision` fails silently as "no books
+        found"**, not as an error. `llmVision.ts:251` — `typeof raw !== 'string' → return []`
+        is indistinguishable from an empty picture.
+      - **AC-10 · Polar's response is cast, never validated.** A well-formed JSON body with
+        different keys → `status === undefined` → **403 "That licence is not active" to a
+        subscriber whose licence is fine.** The honest 502 is only reachable on malformed JSON.
+      - **AC-12 · `expiresAt` is a server timestamp evaluated against the client's clock**,
+        with no skew tolerance and no `expiresIn` to anchor locally.
+      - **SEC-3 · `/api/license` has no per-IP cap**, and `keyCap` is keyed on the string the
+        attacker chooses, so N distinct guesses produce N real calls on our Polar org token.
+        Impact is availability: **a throttled `POLAR_ACCESS_TOKEN` locks out every
+        subscriber's renewal at once.** `createIpCap` already exists and is tested.
+      - **AC-9 / TM-6 · `/api/vision` relays the upstream body with no redaction and no length
+        cap**, while `/api/license` scrubs and truncates the same class of data. **The
+        endpoint that holds the money-spending credential is the one without the scrub.**
+      - **R-6 / TM-13 · Neither edge function bounds its upstream call** with a timeout.
+      - **PERF-6 / SEC-4 · `ipCap` has no eviction** and keys on the full IPv6 address. A
+        residential /64 gives one client 2^64 keys — both unbounded memory and a free bypass.
+        **The `x-forwarded-for` question is SETTLED: Vercel overwrites it at the edge** (threat
+        model, with a docs citation), so it is NOT spoofable today. **But the safety comes
+        from the platform, not the code**, and `ipCap.ts:38-41` reasons from generic HTTP
+        semantics. Move hosts or add a proxy and the only automated brake evaporates silently.
+      - **TM-12 · `vercel.json` excludes `/api/` from the headers block**, so API responses
+        carry no `nosniff` and no `Cache-Control: no-store` — **and the licence response body
+        is a bearer token.**
+
+- [ ] **52. THE TRAY LIVES IN THE HOST PAGE'S LIGHT DOM.** *(review §5)*
+
+      - **TM-9 · Stable class names in the host page's light DOM**, and `content.ts:955`
+        mirrors which pile a book is in into `el.dataset['sig']` — **a CSS-attribute
+        exfiltration surface.** Fix: closed shadow root, move `sig` to a `WeakMap`.
+      - **TM-10 · Latent `javascript:` on the shelf.** `content.ts:519` uses
+        `href*="/status/"` (substring — **the same shape as the `twimg` filter item 41 fixed**)
+        and returns `.href` verbatim. **Defused today only by `popup.ts:467`'s protocol guard
+        at the single render site**, which means a second render site re-opens it.
+
+- [ ] **53. TYPES THAT DO NOT TYPE.** *(review §4 and §5)*
+
+      - **TS-1 · `readSettings` casts a whole storage record and spreads it over the
+        defaults.** `settings.ts:27`. The only one of three storage readers that does not
+        validate field by field — **and its values are called as methods on the money path**
+        (`settings.apiKey.trim()`).
+      - **TS-2 · The shelf and the log cast unvalidated storage arrays.** `Array.isArray` is
+        the only check. **A corrupt `intent` exports the literal `undefined` into Goodreads'
+        "Exclusive Shelf".**
+      - **TS-3 · Five of eight `BackgroundRequest` variants and all six `ContentRequest`
+        variants have no declared response type.**
+      - **TS-4 · Neither message receiver has a `never` check**, so a ninth variant is a
+        silent no-op.
+      - **TS-7 · `exactOptionalPropertyTypes` is off.** *(Confirmed still absent from
+        `tsconfig.json`, 2026-08-25.)* It is the ONE compiler flag that makes "omitted" and
+        "present but undefined" different types — **the exact distinction every
+        conditional-spread comment in this repo reasons about in prose.** It is the only
+        thing that would have made the original `activationId` bug red. **Expect a wave of
+        errors when it is turned on; that wave is the finding.**
+
+- [ ] **54. DEAD CODE, STALE COMMENTS, AND ONE EDGE AGAINST THE GRAPH.** *(review §4 and §5)*
+
+      All confirmed **still true on 2026-08-25** by grep, not by reading the review.
+
+      - **M-1 · `host.ts` exports `LICENSE_ENDPOINT` and `VISION_ENDPOINT` and nothing imports
+        either.** Three files rebuild the paths by hand. `host.test.ts` globs for stale HOSTS
+        only, **never the PATH**.
+      - **M-2 · `tools/mark-sizes.mjs` is 100% dead** — reads `MARK.cords`, retired
+        2026-08-17, `TypeError` on first use. **`README.md:103` lists it as working** and
+        `x-button-harness.mjs:7` cites it as evidence. `entryPoints.test.ts` is green because
+        it only asserts the file PARSES.
+      - **M-3 · `tray-harness.mjs` hand-spells the mark** — an 8th copy outside
+        `mark.test.ts`'s asserted seven, **in a file that CAN import `markSvg`.** This copy
+        has already lied once and cost a real design detour.
+      - **X-2 · `entitlement.footer()` has no caller**, and two module headers vouch for it.
+      - **X-3 · `settings.toVisionConfig` is dead code and `background.ts` still imports it.**
+        *(Confirmed 2026-08-25: still imported at `background.ts:12`, no non-test caller.)*
+      - **X-5 · `Tweet.altText` is declared in three files, threaded through two call sites,
+        and never populated.**
+      - **X-6 · Nine dead CSS tokens**, five of which are an unguarded fourth copy of
+        `BINDING`.
+      - **D-5 · `toolbar.ts` hardcodes two brand colours** and names sources that do not hold
+        them.
+      - **D-7 · `bindingFor` indexes `BINDING` by `CLOTH.length`** — a cross-module length
+        coupling that **fails silently on the sixth dye.**
+      - **D-9 · `tray-harness.mjs` retypes the cloth palette, names the wrong file, and drops
+        one of the five dyes** — so **marigold is structurally invisible to the only tool that
+        can see the tray.**
+      - **K-1 · `src/recognizer/` imports `src/extension/`** — the only edge running against
+        the graph. *(Confirmed 2026-08-25: `groundText.ts:5` and `recognizer.ts:5`, both
+        importing `sameBook` from `../extension/bookIdentity`. Deliberate — the identity rule
+        lives in one place — but it is why `src/shared/` is where anything shared must go.)*
+      - **The seven stale comments** tabulated in review §1. Two were corrected on 2026-08-25
+        (`visionRoute.ts:42`'s model pin is now TRUE; `polar-setup.md:383` rewritten). **Five
+        remain**, including `README.md:103` above.
+
+- [ ] **55. THE TWO SURFACES NO TEST CAN REACH.** *(review §4)*
+
+      - **M-5 · The context-menu handler is 95 lines of the riskiest orchestration in the
+        extension and no test can reach it.** `background.ts:411`. **Four ordering rules
+        stated in comments, none checked.** This session moved four decisions OUT of that file
+        (`visionFailure`, `forgetSession`, `keepTweetMedia`, `realClick`); the ORCHESTRATION
+        is still unreachable.
+      - **M-6 · The whole card renderer is unreachable by any test, including the paywall.**
+        `content.ts:941`. `trayCopy.ts` lists four rules the wall must obey; the tests check
+        the STRINGS. **Nothing checks that `wallBody` renders `WALL.free` as a real button —
+        rule 3, the line between an offer and a dark pattern.**
+
+- [ ] **56. THE ONE THING THAT COULD NOT BE VERIFIED STATICALLY. Maximo, one command.**
+      *(review §7)*
+
+      `permissions.md:153` and `coverCache.ts:36-42` assert that **every hop** of the
+      `covers.openlibrary.org → archive.org` redirect answers with permissive CORS. **That is
+      a live-network fact with no contract behind it.**
+
+      Probe it once against a real cover before submitting. **If it is wrong, every shelf
+      cover silently falls back to the drawn board and nothing would tell you it had
+      happened** — which is this codebase's signature failure, on the surface the product is
+      named for.
+
 
 Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8, 23 and 24
 are all done.** The landing is finished top to bottom, the extension has caught up to it,
