@@ -149,6 +149,11 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 > | `...-2026-08-18-pro-hardening` | **Earlier.** The five-agent review, the item-27 renewal P0, the merge of `buki-pro` into `main` |
 > | `...-2026-08-18-launch-readiness` | **Later, and the one to read first.** Three launch blockers found and fixed, items 17/25/28/29/30/31/32/33/34/18 closed, items 34–37 filed, the launch sequence and store assets written |
 >
+> **A third pair now shares a subject rather than a date.** `...-2026-08-24-prelaunch-review`
+> is where the six P0s were FOUND; `...-2026-08-25-p0-fixes` is where they were fixed, and it
+> carries the two of the review's own prescriptions that were declined, with the arithmetic.
+> Read the 24th for the evidence and the 25th for what was decided about it.
+>
 > They are sequential, not alternatives. The later pair carries the live state.
 
 **`DESIGN.md` is a dated record, not a contract.** It is the 2026-07-20 design session,
