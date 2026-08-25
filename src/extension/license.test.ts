@@ -174,3 +174,50 @@ describe('exchange carries the activation id', () => {
     expect(JSON.parse(body)).toMatchObject({ key: 'KEY-1', activationId: 'act_1' });
   });
 });
+
+/**
+ * THE CLIENT HALF OF THE SAME BUG, and without it the server half is half a fix.
+ *
+ * `retryable: res.status >= 500` misses 429 and 408. Our own `keyCap` answers 429
+ * (`CHECKS_PER_KEY_PER_DAY = 40`) with the words "Try again tomorrow" — advice that only
+ * works if the caller keeps the session it has. It did not: `proState.ts` wrote
+ * `session: null`, the token was erased, and the next catch travelled unauthenticated to a
+ * server that would have honoured it for another seven days on grace.
+ *
+ * The rule now comes from `src/shared/retry.ts`, which `llmVision.ts` uses too, so the two
+ * clients cannot drift apart again.
+ */
+describe('what makes the caller keep its session', () => {
+  const refusing = (status: number) => ({
+    fetch: vi.fn(async () => new Response(JSON.stringify({ error: 'nope' }), { status })),
+    endpoint: 'https://get-buki.vercel.app/api/license',
+    now: () => 1_000,
+  });
+
+  it('keeps the session through OUR OWN rate limit', async () => {
+    const license = createLicense(refusing(429));
+    expect(await license.exchange('KEY-1')).toMatchObject({ ok: false, retryable: true });
+  });
+
+  it('keeps the session through a timeout', async () => {
+    const license = createLicense(refusing(408));
+    expect(await license.exchange('KEY-1')).toMatchObject({ ok: false, retryable: true });
+  });
+
+  it('keeps the session through every server-side failure', async () => {
+    for (const status of [500, 502, 503, 504]) {
+      const license = createLicense(refusing(status));
+      expect(await license.exchange('KEY-1'), `${status}`).toMatchObject({ retryable: true });
+    }
+  });
+
+  it('gives the session up when Polar has actually answered', async () => {
+    // Revoked, refunded, wrong key. This is what lets the options page say what is wrong,
+    // and it must keep working — a fix that made everything retryable would leave a
+    // cancelled subscriber looking Pro for ever.
+    for (const status of [400, 401, 403, 404, 422]) {
+      const license = createLicense(refusing(status));
+      expect(await license.exchange('KEY-1'), `${status}`).toMatchObject({ retryable: false });
+    }
+  });
+});

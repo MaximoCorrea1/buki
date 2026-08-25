@@ -10,6 +10,7 @@
  */
 import { fromExtension } from './policy';
 import { sign, TOKEN_TTL_MS } from './token';
+import { worthRetrying } from '../shared/retry';
 
 export interface LicenseEnv {
   secret: string;
@@ -168,6 +169,27 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
   }
 
   if (!res.ok) {
+    // A BAD MINUTE AT POLAR IS NOT AN ANSWER ABOUT THIS LICENCE, and this branch used to
+    // treat them as the same thing.
+    //
+    // Eight lines above, the `catch` returns 503 under a comment saying exactly why 403 is
+    // wrong. That comment was right and guarded only the RARER outage shape — a socket or
+    // DNS failure. The commoner one, a gateway answering 5xx, fell through to the 403
+    // below: `license.ts` read it as definitive, `proState.ts` wrote `session: null`, the
+    // token was erased, and the subscriber met the wall they had paid to pass. The token
+    // was not expired; `verify` would have served it on grace for another seven days.
+    //
+    // `worthRetrying` is shared with `llmVision.ts` so the two clients cannot drift again.
+    // 429 is in it because OUR OWN `keyCap` is one of the things that answers 429.
+    //
+    // Nothing of the upstream body is quoted here, unlike the 403 path. A gateway error
+    // page is not something a customer can act on, and every relayed byte is a byte that
+    // could carry our Polar credential home.
+    if (worthRetrying(res.status)) {
+      console.error(`[buki] polar upstream ${res.status}`);
+      return json({ error: 'upstream' }, 503);
+    }
+
     // Polar's own words: revoked, wrong key, activation limit reached. Far more use than
     // "invalid licence", and the extension puts it straight in front of the customer.
     const detail = await res.text();

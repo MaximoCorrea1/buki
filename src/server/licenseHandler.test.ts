@@ -358,3 +358,61 @@ describe('the cap', () => {
     expect(error).not.toMatch(/sorry|something went wrong/i);
   });
 });
+
+/**
+ * WHEN POLAR HAS A BAD MINUTE, and it is not the same as Polar saying no.
+ *
+ * `handleLicense` handled the RARER outage shape and not the commoner one. Eight lines
+ * above the bug, the `catch` around the fetch returned 503 under a comment explaining
+ * exactly why 403 is wrong: *"a 4xx makes the extension throw its session away during OUR
+ * outage, which is the exact moment the grace window exists to cover."* Then
+ * `if (!res.ok)` returned 403 for every non-2xx answer — 500, 502, 503, 429 included.
+ *
+ * A socket failure was covered. A gateway 5xx, which is what an outage usually looks like
+ * from the outside, was not.
+ *
+ * `grep -c 'status: 5' licenseHandler.test.ts` returned **0** before this block existed:
+ * every test drove a THROWN fetch, so the response-shaped outage had no coverage at all.
+ */
+describe('a bad minute at Polar is not an answer about this licence', () => {
+  const upstream = (status: number, body = 'gateway error'): (() => Promise<Response>) => async () =>
+    new Response(body, { status });
+
+  it('calls every Polar 5xx a 503, not a 403', async () => {
+    for (const status of [500, 502, 503, 504]) {
+      const res = await handleLicense(post({ key: 'K' }), env({ fetch: vi.fn(upstream(status)) }));
+      expect(res.status, `Polar ${status} became ${res.status}`).toBe(503);
+    }
+  });
+
+  it('calls a Polar 429 a 503 too, because throttling passes', async () => {
+    const res = await handleLicense(post({ key: 'K' }), env({ fetch: vi.fn(upstream(429)) }));
+    expect(res.status).toBe(503);
+  });
+
+  it('STILL answers 403 when Polar has actually refused the key', async () => {
+    // The distinction that makes the fix a fix rather than a blanket. Revoked, wrong key,
+    // activation limit reached: these are answers, and the extension should act on them.
+    for (const status of [400, 401, 403, 404, 422]) {
+      const res = await handleLicense(
+        post({ key: 'K' }),
+        env({ fetch: vi.fn(upstream(status, 'Activation limit reached')) }),
+      );
+      expect(res.status, `Polar ${status} became ${res.status}`).toBe(403);
+    }
+  });
+
+  it('says nothing about our credential on the outage path', async () => {
+    // The 403 path scrubs the token out of the quoted body. The 503 path must not quote a
+    // body at all: a gateway error page is not something a customer can act on, and every
+    // relayed byte is a byte that could carry POLAR-TOKEN-SECRET.
+    const res = await handleLicense(
+      post({ key: 'K' }),
+      env({ fetch: vi.fn(upstream(500, 'POLAR-TOKEN-SECRET in the stack trace')) }),
+    );
+    expect(res.status).toBe(503);
+    const text = await res.text();
+    expect(text).not.toContain('POLAR-TOKEN-SECRET');
+    expect(text).not.toContain('stack trace');
+  });
+});

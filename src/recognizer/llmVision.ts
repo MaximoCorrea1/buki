@@ -1,4 +1,5 @@
 import type { FetchLike, VisionClient, VisionGuess } from './types';
+import { worthRetrying } from '../shared/retry';
 
 /**
  * Recognition by a vision model, over the OpenAI chat-completions shape.
@@ -75,7 +76,11 @@ export class VisionHttpError extends Error {
     this.name = 'VisionHttpError';
     // 429 and 408 are client-class statuses that clear on their own; everything else
     // below 500 is something about this request that will not change until the setup does.
-    this.permanent = status < 500 && status !== 429 && status !== TIMEOUT_STATUS;
+    //
+    // THIS RULE WAS RIGHT AND WAS NOT SHARED. `license.ts` had its own copy reading only
+    // `status >= 500`, and the missing clauses cost a paying subscriber their session
+    // whenever our own rate limit answered 429. Same rule, one place, since 2026-08-25.
+    this.permanent = !worthRetrying(status);
   }
 }
 

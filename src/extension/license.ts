@@ -8,6 +8,7 @@
  * subscription for longer than a day, and it is why `src/server/token.ts` exists.
  */
 import { GRACE_MS, TOKEN_TTL_MS } from '../server/token';
+import { worthRetrying } from '../shared/retry';
 
 /** A session as the extension stores it: the bearer token and when it stops being fresh. */
 export interface Session {
@@ -113,9 +114,22 @@ export function createLicense(deps: LicenseDeps): {
           typeof (body as { error?: unknown })?.error === 'string'
             ? ((body as { error: string }).error)
             : undefined;
-        // 5xx is ours and will pass; 4xx is about this key and will not. Only the second
-        // should make the caller throw the key away.
-        return { ok: false, retryable: res.status >= 500, ...(message ? { message } : {}) };
+        // A BAD MINUTE PASSES; AN ANSWER ABOUT THIS KEY DOES NOT. Only the second should
+        // make the caller throw its session away.
+        //
+        // This read `res.status >= 500`, which missed the two statuses that pass most
+        // often. Our OWN `keyCap` answers 429 — `CHECKS_PER_KEY_PER_DAY = 40`, reachable by
+        // a customer with five installs on a bad network day — with the words "Try again
+        // tomorrow", and the caller treated that as final and erased the token. The server
+        // would have honoured it on grace for another seven days.
+        //
+        // `worthRetrying` is the same rule `llmVision.ts` uses, imported rather than
+        // restated, because these two had already drifted once.
+        return {
+          ok: false,
+          retryable: worthRetrying(res.status),
+          ...(message ? { message } : {}),
+        };
       }
 
       const session = sessionFrom(body);

@@ -39,7 +39,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
 | ~~38~~ | agent | ~~`/api/vision` forwards the body verbatim.~~ **DONE 2026-08-25.** The body is REBUILT, not relayed: `src/server/visionBody.ts` pins the model, clamps `max_tokens`, caps bytes/images/prompt, and emits a three-key allowlist so `n`, `service_tier`, `stream` and `extra_body` have nowhere to go. Six mutations run against the new guards, **six caught** | — |
-| **39** | agent | **A Polar 5xx becomes 403 and the extension deletes a paying subscriber's session.** Both halves, server and client | every subscriber, during any Polar wobble |
+| ~~39~~ | agent | ~~A Polar 5xx becomes 403 and the extension deletes a paying subscriber's session.~~ **DONE 2026-08-25.** Both halves. The rule now lives once, in `src/shared/retry.ts`, used by `licenseHandler`, `license.ts` AND `llmVision.ts` — the two clients that had drifted. **Six mutations, six caught**, in both directions | — |
 | **40** | agent | **No rate limit at all on the licensed path.** An 8-day unrevocable bearer with no ceiling | bounds a leaked token |
 | ~~41~~ | agent | ~~A hostile page can drive the tray.~~ **DONE 2026-08-25.** Three seams, each extracted and tested for real: `realClick.ts` (`isTrusted`, on real events), `feedHost.ts` (the scanner arms only on X), `twitterImage.isTweetMedia` (hostname, not substring). `contentSafety.test.ts` proves the ABSENCE of any second way in. **Seven mutations, seven caught** | — |
 | **42** | agent | **The card's x is a free-read button.** Abort skips the spend; the server never cancels Gemini | the trial's only real ceiling |
@@ -400,7 +400,35 @@ unblocks.
       vulnerability; the client is not the thing being defended. Found by FOUR independent
       reviewers. **Ship this WITH item 26, not instead of it.**
 
-- [ ] **39. A POLAR NON-2xx BECOMES 403, AND THE EXTENSION DELETES THE SESSION.**
+- [x] **39. A POLAR NON-2xx BECOMES 403, AND THE EXTENSION DELETES THE SESSION.**
+      **DONE 2026-08-25.** Both halves, plus the thing that stops it recurring.
+
+      **The rule was never wrong — it was DUPLICATED.** `llmVision.ts:78` has had it right
+      for months (`status < 500 && status !== 429 && status !== TIMEOUT_STATUS`).
+      `license.ts:118` had its own copy reading `res.status >= 500`. Two copies of a rule
+      is two rules, and these two had already drifted. It now lives once in
+      **`src/shared/retry.ts`** as `worthRetrying(status)`, imported by all three call
+      sites. `src/shared/` specifically, because `src/recognizer/` importing
+      `src/extension/` is already the one edge running against the graph (K-1) and this
+      must not add a second.
+
+      **Server:** `worthRetrying(res.status)` inside `if (!res.ok)`, above the 403, and it
+      quotes NOTHING of the upstream body — unlike the 403 path, which scrubs it. A gateway
+      error page is not something a customer can act on, and every relayed byte is a byte
+      that could carry `POLAR_ACCESS_TOKEN` home. A test asserts that.
+
+      **The mutation set ran in BOTH directions**, which is what makes it a fix rather than
+      a blanket: making everything 503, or everything retryable, fails too. A cancelled
+      subscriber must still lose their session, or the options page can never say what is
+      wrong.
+
+      **Trigger (c) is NOT closed here and is not this item's to close.** A mismatched
+      `BUKI_EXTENSION_ID` still 403s every renewal from the Origin check while
+      `/api/vision` keeps serving token-bearing requests, so the failure stays invisible
+      until the token ages out. That is item 37's job — set the shipped id — and the new
+      finding filed at item 44 is the machine-readable marker that would make it visible.
+
+      *Original text:*
       `licenseHandler.ts:170` returns 403 for every `!res.ok` including 500/502/503/429. Eight
       lines above, the `catch` branch returns 503 with a comment saying exactly why 403 is
       wrong. **The rarer outage shape is handled; the commoner one is not.**
