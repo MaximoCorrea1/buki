@@ -221,3 +221,74 @@ describe('what makes the caller keep its session', () => {
     }
   });
 });
+
+/**
+ * A 403 THAT IS ABOUT US MUST NOT COST THE CUSTOMER THEIR SESSION.
+ *
+ * Two 403s from `/api/license` mean opposite things, and until 2026-08-25 the client could
+ * not tell them apart:
+ *
+ *   code: 'licence'   Polar refused this key. Revoked, wrong, activation limit reached.
+ *                     An ANSWER. The session should go so the options page can say why.
+ *   code: 'origin'    our Origin check refused the CALLER. On launch day that means
+ *                     `BUKI_EXTENSION_ID` is not the shipped id — OUR misconfiguration,
+ *                     nothing to do with anybody's subscription.
+ *
+ * With the second read as the first, every renewal 403s, `proState` writes `session: null`,
+ * and the bearer token is erased — while `/api/vision` keeps serving token-bearing requests,
+ * because it skips the Origin check when a token is present. **So the failure is invisible
+ * until tokens age out, eight days later, by which time every subscriber has been signed
+ * out by a status that was never about them.** That is item 39's trigger (c), which item 39
+ * could not close from either half.
+ */
+describe('a misconfiguration on our side is not a verdict on the licence', () => {
+  const answering = (status: number, body: object) => ({
+    fetch: vi.fn(async () => new Response(JSON.stringify(body), { status })),
+    endpoint: 'https://get-buki.vercel.app/api/license',
+    now: () => 1_000,
+  });
+
+  it('KEEPS the session when the server does not recognise us', async () => {
+    const license = createLicense(answering(403, { error: 'Not authorised', code: 'origin' }));
+    expect(await license.exchange('KEY-1')).toMatchObject({ ok: false, retryable: true });
+  });
+
+  it('still gives it up when Polar has answered about the key', async () => {
+    // The half that has to keep working. A revoked licence must clear the session, or the
+    // options page can never say what is wrong and a cancelled subscriber looks Pro for ever.
+    const license = createLicense(
+      answering(403, { error: 'That licence is not active.', code: 'licence' }),
+    );
+    expect(await license.exchange('KEY-1')).toMatchObject({ ok: false, retryable: false });
+  });
+
+  it('treats an UNCODED 403 as final, the way it always did', async () => {
+    // A server that has not been deployed yet, or any other 403 this client has not been
+    // taught about. Unknown means "believe the status", which is the safe direction: it can
+    // only ever cost one re-exchange, where the reverse would keep a dead licence alive.
+    const license = createLicense(answering(403, { error: 'Not authorised' }));
+    expect(await license.exchange('KEY-1')).toMatchObject({ ok: false, retryable: false });
+  });
+
+  it('says so in the console, because nothing else will', async () => {
+    // There is no telemetry in this product by design, so a log line in the service worker
+    // is the entire diagnostic surface. `launch.md` names the spend cap as the primary
+    // alarm precisely because the client reports nothing.
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const license = createLicense(answering(403, { error: 'Not authorised', code: 'origin' }));
+      await license.exchange('KEY-1');
+      expect(spy).toHaveBeenCalled();
+      expect(String(spy.mock.calls[0]?.[0])).toMatch(/BUKI_EXTENSION_ID/);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('passes the message through whatever the code says', async () => {
+    const license = createLicense(
+      answering(403, { error: 'Activation limit reached', code: 'licence' }),
+    );
+    expect(await license.exchange('KEY-1')).toMatchObject({ message: 'Activation limit reached' });
+  });
+});

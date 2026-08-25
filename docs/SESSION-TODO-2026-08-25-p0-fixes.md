@@ -27,7 +27,7 @@ Markers: `[ ]` open · `[x]` done+verified · `[~]` in progress · `[?]` founder
 | **40** No rate limit on the licensed path | `[x]` **DONE** `11f2d6f`. Per-licence cap + `BUKI_REVOKED_KEY_IDS`. Six mutations, six caught |
 | **42** The card's × is a free-read button | `[x]` **DONE** `2b023a8`. Abort reaches Gemini; attempts bounded. Nine mutations, **one survived and found a real hole** |
 | **43** Options-page slot reuse deletable, green | `[x]` **DONE** `f344127`. Extraction of the arithmetic AND the order. Five mutations, five caught |
-| **44** The wire contract closes at publication | `[ ]` **agent, NEW, filed this session.** AC-3 / AC-4 / AC-7 / AC-8 plus the extension-id blind spot. **Before `launch.md` step 5** |
+| **44** The wire contract closes at publication | `[x]` **DONE, same day it was filed.** All four findings plus the fifth the review did not file. Eight mutations, eight caught |
 | **26** Gemini spend cap | `[!]` **Maximo. Now the FLOOR, not a second ceiling.** 38 and 40 bound one caller; only the provider cap bounds the aggregate. `launch.md` step 4.5 is half clear and this is the other half |
 | **1** Polar benefit activation settings | `[!]` Maximo. Unchanged |
 | **2** The six Vercel variables | `[!]` Maximo. `BUKI_EXTENSION_ID` still waits on 37 by design. **Re-probe with `vercel env ls` — that is a report, not a measurement** |
@@ -65,6 +65,12 @@ mutation results are in the commit message.
       tell one person two stories.
 - [x] **43 · The activation reuse is extracted, order and all** (`activateKey.ts`, 18 tests).
       The review's own mutation now fails six tests.
+- [x] **44 · The wire contract, filed and closed the same day** (`visionFailure.ts`,
+      `TOKEN_VERSION`, one envelope per endpoint, a `code` on every licence refusal). A 401 no
+      longer opens the options page for somebody with no settings; the trial kill switch can
+      be pulled without telling every trial user their setup is broken; and a mismatched
+      `BUKI_EXTENSION_ID` no longer erases a paying session on every renewal for eight days
+      before anyone notices.
 
 ### Documents corrected in the same commits as the code
 
@@ -85,11 +91,10 @@ mutation results are in the commit message.
 
 ## Open, and who owns it
 
-- [ ] **44 · The wire contract.** Agent. AC-3, AC-4 (version half), AC-7, AC-8, plus the
-      extension-id blind spot item 39 could not close. **Free until publication, never again.**
 - [!] **26 · The spend cap.** Maximo, a dashboard, and it gates `launch.md` step 5.
-- [ ] **Everything else in the review.** All P1s except AC-4's shape check, and the whole
-      P2/P3 catalogue, are untouched. The review remains the record.
+- [ ] **Everything else in the review.** AC-3, AC-4, AC-7 and AC-8 closed with item 44; the
+      REST of the P1s and the whole P2/P3 catalogue are untouched. The review remains the
+      record for all of them. **Nothing security-shaped is open.**
 - [ ] **Push.** `main` is ahead of `origin/main` by this session’s commits. Nothing has been
       pushed. Run `git log --oneline origin/main..HEAD` rather than trusting a count here.
 
@@ -123,13 +128,17 @@ In commit order, which is the real order.
 | 8 | **Item 43**, and the second surviving mutation | `f344127` · 760/65 |
 | 9 | This pair written | — |
 | 10 | **The review's §3 mutation table closed** — theme, storage, both visionHandler mutations, and the launch-day find-and-replace | `0733ef4` · 772/65. **All six now fail; five used to pass** |
+| 11 | **Item 44**, the wire contract, filed and closed the same day | 808/66. AC-3, AC-4, AC-7, AC-8 and the extension-id blind spot. **Eight mutations, eight caught** |
 
 ---
 
 ## For the next session, in order
 
-1. **Item 44**, while it is still free. It is the only remaining agent item with a deadline.
-2. **Then whichever P1s matter to launch.** The review's §4 is the list; PERF-1, PERF-2 and
-   PERF-3 are all MEASURED and all on paths a first user will feel.
+1. **Whichever P1s matter to launch.** The review's §4 is the list; PERF-1, PERF-2 and
+   PERF-3 are all MEASURED and all on paths a first user will feel. **Nothing
+   security-shaped is open any more** — the six P0s and item 44 all closed on 08-25.
+2. **Item 36 on launch day, and nothing before it.** Its guard now asserts DESTINATIONS
+   rather than link text, and covers the two Polar checkout URLs as well as the three
+   GitHub links — a find-and-replace that caught those sends every purchase to a 404.
 3. **Do not start any of it before running the three probes.** Every number in this file and
    in `OPENWORK.md`'s header was true when written and is a claim by the time you read it.

@@ -5,6 +5,7 @@ import {
   standingOf,
   ensureSession,
   createSessionKeeper,
+  forgetSession,
   PRO_KEY,
   type ProState,
 } from './proState';
@@ -519,5 +520,38 @@ describe('createSessionKeeper', () => {
     const second = await keep({ key: 'KEY-1', session: stale });
     expect(second.session).toEqual(renewed);
     expect(calls).toBe(2);
+  });
+});
+
+describe('forgetSession', () => {
+  /**
+   * The session goes; everything that identifies this install stays.
+   *
+   * `ensureSession` has always done exactly this on a non-retryable refusal, inline. It
+   * needed a second caller on 2026-08-25: a 401 from `/api/vision` means the token is no
+   * longer one the server will honour, and the fix is to forget it so the next catch
+   * exchanges the licence again (AC-3). Two copies of "which fields survive" is two chances
+   * to drop the activation id — which is the bug item 27 was filed for, twice.
+   */
+  it('keeps the key and the activation, drops only the token', () => {
+    expect(
+      forgetSession({ key: 'BUKI-AAAA', session: { token: 't', expiresAt: 1 }, activationId: 'a1' }),
+    ).toEqual({ key: 'BUKI-AAAA', session: null, activationId: 'a1' });
+  });
+
+  it('OMITS the activation rather than storing an empty one', () => {
+    // Matching every other writer's conditional spread, so a record that never had an id
+    // round-trips unchanged instead of gaining a field that means "no id".
+    const next = forgetSession({ key: 'BUKI-AAAA', session: { token: 't', expiresAt: 1 } });
+    expect(next).toEqual({ key: 'BUKI-AAAA', session: null });
+    expect('activationId' in next).toBe(false);
+  });
+
+  it('is safe to run on a state that has no session already', () => {
+    expect(forgetSession({ key: 'K', session: null, activationId: 'a1' })).toEqual({
+      key: 'K',
+      session: null,
+      activationId: 'a1',
+    });
   });
 });

@@ -42,6 +42,7 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 | 4 | **Zip and upload as a DRAFT. Do not publish.** Copy the public key into `manifest.json` as `key` (item 37) | Maximo, then agent | step 3 |
 | **4.5** | ~~THE MODEL PIN (item 38)~~ **DONE 2026-08-25** · **THE SPEND CAP (item 26) IS STILL REQUIRED BEFORE STEP 5** | ~~agent~~, **Maximo** | step 4 |
 | 5 | The six Vercel variables (item 2) — `BUKI_EXTENSION_ID` is now the SHIPPED id | Maximo | steps 1, 2, 4, **4.5** |
+| | **If step 5 goes wrong, the extension now SAYS SO** (item 44). A `BUKI_EXTENSION_ID` that is not the shipped id makes `/api/license` answer `403 code:origin`, and the worker logs the variable by name instead of silently erasing every subscriber's session. Look in the service-worker console during step 9 | | |
 | 6 | `vercel deploy --prod`, then probe both endpoints | Maximo | step 5 |
 | ~~7~~ | ~~The checkout URLs → `pricing.ts` (item 34)~~ **DONE 2026-08-18** | — | — |
 | 8 | The affiliate tags (item 35) | Maximo | — (parallel) |

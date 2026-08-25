@@ -4,13 +4,13 @@
 
 | | |
 | --- | --- |
-| Tests | **760 across 65 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **47 mutations, 44 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **808 across 66 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
-| Security | **The six pre-launch P0s are closed, 2026-08-25** (items 38-43). `/api/vision` rebuilds the request body instead of relaying it, the licensed path has a ceiling and an off switch, a Polar 5xx no longer deletes a subscriber's session, a hostile page cannot drive the tray, the card's × is not a free read, and the activation reuse is extracted and tested with real values. **Evidence: `docs/REVIEW-2026-08-24-prelaunch.md`; order and status: THE LANE below.** What is NOT closed is item 44, the wire contract, which is free until publication and never again |
+| Security | **The six pre-launch P0s are closed, 2026-08-25** (items 38-43), **and item 44 with them**. `/api/vision` rebuilds the request body instead of relaying it, the licensed path has a ceiling and an off switch, a Polar 5xx no longer deletes a subscriber's session, a hostile page cannot drive the tray, the card's × is not a free read, and the activation reuse is extracted and tested with real values. **Evidence: `docs/REVIEW-2026-08-24-prelaunch.md`; order and status: THE LANE below.** The wire contract (item 44) is closed too, which was the one piece of work with a real deadline: AC-3, AC-4, AC-7, AC-8 and the extension-id blind spot. **Nothing security-shaped is open.** |
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **41 commits since `d3e5923`, 2026-08-18 through 08-25** (was 33 at the end of 08-24) (`git rev-list --count d3e5923..HEAD`). **The figure beside it is written INTO the commit that changes it and is therefore wrong by one the moment it lands — that has happened four times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
@@ -70,9 +70,13 @@ switched off, and until 26 exists nothing bounds what abuse can cost.
 > **`launch.md` step 4.5 is now half-clear — item 26, the provider spend cap, is the other
 > half and it is Maximo's.**
 >
-> **ONE NEW ITEM CAME OUT OF DOING THEM: item 44**, and it has a deadline rather than a
-> severity. AC-3, AC-4, AC-7 and AC-8 all say *"cannot be added to clients already in the
-> wild"*, and there are none — until publication. That window is the item.
+> **ONE NEW ITEM CAME OUT OF DOING THEM: item 44 — filed and CLOSED the same day.** It had
+> a deadline rather than a severity: AC-3, AC-4, AC-7 and AC-8 all say *"cannot be added
+> to clients already in the wild"*, and there are none until publication. All four landed,
+> plus the fifth the review did not file — the extension-id blind spot that made item 39's
+> trigger (c) invisible for eight days.
+>
+> **So the agent queue is item 36 alone**, and it can only happen on launch day.
 >
 > The paragraph below is kept because its reasoning about MAXIMO's items is still exactly right:
 >
@@ -621,8 +625,38 @@ unblocks.
       another string guard.
 
 
-- [ ] **44. THE WIRE CONTRACT IS FREE TO CHANGE UNTIL PUBLICATION, AND NEVER AGAIN.**
-      **Filed 2026-08-25**, out of doing items 38-40. Not a new defect — a new DEADLINE on
+- [x] **44. THE WIRE CONTRACT IS FREE TO CHANGE UNTIL PUBLICATION, AND NEVER AGAIN.**
+      **Filed AND DONE 2026-08-25.** Eight mutations, eight caught.
+
+      **All four contract findings closed, plus the fifth the review did not file.**
+
+      | | What landed |
+      | --- | --- |
+      | **AC-3** | `visionFailure.ts`. A 401 is `act: 'session'`, not "your setup is broken" — the extension forgets the dead token so the NEXT catch re-exchanges the licence. **It used to call `chrome.runtime.openOptionsPage()`**, sending a keyless reader to a page with nothing on it they could change |
+      | **AC-4** | `TOKEN_VERSION` in the signed payload, required by `verify`, rejected in BOTH directions. A rejected version reads as `bad` → 401 → re-exchange, so **bumping it is a migration the clients run themselves, one catch each, instead of an outage** |
+      | **AC-7** | 402 is `act: 'closed'`. The trial kill switch can now be pulled without telling every trial user their setup is broken — which is the same as being able to pull it at all |
+      | **AC-8** | 405 and 500 join their endpoint's own envelope, with a content-type. Both now say something a person can read, and **neither names an environment variable** — asserted, because a 500 that says which one is missing is a configuration map handed to a stranger |
+      | **the fifth** | `code` on every `/api/license` refusal. `origin` vs `licence` are two 403s that mean opposite things, and the client now keeps a paying session through the first |
+
+      **THE FIFTH IS THE ONE WORTH READING.** A mismatched `BUKI_EXTENSION_ID` makes the
+      Origin check refuse EVERY renewal with 403, while `/api/vision` keeps serving
+      token-bearing requests because it skips that check when a token is present. So the
+      failure was invisible for eight days — and by the time anyone noticed, every subscriber
+      had been signed out by a status that was never about them. **That is item 39's trigger
+      (c), which item 39 could not close from either half.** `license.ts` now keeps the
+      session and logs the likely cause by name. An UNCODED 403 stays final, which is the
+      safe direction: believing the status can only ever cost one re-exchange.
+
+      **`NoKeyError` moved out of `background.ts`** so the whole classification is importable,
+      and `forgetSession` was extracted from `ensureSession` because it grew a second caller —
+      two copies of "which fields survive" is two chances to drop the activation id, which is
+      the bug item 27 was filed for twice.
+
+      **One thing deliberately not done: no in-catch retry after a 401.** It would put a
+      second upstream request on the money path for a case that only happens during an
+      incident. The card says to try again and the next press works.
+
+      *Original filing:* Not a new defect — a new DEADLINE on
       four the review already filed, and the reason to treat those four as one item.
 
       **AC-3, AC-4, AC-7 and AC-8 share a sentence:** *"cannot be added to clients already
@@ -1531,6 +1565,17 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   countermeasure is not more care: it is that **a guard is not finished when it passes, it is
   finished when you have watched it fail.** Cost: nothing, because the mutation found it.
   It would have cost the whole of item 42 otherwise.
+
+- **THE HEREDOC TRAP FIRED TWICE MORE. Sixth and seventh occurrences, 2026-08-25**, both
+  within an hour, both after re-reading the entry below that warns about it. The failures
+  were `unexpected EOF while looking for matching quote` and `here-document delimited by
+  end-of-file`, and in both cases **bash never ran the command at all**, so nothing was
+  written and the next step reported success against unchanged files.
+  **The rule that actually works is mechanical, not a caution: over about twenty lines, write
+  the content with the Write tool and apply it with `node <file>`.** A `.mjs` in the scratch
+  directory takes ten seconds, applies exactly once, and prints which replacement missed.
+  Two of this session's edits also failed on `\.` inside a regex literal surviving shell
+  quoting — same root, different character, and the same fix.
 
 - **A TEST CAN PASS AGAINST THE MUTATION FOR A REASON THAT HAS NOTHING TO DO WITH WHAT IT
   ASSERTS. 2026-08-25.** Closing the review's `bearer empty→null` mutation, the obvious

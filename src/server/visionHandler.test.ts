@@ -561,3 +561,44 @@ describe('the mutations that survived a green suite', () => {
     expect(res.headers.get('retry-after')).toBeNull();
   });
 });
+
+/**
+ * ONE ENVELOPE, INCLUDING ON THE TWO STATUSES THAT MEAN "THE SERVER ITSELF IS BROKEN".
+ *
+ * The review's AC-8. `405` and `500` returned BARE TEXT with no content-type, while every
+ * other refusal on this endpoint returns `{ error: { message } }` — the shape
+ * `llmVision.explain()` reads. So the client extracted no message on exactly the two
+ * statuses where a person most needs one, and showed them `HTTP 500` instead.
+ *
+ * Free to fix today; after publication it is a shape change against clients in the wild.
+ */
+describe('every refusal answers in one shape', () => {
+  const message = async (res: Response): Promise<unknown> =>
+    ((await res.json()) as { error?: { message?: unknown } }).error?.message;
+
+  it('says something readable on a 405', async () => {
+    const res = await handleVision(new Request('https://x/api/vision'), env());
+    expect(res.status).toBe(405);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(typeof (await message(res))).toBe('string');
+  });
+
+  it('says something readable on a 500', async () => {
+    const res = await handleVision(post(), env({ secret: '' }));
+    expect(res.status).toBe(500);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(typeof (await message(res))).toBe('string');
+  });
+
+  it('NEVER names an environment variable in a 500', async () => {
+    // The loud failure is deliberate — a missing `BUKI_TOKEN_SECRET` would verify every
+    // session as garbage and silently demote every subscriber — but loud to US, in the
+    // logs, not to whoever is asking. A 500 that names the variable it is missing is a
+    // configuration map handed to the caller.
+    for (const missing of ['secret', 'providerKey', 'extensionId'] as const) {
+      const res = await handleVision(post(), env({ [missing]: '' }));
+      const text = await res.text();
+      expect(text, missing).not.toMatch(/BUKI_|GEMINI_|POLAR_|secret|providerKey|extensionId/);
+    }
+  });
+});

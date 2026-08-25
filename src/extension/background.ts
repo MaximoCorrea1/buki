@@ -6,7 +6,7 @@
 // event. One writer means no cross-context race, and it means the right-click flow still
 // records an attempt on a tab whose content script never loaded.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
-import { createLlmVision, MAX_IMAGES, VisionHttpError } from '../recognizer/llmVision';
+import { createLlmVision, MAX_IMAGES } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
 import { readSettings, toVisionConfig, type Settings } from './settings';
@@ -20,7 +20,8 @@ import { rememberCover, liveCoverDeps } from './coverCache';
 import { PRICING_URL } from '../shared/pricing';
 import { createGate, WallError } from './gate';
 import { handleSaveBook, type SaveBookDeps } from './saveBook';
-import { readPro, writePro, createSessionKeeper, type ProState } from './proState';
+import { readPro, writePro, createSessionKeeper, forgetSession, type ProState } from './proState';
+import { readVisionFailure, NoKeyError, type VisionFailure } from './visionFailure';
 import { createLicense } from './license';
 import { BUKI_HOST } from '../shared/host';
 import { visionRoute } from './visionRoute';
@@ -111,23 +112,52 @@ const keepSession = createSessionKeeper({
   now: () => Date.now(),
 });
 
-class NoKeyError extends Error {}
+/**
+ * WHAT TO DO ABOUT A FAILED COVER READ, and it is no longer one predicate.
+ *
+ * This was `needsSetup = NoKeyError || (VisionHttpError && permanent)`, and `permanent` is
+ * `status < 500 && status !== 429 && status !== 408`. So **401 and 402 both told the reader
+ * their setup was broken and opened the options page**, and both statements are false: a
+ * 401 means our session needs re-exchanging (AC-3), a 402 means WE paused the trial (AC-7).
+ * Neither is anything a keyless reader can act on, because a keyless reader configured
+ * nothing — they installed the extension.
+ *
+ * The classification lives in `visionFailure.ts`, because this file registers listeners at
+ * module scope and no test can import it. That is finding M-5, and the reason `saveBook.ts`,
+ * `ensureTray.ts`, `activateKey.ts` and `realClick.ts` all live outside it too.
+ */
+async function failureFor(err: unknown): Promise<VisionFailure> {
+  try {
+    const settings = await readSettings();
+    return readVisionFailure(err, { ownKey: settings.apiKey.trim() !== '' });
+  } catch {
+    // Settings unreadable. Assume the PROXY path, which is the one that never blames the
+    // reader: guessing "own key" here would show a setup message to somebody with no setup.
+    return readVisionFailure(err, { ownKey: false });
+  }
+}
 
 /**
- * Would opening settings fix this? A missing key or a retired model will fail forever;
- * a rate limit or an outage will not. Saying "try again in a moment" to the first kind
- * sends people in circles - a retired model answered 404 on every retry for real.
+ * Forget a session the server will no longer honour, so the NEXT catch re-exchanges.
+ *
+ * A rotated `BUKI_TOKEN_SECRET`, a bumped `TOKEN_VERSION`, or a licence named in
+ * `BUKI_REVOKED_KEY_IDS` all arrive here as a 401. Without this the extension carried a
+ * dead token until it aged out — up to eight days of the wall the customer paid to pass,
+ * with `policy.ts:51` and `visionHandler.ts:63` both documenting the fix in prose that
+ * nothing executed. **It is the only lever that makes a secret rotation survivable.**
+ *
+ * ONE FAILED CATCH, NOT A RETRY LOOP, and that is deliberate. Retrying inside the catch
+ * would put a second upstream request on the money path for a case that only happens
+ * during an incident. The card says to try again; the next press works.
  */
-const needsSetup = (err: unknown): boolean =>
-  err instanceof NoKeyError || (err instanceof VisionHttpError && err.permanent);
-
-function setupMessage(err: unknown): string {
-  if (err instanceof NoKeyError) {
-    return 'Add a recognition key in Buki settings to read covers.';
+async function forgetDeadSession(): Promise<void> {
+  try {
+    const held = await readPro(chrome.storage.local);
+    if (held.session) await writePro(chrome.storage.local, forgetSession(held));
+  } catch (err) {
+    // Never worth failing a catch over: the next renewal tries again regardless.
+    console.error('[Buki] could not clear a dead session', err);
   }
-  // The provider's own words: it names the retired model, the revoked key, the bad
-  // endpoint. Far more use than "something went wrong".
-  return `Recognition needs setting up: ${err instanceof Error ? err.message : String(err)}`;
 }
 
 /** The shelf is the product; the log is diagnostics. A log failure never breaks a save. */
@@ -475,10 +505,14 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       await wallCard(tabId, job);
       return;
     }
-    if (needsSetup(err)) {
+    const failure = await failureFor(err);
+    if (failure.act === 'session') void forgetDeadSession();
+    if (failure.act !== 'transient') {
       if (!(err instanceof NoKeyError)) console.error('[Buki] recognition failed', err);
-      await failCard(tabId, job, setupMessage(err));
-      void chrome.runtime.openOptionsPage();
+      await failCard(tabId, job, failure.message);
+      // ONLY when settings is genuinely where the fix is. Opening it for a 401 or a 402
+      // sends somebody to a page with nothing on it they can change.
+      if (failure.act === 'setup') void chrome.runtime.openOptionsPage();
       return;
     }
     console.error('[Buki] recognition failed', err);
@@ -653,22 +687,29 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
         alreadySaved: await shelvedAmong(recognized.result.candidates),
       } satisfies BackgroundResponse);
     })
-    .catch((err: unknown) => {
+    .catch(async (err: unknown) => {
       // Unfinished setup is not a miss - logging it would make the recognizer look bad
       // for something it was never given a chance to do.
       if (!(err instanceof NoKeyError) && !(err instanceof WallError)) {
         console.error('[Buki] recognition failed', err);
       }
+      const failure = await failureFor(err);
+      if (failure.act === 'session') void forgetDeadSession();
       // A wall is an answer, not a miss. Counting it would make the kept rate - the one
       // number this product reports about itself - drop every time somebody met the offer.
-      if (!needsSetup(err) && !(err instanceof WallError)) {
+      //
+      // Nor is a setup problem, for the reason above. A CLOSED TRIAL is not a miss either,
+      // and neither is our own server refusing us: both would make the recogniser look bad
+      // for something we did, which is exactly the accounting `noteFailure` exists to keep
+      // honest.
+      if (failure.act === 'transient' && !(err instanceof WallError)) {
         noteFailure(Date.now() - startedAt, 'button');
       }
 
       sendResponse({
         ok: false,
-        needsSetup: needsSetup(err),
-        error: needsSetup(err) ? setupMessage(err) : String(err),
+        needsSetup: failure.act === 'setup',
+        error: failure.act === 'transient' ? String(err) : failure.message,
         // The button path answers the page directly, so the wall travels as a flag rather
         // than as its own message. Same decision, different carrier.
         ...(err instanceof WallError ? { wall: true } : {}),

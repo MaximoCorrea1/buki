@@ -164,16 +164,36 @@ export async function ensureSession(
 
   if (result.retryable) return pro;
 
-  // The session goes and the key stays — and so does the activation. This install is
-  // still paired with Polar, so dropping the id would make the next successful exchange
-  // activate a SECOND time for the same machine.
-  const next: ProState = {
-    key: pro.key,
-    session: null,
-    ...(pro.activationId ? { activationId: pro.activationId } : {}),
-  };
+  const next = forgetSession(pro);
   await deps.save(next);
   return next;
+}
+
+/**
+ * The session goes; everything that identifies this install stays.
+ *
+ * The key stays because it is what lets the options page say what is wrong. **The activation
+ * stays because this install is still paired with Polar**, and dropping the id would make
+ * the next successful exchange activate a SECOND time for the same machine — burning one of
+ * five permanent slots. That is the bug item 27 was filed for, twice.
+ *
+ * A FUNCTION RATHER THAN FOUR LINES, since 2026-08-25, because it grew a second caller.
+ * `ensureSession` above does this when Polar refuses outright; `background.ts` now does it
+ * when `/api/vision` answers 401, which means the token is no longer one the server will
+ * honour — a rotated `BUKI_TOKEN_SECRET`, a bumped `TOKEN_VERSION`, a revoked licence — and
+ * the fix is to forget it so the next catch exchanges the licence again. That is AC-3, and
+ * it is the only lever that makes a secret rotation survivable.
+ *
+ * Two copies of "which fields survive" would be two chances to drop the activation id.
+ */
+export function forgetSession(pro: ProState): ProState {
+  return {
+    key: pro.key,
+    session: null,
+    // Omitted rather than empty-stringed, matching every other writer's conditional spread,
+    // so a record that never had one round-trips unchanged.
+    ...(pro.activationId ? { activationId: pro.activationId } : {}),
+  };
 }
 
 /**

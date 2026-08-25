@@ -114,6 +114,32 @@ export function createLicense(deps: LicenseDeps): {
           typeof (body as { error?: unknown })?.error === 'string'
             ? ((body as { error: string }).error)
             : undefined;
+
+        // A 403 THAT IS ABOUT US IS NOT A VERDICT ON THE LICENCE, and two 403s from this
+        // endpoint mean opposite things. `code: 'licence'` is Polar's answer about this key
+        // — revoked, wrong, limit reached — and the session should go. `code: 'origin'` is
+        // OUR Origin check refusing the caller, which on launch day means
+        // `BUKI_EXTENSION_ID` is not the shipped id.
+        //
+        // Read as the first, the second erases a paying customer's session on EVERY
+        // renewal, while `/api/vision` keeps serving token-bearing requests because it skips
+        // the Origin check when a token is present. **So nobody finds out for eight days**,
+        // by which time every subscriber has been signed out by a status that was never
+        // about them. Item 39 could not close that from either half; this field is what
+        // closes it, and it could not have been added after publication.
+        //
+        // An UNCODED 403 stays final, which is the safe direction: believing the status can
+        // only ever cost one re-exchange, where the reverse would keep a dead licence alive.
+        if ((body as { code?: unknown })?.code === 'origin') {
+          // The whole diagnostic surface. There is no telemetry in this product by design,
+          // so a service-worker log line is the only thing that will ever say this out loud.
+          console.error(
+            '[Buki] the licence server does not recognise this extension. ' +
+              'BUKI_EXTENSION_ID is almost certainly not the published id — see OPENWORK item 37. ' +
+              'Keeping the session; it rides the grace window until this is fixed.',
+          );
+          return { ok: false, retryable: true, ...(message ? { message } : {}) };
+        }
         // A BAD MINUTE PASSES; AN ANSWER ABOUT THIS KEY DOES NOT. Only the second should
         // make the caller throw its session away.
         //

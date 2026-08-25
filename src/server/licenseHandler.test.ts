@@ -416,3 +416,123 @@ describe('a bad minute at Polar is not an answer about this licence', () => {
     expect(text).not.toContain('stack trace');
   });
 });
+
+/**
+ * ONE ENVELOPE, AND A CODE THE CLIENT CAN ACT ON.
+ *
+ * Two findings in one block, because they are the same edit.
+ *
+ * **AC-8:** `405` and `500` returned BARE TEXT with no content-type, so `license.ts` — which
+ * reads `body.error` as a string — extracted nothing on exactly the two statuses meaning the
+ * server itself is broken.
+ *
+ * **AND THE ONE THE REVIEW DID NOT FILE.** A mismatched `BUKI_EXTENSION_ID` makes the Origin
+ * check refuse EVERY renewal with 403, while `/api/vision` keeps serving token-bearing
+ * requests — so the failure is invisible until tokens age out, eight days later, and by then
+ * every subscriber has had their session erased by a 403 that was never about their licence.
+ * That is item 39's trigger (c), which item 39 could not close from either half.
+ *
+ * A `code` on the envelope is what lets the client tell "your licence is refused" apart from
+ * "our server is misconfigured". One field today; impossible against clients in the wild.
+ */
+describe('one envelope, and a machine-readable code', () => {
+  const read = async (res: Response): Promise<{ error?: unknown; code?: unknown }> =>
+    (await res.json()) as { error?: unknown; code?: unknown };
+
+  it('says something readable on a 405', async () => {
+    const res = await handleLicense(new Request('https://x/api/license'), env());
+    expect(res.status).toBe(405);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(typeof (await read(res)).error).toBe('string');
+  });
+
+  it('says something readable on a 500', async () => {
+    const res = await handleLicense(post({ key: 'K' }), env({ secret: '' }));
+    expect(res.status).toBe(500);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(typeof (await read(res)).error).toBe('string');
+  });
+
+  it('NEVER names an environment variable in a 500', async () => {
+    const res = await handleLicense(post({ key: 'K' }), env({ polarToken: '' }));
+    const text = await res.text();
+    expect(text).not.toMatch(/BUKI_|GEMINI_|POLAR_|polarToken|organizationId/);
+  });
+
+  it('marks an ORIGIN refusal as ours, not as an answer about the licence', async () => {
+    // The whole point. This 403 means our server does not recognise the caller, which on
+    // launch day means `BUKI_EXTENSION_ID` is not the shipped id. It is not a statement
+    // about the customer's subscription, and the client must not erase a session over it.
+    const res = await handleLicense(
+      new Request('https://get-buki.vercel.app/api/license', {
+        method: 'POST',
+        headers: { origin: 'chrome-extension://the-wrong-id', 'content-type': 'application/json' },
+        body: JSON.stringify({ key: 'K' }),
+      }),
+      env(),
+    );
+    expect(res.status).toBe(403);
+    expect((await read(res)).code, 'the client cannot tell this from a revoked licence').toBe(
+      'origin',
+    );
+  });
+
+  it('marks a refusal that IS about the licence differently', async () => {
+    // Revoked, wrong key, activation limit reached. Same status, different meaning, and the
+    // difference is the whole reason the field exists.
+    const fetch = vi.fn(async () => new Response('Activation limit reached', { status: 403 }));
+    const res = await handleLicense(post({ key: 'K' }), env({ fetch }));
+    expect(res.status).toBe(403);
+    expect((await read(res)).code).toBe('licence');
+  });
+
+  it('marks our own rate limit, so it is never read as a licence problem', async () => {
+    const res = await handleLicense(post({ key: 'K' }), env({ keyCap: () => true }));
+    expect(res.status).toBe(429);
+    expect((await read(res)).code).toBe('cap');
+  });
+
+  it('marks an outage', async () => {
+    const fetch = vi.fn(async () => new Response('gateway', { status: 502 }));
+    const res = await handleLicense(post({ key: 'K' }), env({ fetch }));
+    expect(res.status).toBe(503);
+    expect((await read(res)).code).toBe('upstream');
+  });
+
+  it('gives EVERY refusal a code, so a client can branch on any of them', async () => {
+    // GUARDS THE VACUOUS PASS. Checking four codes proves nothing about the fifth; this
+    // walks the rest of the refusals the handler can produce and insists each carries one.
+    const unreachable = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    const refusals: [string, Response][] = [
+      ['no key', await handleLicense(post({ key: '  ' }), env())],
+      ['unreachable', await handleLicense(post({ key: 'K' }), env({ fetch: unreachable }))],
+      [
+        'unexpected shape',
+        await handleLicense(
+          post({ key: 'K' }),
+          env({ fetch: vi.fn(async () => new Response('not json', { status: 200 })) }),
+        ),
+      ],
+      [
+        'not granted',
+        await handleLicense(
+          post({ key: 'K' }),
+          env({
+            fetch: vi.fn(
+              async () =>
+                new Response(JSON.stringify({ id: 'a', license_key: { id: 'lk', status: 'revoked' } }), {
+                  status: 200,
+                }),
+            ),
+          }),
+        ),
+      ],
+    ];
+    for (const [label, res] of refusals) {
+      expect(res.ok, label).toBe(false);
+      expect(typeof (await read(res)).code, `${label} carries no code`).toBe('string');
+    }
+  });
+});

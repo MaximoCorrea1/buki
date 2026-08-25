@@ -16,6 +16,26 @@
  *  takes effect the same day. */
 export const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * WHICH SHAPE THIS IS, so a migration cannot fail open.
+ *
+ * `verify` used to check only `typeof claim.exp === 'number'`, which the 2026-08-24 review
+ * filed as AC-4: **a shape change fails OPEN and SILENTLY in both directions.** An older
+ * server hands a newer token a `valid` verdict with fields it does not understand, and a
+ * newer one does the same with an older token. Neither is a forgery — both are correctly
+ * signed — which is exactly why the signature check cannot catch it.
+ *
+ * A rejected version reads as `bad`, not `dead`, and that is the point rather than an
+ * accident: `policy.ts` turns `bad` into **401**, and 401 is the one status that tells the
+ * extension to exchange its licence key again. So bumping this number is a migration the
+ * clients perform themselves, one catch each, instead of an outage.
+ *
+ * **BUMP IT whenever the payload's meaning changes** — a field added, removed, or given a
+ * new interpretation. It is free to get right and impossible to add later: the day there
+ * are tokens in the wild, introducing a required field signs every one of them out at once.
+ */
+export const TOKEN_VERSION = 1;
+
 /** How long past expiry a token may still buy service when Polar cannot be reached.
  *  A week: an outage longer than that is not an outage. */
 export const GRACE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -27,6 +47,8 @@ export interface Claim {
 
 export interface SignedClaim extends Claim {
   exp: number;
+  /** The shape this was minted as. See TOKEN_VERSION. */
+  v: number;
 }
 
 export type Verdict =
@@ -94,7 +116,9 @@ export async function sign(claim: Claim, secret: string, now: number): Promise<s
   // Encoded through TextEncoder rather than handed to btoa directly: btoa throws on any
   // code point above 255, and a server that 500s on one unexpected character in an id is
   // a licence nobody can activate.
-  const payload = toBase64Url(encoder.encode(JSON.stringify({ ...claim, exp: now + TOKEN_TTL_MS })));
+  const payload = toBase64Url(
+    encoder.encode(JSON.stringify({ ...claim, exp: now + TOKEN_TTL_MS, v: TOKEN_VERSION })),
+  );
   const mac = await crypto.subtle.sign('HMAC', await key(secret), encoder.encode(payload));
   return `${payload}.${toBase64Url(new Uint8Array(mac))}`;
 }
@@ -125,15 +149,27 @@ export async function verify(token: string, secret: string, now: number): Promis
   } catch {
     return { state: 'bad' };
   }
-  // THE SHAPE, not just the expiry. This checked only `exp`, so a payload without
-  // `licenseKeyId` came back `valid` with the field `undefined` — the review's AC-4, and it
-  // fails OPEN in both directions of a shape migration.
+  // THE SHAPE, NOT JUST THE EXPIRY, and both halves of the review's AC-4 live here.
   //
-  // It stopped being theoretical on 2026-08-25: `proCap` keys a per-licence rate limit on
-  // exactly this field, and a cap keyed on `undefined` is a cap on nobody. Every token this
-  // repo mints carries it (`sign` takes a `Claim` that requires it) and none are in the
-  // wild, so requiring it costs nothing today and cannot be added the day after launch.
-  if (typeof claim?.exp !== 'number') return { state: 'bad' };
+  // This checked only `typeof claim.exp === 'number'`, so **a shape migration failed OPEN
+  // and SILENTLY in both directions**. Neither direction is a forgery — both tokens are
+  // correctly signed — which is exactly why the MAC check above cannot tell them apart.
+  //
+  // VERSION FIRST, because it is what makes the two checks below meaningful. A version we
+  // do not recognise is not a token we can reason about at all: older than us and it may
+  // lack a field we now require, newer and it may mean something different by one we do
+  // read. Bumping `TOKEN_VERSION` is therefore a migration the clients run themselves, one
+  // catch each, rather than an outage.
+  //
+  // THEN `licenseKeyId`, which stopped being theoretical on 2026-08-25: `proCap` keys a
+  // per-licence rate limit on exactly this field, and a cap keyed on `undefined` is a cap
+  // on nobody.
+  //
+  // All of it costs nothing today and is unavailable the day after launch, because the day
+  // there are tokens in the wild, requiring a new field signs every one of them out at once.
+  // That is item 44's whole argument.
+  if (claim?.v !== TOKEN_VERSION) return { state: 'bad' };
+  if (typeof claim.exp !== 'number') return { state: 'bad' };
   if (typeof claim.licenseKeyId !== 'string' || claim.licenseKeyId === '') {
     return { state: 'bad' };
   }

@@ -51,14 +51,22 @@ const json = (body: unknown, status: number): Response =>
 const refuse = (message: string, status: number): Response => json({ error: { message } }, status);
 
 export async function handleVision(request: Request, env: VisionEnv): Promise<Response> {
-  if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+  // THROUGH `refuse`, LIKE EVERY OTHER REFUSAL ON THIS ENDPOINT. This and the 500 below
+  // returned bare text with no content-type, which the review filed as AC-8: the client
+  // extracted no message on exactly the two statuses meaning the server itself is broken,
+  // and showed the reader `HTTP 405` instead. `llmVision.explain()` reads
+  // `{ error: { message } }`, so that is what it gets.
+  if (request.method !== 'POST') return refuse('Buki reads covers by POST only.', 405);
 
   // Refuse to run half-configured. A missing secret makes every token verify as garbage,
   // which silently demotes every subscriber to the trial path — the loudest possible
   // failure is the safest one here.
   if (!env.secret || !env.providerKey || !env.extensionId) {
     console.error('[buki] misconfigured: missing environment');
-    return new Response('Server not configured', { status: 500 });
+    // LOUD TO US, IN THE LOGS; VAGUE TO WHOEVER IS ASKING. The log line above names
+    // nothing either, and this must not: a 500 that says WHICH variable is missing is a
+    // configuration map handed to a stranger. `visionHandler.test.ts` asserts the absence.
+    return refuse('Buki is not set up to read covers just now.', 500);
   }
 
   // AN EARLY-OUT, NOT THE CONTROL. `content-length` is caller-supplied and a runtime may

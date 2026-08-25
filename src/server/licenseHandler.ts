@@ -66,12 +66,46 @@ interface Claim {
 const json = (body: unknown, status: number): Response =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
+/**
+ * WHY THIS WAS REFUSED, as a string a client can branch on.
+ *
+ * Two findings, one field.
+ *
+ * **AC-8** wanted one envelope. `405` and `500` returned bare text with no content-type, so
+ * `license.ts` — which reads `body.error` as a string — extracted nothing on exactly the two
+ * statuses meaning the server itself is broken.
+ *
+ * **The one the review did not file** is `origin`. A mismatched `BUKI_EXTENSION_ID` makes
+ * this check refuse EVERY renewal with 403 while `/api/vision` keeps serving token-bearing
+ * requests, so the failure is invisible until tokens age out eight days later — and by then
+ * every subscriber has had their session erased by a 403 that was never about their licence.
+ * A status alone cannot carry that difference: two 403s here mean opposite things.
+ *
+ *   origin    we do not recognise the caller. OURS to fix, never the customer’s
+ *   request   the body was not a licence exchange
+ *   cap       our own per-key brake. Passes on its own
+ *   licence   Polar's answer about this key. Revoked, wrong, activation limit reached
+ *   shape     Polar answered something we could not read
+ *   upstream  Polar had a bad minute. Passes on its own
+ *
+ * **Adding this after publication is impossible**, which is item 44’s whole argument: a
+ * client in the wild that has never heard of `code` cannot be taught to read one.
+ */
+type Refusal = 'origin' | 'request' | 'cap' | 'licence' | 'shape' | 'upstream';
+
+const refuse = (error: string, code: Refusal, status: number): Response =>
+  json({ error, code }, status);
+
 export async function handleLicense(request: Request, env: LicenseEnv): Promise<Response> {
-  if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+  if (request.method !== 'POST') {
+    return refuse('Buki exchanges licences by POST only.', 'request', 405);
+  }
 
   if (!env.secret || !env.polarToken || !env.organizationId || !env.extensionId) {
     console.error('[buki] misconfigured: missing environment');
-    return new Response('Server not configured', { status: 500 });
+    // Vague on purpose, and asserted to be. Naming the missing variable would hand a
+    // stranger the configuration of the endpoint standing on our Polar credential.
+    return refuse('Buki is not set up to check licences just now.', 'request', 500);
   }
 
   // WHO MAY ASK. Without this the endpoint is an open licence-key oracle standing on our
@@ -87,7 +121,11 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
   // having on `/api/vision`: it closes the casual path entirely, and there was nothing
   // here at all before. It is not a substitute for a spend cap on the provider key.
   if (!fromExtension(request.headers.get('origin'), env.extensionId)) {
-    return json({ error: 'Not authorised' }, 403);
+    // `origin`, NOT `licence`, and that distinction is the whole of the new field. This
+    // 403 says we do not recognise the caller — which on launch day means
+    // `BUKI_EXTENSION_ID` is not the shipped id. It is not a statement about anybody’s
+    // subscription, and `license.ts` must not erase a paying session over it.
+    return refuse('Not authorised', 'origin', 403);
   }
 
   let key: string;
@@ -97,9 +135,9 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
     key = body.key?.trim() ?? '';
     activationId = body.activationId?.trim() ?? '';
   } catch {
-    return json({ error: 'Bad request' }, 400);
+    return refuse('Bad request', 'request', 400);
   }
-  if (!key) return json({ error: 'No licence key' }, 400);
+  if (!key) return refuse('No licence key', 'request', 400);
 
   const renewing = Boolean(activationId);
 
@@ -123,7 +161,11 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
   if (env.keyCap(key, renewing ? 'validate' : 'activate', env.now())) {
     // States the fact and names the one thing that fixes it. A customer can meet this too
     // — five installs on a bad network day — so it never reads as an accusation.
-    return json({ error: 'Too many licence checks for this key today. Try again tomorrow.' }, 429);
+    return refuse(
+      'Too many licence checks for this key today. Try again tomorrow.',
+      'cap',
+      429,
+    );
   }
 
   /**
@@ -165,7 +207,7 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
     // Polar is unreachable. 503, NOT 403: a 4xx makes the extension throw its session
     // away during OUR outage, which is the exact moment the grace window exists to cover.
     console.error('[buki] polar unreachable', err);
-    return json({ error: 'upstream' }, 503);
+    return refuse('upstream', 'upstream', 503);
   }
 
   if (!res.ok) {
@@ -187,19 +229,18 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
     // could carry our Polar credential home.
     if (worthRetrying(res.status)) {
       console.error(`[buki] polar upstream ${res.status}`);
-      return json({ error: 'upstream' }, 503);
+      return refuse('upstream', 'upstream', 503);
     }
 
     // Polar's own words: revoked, wrong key, activation limit reached. Far more use than
     // "invalid licence", and the extension puts it straight in front of the customer.
     const detail = await res.text();
     console.info(`[buki] activate refused ${res.status}`);
-    return json(
-      {
-        // Trimmed, and scrubbed of our own credential. Quoting an upstream body verbatim
-        // is a common way for a server to publish the token it just used.
-        error: detail.split(env.polarToken).join('[redacted]').slice(0, 300),
-      },
+    return refuse(
+      // Trimmed, and scrubbed of our own credential. Quoting an upstream body verbatim
+      // is a common way for a server to publish the token it just used.
+      detail.split(env.polarToken).join('[redacted]').slice(0, 300),
+      'licence',
       403,
     );
   }
@@ -219,11 +260,11 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
           status: (parsed as PolarActivation).license_key?.status,
         };
   } catch {
-    return json({ error: 'Buki got an unexpected answer from the payment provider.' }, 502);
+    return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);
   }
 
   if (claim.status !== 'granted') {
-    return json({ error: 'That licence is not active.' }, 403);
+    return refuse('That licence is not active.', 'licence', 403);
   }
 
   const now = env.now();

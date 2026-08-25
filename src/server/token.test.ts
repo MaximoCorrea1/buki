@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sign, verify, TOKEN_TTL_MS, GRACE_MS, type Claim } from './token';
+import { sign, verify, TOKEN_TTL_MS, TOKEN_VERSION, GRACE_MS, type Claim } from './token';
 
 const SECRET = 'test-secret-not-the-real-one';
 const NOW = Date.UTC(2026, 7, 9, 12, 0, 0);
@@ -7,10 +7,14 @@ const CLAIM = { licenseKeyId: 'lk_1', activationId: 'act_1' };
 
 describe('sign and verify', () => {
   it('round-trips a claim', async () => {
+    // `v` is asserted here rather than only in its own block, because this is the fixture
+    // every other test copies. `OPENWORK.md` §5 records the cost of a round-trip test whose
+    // fixture is narrower than the thing it round-trips: `activationId` flowed perfectly in
+    // all 550 tests and never once in production, because no fixture carried it.
     const token = await sign(CLAIM, SECRET, NOW);
     expect(await verify(token, SECRET, NOW)).toEqual({
       state: 'valid',
-      claim: { ...CLAIM, exp: NOW + TOKEN_TTL_MS },
+      claim: { ...CLAIM, exp: NOW + TOKEN_TTL_MS, v: TOKEN_VERSION },
     });
   });
 
@@ -114,5 +118,88 @@ describe('the claim has to be a claim', () => {
     // The grace window runs on exactly this evidence, so tightening the shape check must
     // not narrow what counts as evidence.
     expect((await verify(token, SECRET, NOW + TOKEN_TTL_MS + 1000)).state).toBe('expired');
+  });
+});
+
+/**
+ * A TOKEN FROM A DIFFERENT VERSION OF THIS SERVER, correctly signed.
+ *
+ * The review's AC-4: **there is no version marker anywhere** — no `/v1/`, no header, no `v`
+ * in the payload — and `verify` checked only `typeof claim.exp === 'number'`. So a shape
+ * migration fails OPEN and SILENTLY in both directions: an old server hands a new token a
+ * `valid` verdict with fields it does not understand, and a new server does the same with an
+ * old one.
+ *
+ * The claim-shape half was closed on 2026-08-25 with item 40, because `proCap` started
+ * keying a rate limit on `licenseKeyId`. This is the version half.
+ *
+ * **It costs nothing today and is impossible after launch.** There are no tokens in the
+ * wild; the day there are, adding a required field to the payload signs every one of them
+ * out at once. That is item 44's whole argument.
+ */
+
+const enc = new TextEncoder();
+
+const b64url = (bytes: Uint8Array): string => {
+  let raw = '';
+  for (const byte of bytes) raw += String.fromCharCode(byte);
+  return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+/** Mint a token the way another version of this server would: correctly signed, other shape. */
+async function signAsAnotherVersion(payload: object, secret: string): Promise<string> {
+  const body = b64url(enc.encode(JSON.stringify(payload)));
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const mac = await crypto.subtle.sign('HMAC', key, enc.encode(body));
+  return `${body}.${b64url(new Uint8Array(mac))}`;
+}
+
+describe('the token carries its own version', () => {
+  const exp = NOW + TOKEN_TTL_MS;
+
+  it('signs the current version into every token', async () => {
+    const token = await sign(CLAIM, SECRET, NOW);
+    const payload = JSON.parse(
+      new TextDecoder().decode(
+        Uint8Array.from(
+          atob(token.split('.')[0]!.replace(/-/g, '+').replace(/_/g, '/')),
+          (ch) => ch.charCodeAt(0),
+        ),
+      ),
+    ) as { v?: unknown };
+    expect(payload.v).toBe(TOKEN_VERSION);
+  });
+
+  it('refuses a correctly signed token from an OLDER server', async () => {
+    // Exactly what this repo minted until 2026-08-25: no `v` at all. Correct signature,
+    // correct claim, and it must not be honoured, or the version marker means nothing.
+    const old = await signAsAnotherVersion({ ...CLAIM, exp }, SECRET);
+    expect((await verify(old, SECRET, NOW)).state).toBe('bad');
+  });
+
+  it('refuses a correctly signed token from a NEWER server', async () => {
+    // The other direction, which is the half that usually gets forgotten. A token whose
+    // shape this code does not understand must not be read as though it did.
+    const future = await signAsAnotherVersion({ ...CLAIM, exp, v: TOKEN_VERSION + 1 }, SECRET);
+    expect((await verify(future, SECRET, NOW)).state).toBe('bad');
+  });
+
+  it('refuses a version that is not a number at all', async () => {
+    const odd = await signAsAnotherVersion({ ...CLAIM, exp, v: '1' }, SECRET);
+    expect((await verify(odd, SECRET, NOW)).state).toBe('bad');
+  });
+
+  it('a rejected version reads as `bad`, which is the 401 the client can act on', async () => {
+    // NOT `dead`. `policy.ts` turns `bad` into 401, and 401 is the one status that tells
+    // the extension to exchange its licence key again — which is exactly the right move
+    // for a token minted by a server that no longer exists.
+    const old = await signAsAnotherVersion({ ...CLAIM, exp }, SECRET);
+    expect(await verify(old, SECRET, NOW)).toEqual({ state: 'bad' });
   });
 });
