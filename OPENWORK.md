@@ -40,7 +40,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
 | ~~38~~ | agent | ~~`/api/vision` forwards the body verbatim.~~ **DONE 2026-08-25.** The body is REBUILT, not relayed: `src/server/visionBody.ts` pins the model, clamps `max_tokens`, caps bytes/images/prompt, and emits a three-key allowlist so `n`, `service_tier`, `stream` and `extra_body` have nowhere to go. Six mutations run against the new guards, **six caught** | — |
 | ~~39~~ | agent | ~~A Polar 5xx becomes 403 and the extension deletes a paying subscriber's session.~~ **DONE 2026-08-25.** Both halves. The rule now lives once, in `src/shared/retry.ts`, used by `licenseHandler`, `license.ts` AND `llmVision.ts` — the two clients that had drifted. **Six mutations, six caught**, in both directions | — |
-| **40** | agent | **No rate limit at all on the licensed path.** An 8-day unrevocable bearer with no ceiling | bounds a leaked token |
+| ~~40~~ | agent | ~~No rate limit at all on the licensed path.~~ **DONE 2026-08-25.** `proCap.ts`: 500 catches per LICENCE per day, keyed on the `licenseKeyId` `decideAccess` was already computing and throwing away. Plus `BUKI_REVOKED_KEY_IDS`, the first targeted incident lever this product has. **A leaked token is now worth about $0.54 for its whole life.** Six mutations, six caught | — |
 | ~~41~~ | agent | ~~A hostile page can drive the tray.~~ **DONE 2026-08-25.** Three seams, each extracted and tested for real: `realClick.ts` (`isTrusted`, on real events), `feedHost.ts` (the scanner arms only on X), `twitterImage.isTweetMedia` (hostname, not substring). `contentSafety.test.ts` proves the ABSENCE of any second way in. **Seven mutations, seven caught** | — |
 | **42** | agent | **The card's x is a free-read button.** Abort skips the spend; the server never cancels Gemini | the trial's only real ceiling |
 | **43** | agent | **The options page's slot reuse is deletable with 620/620 green.** MUTATION-PROVEN. Fix by extraction | five presses lock a paying customer out |
@@ -440,7 +440,45 @@ unblocks.
       429 does it too. `grep -c 'status: 5' licenseHandler.test.ts` -> **0**. Found by FOUR
       independent reviewers. **Both halves must land, or it is half a fix.**
 
-- [ ] **40. NO RATE LIMIT OF ANY KIND ON THE LICENSED PATH.** Both brakes sit inside
+- [x] **40. NO RATE LIMIT OF ANY KIND ON THE LICENSED PATH.** **DONE 2026-08-25.**
+
+      **`CATCHES_PER_LICENCE_PER_DAY = 500`**, keyed on `access.licenseKeyId` — the field
+      that was already in the signed claim, already returned by `decideAccess`, and already
+      discarded by `handleVision` on every request. No new plumbing, only a value that
+      stopped being thrown away. The ceiling is an order of magnitude above
+      `TRIAL_PER_IP_PER_DAY = 40`, which this repo documents as "well above what one person
+      could legitimately do", because a brake a customer can FEEL makes "unlimited, no
+      throttling" false.
+
+      **TWO OF THE REVIEW'S FOUR SUGGESTIONS WERE DECLINED, and the reasoning is the useful
+      part.**
+
+      - *A tighter ceiling for `grace: true` traffic* — **not done.** Grace is where a
+        stolen token spends most of its life, so it looks like the leverage point. But the
+        wall it would raise falls on a real subscriber DURING A REAL OUTAGE, which is
+        precisely the failure item 39 was filed to fix. With the per-licence cap in place
+        the grace tail is already bounded, so the sub-ceiling buys almost nothing and risks
+        the one thing grace exists to prevent.
+      - *Shortening `GRACE_MS` to 48h* — **not done, and the arithmetic is why.** Once the
+        cap exists, seven days versus two is the difference between **$0.54** and **$0.135**
+        of exposure per leaked token. Thirty-four cents is not worth weakening the outage
+        protection the previous item was filed to strengthen. **The cap is doing all the
+        work; the window length barely matters any more.**
+      - *A per-licence cap* — done, as above.
+      - *`BUKI_REVOKED_KEY_IDS`* — done, and it turned out to be the most valuable of the
+        four. `launch.md`'s "If something goes wrong" table listed exactly three levers and
+        **every one was all-or-nothing**, including "remove `GEMINI_API_KEY`", which 500s
+        the product for payers too. This is the first targeted one. Unset is the normal
+        state, like `BUKI_TRIAL_CLOSED`, so it adds nothing to launch day.
+
+      **Half of AC-4 closed in the same commit, because item 40 made it load-bearing.**
+      `verify()` checked only `typeof claim.exp === 'number'`, so a token with no
+      `licenseKeyId` returned `valid` with the field `undefined` — and a rate limit keyed on
+      `undefined` is a rate limit on nobody. It now requires a non-empty string. **There are
+      no tokens in the wild, so this cost nothing today and is unavailable the day after
+      launch.** See item 44.
+
+      *Original text:* Both brakes sit inside
       `if (access.kind === 'trial')` at `visionHandler.ts:80`, and `policy.ts` skips the Origin
       check entirely when a token is present. `decideAccess` returns `licenseKeyId` and
       `handleVision` reads only `.kind` - **the field a per-licence cap would key on is
@@ -515,6 +553,32 @@ unblocks.
       not take. Fix by extraction (`activateKey.ts`), the way `saveBook.ts` did it, not by
       another string guard.
 
+
+- [ ] **44. THE WIRE CONTRACT IS FREE TO CHANGE UNTIL PUBLICATION, AND NEVER AGAIN.**
+      **Filed 2026-08-25**, out of doing items 38-40. Not a new defect — a new DEADLINE on
+      four the review already filed, and the reason to treat those four as one item.
+
+      **AC-3, AC-4, AC-7 and AC-8 share a sentence:** *"cannot be added to clients already
+      in the wild."* Today there are none. That stays true until the item is published and
+      is false for ever afterwards. Together they cost about a morning; after launch they
+      cost a migration nobody can run.
+
+      | Finding | What is missing | What it costs after launch |
+      | --- | --- | --- |
+      | AC-3 | The client has no 401 handler at all. `policy.ts:51` and `visionHandler.ts:63` both document the contract; `grep 401 src/extension/` finds two comments and zero handlers | **A `BUKI_TOKEN_SECRET` rotation becomes unsurvivable.** It is also what would make item 40's new revocation lever HEAL a client rather than merely refuse it |
+      | AC-4 | No version marker anywhere — no `/v1/`, no header, no `v` in the token payload. **Half closed 2026-08-25**: `verify` now requires `licenseKeyId`. The version half is untouched | Any shape migration fails open and silent, in both directions |
+      | AC-7 | 402 (the trial kill switch) is indistinguishable from a setup failure, so the client opens the options page | **The kill switch cannot be flipped without telling every trial user their setup is broken** — and it is one of only three pre-existing incident levers |
+      | AC-8 | Three error envelopes across two endpoints, and 405/500 return BARE TEXT with no content-type | The client extracts no message on exactly the two statuses that mean "the server itself is broken" |
+
+      **A fifth thing belongs here and is not in the review.** A mismatched
+      `BUKI_EXTENSION_ID` 403s every renewal from the Origin check while `/api/vision` keeps
+      serving token-bearing requests, so the failure stays invisible until tokens age out.
+      That is item 39's trigger (c), which item 39 could not close from either half. A
+      machine-readable error code on the licence endpoint is what turns it into a day-one
+      symptom instead of a day-eight one.
+
+      **Do this before step 5 of `launch.md`, beside item 38's gate.** After publication
+      every one of these becomes a permanent property of whatever is already installed.
 
 Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8, 23 and 24
 are all done.** The landing is finished top to bottom, the extension has caught up to it,

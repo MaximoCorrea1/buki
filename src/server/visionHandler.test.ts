@@ -25,6 +25,8 @@ const env = (over: Partial<VisionEnv> = {}): VisionEnv => ({
   fetch: vi.fn(async () => new Response(JSON.stringify({ choices: [] }), { status: 200 })),
   now: () => NOW,
   ipCap: () => false,
+  proCap: () => false,
+  revoked: () => false,
   ...over,
 });
 
@@ -316,5 +318,104 @@ describe('what the proxy actually buys', () => {
     expect(content?.filter((p) => p.type === 'image_url').length).toBe(4);
     expect(JSON.stringify(content)).toContain('read these');
     expect(JSON.stringify(content)).toContain('PICTURE3');
+  });
+});
+
+/**
+ * THE BRAKES ON THE PAID PATH, WHICH HAD NONE.
+ *
+ * Both existing brakes live inside `if (access.kind === 'trial')`, under a comment saying
+ * that stopping somebody who is paying is the worst possible place to save a hundredth of a
+ * cent. That is sound for a $0.00011 catch and stops being sound once the caller picks what
+ * a catch costs — which is what the block above fixes, and why these two ship together.
+ *
+ * `decideAccess` has always returned `licenseKeyId`. `handleVision` read only `.kind`, so
+ * the field a per-licence cap would key on was computed and thrown away on every request.
+ */
+describe('a session token is no longer an unlimited one', () => {
+  const proToken = (licenseKeyId = 'lk_1'): Promise<string> =>
+    sign({ licenseKeyId, activationId: 'act_1' }, SECRET, NOW);
+
+  const asPro = async (over: Partial<VisionEnv> = {}, id = 'lk_1'): Promise<Response> =>
+    handleVision(
+      post({ headers: { authorization: `Bearer ${await proToken(id)}` } }),
+      env(over),
+    );
+
+  it('refuses a licence that has had too many catches today', async () => {
+    const fetch = vi.fn(async () => new Response('{"choices":[]}', { status: 200 }));
+    const res = await asPro({ proCap: () => true, fetch });
+    expect(res.status).toBe(429);
+    expect(fetch, 'a refused catch still cost us a request').not.toHaveBeenCalled();
+  });
+
+  it('serves the same subscriber when they are under it', async () => {
+    expect((await asPro({ proCap: () => false })).status).toBe(200);
+  });
+
+  it('keys the cap on the LICENCE, not on the request', async () => {
+    // The point of using `licenseKeyId`: two installs of one subscription share an
+    // allowance, and one leaked token cannot spend somebody else's.
+    const seen: string[] = [];
+    await asPro({ proCap: (id) => { seen.push(id); return false; } }, 'lk_theirs');
+    expect(seen).toEqual(['lk_theirs']);
+  });
+
+  it('never asks the pro cap about a trial request', async () => {
+    // The trial has its own two brakes and its own counter. Asking both would count one
+    // catch twice and give the trial a ceiling nobody chose.
+    const proCap = vi.fn(() => true);
+    const res = await handleVision(post(), env({ proCap }));
+    expect(proCap).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+  });
+
+  it('still never applies the IP cap to a subscriber', async () => {
+    // The old rule has to survive the new one. A per-licence ceiling is a brake a
+    // subscriber shares with themselves; a per-IP one is a brake they share with a café.
+    expect((await asPro({ ipCap: () => true })).status).toBe(200);
+  });
+});
+
+describe('a licence can be turned off without rotating the secret', () => {
+  /**
+   * THE ONLY TARGETED LEVER in a design with no database. The token is stateless on
+   * purpose — that is what makes a Polar outage invisible and leaves nothing to migrate or
+   * leak — and the price is that a leaked or refunded one keeps working for up to eight
+   * days. Until now the only answer was rotating `BUKI_TOKEN_SECRET`, which signs out every
+   * subscriber at once.
+   */
+
+  const proToken = (licenseKeyId: string): Promise<string> =>
+    sign({ licenseKeyId, activationId: 'act_1' }, SECRET, NOW);
+
+  it('refuses a revoked licence with 401, so the extension re-exchanges and finds out', async () => {
+    // 401, not 403. 401 is the one status that tells the client an action can fix this:
+    // it re-exchanges, Polar answers about the real state of the subscription, and the
+    // extension ends up in the right place either way.
+    const fetch = vi.fn(async () => new Response('{"choices":[]}', { status: 200 }));
+    const res = await handleVision(
+      post({ headers: { authorization: `Bearer ${await proToken('lk_leaked')}` } }),
+      env({ revoked: (id) => id === 'lk_leaked', fetch }),
+    );
+    expect(res.status).toBe(401);
+    expect(fetch, 'a revoked licence still spent a request').not.toHaveBeenCalled();
+  });
+
+  it('leaves every other subscriber alone', async () => {
+    const res = await handleVision(
+      post({ headers: { authorization: `Bearer ${await proToken('lk_paying')}` } }),
+      env({ revoked: (id) => id === 'lk_leaked' }),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it('checks revocation BEFORE the cap, because it is the cheaper refusal', async () => {
+    const proCap = vi.fn(() => false);
+    await handleVision(
+      post({ headers: { authorization: `Bearer ${await proToken('lk_leaked')}` } }),
+      env({ revoked: () => true, proCap }),
+    );
+    expect(proCap).not.toHaveBeenCalled();
   });
 });

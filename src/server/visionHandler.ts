@@ -25,6 +25,20 @@ export interface VisionEnv {
   now: () => number;
   /** True when this caller has had too many unlicensed requests today. */
   ipCap: (request: Request, now: number) => boolean;
+  /**
+   * True when this LICENCE has had too many catches today.
+   *
+   * Keyed on `licenseKeyId`, which `decideAccess` has always returned and this handler
+   * used to discard. Two installs of one subscription therefore share an allowance, which
+   * is the correct shape: the thing being bounded is the subscription, not the machine.
+   */
+  proCap: (licenseKeyId: string, now: number) => boolean;
+  /**
+   * True when this licence has been turned off out of band.
+   *
+   * The only targeted lever in a design with no database. See `proCap.ts`.
+   */
+  revoked: (licenseKeyId: string) => boolean;
 }
 
 const json = (body: unknown, status: number): Response =>
@@ -96,6 +110,33 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
     if (env.trialClosed) return refuse('The free trial is closed just now.', 402);
     if (env.ipCap(request, now)) {
       return refuse('Too many free catches from this network today.', 429);
+    }
+  }
+
+  // AND THE PAID PATH HAS TWO OF ITS OWN NOW, which the sentence above did not anticipate.
+  //
+  // It is still true that stopping somebody who is paying is a terrible place to save a
+  // hundredth of a cent — and it stopped being the whole truth the moment the caller could
+  // choose what a catch costs. The ceilings here are set where no human reaches them:
+  // `TRIAL_PER_IP_PER_DAY` is 40 and is documented as "well above what one person could
+  // legitimately do", and `CATCHES_PER_LICENCE_PER_DAY` is an order of magnitude above
+  // that again. A brake a customer can feel would make "unlimited, no throttling" false.
+  //
+  // These are DIFFERENT brakes from the trial's, not the same ones widened. A per-IP cap
+  // is a ceiling a subscriber would share with a café; a per-licence one is a ceiling they
+  // share only with themselves.
+  if (access.kind === 'pro') {
+    // Revocation first: it is the cheaper refusal and it should not consume an allowance.
+    //
+    // 401, not 403, for the reason stated twice already in this file — it is the one
+    // status that tells the extension an action can fix this. It re-exchanges, Polar
+    // answers about the real state of the subscription, and the client lands in the right
+    // place whichever answer that is.
+    if (env.revoked(access.licenseKeyId)) {
+      return refuse('That session is no longer valid.', 401);
+    }
+    if (env.proCap(access.licenseKeyId, now)) {
+      return refuse('Too many catches on this licence today.', 429);
     }
   }
 

@@ -10,6 +10,7 @@
  */
 import { handleVision } from '../src/server/visionHandler';
 import { createIpCap } from '../src/server/ipCap';
+import { createProCap, parseRevoked } from '../src/server/proCap';
 
 export const config = { runtime: 'edge' };
 
@@ -25,6 +26,24 @@ const PROVIDER_URL =
  */
 const ipCap = createIpCap();
 
+/**
+ * ONE counter for this isolate, per LICENCE. The ceiling, the day rollover and the
+ * eviction rule are all in `src/server/proCap.ts`, where they are tested.
+ */
+const proCap = createProCap();
+
+/**
+ * Licences turned off out of band, read ONCE at module scope.
+ *
+ * Read here rather than per request because an isolate is short-lived: a change to the
+ * variable takes effect as isolates recycle, which is minutes, and re-parsing a
+ * comma-separated string on the money path to save those minutes is the wrong trade.
+ *
+ * **Unset is the normal state**, like `BUKI_TRIAL_CLOSED`, so this adds nothing to the six
+ * variables that must be set at launch. An empty value revokes nothing.
+ */
+const revokedKeyIds = parseRevoked(process.env['BUKI_REVOKED_KEY_IDS']);
+
 export default async function handler(request: Request): Promise<Response> {
   return handleVision(request, {
     secret: process.env['BUKI_TOKEN_SECRET'] ?? '',
@@ -35,5 +54,7 @@ export default async function handler(request: Request): Promise<Response> {
     fetch: (url, init) => fetch(url, init),
     now: () => Date.now(),
     ipCap,
+    proCap,
+    revoked: (licenseKeyId) => revokedKeyIds.has(licenseKeyId),
   });
 }

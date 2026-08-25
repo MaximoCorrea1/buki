@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sign, verify, TOKEN_TTL_MS, GRACE_MS } from './token';
+import { sign, verify, TOKEN_TTL_MS, GRACE_MS, type Claim } from './token';
 
 const SECRET = 'test-secret-not-the-real-one';
 const NOW = Date.UTC(2026, 7, 9, 12, 0, 0);
@@ -79,5 +79,40 @@ describe('the token survives being carried around', () => {
     const wide = { licenseKeyId: 'lk_\u00e9\u4e2d\u6587', activationId: 'act_1' };
     const token = await sign(wide, SECRET, NOW);
     expect(await verify(token, SECRET, NOW)).toMatchObject({ state: 'valid', claim: wide });
+  });
+});
+
+/**
+ * A CLAIM WITHOUT A LICENCE IS NOT A CLAIM, and `verify` used to say it was.
+ *
+ * `verify` checked only `typeof claim.exp === 'number'`, so a token whose payload lacked
+ * `licenseKeyId` came back `{ state: 'valid', claim: { licenseKeyId: undefined } }`. The
+ * 2026-08-24 review filed that as AC-4 and called it right: **a shape migration fails OPEN
+ * and SILENTLY in both directions.**
+ *
+ * It became load-bearing on 2026-08-25, when `proCap` started keying a rate limit on that
+ * exact field. A cap keyed on `undefined` is not a cap on anybody.
+ *
+ * Every token this repo has ever minted carries the field — `sign` takes a `Claim` that
+ * requires it — and there are no tokens in the wild, so requiring it costs nothing today
+ * and is unavailable the day after launch.
+ */
+describe('the claim has to be a claim', () => {
+  it('refuses a token carrying no licence id', async () => {
+    const token = await sign({ activationId: 'act_1' } as unknown as Claim, SECRET, NOW);
+    expect((await verify(token, SECRET, NOW)).state).toBe('bad');
+  });
+
+  it('refuses a token whose licence id is empty', async () => {
+    const token = await sign({ licenseKeyId: '', activationId: 'act_1' }, SECRET, NOW);
+    expect((await verify(token, SECRET, NOW)).state).toBe('bad');
+  });
+
+  it('still accepts a real one, expired ones included', async () => {
+    const token = await sign({ licenseKeyId: 'lk_1', activationId: 'act_1' }, SECRET, NOW);
+    expect((await verify(token, SECRET, NOW)).state).toBe('valid');
+    // The grace window runs on exactly this evidence, so tightening the shape check must
+    // not narrow what counts as evidence.
+    expect((await verify(token, SECRET, NOW + TOKEN_TTL_MS + 1000)).state).toBe('expired');
   });
 });

@@ -353,8 +353,10 @@ looks exactly like the right answer, and variables set there would do nothing.
 "No Environment Variables found". None of the six is set, including the Polar token and the
 organisation id.
 
-All environments. **`OPENWORK.md` item 2 says five. There are six**; the sixth was found on
-2026-08-17 by reading `api/vision.ts` rather than the list.
+All environments. **`OPENWORK.md` item 2 says five. There are six** that must be SET; the
+sixth was found on 2026-08-17 by reading `api/vision.ts` rather than the list. There are
+now seven names in the table and **the seventh, like `BUKI_TRIAL_CLOSED`, stays unset** —
+both are levers rather than configuration, and neither adds anything to launch day.
 
 | Name | Required? | From |
 | --- | --- | --- |
@@ -364,6 +366,7 @@ All environments. **`OPENWORK.md` item 2 says five. There are six**; the sixth w
 | `POLAR_ACCESS_TOKEN` | Yes, for `/api/license` | §6 |
 | `POLAR_ORGANIZATION_ID` | Yes, for `/api/license` | §1, the UUID |
 | `BUKI_TRIAL_CLOSED` | **No. Leave it unset.** | the brake, below |
+| `BUKI_REVOKED_KEY_IDS` | **No. Leave it unset.** | the targeted brake, below |
 
 **The first three are checked together and fail loudly on purpose.** `visionHandler.ts`
 returns 500 if any is missing, because a missing `BUKI_TOKEN_SECRET` would make every
@@ -396,6 +399,24 @@ found retired inside one afternoon, and a pinned default 404s for every new user
 working perfectly for the one person who could notice. It is a module constant rather than
 a seventh environment variable — six are already handed across by hand at launch, and one
 that silently defaults is one more way to ship half-configured.
+
+**`BUKI_REVOKED_KEY_IDS`** is the TARGETED brake, added 2026-08-25 with item 40. A
+comma-separated list of `licenseKeyId` values; `/api/vision` answers 401 to any session
+token carrying one, which makes the extension re-exchange its licence and find out from
+Polar what is really true. **Leave it unset**, and note that unset and empty both revoke
+nothing — a parser that turned `''` into a one-element list would revoke every token, which
+is the opposite of what a targeted lever is for.
+
+> **Why it exists at all.** `token.ts` is stateless by design: the token IS the state, which
+> is what makes a Polar outage invisible and leaves nothing to migrate, back up or leak. The
+> price is that a leaked or refunded token keeps working for up to eight days, and the only
+> lever was rotating `BUKI_TOKEN_SECRET` — which signs out every subscriber at once.
+> `launch.md`'s "If something goes wrong" table lists three levers and all three are
+> all-or-nothing. This is the one that is not.
+>
+> An isolate reads it once at module scope, so a change takes effect as isolates recycle
+> rather than instantly. That is minutes, and re-parsing a string on the money path to save
+> those minutes is the wrong trade.
 
 **`BUKI_TRIAL_CLOSED`** is the emergency brake: set it to `1` and the free trial stops
 answering, with no deploy. **Leave it unset.** Setting it to anything other than `1` is the

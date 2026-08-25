@@ -125,7 +125,18 @@ export async function verify(token: string, secret: string, now: number): Promis
   } catch {
     return { state: 'bad' };
   }
+  // THE SHAPE, not just the expiry. This checked only `exp`, so a payload without
+  // `licenseKeyId` came back `valid` with the field `undefined` — the review's AC-4, and it
+  // fails OPEN in both directions of a shape migration.
+  //
+  // It stopped being theoretical on 2026-08-25: `proCap` keys a per-licence rate limit on
+  // exactly this field, and a cap keyed on `undefined` is a cap on nobody. Every token this
+  // repo mints carries it (`sign` takes a `Claim` that requires it) and none are in the
+  // wild, so requiring it costs nothing today and cannot be added the day after launch.
   if (typeof claim?.exp !== 'number') return { state: 'bad' };
+  if (typeof claim.licenseKeyId !== 'string' || claim.licenseKeyId === '') {
+    return { state: 'bad' };
+  }
 
   if (now <= claim.exp) return { state: 'valid', claim };
   if (now <= claim.exp + GRACE_MS) return { state: 'expired', claim };

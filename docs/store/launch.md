@@ -374,15 +374,28 @@ un-install it. So the levers are server-side, and there are exactly three:
 | `BUKI_TRIAL_CLOSED=1` | Stops the free trial answering. **Paying subscribers are unaffected** — that scoping was itself a fix | Trial users see *"The free trial is closed just now"*. No deploy needed |
 | Remove `GEMINI_API_KEY` | Stops all cover reading | **500s the product for everybody, including payers.** All or nothing |
 | Provider spend cap | Bounds the money without our code noticing anything | Same all-or-nothing effect once hit |
+| `BUKI_REVOKED_KEY_IDS=lk_x,lk_y` | **Turns off named licences only.** They get 401, re-exchange, and Polar tells them the truth | Takes effect as isolates recycle — minutes, not instantly. No deploy needed |
 
-**There is no partial brake for Pro traffic.** Registered in `OPENWORK.md` §6 as an
-accepted risk, not an oversight. If Pro-classified traffic ever becomes the cost problem,
-the only lever is the second row.
+> **The fourth row is new, 2026-08-25, and it is the first targeted one.** Added with item
+> 40. Until it existed, revoking one leaked token meant rotating `BUKI_TOKEN_SECRET`, which
+> signs out every subscriber at once — a sentence worth re-reading beside the row above it
+> that 500s the product for payers. **Unset is the normal state**; empty revokes nothing.
 
-**A refunded subscriber keeps working for up to about eight days.** The session token is
-stateless with no revocation list, which is the deliberate trade that makes a Polar outage
-our problem rather than the customer's, and is why there is no database. Bounded and small
-at $4/month. **Do not "fix" it with a revocation table** without re-opening that decision.
+**~~There is no partial brake for Pro traffic.~~ There are two now, as of 2026-08-25.**
+Item 40 added a per-licence daily ceiling (`CATCHES_PER_LICENCE_PER_DAY = 500`, an order of
+magnitude above `TRIAL_PER_IP_PER_DAY`, so no human reaches it) and the revocation list
+above. Kept rather than deleted because the reasoning for the original entry in
+`OPENWORK.md` §6 is still what makes the ceiling safe: a brake a paying customer can FEEL
+would make "unlimited, no throttling" false, so the number has to sit where nobody real
+ever meets it.
+
+**A refunded subscriber keeps working for up to about eight days**, and since 2026-08-25
+that is bounded rather than merely small: at 500 catches a day and a pinned model, the whole
+eight days is worth about **$0.54**. The session token is still stateless with no revocation
+TABLE, which is the deliberate trade that makes a Polar outage our problem rather than the
+customer's and is why there is no database. **Do not "fix" it with a revocation table**
+without re-opening that decision — `BUKI_REVOKED_KEY_IDS` is an environment variable, not a
+database, and that is the whole point of it.
 
 ---
 
