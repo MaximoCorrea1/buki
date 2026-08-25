@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { resolveTheme, rememberTheme, THEME_KEY } from './theme';
+import { resolveTheme, rememberTheme, start, THEME_KEY } from './theme';
 import popup from '../../popup.html?raw';
 import options from '../../options.html?raw';
 import popupSource from './popup.ts?raw';
@@ -146,5 +146,102 @@ describe('rememberTheme', () => {
     ).not.toThrow();
 
     expect(local.set).toHaveBeenCalledWith({ [THEME_KEY]: 'dark' });
+  });
+});
+
+describe('start, the live path', () => {
+  /**
+   * `theme.ts:106` SAYS THIS IS WHY `start` IS EXPORTED — *"Exported and taking its document
+   * so the live path is reachable from a test, and so the module has no side effect at
+   * import."* **No test ever called it.**
+   *
+   * The review's mutation deleted the click handler and the suite stayed 620/620 green. The
+   * consequence is the exact failure `docs/brand.md` records costing two days on the
+   * landing: **a theme button that renders, focuses, and does nothing.** The module was
+   * restructured, given its own bundle entry and a docblock about that very incident, and
+   * the assertion that would have caught it was never written.
+   *
+   * There is no DOM in this suite, so the document is a small fake — which is precisely what
+   * `start(doc)` taking its document was FOR. The control flow under test is real: the
+   * listener registration, the DOMContentLoaded pass, the flip, and the write.
+   */
+  interface FakeButton {
+    attrs: Record<string, string>;
+    clicks: (() => void)[];
+    setAttribute(name: string, value: string): void;
+    addEventListener(type: string, run: () => void): void;
+  }
+
+  const fakeDoc = (withButton = true) => {
+    const root: Record<string, string> = {};
+    const button: FakeButton = {
+      attrs: {},
+      clicks: [],
+      setAttribute(name, value) {
+        this.attrs[name] = value;
+      },
+      addEventListener(type, run) {
+        if (type === 'click') this.clicks.push(run);
+      },
+    };
+    const ready: (() => void)[] = [];
+    const doc = {
+      documentElement: {
+        setAttribute: (name: string, value: string) => void (root[name] = value),
+        getAttribute: (name: string) => root[name] ?? null,
+      },
+      getElementById: (id: string) => (withButton && id === 'theme' ? button : null),
+      addEventListener: (type: string, run: () => void) => {
+        if (type === 'DOMContentLoaded') ready.push(run);
+      },
+    } as unknown as Document;
+    return { doc, root, button, load: () => ready.forEach((r) => r()) };
+  };
+
+  it('settles the mood before the page is ready, which is the whole reason it exists', () => {
+    // Before DOMContentLoaded. A theme decided after first paint is the flash this module
+    // was made a separate entry point to remove.
+    const { doc, root } = fakeDoc();
+    start(doc);
+    expect(root['data-theme']).toMatch(/^(light|dark)$/);
+  });
+
+  it('WIRES THE BUTTON, and pressing it flips the mood', () => {
+    // THE MUTATION. Deleting the click handler leaves everything above still passing.
+    const { doc, root, button, load } = fakeDoc();
+    start(doc);
+    load();
+
+    expect(button.clicks.length, 'the theme button has no click handler').toBe(1);
+
+    const before = root['data-theme'];
+    button.clicks[0]!();
+    expect(root['data-theme'], 'pressing the theme button did nothing').not.toBe(before);
+
+    button.clicks[0]!();
+    expect(root['data-theme'], 'the second press did not come back').toBe(before);
+  });
+
+  it('labels the button by what pressing it will DO, not by what is showing', () => {
+    // The convention a screen reader needs in order to decide whether to press it.
+    const { doc, root, button, load } = fakeDoc();
+    start(doc);
+    load();
+
+    const expected = (): string =>
+      root['data-theme'] === 'dark' ? 'Switch to light' : 'Switch to dark';
+    expect(button.attrs['aria-label']).toBe(expected());
+
+    button.clicks[0]!();
+    expect(button.attrs['aria-label']).toBe(expected());
+  });
+
+  it('does not throw on a page with no theme button', () => {
+    // `privacy.html` has none, and neither does a torn-down page.
+    const { doc, load } = fakeDoc(false);
+    expect(() => {
+      start(doc);
+      load();
+    }).not.toThrow();
   });
 });

@@ -485,3 +485,79 @@ describe('calling a catch off reaches the provider', () => {
     expect((await answered).status).toBe(502);
   });
 });
+
+/**
+ * THE TWO MUTATIONS THE REVIEW RAN AGAINST THIS FILE, both of which survived 620/620 green.
+ *
+ * They are here rather than beside the tests they resemble because the resemblance is the
+ * problem: there WERE tests for both of these, and both tests verified the mock.
+ */
+describe('the mutations that survived a green suite', () => {
+  it('tells an EMPTY session apart from no session at all', async () => {
+    // `visionHandler.ts` reads the header as `header === null ? null : header.replace(...)`,
+    // with a comment saying not to collapse the two. Collapsing them with a falsy check —
+    // `header?.replace(...) || null` — silently DEMOTES a subscriber whose session broke to
+    // the trial path, spending free catches they already paid to pass, and never sends the
+    // 401 that would make the extension re-exchange its licence and heal itself.
+    //
+    // THE HEADER HAS TO BE EXACTLY EMPTY, and the first version of this test got that
+    // wrong. `Authorization: 'Bearer '` looks like the empty case and is not: `Headers`
+    // strips trailing whitespace, so the value arrives as `'Bearer'`, the `\s+` in the
+    // regex never matches, and BOTH implementations return `'Bearer'` and answer 401. The
+    // test passed against the mutation, which is the only reason it was caught.
+    //
+    // Probed rather than assumed: only `authorization: ''` produces `''` on one side and
+    // `null` on the other.
+    const res = await handleVision(post({ headers: { authorization: '' } }), env());
+    expect(res.status, 'a broken session was quietly demoted to the trial').toBe(401);
+  });
+
+  it('still treats an ABSENT header as somebody who never paid', async () => {
+    // The other half, and the reason the distinction is not just pedantry: a missing header
+    // is the correct, normal state for a trial user, and answering 401 to them would open
+    // the options page on every catch.
+    const res = await handleVision(post(), env());
+    expect(res.status).toBe(200);
+  });
+
+  it('NEVER lets a hostile upstream send our key home in a header', async () => {
+    // THE EXISTING TEST FOR THIS MOCKS AN UPSTREAM WITH NO HEADERS, so it verifies the
+    // mock. The review's mutation — passing `upstream.headers` through — survived it, and
+    // `GEMINI_API_KEY` could have ridden home in a `set-cookie` or a `www-authenticate`.
+    //
+    // `licenseHandler.test.ts` already mocks a HOSTILE upstream. This one now does too.
+    const fetch = vi.fn(
+      async () =>
+        new Response('{"choices":[]}', {
+          status: 200,
+          headers: {
+            'x-goog-quota-user': 'PROVIDER-KEY-SECRET',
+            'www-authenticate': 'Bearer realm="PROVIDER-KEY-SECRET"',
+            'set-cookie': 'session=PROVIDER-KEY-SECRET; Path=/',
+          },
+        }),
+    );
+    const res = await handleVision(post(), env({ fetch }));
+
+    for (const [name, value] of res.headers) {
+      expect(value, `${name} carried the provider key home`).not.toContain('PROVIDER-KEY-SECRET');
+    }
+    // And the whole header set is ours, not theirs: an allowlist of one, proven by its size.
+    expect([...res.headers.keys()].sort()).toEqual(['content-type']);
+  });
+
+  it('does not relay an upstream header even when it is harmless', async () => {
+    // The rule is "only body and status cross back", not "only dangerous headers are
+    // stripped". A rule with an exception is a rule somebody will widen.
+    const fetch = vi.fn(
+      async () =>
+        new Response('{"choices":[]}', {
+          status: 200,
+          headers: { 'x-request-id': 'abc123', 'retry-after': '30' },
+        }),
+    );
+    const res = await handleVision(post(), env({ fetch }));
+    expect(res.headers.get('x-request-id')).toBeNull();
+    expect(res.headers.get('retry-after')).toBeNull();
+  });
+});

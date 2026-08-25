@@ -138,9 +138,37 @@ describe('the install CTA', () => {
   });
 
   it('does not drag the Source and issue links along with it', () => {
-    // These three are GitHub on purpose and stay GitHub after launch. They are excluded
-    // from the set above by not carrying `.btn`, and this says so out loud so that the day
-    // somebody reaches for a find-and-replace, the reason is written down.
+    // THESE ASSERTED LINK TEXT UNTIL 2026-08-25, AND THE REVIEW MUTATION-PROVED WHY THAT
+    // WAS NOT ENOUGH. A launch-day find-and-replace sends `Source` to the Web Store, and
+    // `toContain('>Source<')` survives ANY href change — 620/620 green, shipping a "Source"
+    // link that opens the store listing, and nobody would notice because it still goes
+    // somewhere plausible. Worse, the sibling assertion above ("sends everybody to the SAME
+    // place") passes MORE confidently after the bad replace, because now all eight agree.
+    //
+    // So this asserts the DESTINATION. Item 36 is the one agent edit that can only happen
+    // on launch day; this is the guard it has to survive.
+    const keep = [...indexHtml.matchAll(/<a(?![^>]*class="btn)[^>]*href="([^"]+)"[^>]*>/g)]
+      .map((m) => m[1]!)
+      .filter((href) => href.startsWith('http'));
+
+    // GUARDS THE VACUOUS PASS, and it is the whole reason the count is written out. Three
+    // GitHub links plus the two Polar checkout links: if this collapses — a class renamed,
+    // the regex outgrown — every assertion below starts passing on an empty array.
+    expect(keep.length, 'the non-btn link set collapsed; the check below proves nothing').toBe(5);
+
+    const github = keep.filter((href) => href.includes('github.com'));
+    expect(github.length, 'a GitHub link was moved by a find-and-replace').toBe(3);
+    for (const href of github) {
+      expect(href).toMatch(/^https:\/\/github\.com\/MaximoCorrea1\/buki/);
+    }
+
+    // The till. Same failure mode, higher stakes: a replace that caught these would send
+    // every purchase to a 404 on launch day.
+    const checkout = keep.filter((href) => href.includes('buy.polar.sh'));
+    expect(checkout.length, 'a checkout link was moved by a find-and-replace').toBe(2);
+
+    // The text still matters — it is what a reader sees — so it stays, beside the
+    // destination rather than instead of it.
     expect(indexHtml).toContain('>Source<');
     expect(indexHtml).toContain('/issues">Report a problem<');
   });

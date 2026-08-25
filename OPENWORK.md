@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **760 across 65 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **39 mutations, 37 caught immediately, and the two that survived were real holes in tests written thirty minutes earlier.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **760 across 65 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **47 mutations, 44 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -1531,6 +1531,19 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
   countermeasure is not more care: it is that **a guard is not finished when it passes, it is
   finished when you have watched it fail.** Cost: nothing, because the mutation found it.
   It would have cost the whole of item 42 otherwise.
+
+- **A TEST CAN PASS AGAINST THE MUTATION FOR A REASON THAT HAS NOTHING TO DO WITH WHAT IT
+  ASSERTS. 2026-08-25.** Closing the review's `bearer empty→null` mutation, the obvious
+  fixture was `Authorization: 'Bearer '` — which looks exactly like the empty case and is
+  not. **`Headers` strips trailing whitespace**, so the value arrives as `'Bearer'`, the
+  `\s+` in the regex never matches, and BOTH the correct and the collapsed implementation
+  return `'Bearer'` and answer 401. The test passed, the mutation survived, and the two facts
+  had no connection to each other. Only `authorization: ''` distinguishes them, which a
+  four-line `node -e` probe settled in seconds.
+  **The general rule: a fixture that goes through ANY normalising layer — headers, URLs,
+  `JSON.parse`, a form encoder — is not the value you wrote.** Probe what arrives before
+  asserting on what you sent. This is the third instance this session of a just-written guard
+  not doing what its author believed.
 
 - **A MUTATION THAT DOES NOT COMPILE PROVES NOTHING, AND LOOKS LIKE A PASS. 2026-08-25.**
   A `sed` that turned `} finally {` into unbalanced braces made `gate.test.ts` fail to LOAD,

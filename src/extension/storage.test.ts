@@ -166,3 +166,62 @@ describe('matchesFilter', () => {
     expect(matchesFilter(saved, '')).toBe(true);
   });
 });
+
+describe('what survives a book changing pile', () => {
+  /**
+   * THE MUTATION THAT SURVIVED 620/620 GREEN. Removing
+   *
+   *     source: source ?? previous?.source,
+   *     shot: shot ?? previous?.shot,
+   *
+   * left the whole suite passing, and the consequence is that **every book loses its cover
+   * the first time it changes pile.** Moving Someday to Now goes through `add()` and carries
+   * no picture, so without the carry the shot is overwritten with `undefined` and the shelf
+   * falls back to a drawn board — silently, on the one surface the product is named for.
+   *
+   * The existing tests set `source` on the way IN and read it back. None of them moved a
+   * book afterwards, which is the only moment the carry does anything.
+   */
+  const book = { title: 'Dune', author: 'Frank Herbert' };
+  const source = { kind: 'tweet' as const, url: 'https://x.com/a/status/1' };
+  const shot = 'https://pbs.twimg.com/media/COVER';
+
+  it('keeps the cover when the book moves pile', async () => {
+    const lib = makeLibrary();
+    await lib.add(book, 'someday', source, shot);
+    // The move. `add()` again with a new intent and NOTHING else, which is exactly what
+    // the shelf sends.
+    const moved = await lib.add(book, 'now');
+
+    expect(moved.moved, 'this was not treated as a move at all').toBe(true);
+    expect(moved.shot, 'the cover was dropped on the way between piles').toBe(shot);
+    expect(moved.source?.url, 'the post that sold you on it was dropped').toBe(source.url);
+  });
+
+  it('keeps them across a second move too, not just the first', async () => {
+    const lib = makeLibrary();
+    await lib.add(book, 'someday', source, shot);
+    await lib.add(book, 'now');
+    const again = await lib.add(book, 'read');
+
+    expect(again.shot).toBe(shot);
+    expect(again.source?.url).toBe(source.url);
+  });
+
+  it('still lets a NEW picture replace the old one', async () => {
+    // The carry is a fallback, not a lock. Re-catching a book from a better photograph has
+    // to be able to improve the record.
+    const lib = makeLibrary();
+    await lib.add(book, 'someday', source, shot);
+    const recaught = await lib.add(book, 'someday', source, 'https://pbs.twimg.com/media/BETTER');
+
+    expect(recaught.shot).toBe('https://pbs.twimg.com/media/BETTER');
+  });
+
+  it('leaves a book that never had a cover without one', async () => {
+    const lib = makeLibrary();
+    await lib.add(book, 'someday');
+    const moved = await lib.add(book, 'now');
+    expect(moved.shot).toBeUndefined();
+  });
+});
