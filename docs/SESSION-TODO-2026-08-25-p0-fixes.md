@@ -90,7 +90,8 @@ mutation results are in the commit message.
 - [!] **26 · The spend cap.** Maximo, a dashboard, and it gates `launch.md` step 5.
 - [ ] **Everything else in the review.** All P1s except AC-4's shape check, and the whole
       P2/P3 catalogue, are untouched. The review remains the record.
-- [ ] **Push.** `main` is ahead of `origin/main` by six commits. Nothing has been pushed.
+- [ ] **Push.** `main` is ahead of `origin/main` by this session’s commits. Nothing has been
+      pushed. Run `git log --oneline origin/main..HEAD` rather than trusting a count here.
 
 ### Two things that now belong in item 3's by-hand pass
 
@@ -121,6 +122,7 @@ In commit order, which is the real order.
 | 7 | **Item 42**, and the first surviving mutation | `2b023a8` · 742/64 |
 | 8 | **Item 43**, and the second surviving mutation | `f344127` · 760/65 |
 | 9 | This pair written | — |
+| 10 | **The review's §3 mutation table closed** — theme, storage, both visionHandler mutations, and the launch-day find-and-replace | `0733ef4` · 772/65. **All six now fail; five used to pass** |
 
 ---
 

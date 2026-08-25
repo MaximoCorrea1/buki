@@ -13,7 +13,7 @@ review's own prescriptions were declined and why, and which instruments lied.
 > fifth time.
 >
 > **What DID work this session was a mechanism rather than a rule**: every fix was
-> mutation-tested before it was committed, and that caught two real holes. A rule that
+> mutation-tested before it was committed, and that caught three real holes. A rule that
 > produces an artefact you can watch fail is a different kind of rule from one that asks you
 > to remember something.
 
@@ -25,8 +25,9 @@ Read everything — code, docs, ADRs, findings, competitors, strategy — then w
 **items 38 → 41 → 39 → 40**, and the two P0s behind them. Act across business, backend,
 features, efficiency and design.
 
-All six P0s closed. One new item filed (44). Six commits, one per item, each independently
-revertable.
+All six P0s closed, and the review’s own §3 mutation table closed with them. One new item
+filed (44). Eight commits, one per item plus the ledger pair and the mutation-table work,
+each independently revertable.
 
 ---
 
@@ -35,7 +36,7 @@ revertable.
 | Measurement | Probe | Value |
 | --- | --- | --- |
 | Test suite, session start | `./node_modules/.bin/vitest run` | 620 / 58 files |
-| Test suite, session end | same | **760 / 65 files** |
+| Test suite, session end | same | **772 / 65 files** |
 | Typecheck | `node node_modules/typescript/bin/tsc --noEmit` | exit 0 throughout |
 | Build | `node build.mjs` | exit 0 throughout |
 | Commits since `d3e5923` | `git rev-list --count d3e5923..HEAD` | **41** |
