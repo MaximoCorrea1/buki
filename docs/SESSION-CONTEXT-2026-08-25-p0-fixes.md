@@ -41,9 +41,10 @@ revertable.
 | Commits since `d3e5923` | `git rev-list --count d3e5923..HEAD` | **41** |
 | Open numbered items | `grep -c '^- \[ \] \*\*[0-9]' OPENWORK.md` | **9** (was 14) |
 | P0s open | `grep -cE '^- \[ \] \*\*(38\|39\|40\|41\|42\|43)\.' OPENWORK.md` | **0** |
-| Mutations run against the new guards | by hand, one file at a time | **39** |
-| Mutations caught immediately | same | **37** |
-| **Mutations that SURVIVED** | same | **2 — both real holes** |
+| Mutations run against the new guards | by hand, one file at a time | **47** |
+| Mutations caught immediately | same | **44** |
+| **Mutations that SURVIVED** | same | **3 — all three real holes** |
+| The review's §3 mutation table, re-run | each mutation applied, suite re-run, reverted | **6 of 6 now caught** (was 1 of 6) |
 | Gemini OpenAI-compat base URL | `ai.google.dev/gemini-api/docs/openai`, fetched live | `…/v1beta/openai/` + `/chat/completions` |
 | `max_tokens` in that doc's parameter tables | same fetch | **not listed**, and that mattered — see below |
 | `content-length` survives `new Request(...)` | `node -e` probe | **yes**, so the early-out is testable |
@@ -149,7 +150,8 @@ The behaviours themselves are tested against real `Event` objects, real URLs and
 | A `sed` mutation that unbalanced braces | `gate.test.ts` failed to LOAD, so vitest reported **`92 passed`** — a SMALLER total than the baseline's 107, all green. Read as "survived", it is exactly backwards | **Compare the TOTAL, not the failure count.** Two of 39 mutations were invalid this way |
 | My first abort test | Only listened for the `abort` EVENT, while `handleVision` does two awaits before it calls fetch — so the abort had already happened and the listener waited for an event in the past. It HUNG rather than failing | A real `fetch` checks `signal.aborted` first. Now the fake does too, and the abort is delivered mid-flight |
 | `expect(optionsSrc).toContain('activationId')` | The review's finding, confirmed by re-running its mutation | Replaced by an import-line regex, two absence rules, and a check on the only `writePro` argument left |
-| A JS template literal in a `node -e` heredoc | Backticks inside backticks — **§5's backtick trap wearing a third costume**, after the CSS comment and the `?raw` slice | Build the string from an array, or use the Edit tool |
+| **My first `bearer empty→null` test** | Used `Authorization: 'Bearer '`, which LOOKS like the empty case. `Headers` strips trailing whitespace, so it arrives as `'Bearer'`, the `\s+` never matches, and BOTH implementations answer 401. **The test passed AND the mutation survived, with no connection between the two facts** | **A fixture that goes through any normalising layer is not the value you wrote.** Only `authorization: ''` distinguishes them; a four-line `node -e` probe settled it in seconds |
+| A JS template literal in a `node -e` heredoc | Backticks inside backticks — **§5's backtick trap wearing a third costume**, after the CSS comment and the `?raw` slice. It struck twice more when a `\.` inside a regex literal was passed through shell quoting | Build the string from an array, use `String.raw`, or use the Edit tool |
 | `grep -n 'held\.key'` | Did not match `held\.key` in the file, because shell `\.` is a literal dot and the file holds a real backslash inside a regex literal | The absence guard was there all along; the grep was the thing that was wrong |
 
 ---
@@ -202,6 +204,32 @@ when it passes; it is finished when you have watched it fail.** Thirty-nine muta
 about twenty minutes across the session and found two inert fixes. Recorded in §5.
 
 ---
+
+## The review's own mutation table, re-run
+
+§3 is the review's strongest evidence: six mutations, **five of which survived a fully green
+620-test suite.** Item 43 closed one. The other four were closed afterwards and the whole
+table was then re-run, each mutation applied and reverted one at a time.
+
+| Mutation | 2026-08-24 | 2026-08-25 |
+| --- | --- | --- |
+| `options.ts` activation reuse → `undefined` | 620/620 green | **6 tests fail** |
+| `theme.ts` click handler deleted | 620/620 green | **2 tests fail** |
+| `storage.ts` `shot` + `source` carry removed | 620/620 green | **2 tests fail** |
+| `visionHandler.ts` bearer `empty→null` collapsed | 620/620 green | **1 test fails** |
+| `visionHandler.ts` upstream headers relayed | 620/620 green | **2 tests fail** |
+| `docs/index.html` launch-day find-and-replace | 620/620 green | **1 test fails** |
+| `TRIAL_SPELLED` drift | caught | caught |
+
+**Two of these were tests that verified a mock.** The provider-key guard mocked an upstream
+with NO headers, so it proved the mock had none. The `host.test.ts` guard asserted link TEXT,
+so it survived any href change — and its sibling assertion, "sends everybody to the SAME
+place", passed MORE confidently after the bad replace, because now all eight agreed.
+
+**The `index.html` guard was widened past what the review asked for.** It prescribed the
+three GitHub links; the same find-and-replace would also catch the two Polar checkout URLs,
+and a replace that caught THOSE sends every purchase to a 404 on launch day. Both sets are
+now counted and asserted.
 
 ## What was NOT done, and why
 
