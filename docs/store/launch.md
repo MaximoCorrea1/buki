@@ -40,7 +40,7 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 | 2 | Gemini key **with billing linked**, and the spend cap in the same sitting (26) | Maximo | — |
 | 3 | **Register the developer account, pay the one-time fee** | Maximo | — (do it first, it now gates more than submission) |
 | 4 | **Zip and upload as a DRAFT. Do not publish.** Copy the public key into `manifest.json` as `key` (item 37) | Maximo, then agent | step 3 |
-| **4.5** | **THE MODEL PIN (item 38) AND THE SPEND CAP (item 26) MUST BOTH BE LIVE BEFORE STEP 5** | agent, then Maximo | step 4 |
+| **4.5** | ~~THE MODEL PIN (item 38)~~ **DONE 2026-08-25** · **THE SPEND CAP (item 26) IS STILL REQUIRED BEFORE STEP 5** | ~~agent~~, **Maximo** | step 4 |
 | 5 | The six Vercel variables (item 2) — `BUKI_EXTENSION_ID` is now the SHIPPED id | Maximo | steps 1, 2, 4, **4.5** |
 | 6 | `vercel deploy --prod`, then probe both endpoints | Maximo | step 5 |
 | ~~7~~ | ~~The checkout URLs → `pricing.ts` (item 34)~~ **DONE 2026-08-18** | — | — |
@@ -70,22 +70,27 @@ and step 3 now sits near the front rather than beside submission.
 
 ## Step by step, with the check that proves it
 
-> ### ⚠ STEP 4.5 IS NEW, 2026-08-24, AND IT IS NOT OPTIONAL
+> ### ⚠ STEP 4.5, 2026-08-24. HALF DONE — THE REMAINING HALF IS STILL NOT OPTIONAL
 >
 > **The day `BUKI_EXTENSION_ID` becomes the shipped id is the day `/api/vision` is reachable
 > by anyone who reads the store URL.** The extension id is public the moment the item is
 > listed, and `policy.ts` says out loud three times that its Origin check is forgeable by
 > anything that is not a browser.
 >
-> Today `/api/vision` forwards the caller's request body to Gemini VERBATIM
-> (`visionHandler.ts:98`), so the caller chooses the model and the token budget on our key.
-> Measured: an honest catch costs **$0.000135** and an attacker request **~$3.46**. Every
-> number in the trial's threat model — including whatever ceiling you pick for item 26 — is
-> priced against the first figure.
+> ~~Today `/api/vision` forwards the caller's request body to Gemini VERBATIM.~~ **Fixed
+> 2026-08-25 (item 38).** `src/server/visionBody.ts` REBUILDS the upstream request rather
+> than relaying it: the model is pinned, `max_tokens` is clamped, and `n`, `service_tier`,
+> `stream` and `extra_body` have nowhere to go. The measured $3.46 request was $3.46 because
+> the caller could name a Pro long-context model; it can no longer name anything.
 >
-> So the order is: **pin the model server-side (item 38), set the spend cap (item 26), THEN
-> set the variable.** Doing it the other way round opens a metered credential to the public
-> internet with a 25,000x cost ratio and no ceiling.
+> **The spend cap is the half that remains, and it is now the FLOOR rather than a second
+> ceiling.** Item 40 added a per-licence limit and item 38 fixed the price of a request, so
+> what is left unbounded is the aggregate: many trial callers, or a bug of our own. The
+> provider cap is the only control that bounds that, and `launch.md`'s own analytics section
+> already names it as the primary ALARM — at zero client instrumentation, a cost spike is
+> the first thing that will tell you something is wrong.
+>
+> So the order is: **set the spend cap (item 26), THEN set the variable.**
 >
 > Full evidence: `docs/REVIEW-2026-08-24-prelaunch.md` sections 2 and 8.
 

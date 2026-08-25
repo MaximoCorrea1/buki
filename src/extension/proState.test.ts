@@ -335,10 +335,43 @@ describe('the callers actually forward the activation id', () => {
     );
   });
 
-  it('the options page reuses a stored activation instead of activating again', () => {
-    // Pressing Activate on a key you already hold must not spend a second slot, and
-    // writePro must not drop the id it already had.
-    expect(optionsSrc).toContain('activationId');
+  it('the options page asks activateKey.ts rather than deciding inline', () => {
+    // THIS ASSERTION USED TO BE `expect(optionsSrc).toContain('activationId')`, and the
+    // 2026-08-24 review MUTATION-PROVED it worthless: replacing options.ts's reuse with
+    // `undefined` made every Activate press spend one of the licence's five permanent
+    // slots, and the suite stayed 620/620 green. The identifier survived in the `writePro`
+    // spread and in four comments, which is all `toContain` ever needed.
+    //
+    // ASSERTED ON THE IMPORT LINE, which §5 records as the one thing a `?raw` guard proves
+    // cleanly: there are no branches in an import, and prose about activation ids in a
+    // comment cannot satisfy it. The DECISION itself is now tested with real values in
+    // `activateKey.test.ts`, which is the half a source guard was never able to do.
+    expect(optionsSrc).toMatch(
+      /^import \{ activate as activateLicence \} from '\.\/activateKey';$/m,
+    );
+  });
+
+  it('the options page no longer decides ANYTHING about the activation', () => {
+    // ABSENCE, so a second copy of the rule cannot reappear beside the import above. One
+    // place decides; a second place is a second place to be wrong, and it was.
+    expect(optionsSrc).not.toMatch(/held\.key === pasted/);
+    expect(optionsSrc).not.toMatch(/result\.activationId \|\|/);
+
+    // AND NOTHING HERE BUILDS A ProState ANY MORE.
+    //
+    // A mutation proved the two rules above insufficient on their own: this handler was
+    // rewritten to construct its own literal and call `writePro` directly, in a spelling
+    // neither rule knows, and every test stayed green. Extracting the ARITHMETIC was half
+    // the fix; `activate()` now owns the ORDER too, so the only `writePro` left in this
+    // file is the one-line adapter handed to it.
+    //
+    // The decision that adapter protects — including "a retryable refusal writes NOTHING",
+    // which is a behaviour no source text can express — is asserted with real values in
+    // `activateKey.test.ts`.
+    const writes = [...optionsSrc.matchAll(/writePro\(([^)]*)\)/g)].map((m) => m[1]?.trim());
+    expect(writes, 'the options page writes Pro state it decided itself').toEqual([
+      'storage, state',
+    ]);
   });
 
   it('the worker cannot renew outside the latch', () => {

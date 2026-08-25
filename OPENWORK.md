@@ -1,17 +1,18 @@
 # Open work
 
-**State as of 2026-08-24**, verified by running the commands, not from memory:
+**State as of 2026-08-25**, verified by running the commands, not from memory:
 
 | | |
 | --- | --- |
-| Tests | **620 across 58 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-24). **Green is not the same as covered**: the 2026-08-24 review mutation-tested six behaviours and FIVE survived this suite untouched. See `docs/REVIEW-2026-08-24-prelaunch.md` section 3 |
+| Tests | **760 across 65 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **39 mutations, 37 caught immediately, and the two that survived were real holes in tests written thirty minutes earlier.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
+| Security | **The six pre-launch P0s are closed, 2026-08-25** (items 38-43). `/api/vision` rebuilds the request body instead of relaying it, the licensed path has a ceiling and an off switch, a Polar 5xx no longer deletes a subscriber's session, a hostile page cannot drive the tray, the card's × is not a free read, and the activation reuse is extracted and tested with real values. **Evidence: `docs/REVIEW-2026-08-24-prelaunch.md`; order and status: THE LANE below.** What is NOT closed is item 44, the wire contract, which is free until publication and never again |
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
-| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **33 commits since `d3e5923`, 2026-08-18 through 08-24** (was 25 at the end of 08-18) (probed 2026-08-19; it read 23 because it was written INTO the commit that changed it — the FOURTH such drift) (`git rev-list --count d3e5923..HEAD`). Run the probe |
+| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **41 commits since `d3e5923`, 2026-08-18 through 08-25** (was 33 at the end of 08-24) (`git rev-list --count d3e5923..HEAD`). **The figure beside it is written INTO the commit that changes it and is therefore wrong by one the moment it lands — that has happened four times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
@@ -43,7 +44,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~40~~ | agent | ~~No rate limit at all on the licensed path.~~ **DONE 2026-08-25.** `proCap.ts`: 500 catches per LICENCE per day, keyed on the `licenseKeyId` `decideAccess` was already computing and throwing away. Plus `BUKI_REVOKED_KEY_IDS`, the first targeted incident lever this product has. **A leaked token is now worth about $0.54 for its whole life.** Six mutations, six caught | — |
 | ~~41~~ | agent | ~~A hostile page can drive the tray.~~ **DONE 2026-08-25.** Three seams, each extracted and tested for real: `realClick.ts` (`isTrusted`, on real events), `feedHost.ts` (the scanner arms only on X), `twitterImage.isTweetMedia` (hostname, not substring). `contentSafety.test.ts` proves the ABSENCE of any second way in. **Seven mutations, seven caught** | — |
 | ~~42~~ | agent | ~~The card's x is a free-read button.~~ **DONE 2026-08-25.** Both halves: the server now hands Gemini `request.signal`, so calling a catch off actually stops the billing, and `TRIAL_ATTEMPTS` bounds doing it on purpose. **Both ceilings fold into `trialLeft`**, so the wall and the options page cannot tell one person two stories. Nine mutations; **one survived and found a real hole** | — |
-| **43** | agent | **The options page's slot reuse is deletable with 620/620 green.** MUTATION-PROVEN. Fix by extraction | five presses lock a paying customer out |
+| ~~43~~ | agent | ~~The options page's slot reuse is deletable with 620/620 green.~~ **DONE 2026-08-25.** `activateKey.ts` — and the ORDER came out as well as the arithmetic, because a mutation proved extracting only the arithmetic left the handler free to bypass it. The review's own mutation now fails six tests | — |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800. **The frames, the headlines and the staging are done** (`docs/store/assets.md`, `tools/store-shots.mjs`); what is left is capturing five real ones and re-running the tool | item 15 |
 | ~~17~~ | agent | ~~`docs/privacy.html` + the landing's data section~~ **DONE 2026-08-18** (`c0a3e00`). **The landing was already correct**; `privacy.html`, `README.md` and both Web Store answers were not. No DO-NOT-SUBMIT banners remain in `permissions.md` | — |
@@ -59,12 +60,19 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 **The critical path is 1, 2, 26.** Until the first two exist the paid tier is written and
 switched off, and until 26 exists nothing bounds what abuse can cost.
 
-> ### ~~THERE IS NO AGENT WORK LEFT IN THIS TABLE~~ — TRUE ON 2026-08-18, FALSE SINCE 2026-08-24.
+> ### THE SIX P0s ARE CLOSED, 2026-08-25. The agent queue is item 44 and item 36.
 >
-> The pre-launch review filed **six P0s (items 38-43), all agent work, all unblocked.** They are
-> the front of the queue: item 38 in particular must land BEFORE item 37 completes, because the
-> day `BUKI_EXTENSION_ID` becomes the shipped id is the day `/api/vision` is reachable by anyone
-> who reads the store URL. See `docs/REVIEW-2026-08-24-prelaunch.md` section 8.
+> ~~THERE IS NO AGENT WORK LEFT IN THIS TABLE~~ — true on 08-18, false on 08-24, and true
+> again on 08-25 in a different way. **Items 38-43 all landed**, each mutation-tested as it
+> went in. Item 38's gate on item 37 is satisfied: the model is pinned server-side, so the
+> day `BUKI_EXTENSION_ID` becomes the shipped id, `/api/vision` is reachable by anyone who
+> reads the store URL but can no longer be made to buy anything the caller chose.
+> **`launch.md` step 4.5 is now half-clear — item 26, the provider spend cap, is the other
+> half and it is Maximo's.**
+>
+> **ONE NEW ITEM CAME OUT OF DOING THEM: item 44**, and it has a deadline rather than a
+> severity. AC-3, AC-4, AC-7 and AC-8 all say *"cannot be added to clients already in the
+> wild"*, and there are none — until publication. That window is the item.
 >
 > The paragraph below is kept because its reasoning about MAXIMO's items is still exactly right:
 >
@@ -571,7 +579,32 @@ unblocks.
       ten books was never going to pay four dollars", and `ipCap.ts:11` calls it "the trial
       count that matters". **Both statements are false on this path.**
 
-- [ ] **43. THE OPTIONS PAGE'S ACTIVATION-SLOT REUSE IS DELETABLE WITH 620/620 GREEN.**
+- [x] **43. THE OPTIONS PAGE'S ACTIVATION-SLOT REUSE IS DELETABLE WITH 620/620 GREEN.**
+      **DONE 2026-08-25.** `src/extension/activateKey.ts`, the same move `saveBook.ts` made
+      out of `background.ts`. **The review's exact mutation — `const reuse = undefined` —
+      now fails six tests.**
+
+      **EXTRACTING THE ARITHMETIC WAS ONLY HALF, and a mutation is what said so.** With just
+      `activationFor` and `nextProState` pulled out, `options.ts` was still free to build its
+      own `ProState` and call `writePro` directly — and the whole suite stayed green, because
+      the replacement source guard only forbids the two spellings it already knows and §5
+      records that a `?raw` guard cannot see control flow at all. So `activate()` owns the
+      ORDER too. The handler is now: read a field, call it, say the sentence that comes back.
+      There is no branch left in it.
+
+      **The assertion that could never have been written before:** *a retryable refusal
+      writes NOTHING.* The difference between "wrote a state with no session" and "wrote
+      nothing" is a paying customer signed out during our own outage, and no amount of
+      reading `options.ts` as text can tell the two apart. It is the review's fifth
+      prescribed assertion, and it needed the orchestration extracted to become expressible.
+
+      **`toContain('activationId')` is gone**, replaced by an import-line regex plus two
+      absence rules plus a check that the ONLY `writePro` argument in the file is the
+      one-line adapter. That last one exists because the first two were proven insufficient.
+
+      **Five mutations, five caught**, including the one that survived the first attempt.
+
+      *Original text:*
       MUTATION-PROVEN: replacing `options.ts:85`'s `reuse` with `undefined` makes every Activate
       press spend one of the licence's **five permanent slots**, and the suite stays fully green.
       The only guard is `proState.test.ts:336` `toContain('activationId')`, which passes on the

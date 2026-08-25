@@ -5,6 +5,9 @@ import { toGoodreadsCsv, shelfFilename } from './goodreadsCsv';
 import type { BackgroundRequest } from './messages';
 import { createLicense } from './license';
 import { readPro, writePro, standingOf } from './proState';
+// Aliased: `activate` is already the button element in `wirePro`, and one of the two
+// would have shadowed the other in exactly the handler where both are used.
+import { activate as activateLicence } from './activateKey';
 import { createTrial } from './trial';
 import { planLabel } from './entitlement';
 import { BUKI_HOST } from '../shared/host';
@@ -78,36 +81,27 @@ async function wirePro(): Promise<void> {
         endpoint: `${BUKI_HOST}/api/license`,
         now: () => Date.now(),
       });
-      // Re-pressing Activate on the SAME key must not spend a second activation slot, so
-      // the stored id is offered back and the server validates instead. A DIFFERENT key
-      // gets no id: that is a genuinely new pairing and has to activate.
-      const pasted = el.field.value.trim();
-      const held = await readPro(storage);
-      const reuse = held.key === pasted ? held.activationId : undefined;
-
-      const result = await license.exchange(pasted, reuse);
-      if (result.ok) {
-        const id = result.activationId || reuse;
-        await writePro(storage, {
-          key: pasted,
-          session: result.session,
-          ...(id ? { activationId: id } : {}),
-        });
-        say('Pro is on. Cover reading is unlimited.');
-      } else {
-        // A retryable failure keeps whatever session is already stored: an outage on our
-        // side must not sign a paying customer out.
-        if (!result.retryable) {
-          // The session goes; the activation stays. This install is still paired, and
-          // forgetting the id would make the next success activate a second time.
-          await writePro(storage, {
-            key: pasted,
-            session: null,
-            ...(reuse ? { activationId: reuse } : {}),
-          });
-        }
-        say(result.message ?? 'That key could not be activated.');
-      }
+      // THE WHOLE PRESS LIVES IN `activateKey.ts`, and this handler has no decision left.
+      //
+      // It used to be four lines of branching here, inside a click listener in a module no
+      // test can import — and the 2026-08-24 review MUTATION-PROVED the result: replacing
+      // the activation reuse with `undefined` made every press spend one of the licence's
+      // five permanent slots, and the suite stayed 620/620 green. The only guard was
+      // `toContain('activationId')`, which passed on the identifier surviving in a spread.
+      //
+      // Extracting only the ARITHMETIC was not enough, and a mutation proved that too: this
+      // handler could still build its own state and call `writePro` itself. So the order
+      // came out as well. Read a field, call this, say the sentence — there is no branch
+      // here to get wrong, and "wrote nothing" versus "wrote a dead session" is now a
+      // behaviour a test can see. Same move `saveBook.ts` made out of `background.ts`.
+      say(
+        await activateLicence({
+          pasted: el.field.value,
+          read: () => readPro(storage),
+          exchange: (key, activationId) => license.exchange(key, activationId),
+          write: (state) => writePro(storage, state),
+        }),
+      );
     } catch (err) {
       console.error('[Buki] licence activation failed', err);
       say('Something went wrong. Try again in a moment.');
