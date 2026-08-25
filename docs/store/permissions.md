@@ -64,6 +64,16 @@ at all. That is exactly why the feature was restricted to one site before this p
 existed.
 ```
 
+> **This answer says "injects the same result card", and until 2026-08-25 it was
+> incomplete rather than wrong.** The injected bundle also armed X's feed scanner — a
+> `MutationObserver` on `document.body` plus `setInterval(scan, 2000)`, with no
+> `clearInterval` anywhere in the file — so it kept polling that page for the tab's whole
+> life. The 2026-08-24 review found it as the first link in a real attack chain; off X it
+> was also provably zero-yield work. The scanner is now gated on the host
+> (`src/extension/feedHost.ts`), so what this paragraph describes is now all that happens.
+> **Do not soften the wording:** it is accurate, and it is accurate because the code was
+> changed to match it rather than the other way round.
+
 **activeTab**
 
 ```

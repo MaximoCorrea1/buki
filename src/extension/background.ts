@@ -13,7 +13,7 @@ import { readSettings, toVisionConfig, type Settings } from './settings';
 import { createLibrary, identityOf, type StorageArea } from './storage';
 import { sameBook } from './bookIdentity';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
-import { bestQuality, distinctMedia } from './twitterImage';
+import { bestQuality, distinctMedia, keepTweetMedia } from './twitterImage';
 import { inlineAll, livePrep } from './inlineImage';
 import { createBreaker, withBreaker } from './breaker';
 import { rememberCover, liveCoverDeps } from './coverCache';
@@ -629,8 +629,22 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
 
   if (msg?.type !== 'recognize') return false;
 
+  // THE TRUST BOUNDARY IS HERE, and the filter is applied on BOTH sides of it.
+  //
+  // `content.ts` already drops any image that is not really X's, but it does that while
+  // running inside a page Buki does not control — `ensureTray` injects it into any tab on
+  // a right-click, which is catch-anywhere working as designed. A filter applied only on
+  // the far side of a boundary is a filter the attacker is standing next to: this message
+  // arrives over `chrome.runtime.sendMessage` and its contents are whatever the sender
+  // chose to put in it.
+  //
+  // The CONTEXT-MENU flow deliberately does not come through here. There the URL is
+  // Chrome's own `info.srcUrl`, which reports what the user actually right-clicked, and
+  // catching a book from any image on any site is the product.
+  const fromPage: Tweet = { ...msg.tweet, imageUrls: keepTweetMedia(msg.tweet.imageUrls) };
+
   const startedAt = Date.now();
-  lookUp(msg.tweet, msg.job, { ...(msg.fromText ? { fromText: true } : {}) })
+  lookUp(fromPage, msg.job, { ...(msg.fromText ? { fromText: true } : {}) })
     .then(async (recognized) => {
       sendResponse({
         ok: true,

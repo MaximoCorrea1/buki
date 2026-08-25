@@ -11,6 +11,9 @@ import { resolveTheme, THEME_KEY } from './themeChoice';
 import manrope from '../../fonts/manrope.woff2';
 import { createCatchTray, type Candidate, type Card } from './catchTray';
 import { postKey } from './lookupMemo';
+import { onRealClick } from './realClick';
+import { isFeedHost } from './feedHost';
+import { keepTweetMedia } from './twitterImage';
 import type { AttemptDraft, PendingEvent } from './recognitionLog';
 import type {
   BackgroundRequest,
@@ -543,9 +546,12 @@ function candidateLinks(article: HTMLElement): string[] {
 function scrapeTweet(article: HTMLElement): Tweet {
   return {
     text: article.querySelector('[data-testid="tweetText"]')?.textContent ?? '',
-    imageUrls: Array.from(article.querySelectorAll('img'))
-      .map((img) => img.src)
-      .filter((src) => src.includes('twimg.com/media')),
+    // HOST, not substring. `https://attacker.example/twimg.com/media/x.png` passed the
+    // old `.includes('twimg.com/media')` and was then saved as a book's cover, which the
+    // popup re-fetches on every open. The worker asks the same question again on receipt.
+    imageUrls: keepTweetMedia(
+      Array.from(article.querySelectorAll('img')).map((img) => img.src),
+    ),
     links: candidateLinks(article),
   };
 }
@@ -1033,12 +1039,12 @@ function wallBody(card: Card): Node[] {
   const go = document.createElement('button');
   go.className = 'buki-act buki-buy';
   go.textContent = WALL.act;
-  go.addEventListener('click', () => void openPage('pricing'));
+  onRealClick(go, () => void openPage('pricing'));
 
   const own = document.createElement('button');
   own.className = 'buki-act';
   own.textContent = WALL.free;
-  own.addEventListener('click', () => void openPage('options'));
+  onRealClick(own, () => void openPage('options'));
 
   return [head, go, own];
 }
@@ -1178,7 +1184,7 @@ function saveAllButton(card: Card): HTMLButtonElement {
   const b = document.createElement('button');
   b.className = 'buki-act';
   b.textContent = 'Save all to Someday';
-  b.addEventListener('click', () => void saveAll(card, b));
+  onRealClick(b, () => void saveAll(card, b));
   return b;
 }
 
@@ -1195,7 +1201,7 @@ function closeButton(card: Card): HTMLButtonElement {
   const stopping = card.state === 'looking';
   b.title = stopping ? 'Stop looking' : 'Dismiss';
   b.setAttribute('aria-label', stopping ? 'Stop looking for this book' : 'Dismiss this catch');
-  b.addEventListener('click', () => dismiss(card));
+  onRealClick(b, () => dismiss(card));
   return b;
 }
 
@@ -1215,7 +1221,7 @@ function intentRow(card: Card, cand: Candidate, index: number): HTMLElement {
       b.dataset['here'] = '';
       b.title = `Already in ${intent}`;
     }
-    b.addEventListener('click', () => void choose(card, cand, index, intent, row));
+    onRealClick(b, () => void choose(card, cand, index, intent, row));
     row.append(b);
   });
   return row;
@@ -1308,7 +1314,7 @@ function wordsButton(card: Card): HTMLButtonElement {
   const b = document.createElement('button');
   b.className = 'buki-act';
   b.textContent = "Try the post's words";
-  b.addEventListener('click', () => void tryWords(card));
+  onRealClick(b, () => void tryWords(card));
   return b;
 }
 
@@ -1440,8 +1446,13 @@ function addButton(article: HTMLElement): void {
 
   // Capture phase: X delegates clicks from high up the tree, so a bubble-phase
   // listener can be pre-empted by their handler before it ever runs.
-  btn.addEventListener(
-    'click',
+  //
+  // Through `onRealClick`, like every other click in this file: this script runs inside
+  // pages Buki does not control, and `button.click()` from page script used to run the
+  // whole pipeline - a free catch spent, our key used, and a page-chosen URL saved as a
+  // book's cover.
+  onRealClick(
+    btn,
     async (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -1512,13 +1523,34 @@ function requestScan(): void {
   });
 }
 
-const feed = document.querySelector('main[role="main"]') ?? document.body;
-new MutationObserver(requestScan).observe(feed, { childList: true, subtree: true });
-// Safety net: catches tweets whose nodes are recycled in place (mutating attributes
-// or text only), which a childList-only observer never sees.
-setInterval(scan, 2000);
-scan();
-trace(`content script ready on ${location.host}; ${injected} button(s) injected so far`);
+/**
+ * Arm the feed scanner. ONLY WHERE THERE IS A FEED.
+ *
+ * This used to run at module scope, on every page `content.js` was ever injected into —
+ * which is any page at all, because `ensureTray` injects it on a right-click. The observer
+ * and the interval then ran for the lifetime of that tab, and there is no `clearInterval`
+ * anywhere in this file. Off X that is zero-yield work for ever; on a page that wants it,
+ * it is a scanner waiting for forged `article[data-testid="tweet"]` markup.
+ *
+ * THE TRAY DOES NOT COME THROUGH HERE. It is message-driven — the worker asks for a card —
+ * so catch-anywhere is unchanged. Only the injecting of Save buttons into a feed is gated,
+ * and off X there was never a feed to inject them into.
+ */
+function armFeedScan(): void {
+  const feed = document.querySelector('main[role="main"]') ?? document.body;
+  new MutationObserver(requestScan).observe(feed, { childList: true, subtree: true });
+  // Safety net: catches tweets whose nodes are recycled in place (mutating attributes
+  // or text only), which a childList-only observer never sees.
+  setInterval(scan, 2000);
+  scan();
+}
+
+const armed = isFeedHost(location.hostname);
+if (armed) armFeedScan();
+trace(
+  `content script ready on ${location.host}; scanner ${armed ? 'armed' : 'off (not a feed)'}; ` +
+    `${injected} button(s) injected so far`,
+);
 
 // ---------------------------------------------------------------- from the worker
 

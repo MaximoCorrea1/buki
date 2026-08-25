@@ -41,7 +41,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~38~~ | agent | ~~`/api/vision` forwards the body verbatim.~~ **DONE 2026-08-25.** The body is REBUILT, not relayed: `src/server/visionBody.ts` pins the model, clamps `max_tokens`, caps bytes/images/prompt, and emits a three-key allowlist so `n`, `service_tier`, `stream` and `extra_body` have nowhere to go. Six mutations run against the new guards, **six caught** | — |
 | **39** | agent | **A Polar 5xx becomes 403 and the extension deletes a paying subscriber's session.** Both halves, server and client | every subscriber, during any Polar wobble |
 | **40** | agent | **No rate limit at all on the licensed path.** An 8-day unrevocable bearer with no ceiling | bounds a leaked token |
-| **41** | agent | **A hostile page can drive the tray.** Zero `isTrusted` in `src/`; substring host filter | the user's shelf and our key |
+| ~~41~~ | agent | ~~A hostile page can drive the tray.~~ **DONE 2026-08-25.** Three seams, each extracted and tested for real: `realClick.ts` (`isTrusted`, on real events), `feedHost.ts` (the scanner arms only on X), `twitterImage.isTweetMedia` (hostname, not substring). `contentSafety.test.ts` proves the ABSENCE of any second way in. **Seven mutations, seven caught** | — |
 | **42** | agent | **The card's x is a free-read button.** Abort skips the spend; the server never cancels Gemini | the trial's only real ceiling |
 | **43** | agent | **The options page's slot reuse is deletable with 620/620 green.** MUTATION-PROVEN. Fix by extraction | five presses lock a paying customer out |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
@@ -421,7 +421,42 @@ unblocks.
       `chrome.storage.local`, hold an uncapped arbitrary-prompt Gemini proxy for a week, and
       share it. Grace is UNCONDITIONAL - the server never learns whether Polar was actually down.
 
-- [ ] **41. A HOSTILE PAGE CAN DRIVE THE INJECTED TRAY.** Three facts compose:
+- [x] **41. A HOSTILE PAGE CAN DRIVE THE INJECTED TRAY.** **DONE 2026-08-25.**
+
+      **All three edits landed, and each one alone breaks the chain** — which is the point
+      of doing all three. The scanner no longer arms off X, so the forged article is never
+      scanned; a synthetic `.click()` no longer runs anything, so the button cannot be
+      pressed; and the image filter asks about the HOST, so the beacon URL never survives
+      to be saved.
+
+      **Each is now a module, because `content.ts` cannot be imported by a test** — it
+      touches `document` at module scope. `realClick.ts` is tested against REAL events on
+      a real `EventTarget` (Node has both), `feedHost.ts` against the near-misses
+      (`x.com.evil.test`, `notx.com`), `isTweetMedia` against the exact string from the
+      review. Nothing is mocked, so what passes is what the browser does.
+
+      **The filter is applied on BOTH sides of the trust boundary.** `content.ts` runs
+      inside a page Buki does not control, so a filter only there is one the attacker is
+      standing next to; `background.ts` re-asks the question when the `recognize` message
+      arrives. The CONTEXT-MENU flow is deliberately exempt — there the URL is Chrome's own
+      `info.srcUrl`, and catching a book from any image on any site is the product.
+
+      **`contentSafety.test.ts` is written entirely as ABSENCE proofs**, because §5 records
+      that a `?raw` guard cannot see control flow and the review found three that passed on
+      a string in a comment. It does not assert the safe call is present — a comment
+      satisfies that. It asserts there is no bare click listener, no module-scope timer or
+      observer, no unguarded `armFeedScan()`, no `.includes('twimg`, and no
+      `lookUp(msg.tweet`. Plus one count that guards the vacuous pass: zero bare listeners
+      is also what a file with no buttons looks like, and a deleted listener is exactly the
+      `theme.ts` mutation that survived a green suite.
+
+      **Two things closed for free.** PERF-9 — catch-anywhere installed X's feed scanner on
+      every third-party page, permanently, with no `clearInterval` anywhere — is the same
+      root and is gone with the gate. And `permissions.md`'s scripting answer, which told a
+      reviewer the injection "injects the same result card" while the bundle polled the DOM
+      every two seconds for ever, is now true as written; a note there says not to soften it.
+
+      *Original text:* Three facts compose:
       `grep -rc isTrusted src/` -> **ZERO in all of `src/`**; the image filter is
       `src.includes('twimg.com/media')`, a SUBSTRING match, so
       `https://attacker.example/twimg.com/media/x.png` passes; and the scanner arms permanently
