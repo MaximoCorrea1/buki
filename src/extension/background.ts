@@ -155,16 +155,25 @@ function visionFor(settings: Settings, net: FetchLike, pro: ProState) {
   const providerNeedsKey = /googleapis\.com|openai\.com|openrouter\.ai/.test(route.endpoint);
   if (!route.apiKey && providerNeedsKey) throw new NoKeyError('no key');
 
-  return createLlmVision({
-    fetch: net,
-    config: {
-      endpoint: route.endpoint,
-      // Empty means the proxy chooses, so fall back to the configured model only when we
-      // are talking to a provider directly.
-      model: route.model || settings.model,
-      ...(route.apiKey ? { apiKey: route.apiKey } : {}),
-    },
-  });
+  // THE ROUTE IS THE CONFIG. Not rebuilt field by field, which is what this used to do:
+  //
+  //     model: route.model || settings.model
+  //
+  // under a comment saying it fell back "only when we are talking to a provider directly".
+  // The `||` never looked at the endpoint, so the user's free-text model from
+  // `options.html` went straight back onto the PROXY path — and the proxy forwarded it to
+  // Gemini on our key. A keyless user typing `gemini-2.5-pro` billed us for Pro-tier
+  // inference through our own UI, with no forgery anywhere.
+  //
+  // `visionRoute` already makes that decision, and it is tested. Copying its answer into a
+  // fresh object is what created a second place for the decision to live, and the second
+  // place is the one that was wrong. `Route` and `VisionConfig` are the same shape on
+  // purpose: passing it through means there is nothing left to get wrong here.
+  //
+  // The SERVER is what defends the credential — `visionBody.ts` pins the model no matter
+  // what any client sends, because an attacker does not use our UI. This is the honest
+  // client, made honest.
+  return createLlmVision({ fetch: net, config: route });
 }
 
 /**

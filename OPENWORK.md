@@ -38,7 +38,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done | affiliate revenue |
 | **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
-| **38** | agent | **`/api/vision` forwards the body verbatim.** Caller picks the model and token budget on our Gemini key, reachable from our own options page. Measured 25,000x cost ratio | item 26's cap means nothing without it |
+| ~~38~~ | agent | ~~`/api/vision` forwards the body verbatim.~~ **DONE 2026-08-25.** The body is REBUILT, not relayed: `src/server/visionBody.ts` pins the model, clamps `max_tokens`, caps bytes/images/prompt, and emits a three-key allowlist so `n`, `service_tier`, `stream` and `extra_body` have nowhere to go. Six mutations run against the new guards, **six caught** | — |
 | **39** | agent | **A Polar 5xx becomes 403 and the extension deletes a paying subscriber's session.** Both halves, server and client | every subscriber, during any Polar wobble |
 | **40** | agent | **No rate limit at all on the licensed path.** An 8-day unrevocable bearer with no ceiling | bounds a leaked token |
 | **41** | agent | **A hostile page can drive the tray.** Zero `isTrusted` in `src/`; substring host filter | the user's shelf and our key |
@@ -343,7 +343,49 @@ unblocks.
 > guard asserts a STRING IS PRESENT rather than a BEHAVIOUR HOLDS, which is exactly what a good
 > comment already guarantees. **Five mutations survived a fully green 620-test suite.**
 
-- [ ] **38. `/api/vision` FORWARDS THE REQUEST BODY VERBATIM.** The caller picks the model and
+- [x] **38. `/api/vision` FORWARDS THE REQUEST BODY VERBATIM.** **DONE 2026-08-25.**
+
+      **The fix is a REBUILD, not a sanitise**, and that distinction is the whole design. A
+      sanitiser has to enumerate what is dangerous and is wrong the day the provider adds a
+      field. `src/server/visionBody.ts` builds the upstream request from the two things a
+      catch actually needs — one prompt and up to four pictures — so everything else the
+      caller sent has nowhere to go. The allowlist is three keys (`model`, `messages`,
+      `max_tokens`) and `visionBody.test.ts` asserts its COMPLEMENT: any fourth key is a
+      field somebody forwarded without deciding it was safe.
+
+      **Four levers the review did not name, all closed by the same rebuild.** `n: 100` is
+      a hundred completions charged for one request; `service_tier: 'priority'` is a
+      premium price band; `extra_body` is Gemini's documented escape hatch and can re-open
+      anything this module closes; `max_completion_tokens` is OpenAI's newer spelling of
+      `max_tokens`, so dropping only the old name would have left the new one honoured.
+
+      **`max_tokens` is 2,048, not the 256-512 the review suggested, and the difference is
+      load-bearing.** Twenty books is `MAX_BOOKS` and twenty entries is roughly 400 tokens,
+      so a few hundred would truncate a real answer into invalid JSON that `parseGuesses`
+      reads as "no books found" — the silent failure this codebase keeps producing. Worse,
+      `max_tokens` maps to Gemini's `maxOutputTokens`, which on a THINKING model is a
+      combined budget for reasoning and output; `llmVision.ts` already records that an
+      alias can be repointed at one that thinks. 2,048 keeps ~5x headroom over the largest
+      honest answer and still takes 64,000 attacker-chosen tokens down to 2,048.
+
+      **Where the 25,000x actually came from, checked against Google's pricing rather than
+      assumed:** $3.46 is 1M input + 64k output at **Pro long-context** rates ($2.50/M in,
+      $15/M out). At flash-lite rates the same request is ~$0.13. **So the model pin is
+      most of the fix and the input caps are the rest** — which is why the pin, not the
+      clamp, is the thing that must never regress.
+
+      **The client half was fixed too, and it is NOT the security fix.**
+      `background.ts`'s `model: route.model || settings.model` is now `config: route` —
+      `Route` and `VisionConfig` are the same shape, so there is no second place for the
+      decision to live. The second place is the one that was wrong. It closes the path
+      through our own UI; the server is what defends the credential, because an attacker
+      does not use our UI.
+
+      **`polar-setup.md` §"No model is pinned anywhere" was corrected in the same commit**,
+      with the old sentence kept above the new one, because it was TRUE and that was the
+      finding.
+
+      *Original text:* The caller picks the model and
       the token budget, billed to `GEMINI_API_KEY`. `visionHandler.ts:98` is
       `body: await request.text()` and that is the entire body handling on the money path: no
       parse, no model allowlist, no size cap, no `max_tokens` clamp.

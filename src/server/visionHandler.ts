@@ -11,6 +11,7 @@
  * that this hop exists. The extension's only change is which URL it posts to.
  */
 import { decideAccess } from './policy';
+import { MAX_BODY_BYTES, rebuildVisionBody } from './visionBody';
 
 export interface VisionEnv {
   secret: string;
@@ -44,6 +45,20 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
   if (!env.secret || !env.providerKey || !env.extensionId) {
     console.error('[buki] misconfigured: missing environment');
     return new Response('Server not configured', { status: 500 });
+  }
+
+  // AN EARLY-OUT, NOT THE CONTROL. `content-length` is caller-supplied and a runtime may
+  // or may not surface it, so nothing may depend on it — the authoritative check is the
+  // byte cap inside `rebuildVisionBody`, and `visionHandler.test.ts` proves that cap holds
+  // when this header lies. This only avoids buffering a body we already know we will
+  // refuse, which is why it sits above `decideAccess` rather than below: reading headers
+  // is all that happens before it.
+  //
+  // The same shape as `ipCap.ts`'s note about `x-forwarded-for`: the safety must come from
+  // the code, and the platform is allowed to help.
+  const declared = Number(request.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return refuse('That request is too large to read.', 413);
   }
 
   const now = env.now();
@@ -84,6 +99,17 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
     }
   }
 
+  // THE BODY IS REBUILT, NOT RELAYED, and this line used to be `body: await request.text()`.
+  //
+  // That made the caller the one choosing the model, the token budget and the number of
+  // completions, all billed to `GEMINI_API_KEY` — measured at up to 25,000x an honest
+  // catch. `visionBody.ts` owns the rebuild and every rule inside it; this call site owns
+  // only the ordering, which is that the refusal lands BEFORE the outbound fetch, like
+  // every other refusal in this handler. A 400 answered after calling the provider has
+  // already paid for the request it is refusing.
+  const rebuilt = rebuildVisionBody(await request.text());
+  if (!rebuilt.ok) return refuse(rebuilt.message, rebuilt.status);
+
   let upstream: Response;
   try {
     upstream = await env.fetch(env.providerUrl, {
@@ -95,7 +121,7 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
         // must is a wider blast radius for no gain.
         authorization: `Bearer ${env.providerKey}`,
       },
-      body: await request.text(),
+      body: rebuilt.body,
     });
   } catch (err) {
     console.error('[buki] provider unreachable', err);

@@ -380,10 +380,22 @@ the OpenAI-compatible endpoint `api/vision.ts` posts to:
 https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
 ```
 
-**No model is pinned anywhere**, deliberately: `visionRoute.ts` sends an empty model and
-the server passes the request through, because two pinned models were found retired inside
-one afternoon and a pinned default 404s for every new user while working perfectly for the
-one person who could notice.
+**The model is pinned SERVER-SIDE**, in `src/server/visionBody.ts` as `PINNED_MODEL`, and
+the caller's choice never reaches Gemini.
+
+> **This paragraph used to say "No model is pinned anywhere", and it was true.** That is
+> what the 2026-08-24 review found: `visionRoute.ts:42` claimed the server pinned the
+> alias, this file repeated it, and `visionRoute.test.ts` asserted it — while
+> `visionHandler.ts` was `body: await request.text()` and no file under `src/server/`
+> contained the word `model`. The caller therefore chose the model and the token budget on
+> our key: an honest catch $0.000135, a crafted one ~$3.46. Fixed 2026-08-25; the sentence
+> the three artefacts always made is now the one the code makes.
+
+It is an **alias**, never a pinned version, for the original reason: two pinned models were
+found retired inside one afternoon, and a pinned default 404s for every new user while
+working perfectly for the one person who could notice. It is a module constant rather than
+a seventh environment variable — six are already handed across by hand at launch, and one
+that silently defaults is one more way to ship half-configured.
 
 **`BUKI_TRIAL_CLOSED`** is the emergency brake: set it to `1` and the free trial stops
 answering, with no deploy. **Leave it unset.** Setting it to anything other than `1` is the
