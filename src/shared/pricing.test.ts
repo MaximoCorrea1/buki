@@ -87,7 +87,15 @@ describe('the price is one number', () => {
     // reader sees it, so a stale number cannot be hot-fixed the way a page can. It has to
     // be caught here or not at all.
     expect(TRIAL_CATCHES).toBe(10);
-    expect(storeShots.toLowerCase()).toContain('ten catches free');
+
+    // LOOK AT THE DISPLAYED COPY, NOT THE FILE. The first version of this asserted the
+    // phrase appeared anywhere in store-shots.mjs, and a mutation that DELETED it from the
+    // frame left the suite green: the comment above the frame explaining the guard was
+    // enough to satisfy the guard. That is the ?raw failure OPENWORK section 5 records, in
+    // its purest form. Only head: and sub: literals are copy a reader can ever see.
+    const shown = [...storeShots.matchAll(/\b(?:head|sub):\s*'([^']*)'/g)].map((m) => m[1]);
+    expect(shown.length, 'no frame copy found: has the SHOTS shape changed?').toBeGreaterThan(4);
+    expect(shown.join(' | ').toLowerCase()).toContain('ten catches free');
   });
 
   it('the landing has the anchor the EXTENSION links to', () => {

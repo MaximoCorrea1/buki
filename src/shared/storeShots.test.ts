@@ -72,11 +72,11 @@ describe('shot 2 headline stays bound to the capture it describes', () => {
    * that tells you what to photograph.
    */
   it('assets.md quotes shot 2 head verbatim, so a reshoot cannot change one alone', () => {
-    const head = /head:\s*'(One photo\.[^']*)'/.exec(storeShots)?.[1];
-    expect(head, 'shot 2 head not found: has the copy moved?').toBeTruthy();
+    const head = /head:\s*'([^']*[Nn]ineteen[^']*)'/.exec(storeShots)?.[1];
+    expect(head, 'the head naming the capture count is gone: has the copy moved?').toBeTruthy();
     expect(
       assetsMd,
-      `assets.md must quote shot 2's head verbatim so the staging and the frame move together. Frame says: ${head}`,
+      `assets.md must quote this head verbatim so the staging and the frame move together. Frame says: ${head}`,
     ).toContain(head!);
   });
 

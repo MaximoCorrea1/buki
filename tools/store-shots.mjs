@@ -106,6 +106,37 @@ const mark = (id, px) =>
  * `.agents/product-marketing.md`'s differentiators rather than written fresh, because the
  * positioning is settled and a screenshot is the wrong place to reopen it.
  *
+ * REWRITTEN 2026-08-25, SECOND PASS, and this one changed the approach rather than the
+ * wording. Maximo: *"instead of repolish the currents text, change the approach... these
+ * screenshots need to convert, sell, be fun, nice, we need to appeal to our niche,
+ * bookworms, tech people on x, Redditors who read."*
+ *
+ * The first pass fixed five sentences and left the structure alone, and the structure was
+ * the problem. Every frame answered *what does it do?* A store listing is not a feature
+ * tour: it is read by somebody deciding, and what they are deciding is whether this stops
+ * something that keeps happening to them. So the five frames now run as one story, in the
+ * order the store shows them:
+ *
+ *   1 the loss   2 the rescue   3 the relief   4 the scale   5 the offer
+ *
+ * WHAT MADE IT POSSIBLE was not a better vocabulary. It was noticing that three of the
+ * captures are ONE REAL POST: @Kekius_Sage's *"This is a book I read recently"*, the cover
+ * being read, and Heisenberg landing on the shelf. Shots 1 and 2 are a setup and a payoff
+ * from a single moment, which is a thing no amount of rewriting could have produced from
+ * five unrelated pictures.
+ *
+ * NOTHING HERE IS PROOF WE DO NOT HAVE. Zero users, pre-launch, so there are no counts, no
+ * testimonials and no ratings, exactly as `.agents/product-marketing.md` requires. The one
+ * number in the set is nineteen, and it is printed inside its own capture. The likes on
+ * shot 1's post are somebody else's and are never claimed as ours.
+ *
+ * ---
+ *
+ * The FIRST pass of 2026-08-25 is kept below because two of its fixes were facts, not
+ * taste, and both survive into this set: "tap" was wrong (desktop Chrome, there is nothing
+ * to tap) and the house style has NO CONTRACTIONS, only possessives, which is why none of
+ * the lines above use one.
+ *
  * EDITED 2026-08-25 on Maximo's brief: *"idk if i like the ctas"*. The instinct was right
  * and the diagnosis is that THESE ARE NOT CTAs. A store screenshot has no button on it:
  * the only control on the page is Chrome's own Add to Chrome, above the fold, and it never
@@ -140,72 +171,97 @@ const mark = (id, px) =>
  */
 const SHOTS = [
   {
-    // The sub used to be "Every book you caught, face out, in your browser", which restated
-    // the head and spent its best word on JARGON THE PICTURE ALREADY MAKES: a stranger does
-    // not know "face out", and the covers are face out on screen regardless. It now names
-    // the three piles, which are the one thing in this frame a stranger cannot decode. The
-    // pile control sits directly above the books and nothing anywhere explained it.
+    /**
+     * THE LOSS. One real post, and the reason the product exists is inside it.
+     *
+     * The capture is @Kekius_Sage on 2026-08-20: *"This is a book I read recently."* One
+     * thousand likes, twenty-six thousand views, and **the title appears nowhere in the
+     * text.** It is on the cover of the photograph and nowhere else, which is the exact
+     * condition every text-reading competitor is blind to (`.agents/product-marketing.md`,
+     * Competitive Landscape: TBR Bookmarker reads page text; BookFinder needs selectable
+     * type). A reader does not have to be told that. They can look.
+     *
+     * "Name this book." is a CHALLENGE the reader loses in about one second, and losing it
+     * is the point. It opens a loop that shot 2 closes, it flatters the niche (identifying
+     * books is a thing bookworms enjoy), and it indicts the POST and the BOOKMARK rather
+     * than the reader, which matters: nobody installs anything that just made them feel
+     * slow. The sub is the founder's own framing of the pain, near verbatim.
+     *
+     * THIS FRAME ALSO DOES SHOT 4'S OLD JOB. Buki's mark is already in that post's action
+     * bar, bottom right, beside bookmark and share. The old set spent a whole frame saying
+     * "the button lives here", which is a location rather than a reason. Here it is simply
+     * visible to anyone who looks, and the words are free to sell instead.
+     */
     n: 1,
     layout: 'hero',
-    head: 'A shelf, not a folder.',
-    sub: 'Every book you caught. Now, Next, or Someday.',
-    note: 'The one that sells it. Lead with it.',
+    head: 'Name this book.',
+    sub: 'This is how books get lost.',
+    note: 'The X post. Title nowhere in the text. The mark is in the action bar, bottom right.',
   },
   {
-    // BOUND TO THE CAPTURE. "Nineteen" is the count `trayCopy.ts` prints inside
-    // zzz-shot-2.png ("Buki found 19 books in this picture"). Reshoot with a different
-    // photograph and this word is a lie the reader can see in the same frame. assets.md
-    // states the binding and pricing.test.ts enforces it.
+    /**
+     * THE RESCUE, and it closes shot 1's loop with the answer.
+     *
+     * Same post, same book, seconds apart: the cover being read, then *Physics and
+     * philosophy, Werner Heisenberg* with the evidence line **read from the cover**. Shot 1
+     * asks and this one answers, so the pair is a setup and a payoff rather than two
+     * adjacent features.
+     *
+     * The sub is in the PAST TENSE on purpose. "You never typed a thing" hands the reader
+     * the outcome as something already done to them, which is the thing they are buying:
+     * not a capability, the absence of the step where the intention dies. The positioning
+     * doc names that step by name under Switching Dynamics.
+     */
     n: 2,
-    layout: 'hero',
-    head: 'One photo. Nineteen books.',
-    sub: 'It reads the cover, not the caption.',
-    note: 'The differentiator. No competitor screenshot can show this. Head is bound to the capture count.',
-  },
-  {
-    // WAS "Anywhere there is a picture", a single hero capture of a catch on a non-X site.
-    // Maximo replaced it on 2026-08-20 and the trade is a good one: this shows a catch
-    // HAPPENING and its result, where the old one showed only that the menu opens somewhere
-    // else. The breadth argument it carried is made twice already, in the single-purpose
-    // statement and in the host justification, and neither needed a screenshot to be true.
-    n: 3,
     layout: 'split',
-    // The head narrates the two panels rather than the two panels narrating themselves:
-    // "Right-click" is the left one and "then it is yours" is the right one. The old head,
-    // "You saw a book. Now you have it.", named no gesture at all, so the frame showed a
-    // before and an after with nothing between them. The sub leads with BREADTH now and
-    // puts X last, so shot 4 narrowing to "On X" reads as a zoom rather than a repeat.
-    head: 'Right-click. Then it is yours.',
-    sub: 'Any picture, anywhere. Reddit, Pinterest, X.',
-    note: 'The search, then the find. Needs zzz-shot-3a.png and zzz-shot-3b.png.',
-    a: 'The picture you found',
-    b: 'The book, on your shelf',
+    head: 'Buki reads the cover.',
+    sub: 'You never typed a thing.',
+    note: 'Same post as shot 1, same book, seconds apart. Needs zzz-shot-2a.png and zzz-shot-2b.png.',
+    a: 'What you saw',
+    b: 'What you have',
   },
   {
-    n: 4,
-    layout: 'detail',
-    // WAS "On X, it is one tap." There is no tap: this is a desktop Chrome extension and
-    // the gesture is a click. Shortened to a fragment as well, to rhyme with shot 2 and
-    // because "it is" unelided was the stiffest line in the set with contractions barred.
-    head: 'On X, one click.',
-    sub: 'Buki sits beside reply and like.',
-    note: 'Shows people where it lives. The inset is why this is a detail layout.',
-    zoomLabel: 'Actual size: 18px, X’s own icon box',
-  },
-  {
-    n: 5,
+    /**
+     * THE RELIEF. The old head here was "A shelf, not a folder.", which is a good line
+     * about the PRODUCT and says nothing about the reader.
+     *
+     * "Every book you nearly lost" is the same grid of covers reframed as rescued things,
+     * and it is the only frame in the set that pays off the guilt the first one opened.
+     * `.agents/product-marketing.md` calls that emotion by name: *"the quiet guilt of a
+     * bookmark folder. Knowing there were good things in there and no longer being able to
+     * find them."* Loss felt roughly twice as hard as the equivalent gain, so the relief is
+     * worth more than the feature it comes from.
+     *
+     * The sub still names the three piles, because they are the one thing in this frame a
+     * stranger cannot decode, and it closes on the contrast the head implies.
+     */
+    n: 3,
     layout: 'hero',
-    // The head is the trust claim and the sub is the offer, which is two jobs in one frame
-    // and deliberate: this is the LAST of the five, the only close a swipeable set gets,
-    // and the trial appeared on none of them. The sub is the locked motto's second line
-    // (docs/brand.md), quoted rather than improvised, and pricing.test.ts holds it to
-    // TRIAL_CATCHES so a screenshot cannot outlive the number it promises.
-    head: 'It tells you how it knew.',
-    sub: 'Ten catches free. No account, no sync.',
-    // WAS "Nothing else in this category publishes its own accuracy", which stopped being
-    // true on 2026-08-22 when the masthead stopped carrying a kept rate. The surviving
-    // signal is per-catch, and it is the one to stage.
-    note: 'The only shot that says where an answer came from. Stage the evidence line, not a rate.',
+    head: 'Every book you nearly lost.',
+    sub: 'Now, Next, or Someday. Never a folder again.',
+    note: 'The payoff. A full shelf, sitting on Now, all four piles populated.',
+  },
+  {
+    /**
+     * THE SCALE. Maximo, 2026-08-25, on the previous head "One photo. Nineteen books.":
+     * *"thats just an observation of my shelf, not a buki high conversion screenshot."*
+     * Correct, and the fix is not a bigger number. A count is a STAT; what sells is the
+     * work the reader does not have to do.
+     *
+     * "Nobody types nineteen titles" names the alternative and dismisses it in four words.
+     * It is the only joke in the set that is also the argument, which is the kind worth
+     * keeping. Two moments of wit across five frames is the ratio; more would be noise.
+     *
+     * STILL BOUND TO THE CAPTURE. Nineteen is the count `trayCopy.ts` prints inside
+     * zzz-shot-4.png. Reshoot with a different photograph and the word is a lie the reader
+     * can check without leaving the frame. assets.md quotes this head and
+     * storeShots.test.ts fails if the two stop agreeing.
+     */
+    n: 4,
+    layout: 'hero',
+    head: 'Nobody types nineteen titles.',
+    sub: 'Buki catches every book in the picture.',
+    note: 'The differentiator no competitor can screenshot. Head is bound to the capture count.',
   },
 ];
 
@@ -223,9 +279,21 @@ const ALTERNATES = [
     id: 'pair',
     layout: 'pair',
     ground: 'day',
+    // THE CLOSE, and the fifth thing uploaded to the listing. It needs no capture, which is
+    // why the set can ship today: four product frames plus this one.
+    //
+    // The head is the LOCKED motto (docs/brand.md) and is not up for editing here. The sub
+    // used to be "A picture is enough. No title, no link, no typing." That idea now lives
+    // in shot 2's sub, said better and in the reader's own past tense, so this slot was
+    // spending itself on a duplicate. It carries the OFFER instead, because a swipeable set
+    // gets exactly one close and the trial appeared on none of the five.
+    //
+    // Both sentences are the locked motto's second line, quoted rather than improvised, and
+    // pricing.test.ts holds "Ten catches free" to TRIAL_CATCHES so a PNG cannot outlive the
+    // number it promises.
     head: 'Find any book you see online, instantly.',
-    sub: 'A picture is enough. No title, no link, no typing.',
-    note: 'The brand frame. Also the source for the 440x280 tile: crop to the pair.',
+    sub: 'Ten catches free. No account, no sync.',
+    note: 'The close, and the brand frame. Also the source for the 440x280 tile: crop to the pair.',
   },
 ];
 

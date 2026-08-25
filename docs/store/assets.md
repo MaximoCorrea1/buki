@@ -72,85 +72,113 @@ is one of the two things `.agents/product-marketing.md` records as crossing that
 
 ---
 
-## The five
+## The five, and they are a STORY now
 
-### 1. The shelf · *"A shelf, not a folder."*
+**Restructured 2026-08-25** on Maximo's second brief: *"instead of repolish the currents
+text, change the approach... these screenshots need to convert, sell, be fun, nice, we need
+to appeal to our niche, bookworms, tech people on x, Redditors who read."*
 
-**Lead with it.** It is the one that sells the product, and it is the only shot that shows
-what you actually end up with.
+The previous five were a feature tour, each frame answering *what does it do?*. They now run
+as one story in the order the store shows them: **the loss, the rescue, the relief, the
+scale, the offer.** The words live in `tools/store-shots.mjs`; this file owns the staging.
 
-- The pile control visible at the top with all four piles populated.
-- Two or three full boards, books face out.
-- **Sit on `Now`**, not on a search result. A search box with text in it says "I am looking
-  for something", and the shot is about having it.
+> ### The thing that made it work is not a vocabulary
+>
+> **Three of the captures are ONE REAL POST.** @Kekius_Sage, 2026-08-20: *"This is a book I
+> read recently."* One thousand likes, twenty-six thousand views, and **the title is nowhere
+> in the text** - it exists only on the cover in the photograph. That is precisely the
+> condition every text-reading rival is blind to, and a reader can verify it without being
+> told. Shots 1 and 2 are a setup and its payoff from a single moment.
+>
+> **Do not restage shots 1 and 2 as different books.** The whole construction is that the
+> book you could not name in shot 1 is the book sitting on the shelf in shot 2.
 
-**What ruins it:** a shelf under twelve books, one pile at zero, or a scroll position that
-cuts a board in half.
+### What goes in each slot
 
-### 2. The multi-book catch · *"One photograph, several books."*
+| Slot | Source capture | What it is |
+| --- | --- | --- |
+| `zzz-shot-1.png` | `screenBookTweet.PNG` | The X post. Title nowhere in the text |
+| `zzz-shot-2a.png` | `screenBookTweet1ReadingCover.PNG` | *Reading the cover...* |
+| `zzz-shot-2b.png` | `screenBookTweet3FoundBook.PNG` | *Physics and philosophy*, resolved |
+| `zzz-shot-3.png` | `screen1.PNG` | The shelf |
+| `zzz-shot-4.png` | `screen4.PNG` | The nineteen-book catch |
+| *(none)* | - | The `pair` frame renders from the mark and a cover. **It is the fifth upload** |
 
-**The differentiator, and no competitor screenshot can show it.** Category A reads page
-text and Category C needs the physical book.
+**The numbering changed with the order.** A capture kept under its old name lands in the
+wrong frame silently, because the tool reads position from the filename and cannot know the
+picture is wrong. Re-copy from the sources above rather than renaming in place.
+
+### 1. The loss · *"Name this book."*
+
+**Lead with it**, and it replaced the shelf in that position deliberately. The shelf is
+beautiful and, at a glance, could be Goodreads. This one is unmistakably a timeline, which
+is where the niche already lives, and it poses a question the reader loses in a second.
+
+- The post at full width, **the photograph legible**, and the text visible enough that a
+  reader can see for themselves that no title is written in it.
+- **Buki's mark must be in frame**, bottom right of the action bar. It is small on purpose:
+  this frame does the old shot 4's job without spending words on it, so anyone who looks
+  finds it and nobody has to be told.
+
+**What ruins it:** a crop that loses the post's text, which is the entire proof; or a post
+whose caption happens to name the book, which quietly destroys the argument.
+
+### 2. The rescue · *"Buki reads the cover."*
+
+**A `split` frame. Two files, `zzz-shot-2a.png` and `zzz-shot-2b.png`, and there is no
+`zzz-shot-2.png`.**
+
+- **Left:** the *Reading the cover...* toast with the source thumbnail, caught while the bar
+  is part way, so it reads as a thing HAPPENING.
+- **Right:** the card with the evidence line *read from the cover*, the book resolved, and
+  the three pile buttons unpressed.
+- **Same post and same book as shot 1.** Shoot them seconds apart.
+
+**What ruins it:** a right panel showing a different book than shot 1. That is not an
+inconsistency, it is the joke failing to land.
+
+### 3. The relief · *"Every book you nearly lost."*
+
+- The pile control visible at the top with **all four piles populated**.
+- Two or three full boards, books face out, sitting on `Now` rather than a search result.
+- Fifteen to twenty-five books. Fewer than twelve looks like a demo.
+
+> **⚠ THE PILE SPREAD IS PART OF THE COPY.** The sub names Now, Next and Someday, so a shelf
+> with 99 of 119 books in Someday makes the frame argue against its own line. The capture of
+> 2026-08-20 reads `Now 8 · Next 8 · Someday 99 · Finished 4`, which is what *"Save all to
+> Someday"* being the only bulk action produces. **Restaging alone hides that rather than
+> fixing it**; it is recorded as a product question, not a photography one.
+
+**What ruins it:** one pile at zero, a scroll position that cuts a board in half, or a
+masthead that no longer exists. It reads `N books caught` since 2026-08-22 and the 08-20
+capture still shows a bare `119`.
+
+### 4. The scale · *"Nobody types nineteen titles."*
 
 - A photograph holding **four or more** books: a stack on a desk, a shelf behind someone.
-- > **⚠ THE COUNT IS IN THE HEADLINE.** Shot 2's frame reads *"One photo. Nineteen books."*
-  > because the capture staged on 2026-08-25 found **19**. The number is proof rather than a
-  > claim, which is the whole reason it is there, and it is also the one thing in the set a
-  > reader can falsify without leaving the frame. **Reshoot with a different photograph and
-  > you must change `tools/store-shots.mjs` in the same commit.**
-  > `src/shared/pricing.test.ts` fails if this file and the frame stop agreeing.
-- The card open with each book found on its own row, **covers resolved**, and the three
-  pile buttons unpressed.
+- The card open with each book on its own row, **covers resolved**, pile buttons unpressed.
 - The *Save all* control visible.
 
-**What ruins it:** two books (looks like a coincidence rather than a capability), or a card
-caught mid-load with a spinner.
+> **⚠ THE COUNT IS IN THE HEADLINE.** The frame reads *"Nobody types nineteen titles."*
+> because the capture found **19**. The number is proof rather than a claim, which is the
+> whole reason it is there, and it is the one line in the set a reader can falsify without
+> leaving the frame. **Reshoot with a different photograph and you must change
+> `tools/store-shots.mjs` in the same commit.** `src/shared/storeShots.test.ts` fails if
+> this file and the frame stop agreeing.
 
-### 3. The search, then the find · *"You saw it. Now you have it."*
+**What ruins it:** two books, which reads as a coincidence rather than a capability; or a
+card caught mid-load with a spinner.
 
-**A `split` frame, not a hero: two captures side by side with the mark between them.**
-Decided 2026-08-20. It replaced *A catch somewhere that is not X*, which showed only that
-the menu opens on another site. This shows a catch HAPPENING and its result, which is the
-same claim made in motion. The breadth argument the old shot carried is already made twice,
-in the single-purpose statement and in the host justification, and neither needed a picture
-to be true.
+### 5. The offer · the `pair` frame
 
-**Two files, not one:** `zzz-shot-3a.png` (left) and `zzz-shot-3b.png` (right). There is no
-`zzz-shot-3.png` and the tool will not ask for one.
+**It needs no capture and is the fifth upload.** The mark beside a real cover on the cream
+ground, the locked motto above, *"Ten catches free. No account, no sync."* below.
 
-- **Left, the reading state.** The *Reading the cover...* toast with the source thumbnail in
-  it. It has to be legible as a THING HAPPENING, so catch it while the bar is part way.
-- **Right, the result.** The card with the evidence line *read from the cover*, one book
-  resolved, and the pile buttons, with one pile already showing *on your shelf*.
-- **Same site, same book, both halves.** They are one moment split in two, and two different
-  books reads as two screenshots that happen to be adjacent.
+This is the only close a swipeable set gets, and until 2026-08-25 the trial appeared on none
+of the five. Both sentences are quoted from `docs/brand.md`'s locked motto rather than
+written here, and `src/shared/pricing.test.ts` holds the promise to `TRIAL_CATCHES`.
 
-**What ruins it:** a left panel that does not obviously show work in progress, and a right
-panel for a different book than the left. **Shoot them seconds apart, on the same catch.**
-
-### 4. The button in the action bar · *"One press, where you already are."*
-
-- A post on X with a book cover in it, the action bar visible, **Buki's mark sitting beside
-  reply and like**.
-- Close crop. This is a detail shot and the detail is that it belongs there.
-- The mark is the catcher at 18px, X's own icon size. If it looks like a different size from
-  its neighbours, something is wrong — say so rather than shooting around it.
-
-**What ruins it:** a wide shot where the mark is twelve pixels of blue nobody can see.
-
-### 5. The evidence · *"It tells you how often it is right."*
-
-- A book's detail sheet showing where the answer came from, **plus** the masthead's kept
-  rate in the same frame if you can get both.
-- If not, the masthead count on its own with a full shelf behind it.
-
-**What ruins it:** a detail sheet whose evidence line says *from the post's own words*, the
-weakest of the three signals. **Shoot one that says `read from the cover`** - that is the
-capability nothing else in the category has, and it is the whole reason this shot exists.
-
-*(This previously warned about a kept rate of 100% or 40%. The masthead stopped showing a
-rate on 2026-08-22; the per-catch evidence line is the surviving trust signal and the one
-to stage.)*
+**What ruins it:** putting it on the cobalt ground. See the measurement below.
 
 ---
 
