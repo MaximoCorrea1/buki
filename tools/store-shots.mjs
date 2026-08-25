@@ -106,22 +106,61 @@ const mark = (id, px) =>
  * `.agents/product-marketing.md`'s differentiators rather than written fresh, because the
  * positioning is settled and a screenshot is the wrong place to reopen it.
  *
+ * EDITED 2026-08-25 on Maximo's brief: *"idk if i like the ctas"*. The instinct was right
+ * and the diagnosis is that THESE ARE NOT CTAs. A store screenshot has no button on it:
+ * the only control on the page is Chrome's own Add to Chrome, above the fold, and it never
+ * changes. Written as slogans, five frames were five unrelated claims a reader had to
+ * assemble. They now run as ONE ARGUMENT IN FIVE BEATS, in the order the store shows them:
+ *
+ *   1 what you end up with   2 the proof it works   3 what you do
+ *   4 where it lives         5 why to trust it, and what it costs
+ *
+ * Four changes are worth naming because each fixes something specific rather than taste:
+ *
+ *   - SHOT 2 CARRIES THE NUMBER. *"Every book in it"* is a claim; *"Nineteen books"* is the
+ *     count printed inside the capture beneath it, so the frame proves itself. It is the
+ *     one number no competitor's screenshot can show. **It is bound to the capture** and
+ *     `src/shared/pricing.test.ts` holds it to `docs/store/assets.md`: reshoot with a
+ *     different count and both must move together.
+ *   - SHOT 4 SAID "TAP". Buki is a desktop Chrome extension and there is nothing to tap.
+ *     A mobile verb on a desktop listing reads as copy written without opening the product.
+ *   - SHOT 5 STOPPED SAYING THE SAME THING TWICE. Head and sub were one claim in two
+ *     sentences, and the head said it worse ("where it looked" is ambiguous, and it spent
+ *     two `it`s on two different subjects). The sub now carries the OFFER, because the
+ *     last frame is the only close a swipeable set gets and the trial appeared nowhere in
+ *     the five. Trust and price are one argument here, not two: this is how you check the
+ *     answer, and checking costs nothing.
+ *   - NO CONTRACTIONS, anywhere. `docs/index.html` has none, only possessives, and the
+ *     drafts that read best here all leaned on *that's* and *there's*. House style won.
+ *
+ * Every sub is still under eight words, which is the 2026-08-20 rule and the reason none of
+ * this reopened the positioning.
+ *
  * `docs/store/assets.md` carries what to actually put on screen for each.
  */
 const SHOTS = [
   {
+    // The sub used to be "Every book you caught, face out, in your browser", which restated
+    // the head and spent its best word on JARGON THE PICTURE ALREADY MAKES: a stranger does
+    // not know "face out", and the covers are face out on screen regardless. It now names
+    // the three piles, which are the one thing in this frame a stranger cannot decode. The
+    // pile control sits directly above the books and nothing anywhere explained it.
     n: 1,
     layout: 'hero',
     head: 'A shelf, not a folder.',
-    sub: 'Every book you caught, face out, in your browser.',
+    sub: 'Every book you caught. Now, Next, or Someday.',
     note: 'The one that sells it. Lead with it.',
   },
   {
+    // BOUND TO THE CAPTURE. "Nineteen" is the count `trayCopy.ts` prints inside
+    // zzz-shot-2.png ("Buki found 19 books in this picture"). Reshoot with a different
+    // photograph and this word is a lie the reader can see in the same frame. assets.md
+    // states the binding and pricing.test.ts enforces it.
     n: 2,
     layout: 'hero',
-    head: 'One photo. Every book in it.',
+    head: 'One photo. Nineteen books.',
     sub: 'It reads the cover, not the caption.',
-    note: 'The differentiator. No competitor screenshot can show this.',
+    note: 'The differentiator. No competitor screenshot can show this. Head is bound to the capture count.',
   },
   {
     // WAS "Anywhere there is a picture", a single hero capture of a catch on a non-X site.
@@ -131,8 +170,13 @@ const SHOTS = [
     // statement and in the host justification, and neither needed a screenshot to be true.
     n: 3,
     layout: 'split',
-    head: 'You saw a book. Now you have it.',
-    sub: 'On X, on Reddit, on Pinterest. Right-click it.',
+    // The head narrates the two panels rather than the two panels narrating themselves:
+    // "Right-click" is the left one and "then it is yours" is the right one. The old head,
+    // "You saw a book. Now you have it.", named no gesture at all, so the frame showed a
+    // before and an after with nothing between them. The sub leads with BREADTH now and
+    // puts X last, so shot 4 narrowing to "On X" reads as a zoom rather than a repeat.
+    head: 'Right-click. Then it is yours.',
+    sub: 'Any picture, anywhere. Reddit, Pinterest, X.',
     note: 'The search, then the find. Needs zzz-shot-3a.png and zzz-shot-3b.png.',
     a: 'The picture you found',
     b: 'The book, on your shelf',
@@ -140,7 +184,10 @@ const SHOTS = [
   {
     n: 4,
     layout: 'detail',
-    head: 'On X, it is one tap.',
+    // WAS "On X, it is one tap." There is no tap: this is a desktop Chrome extension and
+    // the gesture is a click. Shortened to a fragment as well, to rhyme with shot 2 and
+    // because "it is" unelided was the stiffest line in the set with contractions barred.
+    head: 'On X, one click.',
     sub: 'Buki sits beside reply and like.',
     note: 'Shows people where it lives. The inset is why this is a detail layout.',
     zoomLabel: 'Actual size: 18px, X’s own icon box',
@@ -148,9 +195,17 @@ const SHOTS = [
   {
     n: 5,
     layout: 'hero',
-    head: 'It shows you where it looked.',
-    sub: 'Every catch says where the answer came from.',
-    note: 'Nothing else in this category publishes its own accuracy.',
+    // The head is the trust claim and the sub is the offer, which is two jobs in one frame
+    // and deliberate: this is the LAST of the five, the only close a swipeable set gets,
+    // and the trial appeared on none of them. The sub is the locked motto's second line
+    // (docs/brand.md), quoted rather than improvised, and pricing.test.ts holds it to
+    // TRIAL_CATCHES so a screenshot cannot outlive the number it promises.
+    head: 'It tells you how it knew.',
+    sub: 'Ten catches free. No account, no sync.',
+    // WAS "Nothing else in this category publishes its own accuracy", which stopped being
+    // true on 2026-08-22 when the masthead stopped carrying a kept rate. The surviving
+    // signal is per-catch, and it is the one to stage.
+    note: 'The only shot that says where an answer came from. Stage the evidence line, not a rate.',
   },
 ];
 

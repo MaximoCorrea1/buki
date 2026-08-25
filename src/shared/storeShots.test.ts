@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import storeShots from '../../tools/store-shots.mjs?raw';
+import assetsMd from '../../docs/store/assets.md?raw';
 
 /**
  * THE STORE FRAMES MUST NOT BECOME AN EIGHTH COPY OF THE MARK.
@@ -51,6 +52,41 @@ describe('the store frames draw the mark rather than redrawing it', () => {
       expect(arg).toMatch(/\$\{/);
     }
     expect(new Set(calls).size).toBe(calls.length);
+  });
+});
+
+
+describe('shot 2 headline stays bound to the capture it describes', () => {
+  /**
+   * SHOT 2'S HEAD NAMES A NUMBER, AND THE NUMBER IS INSIDE THE PICTURE.
+   *
+   * The frame reads *"One photo. Nineteen books."* over a capture whose own copy, from
+   * `trayCopy.ts`, reads *"Buki found 19 books in this picture"*. That is the strongest
+   * thing in the listing: every other frame makes a claim, this one shows its evidence in
+   * the same rectangle. It is also the only line a reader can falsify WITHOUT LEAVING THE
+   * FRAME, so a reshoot that changes the photograph and not the headline does not produce a
+   * stale sentence. It produces a visible contradiction, on the differentiator shot.
+   *
+   * No test can read the count out of a PNG. What it CAN do is refuse to let the two
+   * documents that both spell it drift apart: the frame that prints it and the staging note
+   * that tells you what to photograph.
+   */
+  it('assets.md quotes shot 2 head verbatim, so a reshoot cannot change one alone', () => {
+    const head = /head:\s*'(One photo\.[^']*)'/.exec(storeShots)?.[1];
+    expect(head, 'shot 2 head not found: has the copy moved?').toBeTruthy();
+    expect(
+      assetsMd,
+      `assets.md must quote shot 2's head verbatim so the staging and the frame move together. Frame says: ${head}`,
+    ).toContain(head!);
+  });
+
+  it('the staging note names a digit count for the photograph to hold', () => {
+    // The head spells the number as a word and the capture prints it as a digit. The
+    // staging note is the one place both live, and it is the instruction someone follows
+    // with a camera. A binding note with no number in it is a note nobody can act on.
+    const note = /THE COUNT IS IN THE HEADLINE[\s\S]{0,600}/.exec(assetsMd)?.[0] ?? '';
+    expect(note, 'the shot 2 binding note is gone from assets.md').not.toBe('');
+    expect(note).toMatch(/\*\*\d+\*\*/);
   });
 });
 

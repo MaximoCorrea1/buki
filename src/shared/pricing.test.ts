@@ -12,6 +12,7 @@ import { BUKI_HOST } from './host';
 import { TRIAL_CATCHES } from '../extension/entitlement';
 import indexHtml from '../../docs/index.html?raw';
 import pricingMd from '../../docs/pricing.md?raw';
+import storeShots from '../../tools/store-shots.mjs?raw';
 
 /**
  * The price, defined once, and the copies refused permission to disagree.
@@ -74,6 +75,19 @@ describe('the price is one number', () => {
     // more than the gate allows is the one claim a stranger can check in five minutes.
     expect(TRIAL_CATCHES).toBe(10);
     expect(indexHtml.toLowerCase()).toContain('ten catches free');
+  });
+
+  it('the STORE FRAMES promise the same trial as the landing and the code', () => {
+    // Added 2026-08-25 with shot 5's sub, which now carries the locked motto line
+    // *"Ten catches free. No account, no sync."* That makes the store screenshots a THIRD
+    // surface spelling a promise `entitlement.ts` enforces, and OPENWORK item 45 is open
+    // precisely because the price guard could not see two of the five surfaces it should.
+    //
+    // A screenshot is the worst place for this to drift: the frame is a PNG by the time a
+    // reader sees it, so a stale number cannot be hot-fixed the way a page can. It has to
+    // be caught here or not at all.
+    expect(TRIAL_CATCHES).toBe(10);
+    expect(storeShots.toLowerCase()).toContain('ten catches free');
   });
 
   it('the landing has the anchor the EXTENSION links to', () => {

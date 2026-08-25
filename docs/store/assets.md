@@ -93,6 +93,12 @@ cuts a board in half.
 text and Category C needs the physical book.
 
 - A photograph holding **four or more** books: a stack on a desk, a shelf behind someone.
+- > **⚠ THE COUNT IS IN THE HEADLINE.** Shot 2's frame reads *"One photo. Nineteen books."*
+  > because the capture staged on 2026-08-25 found **19**. The number is proof rather than a
+  > claim, which is the whole reason it is there, and it is also the one thing in the set a
+  > reader can falsify without leaving the frame. **Reshoot with a different photograph and
+  > you must change `tools/store-shots.mjs` in the same commit.**
+  > `src/shared/pricing.test.ts` fails if this file and the frame stop agreeing.
 - The card open with each book found on its own row, **covers resolved**, and the three
   pile buttons unpressed.
 - The *Save all* control visible.
