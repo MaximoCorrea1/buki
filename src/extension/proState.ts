@@ -96,13 +96,17 @@ export async function writePro(storage: StorageArea, state: ProState): Promise<v
  */
 export function standingOf(
   pro: ProState,
-  trialSpent: number,
+  // AN OBJECT, not two adjacent numbers. `standingOf(pro, spent, attempts, key, now)` puts
+  // two interchangeable-looking integers side by side, and a caller that swaps them
+  // compiles, passes every type check, and quietly gives somebody three times the trial.
+  trial: { spent: number; attempts: number },
   providerKey: string,
   now: number,
 ): Standing {
   return {
     pro: isLicensed(pro.session, now),
-    trialSpent,
+    trialSpent: trial.spent,
+    trialAttempts: trial.attempts,
     ownKey: providerKey.trim() !== '',
   };
 }

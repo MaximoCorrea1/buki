@@ -18,29 +18,29 @@ describe('the plan badge', () => {
   it('says nothing at all early in the trial', () => {
     // Ten catches, one used. A badge counting down from the first catch is a countdown,
     // and a countdown on your own shelf is pressure applied to somebody browsing.
-    expect(badgeFor({ pro: false, trialSpent: 1, ownKey: false })).toBeNull();
+    expect(badgeFor({ pro: false, trialSpent: 1, trialAttempts: 0, ownKey: false })).toBeNull();
   });
 
   it('starts counting only once the end is close enough to be a surprise', () => {
-    const badge = badgeFor({ pro: false, trialSpent: TRIAL_CATCHES - WARN_FROM, ownKey: false });
+    const badge = badgeFor({ pro: false, trialSpent: TRIAL_CATCHES - WARN_FROM, trialAttempts: 0, ownKey: false });
     expect(badge?.label).toBe(`${WARN_FROM} free covers left`);
     expect(badge?.cta).toBe(true);
   });
 
   it('says one cover, not 1 covers', () => {
-    expect(badgeFor({ pro: false, trialSpent: TRIAL_CATCHES - 1, ownKey: false })?.label).toBe(
+    expect(badgeFor({ pro: false, trialSpent: TRIAL_CATCHES - 1, trialAttempts: 0, ownKey: false })?.label).toBe(
       '1 free cover left',
     );
   });
 
   it('says the free covers are used once they are, and offers', () => {
-    const badge = badgeFor({ pro: false, trialSpent: TRIAL_CATCHES, ownKey: false });
+    const badge = badgeFor({ pro: false, trialSpent: TRIAL_CATCHES, trialAttempts: 0, ownKey: false });
     expect(badge?.label).toBe('Free covers used');
     expect(badge?.cta).toBe(true);
   });
 
   it('marks a subscriber Pro, and never asks them for anything', () => {
-    const badge = badgeFor({ pro: true, trialSpent: TRIAL_CATCHES, ownKey: false });
+    const badge = badgeFor({ pro: true, trialSpent: TRIAL_CATCHES, trialAttempts: 0, ownKey: false });
     expect(badge?.label).toBe('Pro');
     expect(badge?.cta).toBe(false);
   });
@@ -48,11 +48,11 @@ describe('the plan badge', () => {
   it('says nothing to somebody using their own key', () => {
     // Their cover reading is unlimited and costs us nothing. There is no offer to make,
     // and a badge saying "Your own key" is a label on a fact they already know.
-    expect(badgeFor({ pro: false, trialSpent: TRIAL_CATCHES, ownKey: true })).toBeNull();
+    expect(badgeFor({ pro: false, trialSpent: TRIAL_CATCHES, trialAttempts: 0, ownKey: true })).toBeNull();
   });
 
   it('prefers Pro over the trial count, so paying visibly changes something', () => {
     // Almost everyone converts AT the wall, so a subscriber's trialSpent is 10 forever.
-    expect(badgeFor({ pro: true, trialSpent: TRIAL_CATCHES, ownKey: false })?.label).toBe('Pro');
+    expect(badgeFor({ pro: true, trialSpent: TRIAL_CATCHES, trialAttempts: 0, ownKey: false })?.label).toBe('Pro');
   });
 });

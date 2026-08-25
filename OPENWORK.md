@@ -42,7 +42,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~39~~ | agent | ~~A Polar 5xx becomes 403 and the extension deletes a paying subscriber's session.~~ **DONE 2026-08-25.** Both halves. The rule now lives once, in `src/shared/retry.ts`, used by `licenseHandler`, `license.ts` AND `llmVision.ts` — the two clients that had drifted. **Six mutations, six caught**, in both directions | — |
 | ~~40~~ | agent | ~~No rate limit at all on the licensed path.~~ **DONE 2026-08-25.** `proCap.ts`: 500 catches per LICENCE per day, keyed on the `licenseKeyId` `decideAccess` was already computing and throwing away. Plus `BUKI_REVOKED_KEY_IDS`, the first targeted incident lever this product has. **A leaked token is now worth about $0.54 for its whole life.** Six mutations, six caught | — |
 | ~~41~~ | agent | ~~A hostile page can drive the tray.~~ **DONE 2026-08-25.** Three seams, each extracted and tested for real: `realClick.ts` (`isTrusted`, on real events), `feedHost.ts` (the scanner arms only on X), `twitterImage.isTweetMedia` (hostname, not substring). `contentSafety.test.ts` proves the ABSENCE of any second way in. **Seven mutations, seven caught** | — |
-| **42** | agent | **The card's x is a free-read button.** Abort skips the spend; the server never cancels Gemini | the trial's only real ceiling |
+| ~~42~~ | agent | ~~The card's x is a free-read button.~~ **DONE 2026-08-25.** Both halves: the server now hands Gemini `request.signal`, so calling a catch off actually stops the billing, and `TRIAL_ATTEMPTS` bounds doing it on purpose. **Both ceilings fold into `trialLeft`**, so the wall and the options page cannot tell one person two stories. Nine mutations; **one survived and found a real hole** | — |
 | **43** | agent | **The options page's slot reuse is deletable with 620/620 green.** MUTATION-PROVEN. Fix by extraction | five presses lock a paying customer out |
 | **3** | **Maximo** | The by-hand browser pass. **No agent can ever tick this** | item 9 |
 | **9** | **Maximo** | Five Web Store screenshots at 1280x800. **The frames, the headlines and the staging are done** (`docs/store/assets.md`, `tools/store-shots.mjs`); what is left is capturing five real ones and re-running the tool | item 15 |
@@ -533,7 +533,36 @@ unblocks.
       popup open, forever. **The correct hostname check is three lines away in
       `twitterImage.ts:51`.** Found by the threat model ONLY. Three small edits.
 
-- [ ] **42. THE CARD'S x IS A FREE-READ BUTTON.** `gate.ts:64` spends the trial credit only
+- [x] **42. THE CARD'S x IS A FREE-READ BUTTON.** **DONE 2026-08-25.** Both halves, and
+      they fix different things: one stops the waste, the other bounds doing it on purpose.
+
+      **Server.** `grep -c signal src/server/visionHandler.ts` was **0**. The extension
+      aborts correctly — `dismiss` sends `cancelRecognize`, the worker's controller fires,
+      the socket closes — and none of it crossed the hop, so Gemini went on generating and
+      billing against a connection nobody was listening to. The upstream fetch now carries
+      `request.signal`.
+
+      **Client.** `trialAttempts` in `trial.ts`, incremented in a `finally` for every catch
+      that issued a request, ceiling `TRIAL_ATTEMPTS = TRIAL_CATCHES * 3`. **The advertised
+      promise is untouched**: a reading that never came back still costs none of the ten,
+      because charging for a timeout is the fastest uninstall there is.
+
+      **Both ceilings fold into ONE `trialLeft`, and that was the design decision worth
+      making.** Two counts read in two places is two places to disagree, and the
+      disagreement lands as the wall saying "spent" while `planLabel` says "10 of 10 left" —
+      a false statement made to somebody at the exact moment they are deciding whether to
+      pay. `decide`, `planLabel` and `footer` now all read the same number by construction.
+
+      **`standingOf` takes an OBJECT, not two adjacent numbers.**
+      `standingOf(pro, spent, attempts, key, now)` puts two interchangeable-looking integers
+      side by side; a caller that swaps them compiles, typechecks, and quietly hands somebody
+      three times the trial.
+
+      **The attempt counter is swallowed in the `finally`.** A `finally` that throws
+      REPLACES the error being unwound, so a storage-quota failure would surface instead of
+      the wall — on the one path where the message is the entire point.
+
+      *Original text:* `gate.ts:64` spends the trial credit only
       after `work()` RESOLVES, and `grep -c signal src/server/visionHandler.ts` -> **0**, so a
       client abort never reaches Gemini. **The money is committed; the counter does not move.**
       Press catch, press "Stop looking" after two seconds, repeat - no forgery, no storage
@@ -1450,6 +1479,28 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
 ---
 
 ## 5. Traps that have already cost time
+
+- **THE GUARD YOU JUST WROTE IS THE ONE YOU ARE LEAST ABLE TO SEE THROUGH. Mutate it. 2026-08-25.**
+  Every P0 fix this session was mutation-tested after it went green, and **one of the new
+  guards survived**: replacing `trial.ts`'s `attempts: () => read(ATTEMPTS_KEY)` with
+  `attempts: async () => 0` left the whole suite green. Attempts were written on every catch
+  and read back as zero for ever, so the ceiling could never be reached and item 42's fix was
+  inert. **The tests had been written thirty minutes earlier, by someone holding the whole
+  design in their head, specifically to catch this class of bug.** They asserted the gate
+  called `attempt()` and that `decide` respected the ceiling — both true, both useless
+  without the round trip in between.
+  This is `readPro` dropping `activationId` for the third time (see item 27, twice). The
+  countermeasure is not more care: it is that **a guard is not finished when it passes, it is
+  finished when you have watched it fail.** Cost: nothing, because the mutation found it.
+  It would have cost the whole of item 42 otherwise.
+
+- **A MUTATION THAT DOES NOT COMPILE PROVES NOTHING, AND LOOKS LIKE A PASS. 2026-08-25.**
+  A `sed` that turned `} finally {` into unbalanced braces made `gate.test.ts` fail to LOAD,
+  so vitest reported `92 passed` — a smaller number than the baseline's 107, all green. Read
+  as "the mutation survived" it is exactly backwards, and read carelessly it is reassuring.
+  **Compare the TOTAL, not just the failure count**: a mutation run whose total dropped did
+  not run the tests you think it ran. Two of nine mutations this session were invalid this
+  way, both caught only by the total.
 
 - **A LARGE HEREDOC THROUGH BASH BREAKS ON QUOTING. Fourth occurrence 2026-08-18**, writing
   the handoff: `bash: unexpected EOF while looking for matching quote`, with nothing written.

@@ -16,28 +16,46 @@ import { createWriteQueue } from './writeQueue';
  */
 const KEY = 'trialSpent';
 
+/**
+ * Catches that ISSUED a request, whatever came back.
+ *
+ * The counter above is the advertised one and only moves when a reading arrives, which is
+ * a promise this module makes out loud and keeps. This one exists because that promise can
+ * be turned into an unbounded free-read loop by anybody willing to press the card's x:
+ * the abort surfaces as a 408, the spend is skipped, and the request was already paid for.
+ *
+ * `entitlement.TRIAL_ATTEMPTS` is the ceiling, three per advertised catch, and
+ * `entitlement.trialLeft` folds both into ONE number so the wall, the plan label and the
+ * tray footer cannot tell one person three different stories.
+ */
+const ATTEMPTS_KEY = 'trialAttempts';
+
 export function createTrial(deps: { storage: StorageArea }) {
   // Same reason storage.ts has one: spend() is read-modify-write against a single key, and
   // two catches landing together would otherwise both read the same base and one would be
   // silently free.
   const serialize = createWriteQueue();
 
-  async function read(): Promise<number> {
-    const got = await deps.storage.get(KEY);
-    const raw = got[KEY];
+  async function read(key: string): Promise<number> {
+    const got = await deps.storage.get(key);
+    const raw = (got as Record<string, unknown>)[key];
     // Storage is shared and user-editable. A corrupt or negative value reads as zero
     // rather than throwing, and never as "infinite free catches".
     return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
   }
 
+  /** Read, add one, write - through the queue, because two catches can land together. */
+  const bump = (key: string): Promise<number> =>
+    serialize(async () => {
+      const next = (await read(key)) + 1;
+      await deps.storage.set({ [key]: next });
+      return next;
+    });
+
   return {
-    spent: read,
-    async spend(): Promise<number> {
-      return serialize(async () => {
-        const next = (await read()) + 1;
-        await deps.storage.set({ [KEY]: next });
-        return next;
-      });
-    },
+    spent: () => read(KEY),
+    attempts: () => read(ATTEMPTS_KEY),
+    spend: () => bump(KEY),
+    attempt: () => bump(ATTEMPTS_KEY),
   };
 }

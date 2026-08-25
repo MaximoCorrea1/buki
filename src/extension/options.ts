@@ -49,12 +49,13 @@ async function wirePro(): Promise<void> {
 
   /** What plan is this, in the words `entitlement.ts` owns. */
   async function showPlan(): Promise<void> {
-    const [pro, settings, spent] = await Promise.all([
+    const [pro, settings, spent, attempts] = await Promise.all([
       readPro(storage),
       readSettings(),
       trial.spent(),
+      trial.attempts(),
     ]);
-    const standing = standingOf(pro, spent, settings.apiKey, Date.now());
+    const standing = standingOf(pro, { spent, attempts }, settings.apiKey, Date.now());
     el.now.textContent = planLabel(standing);
     el.now.toggleAttribute('data-pro', standing.pro);
     // Nothing to sell to somebody already on Pro or paying nothing because they brought

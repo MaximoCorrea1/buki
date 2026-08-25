@@ -20,6 +20,27 @@
  *  catch costs about $0.00011, so this number is a design decision, not a cost one. */
 export const TRIAL_CATCHES = 10;
 
+/**
+ * THE CEILING THAT IS NOT AN ALLOWANCE, and the distinction is the whole design.
+ *
+ * `trialSpent` counts readings that came BACK, and `trial.ts` states out loud why: charging
+ * one of ten free catches for a timeout is the fastest uninstall there is. That promise is
+ * kept and this does not touch it.
+ *
+ * What the promise could not survive is a caller who makes the work fail ON PURPOSE. Press
+ * catch, press the card's × two seconds later, repeat: `dismiss` sends `cancelRecognize`,
+ * the worker aborts, `lookups.forget(job)` guarantees the next press is a fresh full-price
+ * lookup, the abort surfaces as a 408, and `spendTrial` is skipped. **The money is
+ * committed and the counter does not move**, with no forgery and no storage editing — while
+ * the options page goes on reading "10 of 10 free catches left".
+ *
+ * So this counts ATTEMPTS: every catch that actually issued a request, whatever came back.
+ * Three per advertised catch, because somebody with a genuinely terrible connection burns
+ * one attempt per catch and 30 consecutive real failures is a broken product rather than a
+ * pattern to bill for. It is a stop on an unbounded loop, not a second allowance.
+ */
+export const TRIAL_ATTEMPTS = TRIAL_CATCHES * 3;
+
 /** How few must remain before the tray starts counting down. Earlier is nagging. */
 export const WARN_FROM = 3;
 
@@ -43,6 +64,14 @@ export interface Standing {
   pro: boolean;
   /** Hosted cover catches already spent. Only ever grows. */
   trialSpent: number;
+  /**
+   * Catches that issued a request, whatever came back. Only ever grows.
+   *
+   * NOT a second allowance. See TRIAL_ATTEMPTS: it exists so that a catch which is called
+   * off, or which times out, still costs the caller SOMETHING, without breaking the promise
+   * that a failure never costs one of the advertised ten.
+   */
+  trialAttempts: number;
   /** The user configured their own provider key, so we are not paying for the call. */
   ownKey: boolean;
 }
@@ -61,12 +90,16 @@ export function decide(standing: Standing, kind: CatchKind): Verdict {
   // meeting the wall, so they arrive here with the trial already spent. Checking the cap
   // first would mean paying changed nothing.
   if (standing.pro || standing.ownKey) return { allow: true, spendTrial: false };
-  if (spent(standing) >= TRIAL_CATCHES) return { allow: false, reason: 'trial-spent' };
+  // ONE function answers "how much trial is left", and both ceilings are folded into it.
+  // Reading the two counts in two places would be two places to disagree, and the
+  // disagreement lands as the wall saying "spent" while `planLabel` says "10 of 10 left" —
+  // a false statement made to somebody at the moment they are deciding whether to pay.
+  if (trialLeft(standing) <= 0) return { allow: false, reason: 'trial-spent' };
   return { allow: true, spendTrial: true };
 }
 
 /**
- * `trialSpent` as a number we are willing to act on.
+ * A stored counter as a number we are willing to act on.
  *
  * It arrives from `chrome.storage.local`, which is user-editable and shared with every
  * other key in the extension. `trial.ts` already sanitises its own reads, so this is the
@@ -74,8 +107,7 @@ export function decide(standing: Standing, kind: CatchKind): Verdict {
  * one chokepoint three callers share: a future caller that reads storage directly must not
  * be able to turn a NaN into unlimited free catches.
  */
-function spent(standing: Standing): number {
-  const raw = standing.trialSpent;
+function count(raw: number): number {
   return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
 }
 
@@ -86,7 +118,15 @@ function spent(standing: Standing): number {
  * they have three catches left.
  */
 export function trialLeft(standing: Standing): number {
-  return Math.max(0, TRIAL_CATCHES - spent(standing));
+  return Math.max(
+    0,
+    Math.min(
+      TRIAL_CATCHES - count(standing.trialSpent),
+      // The attempt ceiling reaches the same reader through the same number, so the wall,
+      // the plan label and the tray footer cannot tell one person three different stories.
+      TRIAL_ATTEMPTS - count(standing.trialAttempts),
+    ),
+  );
 }
 
 /**

@@ -508,8 +508,9 @@ async function renderPlan(): Promise<void> {
     // The trial counter through `createTrial`, not a second reader: the key name and the
     // "a corrupt value is zero, never infinity" rule belong to that module, and this is
     // the third caller. A hand-rolled copy here guessed the wrong key on the first try.
-    const spent = await createTrial({ storage: chrome.storage.local }).spent();
-    badge = badgeFor(standingOf(pro, spent, settings.apiKey, Date.now()));
+    const counters = createTrial({ storage: chrome.storage.local });
+    const [spent, attempts] = await Promise.all([counters.spent(), counters.attempts()]);
+    badge = badgeFor(standingOf(pro, { spent, attempts }, settings.apiKey, Date.now()));
   } catch (err) {
     // A shelf that cannot read its own plan still draws. Saying nothing is the safe
     // default here: the alternative is telling somebody they are out when they are not.

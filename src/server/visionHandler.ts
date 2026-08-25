@@ -163,6 +163,18 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
         authorization: `Bearer ${env.providerKey}`,
       },
       body: rebuilt.body,
+      // THE CALLER'S OWN SIGNAL, so that calling a catch off reaches Gemini.
+      //
+      // `grep -c signal` on this file returned ZERO. The extension aborts properly —
+      // `dismiss` sends `cancelRecognize`, the worker's controller fires, the socket closes
+      // — and none of it crossed this hop, so the provider went on generating and billing
+      // against a connection nobody was listening to. That is what made the card's × a
+      // free-read button: the money was committed and `gate.ts` skipped the spend because
+      // the work had rejected.
+      //
+      // Both halves shipped together. This one stops the waste; `entitlement.TRIAL_ATTEMPTS`
+      // bounds how many times somebody can do it deliberately.
+      signal: request.signal,
     });
   } catch (err) {
     console.error('[buki] provider unreachable', err);

@@ -126,36 +126,41 @@ describe('standingOf', () => {
   const dead = { token: 't', expiresAt: NOW - GRACE_MS - 1000 };
 
   it('is Pro on a live session', () => {
-    expect(standingOf({ key: 'K', session: live }, 0, '', NOW).pro).toBe(true);
+    expect(standingOf({ key: 'K', session: live }, { spent: 0, attempts: 0 }, '', NOW).pro).toBe(true);
   });
 
   it('is STILL Pro on a session the server would honour on grace', () => {
     // The outage case. Anything narrower shows a subscriber the paywall.
-    expect(standingOf({ key: 'K', session: stale }, 0, '', NOW).pro).toBe(true);
+    expect(standingOf({ key: 'K', session: stale }, { spent: 0, attempts: 0 }, '', NOW).pro).toBe(true);
   });
 
   it('is not Pro once the server would refuse it too', () => {
-    expect(standingOf({ key: 'K', session: dead }, 0, '', NOW).pro).toBe(false);
+    expect(standingOf({ key: 'K', session: dead }, { spent: 0, attempts: 0 }, '', NOW).pro).toBe(false);
   });
 
   it('is NOT Pro on a key that has never been exchanged', () => {
     // Holding a key is not holding a subscription. Pasting anything into the field must
     // not buy unlimited catches.
-    expect(standingOf({ key: 'KEY-1', session: null }, 0, '', NOW).pro).toBe(false);
+    expect(standingOf({ key: 'KEY-1', session: null }, { spent: 0, attempts: 0 }, '', NOW).pro).toBe(false);
   });
 
   it('counts an own provider key as its own plan, not as Pro', () => {
-    const s = standingOf({ key: '', session: null }, 0, 'AIza-mine', NOW);
+    const s = standingOf({ key: '', session: null }, { spent: 0, attempts: 0 }, 'AIza-mine', NOW);
     expect(s.ownKey).toBe(true);
     expect(s.pro).toBe(false);
   });
 
   it('treats whitespace in the provider key field as no key', () => {
-    expect(standingOf({ key: '', session: null }, 0, '   ', NOW).ownKey).toBe(false);
+    expect(standingOf({ key: '', session: null }, { spent: 0, attempts: 0 }, '   ', NOW).ownKey).toBe(false);
   });
 
-  it('carries the trial count through untouched, so one module owns the arithmetic', () => {
-    expect(standingOf({ key: '', session: null }, 7, '', NOW).trialSpent).toBe(7);
+  it('carries BOTH trial counts through untouched, so one module owns the arithmetic', () => {
+    // Both, because there are two ceilings now and `entitlement.trialLeft` folds them into
+    // one number. A reader that carried only the advertised one would put the wall and the
+    // options page back into disagreement, which is the failure the fold exists to prevent.
+    const s = standingOf({ key: '', session: null }, { spent: 7, attempts: 19 }, '', NOW);
+    expect(s.trialSpent).toBe(7);
+    expect(s.trialAttempts).toBe(19);
   });
 });
 

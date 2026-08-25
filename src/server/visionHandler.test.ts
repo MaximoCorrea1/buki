@@ -419,3 +419,69 @@ describe('a licence can be turned off without rotating the secret', () => {
     expect(proCap).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * A CALLED-OFF CATCH HAS TO REACH THE PROVIDER, or it is not called off at all.
+ *
+ * `grep -c signal src/server/visionHandler.ts` returned **0**. The extension aborts
+ * properly — `dismiss` sends `cancelRecognize`, the worker's `AbortController` fires, the
+ * socket closes — and none of that reached Gemini, which went on generating and billing
+ * against a connection nobody was listening to.
+ *
+ * That is the half of P0-5 that costs money. The other half is `gate.ts` and
+ * `entitlement.TRIAL_ATTEMPTS`, which bound how many times somebody can do it on purpose.
+ */
+describe('calling a catch off reaches the provider', () => {
+  it('hands the provider the caller\'s own abort signal', async () => {
+    const fetch = vi.fn(async () => new Response('{"choices":[]}', { status: 200 }));
+    const request = post();
+    await handleVision(request, env({ fetch }));
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.signal, 'the upstream call was not cancellable').toBe(request.signal);
+  });
+
+  it('actually stops the upstream call when the caller goes away mid-read', async () => {
+    // Behavioural, not a shape check: the fake provider is still generating, the client
+    // disconnects, and what is asserted is that the provider's own promise rejected
+    // because of it.
+    //
+    // THE FIRST VERSION OF THIS TEST HUNG, and the instrument was what was wrong. It only
+    // listened for the `abort` EVENT, while `handleVision` does two awaits (the token
+    // verify and reading the body) before it ever calls fetch — so the abort had already
+    // happened and the listener was registered after the event it was waiting for. A real
+    // `fetch` checks `signal.aborted` first. Now this one does too, and the abort is
+    // delivered while the call is genuinely in flight, which is the case that matters.
+    const control = new AbortController();
+    let reached: () => void;
+    const inFlight = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
+
+    const fetch = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+          if (signal?.aborted) return reject(new Error('AbortError'));
+          signal?.addEventListener('abort', () => reject(new Error('AbortError')));
+          reached();
+        }),
+    );
+
+    const request = new Request('https://get-buki.vercel.app/api/vision', {
+      method: 'POST',
+      headers: { origin: `chrome-extension://${EXT}` },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: [{ type: 'text', text: 'read this' }] }],
+      }),
+      signal: control.signal,
+    });
+
+    const answered = handleVision(request, env({ fetch }));
+    await inFlight; // the provider is now generating, and being billed for it
+    control.abort();
+
+    // 502 is right: from the server's point of view the provider did not answer, and the
+    // caller who aborted is no longer listening to hear anything else.
+    expect((await answered).status).toBe(502);
+  });
+});
