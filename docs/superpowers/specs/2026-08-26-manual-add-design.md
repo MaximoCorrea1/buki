@@ -1,6 +1,10 @@
 # Adding a book by hand
 
-**Written 2026-08-26.** Brief: Maximo, *"lets add the feature to manually search and add a
+**Written 2026-08-26. Reviewed and approved the same day**, with two corrections recorded
+inline rather than silently applied: the `addedBy` field was CUT, and an `alreadySaved`
+reference was wrong about which context it belongs to.
+
+**Brief:** Maximo, *"lets add the feature to manually search and add a
 book"*, then **`B`** when offered three placements — a permanent control rather than one that
 appears only in empty states.
 
@@ -108,10 +112,18 @@ invitation, not a better one.
 | Catalogue unreachable | The breaker's own message. Named, never *"something went wrong"* |
 | Already on the shelf | The row says which pile it is in, and the pile buttons still work as a **move** |
 
-The last one is not a nicety. `identityOf` already exists and the tray already answers
-`alreadySaved`; without it a user re-adds a book they own and gets a duplicate, which is
-**item 47's territory** (`ADV-6`, re-catching destroys the good record). This feature must not
-open a second door onto that bug.
+The last one is not a nicety, and it is cheaper than it looks. **The popup already holds the
+whole shelf** — `paint()` reads it to draw the boards — so matching a result against it is
+`identityOf` over an array already in memory. No message, no round trip.
+
+*(Corrected at spec review: an earlier draft said the tray "already answers `alreadySaved`".
+It does, but `alreadySaved` is a field on the CATCH-TRAY's response, for a content script that
+cannot read storage. The popup can. Reusing that name here would have invented a round trip
+the design does not need.)*
+
+Without it a user re-adds a book they own and gets a duplicate, which is **item 47's
+territory** (`ADV-6`, re-catching destroys the good record). This feature must not open a
+second door onto that bug.
 
 ---
 
@@ -154,20 +166,24 @@ already handles by rendering no link. **No `PROVENANCE` change. No migration.**
 
 That leaves one real decision:
 
-**Proposed: `SavedBook` gains `addedBy?: 'hand'`,** and the sheet renders `Added by hand`
-where a caught book renders its source link. Optional, so every existing record is valid
-unchanged.
+**DECIDED AT SPEC REVIEW, 2026-08-26: no field. `SavedBook` is untouched.**
 
-**Why not just leave it absent:** the shelf's entire trust claim is that a book tells you
-where it came from. Absence is currently indistinguishable from a caught book whose source was
-lost, so a silent row makes the sheet ambiguous in the one place the product cannot afford it —
-and *"months later you see not just which book you saved, but why you wanted it"* is a
-sentence in the store listing.
+The proposal was `addedBy?: 'hand'`, with the sheet rendering *Added by hand* where a caught
+book renders its source link. **I argued for it and the argument does not survive re-reading.**
 
-**Why it might still be YAGNI:** the person who typed the title knows they typed it.
+It rested on the shelf's trust claim, that a book tells you where it came from. But
+`docs/store/listing.md` says what that claim is FOR: *"So you can see how it got there, and
+decide for yourself whether it is right."* **Provenance exists so a reader can adjudicate
+Buki's guess.** A book somebody typed the title of has no guess in it. There is nothing to
+adjudicate, so there is nothing for the line to do.
 
-*Maximo decides at spec review. If it goes, delete the field, not the section — the reasoning
-is the part worth keeping.*
+The residual worry was ambiguity: with no field, a hand-added book is indistinguishable from a
+caught book whose source was lost. True, and it costs nothing, because both rows mean the same
+thing to the reader — *this one has no post behind it*. Neither is a claim about accuracy.
+
+**So: no schema change, no migration, no sheet change.** The absence of a source link already
+says everything true. This paragraph stays rather than being deleted, because the next person
+to notice the missing line will propose exactly this field again.
 
 ---
 
@@ -205,7 +221,7 @@ watched to fail is not evidence.
 | `src/extension/background.ts` | The handler; same client and breaker as recognition |
 | `src/extension/popup.ts` | The `+` button, the sheet contents, DOM wiring only |
 | `popup.html` | The `+` in `<header>`, and its styles |
-| `src/extension/storage.ts` | `addedBy?: 'hand'` **(pending the decision above)** |
+| ~~`src/extension/storage.ts`~~ | ~~`addedBy?: 'hand'`~~ **Cut at spec review. `SavedBook` is untouched** |
 | `docs/store/listing.md` | **The single-purpose statement.** See below |
 | `README.md`, `docs/index.html` | Only if they enumerate the ways a book arrives |
 
