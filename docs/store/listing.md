@@ -87,13 +87,21 @@ Buki gives those books a place.
 IT READS THE PICTURE, NOT THE CAPTION
 
 Right-click any cover image and choose "Save book to shelf". X, Reddit, Pinterest, a
-newsletter, a blog, anywhere there is a picture. Buki reads the picture together with the
-words around it, checks the answer against OpenLibrary, and files it. That is the one that works on a photograph with no link and no
-title written anywhere.
+newsletter, a blog, anywhere there is a picture. Buki's AI reads the picture together with the
+words around it, then checks the answer against OpenLibrary before anything is filed. That
+is the one that works on a photograph with no link and no title written anywhere.
 
 On X, Buki's own mark sits in the post's action bar and does the same thing in one press.
 
 A photograph holding several books gives you several books, not just the clearest one.
+
+HOW THE RECOGNITION WORKS
+
+Buki uses AI image recognition to identify a book from its cover. The picture and the words
+around it go to an AI vision model together, because the caption is often what makes a
+blurry or angled cover legible. Every guess is then checked against OpenLibrary's catalogue,
+so an AI answer on its own never reaches your shelf, and nothing is saved until you pick a
+pile.
 
 NOW, NEXT, OR SOMEDAY
 
@@ -134,8 +142,8 @@ from Google AI Studio or any OpenAI-compatible provider.
 WHAT LEAVES YOUR COMPUTER, AND WHEN
 
 Reading a cover from a photograph is the one thing Buki cannot do on your machine. When
-you ask it to, that one picture is sent to Buki's server, which passes it to a vision
-model and returns the answer. The picture is not stored and no account is attached to it,
+you ask it to, that one picture is sent to Buki's server, which passes it to an AI
+vision model and returns the answer. The picture is not stored and no account is attached to it,
 because there is no account. Nothing else about you is sent, and nothing is sent unless
 you ask for a catch.
 

@@ -162,6 +162,26 @@ yours.
 *game-changing*, *revolutionise*. Also avoid *scan*: it implies a camera and a physical
 book, which is the competitor's job, not ours. No em-dashes anywhere (see `docs/brand.md`).
 
+> **`AI-powered` is banned. `AI` is not, and the difference is the whole point.**
+> Clarified 2026-08-26 on Maximo's instruction: *"we need to add more ai keywords to our
+> descriptions, since we use ai actually."* He is right, and the rule was never meant to
+> forbid the fact.
+>
+> - **Banned, still:** *AI-powered*, *AI-driven*, *powered by AI* as a VALUE CLAIM. It is a
+>   cliché, it describes no benefit, and every rival in the category says it, so it competes
+>   on the one axis where a solo product cannot win.
+> - **Allowed, and now used on purpose:** *AI*, *AI vision model*, *AI image recognition* as
+>   STATEMENTS OF FACT about how a catch happens. Buki does send a picture to a vision
+>   model. Naming it is more honest than not, it is the word a reader worried about their
+>   photograph already has in mind, and the Web Store's long description is indexed.
+>
+> **The test:** if the sentence would survive having *AI* deleted from it and still say
+> something, it is a fact. If deleting *AI* leaves nothing, it was a claim. Delete it.
+>
+> **`scan` stays banned regardless.** Its problem was never the buzzword: it implies a
+> camera pointed at a physical book, which is the phone-app competitor's job and misdescribes
+> what Buki does. No amount of search volume fixes a word that describes the wrong product.
+
 **Glossary:**
 
 | Term | Meaning |

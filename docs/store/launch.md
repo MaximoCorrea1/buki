@@ -45,7 +45,7 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 | | **If step 5 goes wrong, the extension now SAYS SO** (item 44). A `BUKI_EXTENSION_ID` that is not the shipped id makes `/api/license` answer `403 code:origin`, and the worker logs the variable by name instead of silently erasing every subscriber's session. Look in the service-worker console during step 9 | | |
 | 6 | `vercel deploy --prod`, then probe both endpoints | Maximo | step 5 |
 | ~~7~~ | ~~The checkout URLs → `pricing.ts` (item 34)~~ **DONE 2026-08-18** | — | — |
-| 8 | The affiliate tags (item 35) | Maximo | — (parallel) |
+| 8 | The affiliate tags (item 35) | Maximo | **Amazon: step 11.** Bookshop: their review |
 | 9 | The by-hand browser pass, thirteen checks (item 3) | **Maximo only** | steps 4, 6 |
 | 10 | Five screenshots at 1280x800 (item 9) | Maximo | step 9 |
 | 11 | Publish the draft | Maximo | steps 9, 10 |
@@ -64,7 +64,19 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 > `manifest.json` makes the unpacked build load under the shipped id, so item 3 tests the
 > thing that ships. Item 37.
 
-**Steps 1, 2, 3 and 8 have no blockers and can be done today.** Everything else is a chain,
+> **STEP 8 IS NOT PARALLEL, and this line said it was until 2026-08-26.** Maximo:
+> *"in order to become amazon affiliate i need to add the extension link which i dont have
+> yet."* Amazon Associates wants the URL of the property the links will sit on, and the
+> store URL does not exist until step 11 publishes the draft. **So Amazon is blocked BY
+> launch, not before it**, which inverts the dependency this table assumed. Bookshop is
+> applied for and waiting on their review.
+>
+> **This does not block launch.** `AFFILIATE = { amazonTag: '', bookshopId: '' }` ships
+> working Buy links that earn nothing, the disclosure is already correct in three places,
+> and the tags are a one-line change afterwards. It is revenue deferred, not a broken
+> surface. Do not hold the submission for it.
+
+**Steps 1, 2 and 3 have no blockers and can be done today.** Everything else is a chain,
 and step 3 now sits near the front rather than beside submission.
 
 ---
