@@ -131,6 +131,19 @@ export type BackgroundRequest =
       shot?: string;
       restoreOf?: string;
     }
+  /**
+   * Search the catalogue by title, for a book being added by hand rather than caught.
+   *
+   * It goes through the worker for the same reason every shelf write does: the worker
+   * owns the one OpenLibrary client and the one `catalogue` breaker. A client built in
+   * the popup would fetch the same host with no breaker in front of it, so a catalogue
+   * outage would trip recognition and leave this path hammering a host already down.
+   *
+   * `seq` is the popup`s own request counter and comes back untouched. There is no
+   * cancel message: a search is one cheap fetch, so the only hazard worth closing is a
+   * slow answer painting over a faster newer one.
+   */
+  | { type: 'searchBooks'; query: string; seq: number }
   /** Removes AND flags the recognition, so the popup needs one round trip, not two. */
   | { type: 'removeBook'; savedId: string }
   /**
@@ -170,6 +183,11 @@ export type BackgroundResponse =
    * the two lead to opposite screens.
    */
   | { ok: false; needsSetup: boolean; error: string; wall?: boolean };
+
+/** Answer to a catalogue search. `seq` is echoed so the popup can drop a stale one. */
+export type SearchResponse =
+  | { ok: true; seq: number; books: Book[] }
+  | { ok: false; seq: number; error: string };
 
 /** Answer to a shelf write. `saved` is present for saveBook, absent for removeBook. */
 export type ShelfResponse = { ok: true; saved?: SavedBook } | { ok: false; error: string };
