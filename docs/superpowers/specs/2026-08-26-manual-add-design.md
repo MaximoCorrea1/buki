@@ -67,7 +67,30 @@ Five things were checked in the code. Three of them changed the design.
 
 ## The control
 
-**A `+` button in the masthead, left of Settings.**
+> ### ⚠ CORRECTED AT IMPLEMENTATION. The masthead refused it, in writing.
+>
+> This section proposed a `+` in the masthead, left of Settings, and `popup.html` had
+> already ruled that out. The comment on `header .theme` says why:
+>
+> > *"Settings is already pinned right, out of the flow, so the mark and the count stay on
+> > the page's axis. **A second control pinned to the SAME corner would crowd it and push
+> > the axis around**... One at each corner instead: the header becomes symmetric rather
+> > than merely un-crowded, and the mark sits between them."*
+>
+> Three slots, one per corner, and both corners taken. The design below read "the header is
+> the only chrome that survives an empty shelf" and concluded "so it goes in the header".
+> The first half was right and the second did not follow.
+>
+> **What shipped instead: the plus renders TWICE, from one factory.** At the search row's
+> trailing edge when there is a shelf, mirroring the magnifier already absolutely positioned
+> at the other end of the same box; and inside the empty state when there is not. Between
+> them it is present in every state, **which is what placement `B` actually asked for.**
+> `B` required a permanent control, not a control in a particular element, and the two
+> requirements only looked identical while the header seemed available.
+>
+> The original reasoning is kept below because it is what makes the correction legible.
+
+**~~A `+` button in the masthead, left of Settings.~~**
 
 The masthead is the only chrome that renders in every state, which is the whole requirement of
 placement `B`: a control that lives in the search row is invisible to exactly the new user it

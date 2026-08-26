@@ -24,7 +24,8 @@ import {
   searchAll,
   shelvesOf,
 } from './shelfView';
-import type { BackgroundRequest, ShelfResponse } from './messages';
+import type { BackgroundRequest, SearchResponse, ShelfResponse } from './messages';
+import { candidatesFor, isCurrent, saveRequest, shouldSearch, type Candidate } from './manualAdd';
 
 const storage: StorageArea = {
   get: (key) => chrome.storage.local.get(key),
@@ -560,6 +561,180 @@ async function renderStats(shelfCount: number): Promise<void> {
   el.textContent = mastheadLine(summarize(events).caught, shelfCount);
 }
 
+/**
+ * The plus, in both the places it has to appear.
+ *
+ * NOT IN THE HEADER, and that is the header's own decision rather than mine. The comment
+ * on `header .theme` in popup.html records it: Settings is pinned right and the switch
+ * left so the mark and the count keep the page's axis, and "a second control pinned to the
+ * SAME corner would crowd it and push the axis around". One per corner, and both corners
+ * are taken.
+ *
+ * So it renders twice, from one factory: at the search row's trailing edge when there is a
+ * shelf, and inside the empty state when there is not. Between them it is present in every
+ * state, which is what a permanent control had to mean.
+ */
+function addButton(label: string): HTMLButtonElement {
+  const press = document.createElement('button');
+  press.type = 'button';
+  press.className = 'add';
+  press.setAttribute('aria-label', label);
+  press.innerHTML = '';
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M12 5v14M5 12h14');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '2');
+  path.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(path);
+  press.appendChild(svg);
+
+  press.addEventListener('click', openAddSheet);
+  return press;
+}
+
+/** The popup's own request counter. Only the newest answer is painted. See `isCurrent`. */
+let searchSeq = 0;
+
+/**
+ * Search the catalogue and put a book on a pile, without catching it from a picture.
+ *
+ * Reuses `openSheet`'s furniture rather than growing a second overlay. popup.ts's "this
+ * popup has no dialog and should not grow one" is about CONFIRMS: it argues for an undo
+ * strip over a confirm box. The sheet already sets role="dialog".
+ */
+function openAddSheet(): void {
+  const sheet = document.getElementById('sheet');
+  if (!sheet) return;
+  lastPicked = document.activeElement as HTMLElement | null;
+
+  const scrim = document.createElement('div');
+  scrim.id = 'scrim';
+  scrim.addEventListener('click', closeSheet);
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.setAttribute('role', 'dialog');
+  card.setAttribute('aria-modal', 'true');
+  card.setAttribute('aria-label', 'Add a book by hand');
+
+  const shut = document.createElement('button');
+  shut.className = 'shut';
+  shut.textContent = '\u00d7';
+  shut.setAttribute('aria-label', 'Close');
+  shut.addEventListener('click', closeSheet);
+
+  const field = document.createElement('input');
+  field.type = 'search';
+  field.className = 'addfind';
+  field.placeholder = 'Title, or title and author';
+  field.setAttribute('aria-label', 'Search for a book to add');
+
+  const results = document.createElement('div');
+  results.className = 'addrows';
+  results.setAttribute('role', 'status');
+
+  const REST = 'Search the catalogue, then pick a pile. Nothing is saved until you do.';
+  const tell = (text: string): void => {
+    const line = document.createElement('p');
+    line.className = 'empty';
+    line.textContent = text;
+    results.replaceChildren(line);
+  };
+  tell(REST);
+
+  const run = async (typed: string): Promise<void> => {
+    const seq = ++searchSeq;
+    tell('Looking...');
+    const answer = (await chrome.runtime.sendMessage({
+      type: 'searchBooks',
+      query: typed,
+      seq,
+    })) as SearchResponse | undefined;
+
+    // A slow answer that has been overtaken paints nothing. There is no cancel message
+    // because a search is one cheap fetch; the hazard is order, not cost.
+    if (!answer || !isCurrent(answer.seq, searchSeq)) return;
+    if (!answer.ok) return tell(answer.error);
+    if (!answer.books.length) return tell(`No book called "${typed.trim()}".`);
+
+    results.replaceChildren(...candidatesFor(answer.books, shelf).map(addRow));
+  };
+
+  let timer: number | undefined;
+  field.addEventListener('input', () => {
+    window.clearTimeout(timer);
+    const typed = field.value;
+    if (!shouldSearch(typed)) return tell(REST);
+    // 300ms: long enough that a typed word is one request rather than five, short enough
+    // that the pause before rows appear is not read as nothing happening.
+    timer = window.setTimeout(() => void run(typed), 300);
+  });
+
+  card.append(shut, field, results);
+  sheet.replaceChildren(scrim, card);
+  sheet.hidden = false;
+  requestAnimationFrame(() => {
+    sheet.dataset.in = 'true';
+    field.focus();
+  });
+}
+
+/** One catalogue result: the book, where the shelf already keeps it, and the three piles. */
+function addRow(row: Candidate): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'addrow';
+
+  const title = document.createElement('div');
+  title.className = 'addtitle';
+  title.textContent = row.book.title;
+  wrap.appendChild(title);
+
+  if (row.book.author) {
+    const by = document.createElement('div');
+    by.className = 'by';
+    by.textContent = row.book.author;
+    wrap.appendChild(by);
+  }
+
+  if (row.held) {
+    // Says where it already is, and the pile buttons below still work, as a MOVE. Somebody
+    // who searched for a book they own usually wants it somewhere else, and silently
+    // adding a second copy is item 47's bug.
+    const where = document.createElement('span');
+    where.className = 'held-in';
+    where.textContent = `on your shelf \u00b7 ${PILE_LABEL[row.held]}`;
+    wrap.appendChild(where);
+  }
+
+  const piles = document.createElement('div');
+  piles.className = 'addpiles';
+  for (const each of ['now', 'next', 'someday'] as const) {
+    const press = document.createElement('button');
+    press.type = 'button';
+    press.textContent = `Read ${each}`;
+    press.disabled = row.held === each;
+    press.addEventListener('click', () => {
+      void (async () => {
+        try {
+          await writeShelf(saveRequest(row.book, each));
+          closeSheet();
+          await refresh();
+        } catch (err) {
+          console.error('[Buki] could not add the book', err);
+        }
+      })();
+    });
+    piles.appendChild(press);
+  }
+  wrap.appendChild(piles);
+  return wrap;
+}
+
 function renderEmpty(app: HTMLElement): void {
   const empty = document.createElement('p');
   empty.className = 'empty';
@@ -571,6 +746,16 @@ function renderEmpty(app: HTMLElement): void {
       'Press the Buki button on a post, or right-click any cover image, and it lands here.',
     ),
   );
+
+  // AN EMPTY STATE IS AN INVITATION (docs/brand.md), and until now every route it named
+  // sent the reader back OUT to a post. This is the first thing a new shelf can do with
+  // itself. It also carries the control the search row cannot: paint() returns here
+  // before that row exists, so without this button the plus is missing from exactly the
+  // state it matters most in.
+  const add = addButton('Add a book by hand');
+  add.append(document.createTextNode('Add one by hand'));
+  empty.appendChild(add);
+
   app.replaceChildren(empty);
 }
 
@@ -631,6 +816,7 @@ function paint(): void {
     paint(); // synchronous: no storage read, no await, no render race
   });
   search.appendChild(find);
+  search.appendChild(addButton('Add a book by hand'));
   app.appendChild(search);
 
   // Searching leaves the pile you were in and crosses all of them; clearing the box puts

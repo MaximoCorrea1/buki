@@ -220,7 +220,7 @@ media re-opens exactly the contradiction that field exists to close.
 ## Single purpose (required)
 
 ```
-Buki identifies books shown in pictures on web pages and saves them to a reading list
+Buki identifies books from pictures on web pages, and keeps them on a reading list
 stored in the user's own browser.
 ```
 
@@ -234,6 +234,21 @@ admits to.
 The statement above is one purpose, not two, and it covers every entry point the manifest
 actually has: the context menu on any page, Buki's mark in a post's action bar on X, and
 the shelf in the popup. Saving is not a second purpose; it is what identifying is *for*.
+
+> **WIDENED 2026-08-26, WITH THE FEATURE AND NOT AFTER IT.** It said *"identifies books
+> **shown in** pictures on web pages **and saves them** to a reading list"*. Adding a book by
+> hand involves no picture and no web page, so that sentence would have been **narrower than
+> the product it sits beside** - which is the exact mismatch that made the version before it
+> likely to fail, and which this section already exists to warn about.
+>
+> The purpose is the reading list. Identifying is what it is FOR, and `keeps them on` covers
+> a book that arrived by either route. It is still ONE purpose and it still covers every
+> entry point the manifest has: the context menu, the mark in a post's action bar, the popup,
+> and now the plus.
+>
+> **The timing is the point.** Store copy cannot be edited after submission without another
+> review cycle. Changing this sentence today costs one line; changing it in September costs a
+> re-review of the whole listing.
 
 **Permission justifications go in the dashboard's own fields, and they are written already
 in `docs/store/permissions.md`.** Do not restate them here. That file is the one that

@@ -449,6 +449,51 @@
         /* The glyph must never take the click that was meant for the field. */
         pointer-events: none;
       }
+      /* ADDING A BOOK BY HAND, at the search row's trailing edge.
+
+         IT IS NOT IN THE HEADER, and that is a decision the header itself already made:
+         see the comment on `header .theme` above. Settings is pinned right and the theme
+         switch left precisely so the mark and the count keep the page's axis, and a
+         second control in either corner would push that axis around. One per corner is
+         the rule, and the header is full.
+
+         So it lives here, mirroring the magnifier that is already absolutely positioned
+         at the other end of the same box. `renderEmpty` returns before this row exists,
+         which is why the empty state carries its own button rather than relying on this
+         one: between them the control is present in every state, which is what a
+         permanent control had to mean. */
+      .search .add {
+        position: absolute; right: 5px; top: 50%;
+        translate: 0 -50%;
+        display: grid; place-items: center;
+        width: 28px; height: 28px; padding: 0;
+        border: 0; border-radius: var(--r-md);
+        background: none; color: var(--muted); cursor: pointer;
+        transition: color 140ms ease, background 140ms ease;
+      }
+      .search .add svg {
+        position: static; translate: none; width: 15px; height: 15px;
+        pointer-events: none;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .search .add:hover { color: var(--accent); background: var(--fill); }
+      }
+      .search .add:active { scale: 0.94; }
+
+      /* The empty shelf's own copy of it. An empty state is an invitation (docs/brand.md),
+         and until now every route it named sent the reader back out to a post. */
+      .empty .add {
+        display: inline-flex; align-items: center; gap: 6px;
+        margin-top: 10px; padding: 7px 12px;
+        border: 0; border-radius: var(--r-md);
+        background: var(--fill); color: var(--ink);
+        font: 600 12.5px/1 var(--ui); cursor: pointer;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .empty .add:hover { background: var(--board); }
+      }
+      .empty .add:active { scale: 0.97; }
+
       #find {
         width: 100%;
         margin: 0;
@@ -956,6 +1001,46 @@
         .pick:hover .art,
         .pick:hover .board { transform: none; }
       }
+
+      /* --- adding a book by hand: the sheet ------------------------------- */
+      /* It borrows .card, .shut and .by from the detail sheet on purpose. One sheet
+         idea to learn, two things it can hold. */
+      .addfind {
+        width: 100%; margin: 4px 0 10px; padding: 9px 12px;
+        background: var(--fill); color: var(--ink);
+        border: 0; border-radius: var(--r-md);
+        font: 13.5px/1.3 var(--ui);
+      }
+      .addfind:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      /* Bounded, and scrolling INSIDE the card: twenty results must not grow a sheet
+         past the popup and take the close control off screen with it. */
+      .addrows { max-height: 320px; overflow-y: auto; text-align: left; }
+      .addrow {
+        display: flex; flex-direction: column; gap: 4px;
+        padding: 10px 0; border-top: 1px solid var(--hairline);
+      }
+      .addrow:first-child { border-top: 0; }
+      .addtitle { font: 600 13.5px/1.25 var(--ui); color: var(--ink); }
+      .held-in {
+        align-self: flex-start; padding: 2px 7px; border-radius: 999px;
+        background: var(--fill); color: var(--muted);
+        font: 600 11px/1.5 var(--ui);
+      }
+      .addpiles { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+      .addpiles button {
+        padding: 6px 10px; border-radius: var(--r-md);
+        border: 1px solid var(--hairline);
+        background: none; color: var(--ink);
+        font: 600 12px/1 var(--ui); cursor: pointer;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .addpiles button:hover:not(:disabled) { background: var(--board); }
+      }
+      .addpiles button:active:not(:disabled) { scale: 0.97; }
+      /* The pile it is ALREADY in. Disabled rather than hidden: removing it would
+         reshuffle the row every time the shelf changes, and the reader needs to see
+         which one is the current one. */
+      .addpiles button:disabled { opacity: 0.42; cursor: default; }
     </style>
   </head>
   <body>
