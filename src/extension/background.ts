@@ -6,6 +6,7 @@
 // event. One writer means no cross-context race, and it means the right-click flow still
 // records an attempt on a tab whose content script never loaded.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
+import { handleSearchBooks } from './searchBooks';
 import { createLlmVision, MAX_IMAGES } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
@@ -614,6 +615,21 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
         console.error('[Buki] remove failed', err);
         sendResponse({ ok: false, error: String(err) } satisfies ShelfResponse);
       });
+    return true; // async response
+  }
+
+  // THE SAME CLIENT AND THE SAME BREAKER RECOGNITION USES. A client built in the popup
+  // would fetch the same host with nothing in front of it, so a catalogue outage would
+  // trip recognition and leave the add-a-book path hammering a host already given up on.
+  //
+  // Thin on purpose: every decision is in handleSearchBooks, where a test can reach it.
+  if (msg?.type === 'searchBooks') {
+    void handleSearchBooks(msg, () =>
+      withBreaker(
+        createOpenLibraryClient({ fetch: (url, init) => fetch(url, init) }),
+        catalogue,
+      ),
+    ).then(sendResponse);
     return true; // async response
   }
 
