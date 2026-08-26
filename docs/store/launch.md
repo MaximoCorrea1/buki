@@ -36,9 +36,9 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 
 | # | Step | Owner | Blocked until |
 | --- | --- | --- | --- |
-| 1 | Polar: verify the benefit's activation settings, on **both** products | Maximo | — |
-| 2 | Gemini key **with billing linked**, and the spend cap in the same sitting (26) | Maximo | — |
-| 3 | **Register the developer account, pay the one-time fee** | Maximo | — (do it first, it now gates more than submission) |
+| ~~1~~ | ~~Polar: verify the benefit's activation settings, on both products~~ **DONE 2026-08-26.** Benefit attached to both | — |
+| ~~2~~ | ~~Gemini key with billing linked, and the spend cap in the same sitting (26)~~ **DONE 2026-08-26, cap at $5.** See item 26 for the two follow-ups: prove it is a CAP and not a budget alert, and set the alert below it | — |
+| ~~3~~ | ~~Register the developer account, pay the one-time fee~~ **DONE 2026-08-26** | — |
 | 4 | **Zip and upload as a DRAFT. Do not publish.** Copy the public key into `manifest.json` as `key` (item 37) | Maximo, then agent | step 3 |
 | **4.5** | ~~THE MODEL PIN (item 38)~~ **DONE 2026-08-25** · **THE SPEND CAP (item 26) IS STILL REQUIRED BEFORE STEP 5** | ~~agent~~, **Maximo** | step 4 |
 | 5 | The six Vercel variables (item 2) — `BUKI_EXTENSION_ID` is now the SHIPPED id | Maximo | steps 1, 2, 4, **4.5** |
@@ -76,7 +76,9 @@ Each step is blocked by the one above it. The numbers are `OPENWORK.md` items.
 > and the tags are a one-line change afterwards. It is revenue deferred, not a broken
 > surface. Do not hold the submission for it.
 
-**Steps 1, 2 and 3 have no blockers and can be done today.** Everything else is a chain,
+~~**Steps 1, 2 and 3 have no blockers and can be done today.**~~ **ALL THREE DONE 2026-08-26.**
+**The chain now starts at step 4**, the draft upload, and it is the one that assigns the real
+extension id. Everything after it is blocked until that zip is uploaded. Everything else is a chain,
 and step 3 now sits near the front rather than beside submission.
 
 ---

@@ -30,9 +30,9 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 
 | # | Lane | Item | Blocks |
 | --- | --- | --- | --- |
-| **1** | **Maximo** | Polar product exists (products created 08-17; verify the benefit's activation settings) | everything in Part 3 |
+| ~~1~~ | **Maximo** | ~~Polar product exists; verify the benefit's activation settings~~ **DONE 2026-08-26.** The License Key benefit is attached to **both** products. The settings were already right - prefix `BUKI`, expiry off, limit 5, customer can deactivate, usage limit empty - but the benefit was **not attached**, which is the silent failure `polar-setup.md` warns about by name: a subscriber pays, receives no key, and refunds rather than filing a bug | — |
 | **2** | **Maximo** | The six Vercel variables, **one of which stays unset** | `/api/vision`, `/api/license` |
-| **26** | **Maximo** | **Hard spend cap + alert on the Gemini key.** The only control that bounds real money | nothing, but it is the floor under items 28 and 4 |
+| ~~26~~ | **Maximo** | ~~Hard spend cap + alert on the Gemini key~~ **CAP SET 2026-08-26, at $5.** At the `$0.00011` per catch `entitlement.ts` and `policy.ts` both assume, that is roughly **45,000 catches, or 4,500 users' entire free trials** - ample for launch. **TWO THINGS REMAIN AND BOTH ARE MAXIMO'S:** (a) confirm it STOPS spending rather than emailing, because a Google Cloud *budget* is an alert by default and does not cap anything; (b) set the alert **below** the cap, ~50%, so the first news is not the outage. **Raise it the day there are paying subscribers** - a tripped cap takes Pro down with it | — |
 | ~~28~~ | agent | ~~`/api/license` has no rate limit~~ **DONE 2026-08-18** (`c5e3f64`) | — |
 | ~~29~~ | agent | ~~`proState` has no write queue around a call that spends a slot~~ **DONE 2026-08-18** (`b1676e9`) | — |
 | ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |

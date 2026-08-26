@@ -66,14 +66,23 @@ which is where the store actually reads them.
 
 ## Summary / short description (132 characters max)
 
-Already shipped in `manifest.json`, 100 characters, and correct:
+Lives in `manifest.json`, 105 characters of the 132 allowed:
 
 ```
-Catch a book from any picture on the web into your own shelf, before it gets lost in your bookmarks.
+Identify a book from any picture and save it to your reading list, before it gets lost in your bookmarks.
 ```
 
-Change it in `manifest.json` or the store and the code will disagree. `src/shared/host.test.ts`
-does not guard this string; check it by eye when the manifest moves.
+**Rewritten 2026-08-26 for discovery.** It said *"Catch a book from any picture on the web
+into your own shelf..."*. `catch` is Buki's own word for the act and it is the right word
+inside the product, but **nobody searches for it**: the summary is the most heavily indexed
+field on the listing and it was spending its first word on vocabulary with no demand behind
+it. `identify` is the head term for the job, and `reading list` is the category term
+somebody browsing types. The bookmark clause survives because it is the pain, and the pain is
+what makes a browsing reader stop.
+
+**It is now guarded.** This file and `manifest.json` used to be checked "by eye", which is
+what item 45 is about: a store string that cannot be edited after submission, with nothing
+watching it. `src/shared/pricing.test.ts` now fails if the two disagree.
 
 ## Detailed description
 

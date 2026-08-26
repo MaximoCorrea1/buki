@@ -15,7 +15,7 @@ and are willing to type it. Buki is upstream of that: it is how you get the titl
 Right-click any image and choose "Save book to shelf". The picture and the surrounding
 text go to a vision model together, because the words beside a cover are often what make a
 hard cover legible. The reading is then confirmed against OpenLibrary rather than trusted.
-Nothing is saved until the person chooses a pile: Now, Next, Someday or Read. One
+Nothing is saved until the person chooses a pile: Now, Next, Someday or Finished. One
 photograph can hold several books and each one gets its own decision.
 
 ## What makes it different

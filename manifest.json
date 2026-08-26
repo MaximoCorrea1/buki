@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Buki",
   "version": "1.0.0",
-  "description": "Catch a book from any picture on the web into your own shelf, before it gets lost in your bookmarks.",
+  "description": "Identify a book from any picture and save it to your reading list, before it gets lost in your bookmarks.",
   "minimum_chrome_version": "116",
   "permissions": ["storage", "contextMenus", "scripting", "activeTab"],
   "host_permissions": [
