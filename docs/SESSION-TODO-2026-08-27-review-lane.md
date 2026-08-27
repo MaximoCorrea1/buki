@@ -24,8 +24,8 @@ streak of writing it late. The paths were printed in the first reply.
 | 8 | **Item 48** — the activation lifecycle's last three holes | [x] | agent | `261852c`. TWO of three. 5 mutations, 5 caught, 1 proved equivalent and removed |
 | 8b | **Item 59** — C-3, a dead activation with no escape but wiping the shelf | [!] | **Maximo** | split out of 48. BLOCKED on item 2: one probe against the live endpoint settles it |
 | 7b | **Item 58** — ADV-7, two catch flows, two trial spends | [?] | **Maximo** | split out of 47. A decision about what a catch IS, not a fix |
-| 9 | **Item 49** — four reliability holes on the waited-on path | [ ] | agent | R-1 to R-4. **NEXT** |
-| 10 | **Item 50** — the measured performance set | [ ] | agent | PERF-1/2/3. Re-measure after, not before |
+| 9 | **Item 49** — four reliability holes on the waited-on path | [x] | agent | `0486712` + `b006efc`. ALL FOUR. 25 mutations, 25 caught, 4 survived first pass |
+| 10 | **Item 50** — the measured performance set | [ ] | agent | PERF-1/2/3. Re-measure after, not before. **NEXT** |
 | 11 | **Item 51** — server contract and edge gaps | [ ] | agent | AC-5/6/10/12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12 |
 | 12 | **Item 52** — the tray lives in the host page's light DOM | [ ] | agent | TM-9 exfiltration surface, TM-10 latent `javascript:` |
 | 13 | **Item 53** — types that do not type | [ ] | agent | TS-1/2/3/4/7 |
@@ -82,6 +82,11 @@ streak of writing it late. The paths were printed in the first reply.
 | 21 | Item 48 committed | `261852c`. One mutation proved equivalent and the condition was deleted rather than counted |
 | 22 | `CLAUDE.md`'s size warning corrected | it claimed ~100 lines of §5 were reachable; §5 now BEGINS past the cut |
 | 23 | Handoff written, pointer updated, `cat -A` clean | `%TEMP%/buki-handoff-2026-08-27-review-lane.md` |
+| 24 | Item 49 re-probed | R-1's `licenseHandler` comment was false from the day it was written |
+| 25 | R-1, R-4 fixed and committed | `0486712`. 11 mutations, 2 survived: the signal composition, and `livePrep` being unreachable |
+| 26 | R-2's cooldown had to be PERSISTED | MV3 teardown kills module scope. Item 27's `Required<ProState>` fixture caught the missing `readPro` line |
+| 27 | R-3's number DERIVED from the pipeline's ceilings | 3 constants exported so the test computes the budget rather than trusting a comment |
+| 28 | R-2, R-3 committed | `b006efc`. 14 mutations, 2 survived: a NaN cooldown, and a FIXED test clock that cannot see a clock being re-read |
 
 ---
 

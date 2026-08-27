@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **958 across 75 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **992 across 75 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -15,7 +15,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27. `main` = `origin/main` at `60b98e4`, 0 ahead** (`git rev-list --count origin/main..HEAD`). Twenty-nine commits went up in one go: the push had been blocked by the permission classifier since 08-25 and cleared on this attempt. **This row asserted "28 UNPUSHED" for about thirty seconds before the push succeeded, which is the drift this file keeps paying for in miniature - it was corrected in the same session rather than inherited.** **63 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). `buki-hardening` was merged and pushed 2026-08-18; `buki-pro` is older history. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Eight are Maximo's (2, 3, 9, 35, 37, 56, 58, 59); nine are agent work (36, 49-55, 57).** **Items 45, 46, 47 and 48 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so a flat count of 17 hides four closures and two new decisions. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **16.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Eight are Maximo's (2, 3, 9, 35, 37, 56, 58, 59); eight are agent work (36, 50-55, 57).** **Items 45, 46, 47, 48 and 49 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so this number moved by one while FIVE items closed. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -45,7 +45,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **58** | **Maximo** | **Two catch flows, two jobs, two trial spends for one post** (ADV-7). Not a bug an agent may fix: the flows key differently ON PURPOSE, and folding them changes what the model is asked | one trial catch, per post caught both ways |
 | ~~48~~ | agent | ~~The activation lifecycle's last three holes~~ **TWO DONE 2026-08-27**, `261852c`. ADV-3: the server minted a session with no activation id, and undefined does not survive `JSON.stringify`, so **every renewal activated again** - five slots gone in five days. ADV-8: `ensureSession` says it never throws and both saves sat outside the `try`. **C-3 IS NOT FIXED AND THAT IS THE FINDING** - two fixes were written and both reverted, because item 27's premise does not expire and telling the two cases apart needs Polar's refusal codes, which cannot be probed until item 2. Split out as item **59** | every subscriber, eventually |
 | **59** | **Maximo**, then agent | **A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING STORAGE, which destroys the shelf** (C-3). Blocked on item 2: one probe against the live endpoint settles it | a subscriber who deactivates an install |
-| **49** | agent | **Four reliability holes on the path somebody is waiting on** (R-1 to R-4) | a catch that hangs, on someone else’s page |
+| ~~49~~ | agent | ~~Four reliability holes on the path somebody is waiting on~~ **DONE 2026-08-27**, `0486712` + `b006efc`. **ALL FOUR.** R-1's comment in `licenseHandler.ts` - *"never during a catch"* - **was false from the day it was written**, which is why a missing timeout on the catch path went unnoticed. R-2's cooldown had to be PERSISTED, because an MV3 worker is torn down between catches and module scope does not survive. R-3's watchdog number is DERIVED from the pipeline's own ceilings rather than guessed, which is why this exports three of them. **25 mutations, 25 caught, 4 survived first pass** | a catch that hangs, on someone else’s page |
 | **50** | agent | **The measured performance set** — PERF-1/2/3 are the three a first user feels. Every number came off a probe | the first impression |
 | **51** | agent | **The server's remaining contract and edge gaps** (AC-5, AC-6, AC-10, AC-12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12) | — |
 | **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
@@ -982,7 +982,57 @@ unblocks.
       lockout whose only escape destroys the reader's books; dropping it wrongly costs one
       of five slots, recoverable from the Polar dashboard.
 
-- [ ] **49. FOUR RELIABILITY HOLES ON THE PATH SOMEBODY IS WAITING ON.** *(review §4)*
+- [x] **49. FOUR RELIABILITY HOLES ON THE PATH SOMEBODY IS WAITING ON.** *(review §4)*
+      **ALL FOUR DONE 2026-08-27**, `0486712` (R-1, R-4) and `b006efc` (R-2, R-3).
+
+      **R-1 SAT UNNOTICED BECAUSE A COMMENT SAID IT COULD NOT EXIST.** `licenseHandler.ts`
+      opened with *"called once a day by an extension that already holds a licence, and
+      **never during a catch**"*. `background.ts` calls it there BY DESIGN - an MV3 worker is
+      torn down between clicks, so the catch is the only reliable heartbeat this extension
+      has. A reader checking whether that endpoint needed a timeout found a sentence saying
+      it could not matter. **The exchange had no timeout at all** while `llmVision` sets 12s
+      and `openLibrary` sets 6s, and it was awaited SIX LINES before the catch's
+      `AbortController` existed, so cancelling never reached it either.
+
+      Bounded at `EXCHANGE_TIMEOUT_MS = 8s`, and **deliberately NOT put under the catch's
+      signal**: aborting an exchange Polar has already ACTIVATED loses the activation id we
+      never got back, and the next renewal spends another of five permanent slots. A ceiling
+      bounds the wait; the signal would trade a hang for a slot. **And the catch no longer
+      WAITS for a renewal it does not need** - `canCatchOnHeldSession` in `license.ts`.
+
+      **R-2's COOLDOWN HAD TO BE PERSISTED.** `createSessionKeeper`'s latch stops two catches
+      in the same SECOND exchanging twice and remembers nothing after, and module scope does
+      not survive a worker teardown - which is the same fact that put renewal on the catch in
+      the first place. It lives in `ProState.renewFailedAt`, and **adding that field turned
+      item 27's own `Required<ProState>` fixture red until `readPro` carried it**, which is
+      exactly why that fixture is typed the way it is.
+
+      `RENEW_COOLDOWN_MS = 45min`, and the number comes from the cap: `keyCap` allows 40
+      checks per key per day, so anything under 36 minutes lets a broken licence exhaust the
+      day again and the backoff is decorative. The test computes that from the real
+      `CHECKS_PER_KEY_PER_DAY`.
+
+      **R-3's NUMBER IS DERIVED, NOT GUESSED.** `STALL_MS = 90s` has to clear the pipeline's
+      own budget - 10s picture + 24s vision (12s x 2 attempts) + 6s catalogue + 8s licence =
+      48s - or it fires on catches that were going to succeed, which is worse than the bug
+      because it replaces a slow answer with a wrong error. The test computes that sum from
+      the real constants, which is why three of them are now exported.
+
+      > **AN ORDERING TRAP ONE LINE WIDE, and a test pins it.** The watchdog is armed from
+      > `tick`, which continues on `!card.transient` - and a `looking` card is precisely the
+      > one with `transient: false`. An `armWatchdog` call placed after that guard is never
+      > reached by the only state it exists for. **The code would read correctly and do
+      > nothing.**
+
+      **R-4.** `livePrep` fetched with `signal ? { signal } : {}`: a cancellable download that
+      could never time out, or an uncancellable one with no bound at all. `downloadSignal`
+      composes both at `DOWNLOAD_TIMEOUT_MS = 10s`.
+
+      **25 mutations, 25 caught. FOUR SURVIVED FIRST PASS**, and two are worth carrying:
+      `return job ?? AbortSignal.timeout(ms)` passed every test because nothing asked whether
+      a catch that SUPPLIES a signal also gets a ceiling - which is every catch on the feed
+      path. And `openedAt: now()` on every state change survived because the test used a
+      FIXED clock: **a clock that never moves cannot detect a clock being re-read.**
 
       - **R-1 · The licence exchange runs on the catch path with no timeout**, outside the
         catch's abort signal. `keepSession` is awaited at `background.ts:200`, BEFORE the
