@@ -25,6 +25,14 @@ file owns only what the founder raised in the message that opened this lane.
 | **C1** | Re-verify the suite after every change, mutation-test every new guard | [~] | agent | 1,020 / 76 green; 7/7 caught on the one guard added |
 | **C2** | Update `OPENWORK.md` + this pair the turn anything closes | [~] | agent | Items 57 rewritten, 60 filed, §0 gained `tools/probe/` |
 | **C3** | Promote the passage probe out of `zzz-` before it is deleted | **[x]** | agent | `tools/probe/passage-grounding.mjs`. `.gitignore:17` is `zzz-*` |
+| **D1** | **The control-byte sweep could not run**, while two docs said to run it | **[x]** | agent | `02af222` · §5 T20 · found mid-task |
+| **D2** | A commit message named two edits that were in the previous commit | **[x]** | agent | `d22831c` · §5 T16, second instance |
+| **E0** | **Re-probe all nine of item 51 before ranking** (Rule 4) | **[x]** | agent | **All nine confirmed still open.** None had been quietly fixed |
+| **E1** | **PERF-6 / SEC-4** — `ipCap` IPv6 bypass + unbounded map | **[x]** | agent | `b8b33fa` · 11 mutations, 11 caught (3 survived first pass, 1 equivalent) |
+| **E2** | **SEC-3** — no per-IP cap on `/api/license` | **[x]** | agent | `fa5ab8f` · 9/9 caught. A mutation found the shell guard passed on the IMPORT line |
+| **E3** | **TM-12** — API responses carry no `no-store`, and one body is a bearer token | **[x]** | agent | `887cf50` · 8/8 caught, twice |
+| **E4** | Item 51's remaining six: AC-5, AC-6, AC-10, AC-12, AC-9/TM-6, R-6/TM-13 | **[ ]** | agent | **Next.** All re-probed 08-27 |
+| **F1** | §5 gained **T20, T21, T22** | **[x]** | agent | The sweep that could not run · bold-onto-slash ends a docblock · **a mutation that reads a clock** |
 
 `[x]` done+verified · `[~]` in progress · `[ ]` open · `[?]` founder decision · `[!]` blocked
 

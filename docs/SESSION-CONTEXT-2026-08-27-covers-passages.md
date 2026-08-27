@@ -142,6 +142,53 @@ instruments)*
 5. **`size=100` on the OpenLibrary endpoint.** Silently ignored; 20 hits returned regardless.
    A depth-walk that believed it had walked 100 would under-report every "not found".
 
+6. **`node tools/control-bytes.mjs | tail`, twice in one session.** The pipe reports `tail`'s
+   exit status, so a tool that `process.exit(1)`s without doing its job looked clean. **Same
+   mechanism as `tsc --noEmit | head`, which is already §5** — hit again by a reader who knew
+   about the first one. **Run tools unpiped, or read `${PIPESTATUS[0]}`.** §5 T20.
+
+7. **A COMMENT IN THE SOURCE, vouching for the hole beneath it.** `ipCap.ts` explained at
+   length why it needed no eviction. The explanation was IPv4 reasoning next to an
+   IPv6-capable edge, and it is *why nobody looked* — a guard with a written reason reads as
+   a guard somebody thought about. **The most expensive instrument on this list, because it
+   suppresses inspection rather than returning a wrong number.**
+
+8. **A `?raw` guard satisfied by an IMPORT line.** The shell guard asserted the file contains
+   `LICENSE_PER_IP_PER_DAY` with comments stripped — and stripping comments was not enough,
+   because the import names the constant. A shell that imported it and then called
+   `createIpCap()` bare, silently taking the trial ceiling, passed. **A mention is not a use.**
+   Found by mutation 51u; the guard now reads the CALL.
+
+9. **My own new test, matching the pattern it was written to replace.**
+   `source.includes('api')` finds `vercel.json`'s block `/((?!api/).*)` — which mentions
+   `api` in order to EXCLUDE it. The test would have passed against the unfixed config. It
+   now compiles each source and asks whether it matches `/api/license`.
+
+10. ⭐ **A MUTATION THAT READ A CLOCK.** `String(Math.round(performance.now()))` reported
+    **CAUGHT when the harness output was redirected and SURVIVED when it was piped** — same
+    plan, same code, seconds apart, because 42 calls inside one millisecond share a key.
+    **The harness was honest and the MUTATION was the lie**, which nothing else on this list
+    covers. Found only because the same plan happened to be run twice and the totals
+    disagreed. **If two runs of one plan disagree, suspect the plan before the code.** §5 T22.
+
+---
+
+## Item 51 — the re-probe, before any ranking (Rule 4)
+
+All nine findings were re-probed against the SYSTEM on 2026-08-27 before any work started.
+**None had been quietly fixed** — unlike the eleven that had, in the 08-26 cycle. The probes:
+
+| Finding | Probe | Verdict |
+|---|---|---|
+| AC-5 | `grep -n 'TOKEN_TTL_MS\|GRACE_MS' src/extension/license.ts` | open — `license.ts:10` imports both from `../server/token` |
+| SEC-3 | `grep -n 'ipCap' api/license.ts` | open — `keyCap` only, no `ipCap` |
+| TM-12 | `cat vercel.json` | open — source is `/((?!api/).*)`, and neither `json()` helper sets more than `content-type` |
+| PERF-6/SEC-4 | `cat src/server/ipCap.ts` | open — no eviction, full-address key, **and a docblock arguing both were fine** |
+| R-6/TM-13 | `grep -n 'AbortSignal\|timeout\|signal' src/server/*Handler.ts` | open — `visionHandler:185` passes `request.signal`, which is abort PROPAGATION, not a timeout |
+| AC-6, AC-10, AC-12, AC-9/TM-6 | read in place | open |
+
+**Three closed this session.** The remaining six are the next row.
+
 ---
 
 ## Carried context this lane does not re-derive
