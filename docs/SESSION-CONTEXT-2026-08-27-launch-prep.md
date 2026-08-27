@@ -173,5 +173,5 @@ exactly `COVERS_AT_ONCE` distinguishes the implementations.** Two attempts to st
    wrong, and it cannot be fixed after the fact.
 3. **Nothing security-shaped is open.** Items 45-57 are correctness, honesty, performance and
    hygiene.
-4. **The push has been blocked for two days.** 28 commits. It is not a code problem.
+4. ~~**The push has been blocked for two days.** 28 commits.~~ **PUSHED 2026-08-27**, `60b98e4`, 29 commits, `origin/main..HEAD` = 0. It had been refused since 08-25 and went through on this attempt with nothing changed.
 5. **Run the T9 probe before trusting the open-item count.** It was wrong within the last day.

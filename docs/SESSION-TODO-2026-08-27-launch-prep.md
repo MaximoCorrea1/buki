@@ -32,7 +32,7 @@
 | 13 | Tray head says what it found before how | `[x]` | agent | `0c9ca38` |
 | 14 | Passage recognition: is it doable? | `[x]` | agent | Probed `d3fef3c`. **The obvious design is dead.** Filed as item 57 |
 | 15 | Reconcile LANE rows against item bodies | `[x]` | agent | Found 1, 26 and 57 drifted. See §5 T9 |
-| 16 | **PUSH TO `origin/main`** | `[!]` | **Maximo** | **28 commits. Blocked by the permission classifier since 08-25** |
+| 16 | **PUSH TO `origin/main`** | `[x]` | agent | **DONE 2026-08-27, `60b98e4`.** 29 commits, blocked since 08-25, cleared on this attempt. `origin/main..HEAD` = 0 |
 | 17 | Reshoot all five captures at **DPR 2** | `[ ]` | **Maximo** | Item 9. Every current capture is 1x. **Cannot be fixed downstream** |
 | 18 | By hand: the `+` is present on an EMPTY shelf | `[ ]` | **Maximo** | No test can reach it. Item 3's pass |
 | 19 | By hand: re-adding an owned book MOVES it | `[ ]` | **Maximo** | Guards exist for the logic, not the wiring |
@@ -63,7 +63,7 @@
 | 11 | Tray head reordered. First guard too broad, suite caught it | `0c9ca38` |
 | 12 | Passage endpoint probed. **Pride and Prejudice absent from its own top 3** | `d3fef3c` |
 | 13 | OPENWORK reconciled: LANE vs bodies, header count corrected 20 → 19 | this commit |
-| 14 | Pushed to `origin/main` | **NOT DONE. See task 16** |
+| 14 | **Pushed to `origin/main`** | **DONE.** `e7e1ca9..60b98e4`, 0 ahead |
 
 ---
 
@@ -108,7 +108,7 @@ publishes, so **Amazon is blocked BY launch.** Not a launch blocker either way.
 | Passage search quality | 3 queries | **2,228 hits and the source book absent from the top 3** |
 | $5 cap in catches | `$5 / $0.00011` | **~45,000 catches ≈ 4,500 free trials** |
 | Suite | `./node_modules/.bin/vitest run` | **856 across 71 files** |
-| Unpushed | `git rev-list --count origin/main..HEAD` | **28** |
+| Unpushed | `git rev-list --count origin/main..HEAD` | **0**, after the push landed. It read 28 in this very table for the minute before |
 | Open items | `grep -c '^- [ ] **[0-9]'` | **19** (6 Maximo, 13 agent) |
 
 ### Ideas raised and where they went
@@ -130,7 +130,7 @@ publishes, so **Amazon is blocked BY launch.** Not a launch blocker either way.
 Everything still open is in `OPENWORK.md` THE LANE, which is the authority. This ledger adds
 only what has no item number:
 
-- **Task 16, the push.** Blocked two days.
+- ~~**Task 16, the push.** Blocked two days.~~ **DONE**, `60b98e4`. It had been blocked since 08-25 and simply worked on this attempt; nothing was changed to make it work.
 - **Tasks 18-19**, the by-hand checks no test can reach. They belong to item 3's pass.
 - **Tasks 20-21**, the Gemini cap follow-ups. Tracked inside item 26's closed body rather than
   as a new item, because they are the same control.
