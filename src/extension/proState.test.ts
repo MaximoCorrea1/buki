@@ -654,3 +654,37 @@ describe('forgetSession still keeps the pairing, because its caller is a differe
     );
   });
 });
+
+/**
+ * R-1's WIRING, which is the half no unit test can reach. `OPENWORK.md` item 49.
+ *
+ * `canCatchOnHeldSession` is proved in `license.test.ts` with real values. What it cannot
+ * prove is that `background.ts` actually asks it — and `background.ts` registers listeners
+ * at module scope, so nothing can import it. Asserted as SOURCE, with comments stripped
+ * first, because this repo's house style is dense enough that the paragraph explaining a
+ * rule will otherwise satisfy a guard on it. See `optionsPage.test.ts`.
+ */
+const backgroundCode = background
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^[ \t]*\/\/.*$/gm, '');
+
+describe('a catch waits for a renewal only when it has no usable session', () => {
+  it('has NO unguarded await of the renewal', () => {
+    // The absence proof. One awaited call, and the decision is asked before it. A second
+    // `await keepSession` anywhere would put the licence server back in front of every
+    // renewing catch, which is the whole defect.
+    expect(backgroundCode.match(/await keepSession\(/g) ?? []).toHaveLength(1);
+    const asks = backgroundCode.indexOf('canCatchOnHeldSession(');
+    const waits = backgroundCode.indexOf('await keepSession(');
+    expect(asks, 'background.ts never asks whether it needs to wait').toBeGreaterThan(-1);
+    expect(waits, 'nothing awaits the renewal at all any more').toBeGreaterThan(-1);
+    expect(asks, 'the wait happens before the question that decides it').toBeLessThan(waits);
+  });
+
+  it('swallows the fire-and-forget rejection instead of letting it escape', () => {
+    // An unhandled rejection in a service worker is logged as an error on a catch that
+    // otherwise worked perfectly. `warmCovers` records the same rule; this is the second
+    // place in the worker that runs something without awaiting it.
+    expect(backgroundCode).toMatch(/void keepSession\([^)]*\)\.catch\(/);
+  });
+});

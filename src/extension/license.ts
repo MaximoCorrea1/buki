@@ -66,6 +66,37 @@ export function isLicensed(session: Session | null, now: number): boolean {
   return now < session.expiresAt + GRACE_MS;
 }
 
+/**
+ * How long the exchange may take before the catch behind it gives up. `OPENWORK.md` 49, R-1.
+ *
+ * Between `openLibrary`'s 6s and `llmVision`'s 12s, and it is a ceiling rather than an
+ * expectation: this is one small POST to our own edge, which then asks Polar. When the catch
+ * actually WAITS for it — see `canCatchOnHeldSession`, which is the uncommon case — this is
+ * the most it can add.
+ */
+export const EXCHANGE_TIMEOUT_MS = 8_000;
+
+/**
+ * May this catch go ahead on the session it already holds, while the renewal runs behind it?
+ *
+ * THE SECOND HALF OF R-1. Bounding the exchange stops it hanging for ever; it still puts the
+ * licence server in front of every catch that renews, and it does not need to be there.
+ * `needsRenewal` fires EARLY on purpose, so the ordinary case is a session the proxy would
+ * still honour for another `GRACE_MS`. A catch holding one of those can start now.
+ *
+ * This is `isLicensed` asked at the call site's own question, and it exists as its own name
+ * because `background.ts` cannot be imported by a test: a decision written inline there is a
+ * decision no test can reach. Same reason `ensureTray`, `activateKey` and `grantedHosts` are
+ * modules.
+ *
+ * FALSE means the catch must wait — a first pairing, or a session so old even the grace has
+ * run out. There is no usable token then, so going ahead means a 401 and a wall in front of
+ * somebody who has paid.
+ */
+export function canCatchOnHeldSession(session: Session | null, now: number): boolean {
+  return isLicensed(session, now);
+}
+
 /** A body that is actually a session, rather than anything a 200 might carry. */
 function sessionFrom(body: unknown): Session | null {
   if (!body || typeof body !== 'object') return null;
@@ -90,6 +121,20 @@ export function createLicense(deps: LicenseDeps): {
         res = await deps.fetch(deps.endpoint, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
+          // A CEILING, because this runs during a catch. `OPENWORK.md` item 49, R-1.
+          //
+          // `background.ts` awaits this before the catch's own `AbortController` exists, so
+          // nothing could stop it — and it had no timeout of its own while `llmVision` sets
+          // 12s and `openLibrary` sets 6s. A `/api/license` that accepted the connection and
+          // never answered pinned the catch open with no ceiling and no way out, under a
+          // card reading "Reading the cover…" in somebody else's page.
+          //
+          // NOT the catch's signal, deliberately. Aborting an exchange that Polar has
+          // already ACTIVATED loses the activation id we never got back, and the next
+          // renewal spends another of five permanent slots — ADV-8's cost, arriving through
+          // a cancel button. A ceiling bounds the wait; the signal would trade a hang for a
+          // slot.
+          signal: AbortSignal.timeout(EXCHANGE_TIMEOUT_MS),
           // In the BODY, never the URL: a query string lands in server logs, browser
           // history and every proxy in between, and this is a bearer credential.
           // The activation id is OMITTED rather than sent empty on a first pairing: the
@@ -97,9 +142,20 @@ export function createLicense(deps: LicenseDeps): {
           // renewal and validate an activation that does not exist yet.
           body: JSON.stringify(activationId ? { key, activationId } : { key }),
         });
-      } catch {
-        // Offline, DNS, a captive portal. The caller must keep whatever session it has.
-        return { ok: false, retryable: true, message: 'Could not reach Buki. Still offline?' };
+      } catch (err) {
+        // A timeout is not the network being down, and saying "still offline?" to somebody
+        // whose connection is fine sends them to fix the wrong thing. `docs/brand.md`: an
+        // error names what failed. Both are RETRYABLE — a slow endpoint is our outage, and
+        // classifying it as definitive would sign a paying subscriber out for it, which is
+        // the shape item 39 was filed for.
+        const timedOut = (err as { name?: string })?.name === 'TimeoutError';
+        return {
+          ok: false,
+          retryable: true,
+          message: timedOut
+            ? `Buki's licence check took too long (over ${EXCHANGE_TIMEOUT_MS / 1000}s).`
+            : 'Could not reach Buki. Still offline?',
+        };
       }
 
       let body: unknown = null;

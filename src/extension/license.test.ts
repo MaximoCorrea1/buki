@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { needsRenewal, isLicensed, createLicense } from './license';
+import { needsRenewal, isLicensed, createLicense, canCatchOnHeldSession } from './license';
 import { GRACE_MS } from '../server/token';
 
 const NOW = Date.UTC(2026, 7, 9, 12, 0, 0);
@@ -290,5 +290,111 @@ describe('a misconfiguration on our side is not a verdict on the licence', () =>
       answering(403, { error: 'Activation limit reached', code: 'licence' }),
     );
     expect(await license.exchange('KEY-1')).toMatchObject({ message: 'Activation limit reached' });
+  });
+});
+
+/**
+ * R-1. `OPENWORK.md` item 49, and it is on the path somebody is watching a spinner for.
+ *
+ * The licence exchange is awaited at `background.ts:241`. The catch's `AbortController` is
+ * created at `:247`, six lines LATER, so cancelling a catch never reached it — and the
+ * exchange had **no timeout of its own either**, while `llmVision` sets 12s and
+ * `openLibrary` sets 6s. A hung `/api/license` pinned the catch open with no ceiling and no
+ * way out, on a card that says "Reading the cover…" in somebody else's page.
+ *
+ * `licenseHandler.ts` opened with *"called once a day by an extension that already holds a
+ * licence, and never during a catch"*. `background.ts` calls it there BY DESIGN — an MV3
+ * worker is torn down between clicks, so the catch is the only reliable heartbeat this
+ * extension has. The comment described the intent and the code did the opposite.
+ */
+describe('the licence exchange cannot pin a catch open', () => {
+  // The raw abort surfaces as a TimeoutError, exactly as it does for `llmVision`, and these
+  // two tests split what that has to produce. Neither alone proves the ceiling FIRES - that
+  // is what the signal test below is for - and saying so is cheaper than a test that waits
+  // eight seconds to find out.
+  const timesOut = () =>
+    vi.fn(async () => {
+      throw Object.assign(new Error('signal timed out'), { name: 'TimeoutError' });
+    });
+
+  it('treats a timeout as worth retrying, never as an answer about the licence', async () => {
+    // Retryable is the whole point. A timeout classified as definitive makes `ensureSession`
+    // call `forgetSession`, and a paying subscriber is signed out because OUR endpoint was
+    // slow - which is the same shape as the 5xx-as-403 bug item 39 was filed for.
+    const result = await createLicense({
+      fetch: timesOut() as never,
+      endpoint: ENDPOINT,
+      now: () => NOW,
+    }).exchange('KEY-1');
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.retryable).toBe(true);
+  });
+
+  it('names the timeout rather than blaming the network', async () => {
+    // `docs/brand.md`: an error names what failed. "Still offline?" is wrong and unhelpful
+    // when the machine is online and OUR endpoint is the thing not answering.
+    const result = await createLicense({
+      fetch: timesOut() as never,
+      endpoint: ENDPOINT,
+      now: () => NOW,
+    }).exchange('KEY-1');
+    expect(result.ok === false && result.message).toMatch(/too long/i);
+    expect(result.ok === false && result.message).not.toMatch(/offline/i);
+  });
+
+  it('passes a signal to fetch at all, which is what bounds it', async () => {
+    const seen: (AbortSignal | undefined)[] = [];
+    const ok = vi.fn(async (_url: string, init?: { signal?: AbortSignal }) => {
+      seen.push(init?.signal);
+      return new Response(JSON.stringify({ token: 't', expiresAt: NOW + 1000 }), { status: 200 });
+    });
+    await createLicense({ fetch: ok as never, endpoint: ENDPOINT, now: () => NOW }).exchange('KEY-1');
+    expect(seen[0], 'the exchange fetch carries no signal, so nothing can stop it').toBeInstanceOf(
+      AbortSignal,
+    );
+  });
+
+  it('still reports a real offline as offline', async () => {
+    // The other branch has to keep working: a TypeError from a dead connection is not a
+    // timeout, and telling somebody on a train that our server was slow is a lie.
+    const dead = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    const result = await createLicense({ fetch: dead as never, endpoint: ENDPOINT, now: () => NOW }).exchange('K');
+    expect(result.ok === false && result.message).toMatch(/offline/i);
+  });
+});
+
+/**
+ * WHETHER THE CATCH HAS TO WAIT FOR THE RENEWAL AT ALL, which is the other half of R-1.
+ *
+ * Bounding the exchange stops it hanging for ever; it still puts the licence server in
+ * front of every catch that renews. It does not need to be. `needsRenewal` fires EARLY, on
+ * purpose, so the common case is a session that is still perfectly usable — the server
+ * would honour it for another `GRACE_MS` past expiry. A catch holding one of those can go
+ * now and let the renewal finish behind it.
+ *
+ * The decision is named here rather than written inline in `background.ts`, which no test
+ * can import.
+ */
+describe('canCatchOnHeldSession', () => {
+  it('is true for a session the server would still honour', () => {
+    expect(canCatchOnHeldSession({ token: 't', expiresAt: NOW + 60_000 }, NOW)).toBe(true);
+  });
+
+  it('is TRUE inside the grace window, because the server answers there', () => {
+    // The whole reason `isLicensed` and `needsRenewal` are two questions. A catch inside
+    // grace is a catch the proxy will serve, so blocking it on a renewal buys nothing.
+    expect(canCatchOnHeldSession({ token: 't', expiresAt: NOW - 1000 }, NOW)).toBe(true);
+  });
+
+  it('is false once even the grace has run out', () => {
+    expect(canCatchOnHeldSession({ token: 't', expiresAt: NOW - GRACE_MS - 1 }, NOW)).toBe(false);
+  });
+
+  it('is false with no session at all, which is a first pairing', () => {
+    // Here the catch MUST wait: there is no token to send, so going ahead means a 401 and
+    // a wall in front of somebody who has paid.
+    expect(canCatchOnHeldSession(null, NOW)).toBe(false);
   });
 });

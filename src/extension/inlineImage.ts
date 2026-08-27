@@ -34,6 +34,40 @@ export interface ImagePrep {
   asDataUrl(url: string, maxEdge: number): Promise<string>;
 }
 
+/**
+ * How long the picture download may take. `OPENWORK.md` item 49, R-4.
+ *
+ * Generous, because this is one image on the reader's own connection from a CDN the page is
+ * already talking to — the point is a CEILING, not a target. Above `openLibrary`'s 6s
+ * because a photograph is bigger than a JSON record, below `llmVision`'s 12s because
+ * fetching a file should never be the slowest thing in a catch that also reads it.
+ */
+export const DOWNLOAD_TIMEOUT_MS = 10_000;
+
+/**
+ * The signal a picture download obeys: the catch's, and a ceiling of its own.
+ *
+ * `livePrep` fetched with `signal ? { signal } : {}` — so a catch that supplied one could be
+ * cancelled and NOTHING could time out, and a catch that supplied none had no bound at all.
+ * A host that accepts the connection and never answers left the catch waiting for as long as
+ * the reader was willing to look at "Reading the cover…", in a page Buki does not own. Both
+ * siblings on this path are bounded; this one was not.
+ *
+ * Its own function because `livePrep` needs `createImageBitmap` and `OffscreenCanvas`,
+ * neither of which exists in node, so nothing inside it can be reached by a test. The
+ * composition is the part worth proving, and this is the part that composes.
+ *
+ * `ms` is a parameter only so a test can watch the ceiling actually arrive without waiting
+ * ten seconds. Every caller uses the default.
+ */
+export function downloadSignal(
+  job: AbortSignal | undefined,
+  ms: number = DOWNLOAD_TIMEOUT_MS,
+): AbortSignal {
+  const ceiling = AbortSignal.timeout(ms);
+  return job ? AbortSignal.any([job, ceiling]) : ceiling;
+}
+
 /** Fit inside a square of `max`, keeping the shape. Never upscales. */
 export function fitWithin(
   width: number,
@@ -94,7 +128,10 @@ async function base64(blob: Blob): Promise<string> {
  */
 export const livePrep = (signal?: AbortSignal): ImagePrep => ({
   async asDataUrl(url, maxEdge) {
-    const res = await fetch(url, signal ? { signal } : {});
+    // The catch's signal AND a ceiling. See `downloadSignal`: this line used to be
+    // `signal ? { signal } : {}`, which meant a cancellable download that could never
+    // time out, or an uncancellable one with no bound at all.
+    const res = await fetch(url, { signal: downloadSignal(signal) });
     if (!res.ok) throw new Error(`picture request failed (HTTP ${res.status})`);
 
     const bitmap = await createImageBitmap(await res.blob());

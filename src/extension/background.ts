@@ -24,7 +24,7 @@ import { createGate, WallError } from './gate';
 import { handleSaveBook, type SaveBookDeps } from './saveBook';
 import { readPro, writePro, createSessionKeeper, forgetSession, type ProState } from './proState';
 import { readVisionFailure, NoKeyError, type VisionFailure } from './visionFailure';
-import { createLicense } from './license';
+import { createLicense, canCatchOnHeldSession } from './license';
 import { BUKI_HOST } from '../shared/host';
 import { visionRoute } from './visionRoute';
 import { createTrial } from './trial';
@@ -238,7 +238,26 @@ async function recognize(
   // Through `keepSession`, never `ensureSession` directly: two catches in the same second
   // both arrive here with the same stale state, and only the module-scope latch stops them
   // exchanging twice and spending two of the licence's five slots for one user action.
-  const pro = await keepSession(held);
+  //
+  // AND IT ONLY BLOCKS WHEN IT HAS TO. `OPENWORK.md` item 49, R-1. `needsRenewal` fires
+  // EARLY on purpose, so the ordinary renewing catch still holds a session the proxy would
+  // honour for another `GRACE_MS` — and waiting for a licence server before reading a cover
+  // buys that catch nothing. When the held session is usable the renewal runs behind the
+  // catch; when it is not (a first pairing, or one so old even the grace has run out) there
+  // is no token to send, so the catch waits or meets a wall it has paid to pass.
+  //
+  // `canCatchOnHeldSession` rather than `isLicensed` inline: this file registers listeners
+  // at module scope and no test can import it, so a decision written here is a decision
+  // nothing can reach.
+  let pro = held;
+  if (canCatchOnHeldSession(held.session, Date.now())) {
+    // Not awaited, and the rejection is swallowed HERE rather than left to escape: this is
+    // fire-and-forget from a service worker, where an unhandled rejection is logged as an
+    // error on a catch that otherwise worked perfectly. Same rule as `warmCovers`.
+    void keepSession(held).catch(() => undefined);
+  } else {
+    pro = await keepSession(held);
+  }
   let keyWasMissing = false;
 
   // Every request this catch makes goes through one signal, so calling it off reaches the

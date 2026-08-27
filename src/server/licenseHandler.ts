@@ -3,10 +3,22 @@
  *
  * `api/license.ts` is a shell that reads `process.env` and calls this.
  *
- * Called once a day by an extension that already holds a licence, and never during a
- * catch. Polar's customer-portal endpoints would let the extension do this itself without
- * a secret, but the proxy has to verify the licence anyway before spending our provider
- * key — so a check made in the extension would be decoration. One place decides.
+ * Called about once a day by an extension that already holds a licence. Polar's
+ * customer-portal endpoints would let the extension do this itself without a secret, but
+ * the proxy has to verify the licence anyway before spending our provider key — so a check
+ * made in the extension would be decoration. One place decides.
+ *
+ * ⚠ **THIS PARAGRAPH USED TO END "and never during a catch". THAT WAS FALSE FROM THE DAY
+ * IT WAS WRITTEN**, and it is why R-1 sat unnoticed. `background.ts` calls it there BY
+ * DESIGN: an MV3 worker is torn down between clicks, so a background schedule is the one
+ * thing that cannot be relied on and the catch itself is the only reliable heartbeat this
+ * extension has. The comment described the intent; the code did the opposite; and a reader
+ * checking whether this endpoint needed a timeout found a sentence saying it could not
+ * matter. `OPENWORK.md` item 49.
+ *
+ * So it IS on the catch path, and both halves of that are now handled at the client:
+ * `license.ts` bounds the exchange at `EXCHANGE_TIMEOUT_MS`, and `background.ts` only
+ * WAITS for it when the held session is no longer usable.
  */
 import { fromExtension } from './policy';
 import { sign, TOKEN_TTL_MS } from './token';
