@@ -41,6 +41,7 @@
 | 22 | Probe whether `search/inside` can be SCOPED to a work | `[ ]` | agent | One request. Decides whether item 57 exists at all |
 | 23 | The six Vercel variables | `[ ]` | **Maximo** | Item 2. Blocked on the draft upload (item 37) |
 | 24 | Draft upload → real extension id into `manifest.json` | `[ ]` | **Maximo** | Item 37. **The chain now starts here** |
+| 25 | **Write `CLAUDE.md`**, adapted from Flowy's | `[x]` | agent | Buki had NONE. Guarded by `agentRules.test.ts`, 4 mutations, 4 caught |
 
 `[x]` done+verified · `[~]` in progress · `[ ]` open · `[?]` founder decision · `[!]` blocked
 
@@ -64,6 +65,7 @@
 | 12 | Passage endpoint probed. **Pride and Prejudice absent from its own top 3** | `d3fef3c` |
 | 13 | OPENWORK reconciled: LANE vs bodies, header count corrected 20 → 19 | this commit |
 | 14 | **Pushed to `origin/main`** | **DONE.** `e7e1ca9..60b98e4`, 0 ahead |
+| 15 | **`CLAUDE.md` written.** Buki had none, and §5's traps were measured UNREACHABLE | 860/72 |
 
 ---
 

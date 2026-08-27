@@ -106,6 +106,26 @@ only by mutating the constant. Reading the test does not show it, because it rea
 
 ---
 
+### B8. "The traps are written down, so they are known"
+
+Five repeat hits on `heredoc`, `backtick`, `npx` and `0x08` in one session, by an agent
+that had read `OPENWORK.md`. The obvious read is carelessness. **The measured one is that
+they were unreachable.**
+
+```
+§5 spans OPENWORK.md lines 1900-2511.   The Read tool takes 2000 by default.
+heredoc  BELOW the cut     backtick  BELOW the cut
+npx      BELOW the cut     0x08      BELOW the cut
+ESC byte ABOVE (written the same day, at the top of the section)
+```
+
+**Only the entry added that morning was readable.** So `CLAUDE.md` was written - Buki had
+none at all - and it SPELLS the shell traps out rather than pointing at §5.
+`src/shared/agentRules.test.ts` holds it to that. **A rule nobody can read is not a rule**,
+and "write it down" had been the fix three times without working.
+
+---
+
 ## Instruments that returned a CONFIDENT WRONG ANSWER
 
 **This list is worth more than the findings**, because the next session inherits the
@@ -141,7 +161,16 @@ were not. **The file disagreed with itself for half a day** and the header carri
 half. Item 57 had a LANE row and no body at all. **The probe is now in §5 as T9: the number
 SET from the LANE must equal the set from the bodies.**
 
-### I5. A test fixture smaller than the bound it guards
+### I5. A presence check satisfied by a MENTION rather than by the rule
+
+`CLAUDE.md`'s first guard looked for the words `npx` and `backtick` anywhere in the file.
+**Deleting both actual rules left it green**, because both words also appear in the
+size-budget note at the top that LISTS which traps fall below the cut. Now asserted on the
+REMEDY (`process.execPath`, `node <file>.mjs`, `String.raw`) and scoped to the shell
+section. **Same shape as the `?raw` guard satisfied by its own comment - a mention is not
+an instruction.**
+
+### I6. A test fixture smaller than the bound it guards
 
 `mapPool`'s completeness tests used two and three items against a pool of four, so a mutation
 that stopped after the first batch survived. And "one failure must not strand the rest" passed

@@ -149,6 +149,7 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 
 | The fact | Lives in | Not in |
 | --- | --- | --- |
+| **The rules an agent needs on TURN ONE, and the ground truth it cannot derive** | **`CLAUDE.md`** (new 2026-08-27) | this file, which is too long to be read whole |
 | What is open, who owns it, what it unblocks | **this file** | any handoff |
 | The visual contract: tokens, generations, the mark, the checklist | `docs/brand.md` | `DESIGN.md` |
 | The mark's geometry and its measured colour values | `tools/mark.mjs` | anywhere else — six surfaces are asserted against it |
@@ -1898,6 +1899,21 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
 ---
 
 ## 5. Traps that have already cost time
+
+> ### ⚠ MOST OF THIS SECTION IS UNREACHABLE IN A DEFAULT READ, AND THAT WAS MEASURED
+>
+> §5 spans lines **1900-2511** of this file and the Read tool takes **2000 lines by
+> default**, so roughly five sixths of it is invisible unless read with an explicit
+> `offset`. On 2026-08-27 the entries below that cut were `heredoc`, `backtick`, `npx`
+> and `0x08` - **the exact four traps hit five times in one session**, by an agent that had
+> read this file.
+>
+> **That is why `CLAUDE.md` exists and why it SPELLS THE SHELL TRAPS OUT rather than
+> pointing here.** It is the one place the point-do-not-copy rule is deliberately broken,
+> and `src/shared/agentRules.test.ts` holds it to that: four mutations, four caught,
+> including one that tidied a trap back into a pointer.
+>
+> **Read this section with `offset: 1900`.**
 
 ### THE 2026-08-27 SET. Every one of these made an instrument LIE, not a test fail.
 
