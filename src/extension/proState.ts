@@ -158,16 +158,59 @@ export async function ensureSession(
         ? { activationId: result.activationId || pro.activationId }
         : {}),
     };
-    await deps.save(next);
+    await keep(next, deps.save);
     return next;
   }
 
   if (result.retryable) return pro;
 
+  /**
+   * THE PAIRING SURVIVES A REFUSED RENEWAL, and C-3 is NOT fixed here. `OPENWORK.md` 48.
+   *
+   * Dropping the activation id on this branch was written and reverted on 2026-08-27,
+   * because item 27's premise does not expire here — it just does not cover everything.
+   * Two real cases want opposite behaviour and this code cannot tell them apart:
+   *
+   * - **The subscription lapsed and was fixed.** The activation still exists at Polar, so
+   *   dropping the id makes the next success activate a SECOND time for the same machine.
+   *   Item 27 exactly.
+   * - **The customer deactivated this install at Polar to free a slot.** Then keeping the
+   *   id validates a nonexistent activation for ever.
+   *
+   * Telling them apart needs Polar's refusal code, and the endpoints are not live yet
+   * (item 2). Guessing would trade a common small cost for a rare large one in the dark.
+   *
+   * So the escape hatch went where the signal actually is: **a human re-pasting their key
+   * while unpaired.** The lapsed case self-heals with no re-paste at all, because renewal
+   * resumes on the stored id. See `activateKey.activationFor`.
+   */
   const next = forgetSession(pro);
-  await deps.save(next);
+  await keep(next, deps.save);
   return next;
 }
+
+/**
+ * Persist, and swallow the failure. `ensureSession` says it never throws and both of its
+ * writes sat OUTSIDE the try. `OPENWORK.md` item 48, ADV-8.
+ *
+ * It runs on the path of a catch somebody is waiting on, so a storage-quota failure did not
+ * degrade to *"carry on with what we have"* — it rejected into the caller and took the
+ * catch with it. Worse on a first pairing: `exchange` has ALREADY SPENT A SLOT by the time
+ * this runs, so throwing loses the catch AND the slot, and the id that would have stopped
+ * the next renewal spending another was never written.
+ *
+ * The caller still gets the state in memory, which is what makes this catch work. The next
+ * worker start reads storage and finds the old value, which is the honest consequence of a
+ * disk that would not take the write.
+ */
+async function keep(next: ProState, save: (state: ProState) => Promise<void>): Promise<void> {
+  try {
+    await save(next);
+  } catch (err) {
+    console.error('[Buki] could not store the licence session', err);
+  }
+}
+
 
 /**
  * The session goes; everything that identifies this install stays.

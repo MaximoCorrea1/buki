@@ -267,6 +267,39 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
     return refuse('That licence is not active.', 'licence', 403);
   }
 
+  /**
+   * A SESSION THAT CANNOT BE RENEWED WITHOUT SPENDING A SLOT IS NOT WORTH MINTING.
+   * `OPENWORK.md` item 48, ADV-3 — item 27's P0 arriving through a different door.
+   *
+   * On the activate path `claim.activationId` is Polar's `id` and there is no fallback,
+   * because there is no prior id to fall back TO. If that key is missing the value is
+   * `undefined`, and undefined does not survive `JSON.stringify`: it vanishes from the
+   * signed claim AND from the body below. The client's `?? ''` then yields `''`,
+   * `writePro`'s `&& activationId` guard omits the field, and the NEXT RENEWAL ACTIVATES
+   * AGAIN. Renewal runs daily and a key has five permanent slots, so the subscriber is
+   * locked out inside a week out of a resource only the Polar dashboard can free.
+   *
+   * 502 rather than 403 because this is our upstream failing its own contract, not an
+   * answer about this customer's licence — and 502 is in `worthRetrying`, so a client that
+   * already holds a session keeps it and rides the grace window.
+   *
+   * RENEWAL CANNOT REACH THIS, and the condition does not say so on purpose. `renewing` is
+   * `Boolean(activationId)` and the renewing branch above ends `?? activationId`, so a
+   * renewal always carries an id by construction. An added `!renewing &&` was written here
+   * first and MUTATION-PROVED EQUIVALENT: removing it changed no test, because the case it
+   * excluded cannot occur. A condition that can never be false is a condition a reader has
+   * to reason about for nothing, so it went.
+   *
+   * The invariant is not left unguarded by that: *"lets a RENEWAL through on the id the
+   * client sent"* below asserts 200 for a validation response carrying no activation of its
+   * own, so the day that fallback breaks, this branch starts refusing renewals and that test
+   * says so.
+   */
+  if (!claim.activationId) {
+    console.error('[buki] polar activated with no activation id');
+    return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);
+  }
+
   const now = env.now();
   const token = await sign(
     { licenseKeyId: claim.licenseKeyId, activationId: claim.activationId },

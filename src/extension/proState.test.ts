@@ -555,3 +555,102 @@ describe('forgetSession', () => {
     });
   });
 });
+
+/**
+ * ADV-8 AND C-3. `OPENWORK.md` item 48. Both are about the five permanent slots, which are
+ * the only finite resource this product can burn.
+ */
+describe('ensureSession keeps its promise never to throw', () => {
+  const NOW3 = Date.UTC(2026, 7, 17, 12, 0, 0);
+  const nearlyDone = { token: 'old', expiresAt: NOW3 + 60_000 };
+
+  it('does not throw when storage refuses the write', async () => {
+    // ADV-8. The docblock says "It never throws", and both `deps.save` calls sat OUTSIDE
+    // the try. `ensureSession` runs on the path of a catch somebody is waiting on, so a
+    // storage-quota failure did not degrade to "carry on with what we have" — it rejected
+    // into the caller and took the catch with it.
+    const save = vi.fn(async () => {
+      throw new Error('QUOTA_BYTES quota exceeded');
+    });
+    const result = await ensureSession(
+      { key: 'K', session: nearlyDone },
+      {
+        exchange: vi.fn(async () => ({
+          ok: true as const,
+          session: { token: 'new', expiresAt: NOW3 + 86_400_000 },
+          activationId: 'act_1',
+        })),
+        save,
+        now: () => NOW3,
+      },
+    );
+    // And the caller still gets the fresh session, because it exists in memory whatever
+    // storage did. Worse: the exchange ALREADY SPENT A SLOT, so throwing here would lose
+    // both the catch and the slot.
+    expect(result.session?.token).toBe('new');
+    expect(result.activationId).toBe('act_1');
+  });
+
+  it('does not throw when storage refuses the write on a definitive refusal either', async () => {
+    const save = vi.fn(async () => {
+      throw new Error('QUOTA_BYTES quota exceeded');
+    });
+    const result = await ensureSession(
+      { key: 'K', session: nearlyDone, activationId: 'act_1' },
+      {
+        exchange: vi.fn(async () => ({ ok: false as const, retryable: false, reason: 'licence' })),
+        save,
+        now: () => NOW3,
+      },
+    );
+    expect(result.session).toBeNull();
+  });
+
+  it('KEEPS the pairing even when a renewal is refused outright, and that is deliberate', async () => {
+    // C-3 IS NOT FIXED HERE, and the attempt to fix it here was reverted on 2026-08-27.
+    // Item 27's premise does not expire on this branch, it just does not cover everything:
+    // a lapsed-then-fixed subscription still has its activation at Polar, so dropping the
+    // id would activate a second time for the same machine. A deactivated install wants
+    // the opposite. Telling them apart needs Polar's refusal code and the endpoints are not
+    // live yet, so the escape hatch went where the signal actually is - see
+    // `activateKey.activationFor`, which re-activates when a human re-pastes while unpaired.
+    const result = await ensureSession(
+      { key: 'K', session: nearlyDone, activationId: 'act_1' },
+      {
+        exchange: vi.fn(async () => ({ ok: false as const, retryable: false, reason: 'licence' })),
+        save: vi.fn(async () => undefined),
+        now: () => NOW3,
+      },
+    );
+    expect(result.session).toBeNull();
+    expect(result.key, 'the key must stay, or the options page cannot say what is wrong').toBe('K');
+    expect(result.activationId).toBe('act_1');
+  });
+
+  it('KEEPS the activation id when the refusal might pass, which is item 27', async () => {
+    // The guard on the guard. A retryable refusal is our outage, not an answer, and
+    // dropping the pairing there would activate a second time for the same machine on the
+    // next success — burning a slot to survive a bad minute at Polar.
+    const result = await ensureSession(
+      { key: 'K', session: nearlyDone, activationId: 'act_1' },
+      {
+        exchange: vi.fn(async () => ({ ok: false as const, retryable: true, reason: 'upstream' })),
+        save: vi.fn(async () => undefined),
+        now: () => NOW3,
+      },
+    );
+    expect(result.activationId).toBe('act_1');
+    expect(result.session).toEqual(nearlyDone);
+  });
+});
+
+describe('forgetSession still keeps the pairing, because its caller is a different failure', () => {
+  it('keeps the activation id when only the TOKEN was rejected', () => {
+    // `background.ts` calls this when `/api/vision` answers 401 — a rotated secret, a
+    // bumped TOKEN_VERSION. The licence is fine and the install is still paired, so
+    // dropping the id here would spend a slot to recover from our own key rotation.
+    expect(forgetSession({ key: 'K', session: { token: 't', expiresAt: 1 }, activationId: 'a' })).toEqual(
+      { key: 'K', session: null, activationId: 'a' },
+    );
+  });
+});

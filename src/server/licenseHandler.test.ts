@@ -536,3 +536,64 @@ describe('one envelope, and a machine-readable code', () => {
     }
   });
 });
+
+/**
+ * ADV-3. `OPENWORK.md` item 48, and it is item 27's P0 with a different door.
+ *
+ * On the ACTIVATE path `claim.activationId` is `(parsed as PolarActivation).id`, and there
+ * is no fallback because there is no prior id to fall back TO. If Polar's answer lacks that
+ * key the value is `undefined`, and undefined does not survive `JSON.stringify`: it is
+ * dropped from the signed claim AND from the response body. The client's `?? ''` then
+ * yields `''`, `writePro`'s `&& activationId` guard omits the field, and **the next renewal
+ * ACTIVATES AGAIN.**
+ *
+ * That is not a slow leak. Renewal runs daily and a key has FIVE permanent slots, so a
+ * subscriber is locked out inside a week, out of a resource only the Polar dashboard can
+ * free. The comment eleven lines up in `license.ts` names this exact hazard.
+ *
+ * A session that cannot be renewed without spending a slot is not worth minting. 502
+ * rather than 403: this is our upstream failing its own contract, not an answer about
+ * this customer's licence, and 502 is in `worthRetrying` so the client keeps what it has.
+ */
+describe('a session is never minted without the id that renews it', () => {
+  it('refuses when Polar activates but returns no activation id', async () => {
+    const noId = { license_key: { id: 'lk_1', status: 'granted', expires_at: null } };
+    const res = await handleLicense(
+      post({ key: 'K' }),
+      env({ fetch: vi.fn(async () => new Response(JSON.stringify(noId), { status: 200 })) }),
+    );
+    expect(res.status).toBe(502);
+    // Not a token. The whole point is that no session escapes this branch.
+    expect(await res.json()).not.toHaveProperty('token');
+  });
+
+  it('refuses when the id is present but empty, which stringify also drops on the way back', async () => {
+    const emptyId = { id: '', license_key: { id: 'lk_1', status: 'granted', expires_at: null } };
+    const res = await handleLicense(
+      post({ key: 'K' }),
+      env({ fetch: vi.fn(async () => new Response(JSON.stringify(emptyId), { status: 200 })) }),
+    );
+    expect(res.status).toBe(502);
+  });
+
+  it('STILL mints when Polar answers properly, or nobody can activate at all', async () => {
+    const res = await handleLicense(post({ key: 'K' }), env());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { token?: string; activationId?: string };
+    expect(body.token).toBeTruthy();
+    expect(body.activationId).toBe('act_1');
+  });
+
+  it('lets a RENEWAL through on the id the client sent, which is the whole point of renewing', async () => {
+    // The validate path already has a fallback: Polar's validation response need not echo
+    // the activation, because the client just sent it. Refusing here would break renewal
+    // for every subscriber to fix a bug that only exists on activate.
+    const validated = { id: 'lk_1', status: 'granted' };
+    const res = await handleLicense(
+      post({ key: 'K', activationId: 'act_1' }),
+      env({ fetch: vi.fn(async () => new Response(JSON.stringify(validated), { status: 200 })) }),
+    );
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { activationId?: string }).toHaveProperty('activationId', 'act_1');
+  });
+});
