@@ -16,7 +16,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27 (evening). `main` = `origin/main` at `640d451`, 0 ahead** (`git rev-list --count origin/main..HEAD`). **Eighteen commits went up in one go**: items 45-49 closed, item 50 taken to five of nine, the mutation harness promoted out of `zzz-`, and the whole session captured. **84 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). ⚠ **THIS ROW NAMED `60b98e4` UNTIL THE PUSH ABOVE HAD ALREADY LANDED**, which is the drift this file keeps paying for, in miniature, for the second time in one day - it was corrected in the same session rather than inherited. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **16.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Eight are Maximo's (2, 3, 9, 35, 37, 56, 58, 59); eight are agent work (36, 50-55, 57).** **Items 45, 46, 47, 48 and 49 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so this number moved by one while FIVE items closed. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27, second lane.) **Ten are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, and 57 now needs his call first); seven are agent work (36, 50-55).** **Item 57 moved from agent to Maximo without closing**, because the second probe answered the engineering question and left a positioning one. **Item 60 was filed by the commit that CAUSED it**, which is the only honest moment to file a trade-off. **Items 45, 46, 47, 48 and 49 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so this number moved by one while FIVE items closed. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -53,7 +53,8 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
 | **55** | agent | **The two surfaces no test can reach** (M-5 the context-menu orchestration, M-6 the whole card renderer including the paywall) | — |
-| **57** | agent, AFTER LAUNCH | **Find a book from a passage.** Probed 2026-08-27: OpenLibrary full-text is real but ranks the SOURCE below textbooks and criticism (Pride and Prejudice absent from the top 3 for its own opening line), takes 4-5s against a 6s timeout, and returns raw Elasticsearch. The naive design is dead; the inverted one (model proposes, full text CHECKS) needs one more probe first. `docs/superpowers/specs/2026-08-27-passage-probe.md` | nothing |
+| **57** | **Maximo decides, then agent**, AFTER LAUNCH | **Find a book from a passage. PROBED TWICE 2026-08-27 AND THE SECOND ROUND OVERTURNED THE FIRST.** The floor round one said might not exist is there: field filters are dead but a **bare boolean term** scopes the query (2,228 hits → 227, the book from absent-in-the-top-3 to **rank 1**), and comparing the model's proposed title against the returned hit titles **discriminated 5/5** and refused 7 of 8 wrong-book-right-author hallucinations at **no extra request**. **The blocker is no longer ranking, it is COVERAGE** — four modern in-copyright novels, none found, two returning zero hits. `node tools/probe/passage-grounding.mjs` | **a positioning call, not a build** |
+| **60** | **Maximo** | **Several artless books from one photograph now show the same tile.** Opened deliberately by `cae4ad1`, which is the founder's *"when we find no cover book, we use the original image"*. Honest but repetitive on a face-out shelf. Two ways out are costed in the body; doing nothing is a real option | the shelf's first impression |
 | **56** | **Maximo** | **The CORS redirect chain has never been probed** (review §7). One curl. If it is wrong every shelf cover silently falls back to a drawn board | item 3 |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done. **2026-08-26: Amazon is blocked BY launch** - Associates wants the property URL and the store URL does not exist until the draft is published. Bookshop is applied for and awaiting review. **Not a launch blocker either way** | affiliate revenue, AFTER launch |
 | **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
@@ -169,6 +170,7 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 | This session's forget-nothing ledger | `docs/SESSION-TODO-<date>-<label>.md` | — |
 | **WHAT WAS ACTUALLY BROKEN ON PURPOSE**, per item, so *"N mutations, N caught"* can be re-run rather than believed | **`tools/mutations/`** + its `README.md`. Run with `node tools/mutate.mjs tools/mutations/<plan>.json` from the repo root | a commit message, which cannot be re-run |
 | **The before/after numbers for a performance change** | **`tools/bench/`** — one script per finding, run the SAME way before and after | a number quoted in prose, which the next session cannot reproduce |
+| **Whether an idea against a THIRD-PARTY service is feasible at all** | **`tools/probe/`** — one script per question, hitting the live endpoint. **Deliberately NOT in the vitest suite**: it needs the network, and its numbers are expected to move. What it must keep proving is the SHAPE. `passage-grounding.mjs` is the worked example | the suite, which must stay hermetic; or a spec, which records a belief rather than a query |
 | **The 2026-08-24 pre-launch review**: every finding, its evidence, its attack path, its fix | **`docs/REVIEW-2026-08-24-prelaunch.md`** | this file, which owns the ORDER and the STATUS |
 
 > ### ⚠ TWO SESSIONS SHARE 2026-08-18. Filename order is not a reading order.
@@ -1255,19 +1257,85 @@ unblocks.
   book stated firmly".
 
   **So "search the passage, take the top hit" would put a revision guide on the shelf and call
-  it Jane Austen.** Dead.
+  it Jane Austen.** Dead, and round two reproduced it in a second book: *Nineteen Eighty-Four*
+  ranks below an Orwell symposium, a novel called *Wanksy*, and a grammar textbook, for its
+  own opening line. **General, not an Austen-anthology fluke.**
 
-  **The inverted design might live:** the model names a book, and full text is scoped to THAT
-  book to ask a precision question - *is this passage in it?* - rather than a ranking one. It
-  is the shape `recognizeBook` already has (the model proposes, the catalogue disposes) and
-  it fails the same honest way, landing on `unverified`. **Unprobed and blocking: whether
-  `search/inside` can be scoped to a work or edition at all.** One request answers it. If it
-  cannot, the answer becomes Google Books full text - better ranking, a key, a quota.
+  ---
 
-  **AFTER LAUNCH, and the next step is that one probe rather than a spec.** The idea stays
-  worth doing: passage screenshots are more common on X than photographs of covers, and
-  *"reads the picture, not the caption"* bends to *"whether it is a cover or a page"* without
-  breaking. Full record: `docs/superpowers/specs/2026-08-27-passage-probe.md`.
+  ⭐ **ROUND 2, THE SAME DAY, AND IT OVERTURNED THE PARAGRAPH THAT USED TO BE HERE.** Maximo:
+  *"lets see if we cant solve the 'find any book from phrase, passage, page etc'"*. Round one
+  ended on *"unprobed and blocking: whether `search/inside` can be scoped at all."* **It can.**
+  Re-runnable: `node tools/probe/passage-grounding.mjs`.
+
+  **One claim above is now known WRONG and is kept only to show what was believed:**
+  *"titles are often absent and authors always are, so every hit costs a second lookup."*
+  Every hit carries `meta_title`, `meta_creator`, `identifier` and `page_num`. **There is no
+  second lookup**, and that payload turned out to be the whole answer.
+
+  1. **Field filters are dead, and nearly mis-read as "scoping is impossible".**
+     `edition_key:`, `meta_title:`, `meta_creator:` all return 0 — **and so do the negative
+     controls**, which means the instrument said nothing. The discriminator was a filter that
+     MUST match everything: `AND meta_mediatype:texts`, the mediatype of every document in the
+     corpus, **returns 0**. The `meta_*` keys are STORED, not indexed. `&edition=`, `&ia=` and
+     `&sort=` are ignored too. *A filter never watched to PASS is not evidence, exactly as a
+     guard never watched to FAIL is not.*
+  2. **BARE BOOLEAN SCOPING WORKS.** `"<passage>" AND Austen` → **2,228 hits down to 227, and
+     the book itself from absent-in-the-top-3 to RANK 1.**
+  3. **The COUNT is not the check.** `"<austen passage>" AND Hemingway` returns **115 hits**,
+     topped by a cocktail recipe book, because Hemingway is a cocktail. A design reading
+     *"total > 0, confirmed"* ships the exact bug this item exists to avoid.
+  4. **The TITLES are the check, and they cost nothing.** Compare the model's proposed title
+     against the returned hit titles — **starts-with, not contains**, because *"Twentieth
+     century interpretations of Pride and prejudice"* contains it and is criticism.
+     **Discriminated 5 of 5**, wrong author matching none. The titles are already in the
+     response that answered the query.
+  5. **It refuses the realistic hallucination.** Wrong-book-right-author, not wrong-author, is
+     what a model gets wrong. **7 of 8 refused**; the 8th matched an omnibus at rank 8 while
+     the right answer sat at rank 1, so **BEST match rather than ANY match** closes it.
+
+  ⛔ **THE BLOCKER MOVED, AND THIS IS THE PART THAT NEEDS A DECISION.** Ranking is solved.
+  **Coverage is not.** Four modern in-copyright novels — *The Hunger Games*, *Gone Girl*,
+  *The Road*, *Normal People* — **none found; two returned literally zero hits.** The corpus
+  is scanned-and-open books: classics are in it, contemporary fiction is not. Latency measured
+  **982-9,983ms** across 19 queries against a 6,000ms `TIMEOUT_MS`, survivable only because
+  the failure mode is *"could not confirm"*.
+
+  **MAXIMO'S CALL, and it is positioning before it is engineering:** does *"reads the picture,
+  whether it is a cover or a page"* survive the sentence that must follow it — ***"for books
+  old enough to be in the open library"***? If yes, this is a build of known size and every
+  piece exists (`bookIdentity.ts` already holds the title comparison, `normAuthor` already
+  extracts the surname the query needs). If no, the alternative is Google Books full text:
+  better coverage, a key, a quota, and **unmeasured**. Full record:
+  `docs/superpowers/specs/2026-08-27-passage-probe.md`.
+
+- [ ] **60. SEVERAL ARTLESS BOOKS FROM ONE PHOTOGRAPH NOW SHOW THE SAME TILE.**
+      **Opened deliberately on 2026-08-27 by `cae4ad1`**, and filed in the same commit rather
+      than discovered later.
+
+      `cae4ad1` is the founder's rule — *"when we find no cover book, we use the original
+      image"* — and it loosened `shotFor` from `books === 1` to `books >= 1`. The half of C-9
+      it retired had genuinely expired (see the commit). **What it trades away is visual:**
+      the drawn boards were hashed per book, so five artless books read as five different
+      objects. Five copies of one photograph read as a bug, even though each is honest.
+
+      **How often:** only when SEVERAL books from ONE photograph ALL lack catalogue art. Any
+      book with art shows its art, because `coverSources` puts `coverUrl` first.
+
+      **Three ways out, and doing nothing is a real one:**
+
+      1. **Accept it.** The tile is true — that book was read out of that picture. Cost: 0.
+      2. **Stamp the title over the photograph**, exactly as `drawnCover` already stamps it.
+         Five tiles then differ by the one thing that identifies them, and the photograph
+         reads as the shelf's texture rather than as five duplicate covers. Reuses
+         `titleStep` and the `.stamp` class; needs `coverFor` to know the shot is SHARED,
+         which `popup.ts` can compute shelf-wide in one pass. **Cost: small, and it is the
+         one I would build.**
+      3. **Per-book image attribution at the source** — add an image index to `VisionGuess`
+         so each book knows which picture it came from. **This also closes the OTHER half of
+         C-9**, the one still refusing, and would let a four-picture post keep its pictures.
+         Cost: touches the prompt, the response schema, the recognizer and the card — and it
+         changes what the model is asked, which is item 58's territory.
 
 - [ ] **56. THE ONE THING THAT COULD NOT BE VERIFIED STATICALLY. Maximo, one command.**
       *(review §7)*
@@ -2858,8 +2926,26 @@ deleted, because the wrong belief explains the code above it.
   than reporting SURVIVED. Same family as the `0x08` that shipped into a doc. **The behaviour
   was right and better than what was intended** (a space separator collides: `{title:'A B',
   author:'C'}` and `{title:'A', author:'B C'}` give one key), so the separator stayed and the
-  SPELLING changed. `zzz-fix-nul.mjs` sweeps the tree for NUL and 0x08; run it after any
-  session that wrote source through a shell.
+  SPELLING changed. **`node tools/control-bytes.mjs`** sweeps the tree for NUL and 0x08; run it
+  after any session that wrote source through a shell. *(This line said `zzz-fix-nul.mjs` until
+  08-27 — a path that is gitignored and no longer exists. See T20, which is the same file.)*
+
+- **T20. THE SWEEP IN T19 COULD NOT RUN, AND TWO DOCS TOLD THE NEXT READER TO RUN IT.**
+  `tools/control-bytes.mjs` was a one-shot REPAIR for T19's specific NUL, with the sweep bolted
+  on after a `process.exit(1)` that fired whenever the repair found nothing to repair. **So from
+  the moment T19 was fixed, every invocation exited 1 without reading a single file** — while
+  `OPENWORK.md` and the 08-27 handoff both said *"sweep with it; only binaries should match."*
+
+  **Invisible twice over.** The natural way to run a noisy script is
+  `node tools/control-bytes.mjs | tail`, and **a pipe reports the exit status of `tail`.** That
+  is T-for-T the `tsc --noEmit | head` trap that printed `TSC=0` under ten real errors, hit
+  again on a different tool, by a reader who knew about the first one. Both checks in the
+  session that found it reported a clean exit; the third, unpiped, reported 1.
+
+  **Two rules out of it.** *A guard whose job is done must become a guard, not stay a fix* — the
+  repair half is deleted and the sweep survives alone. And *a guard needs a way to be watched
+  failing*: `node tools/control-bytes.mjs --verify` plants a NUL, confirms the sweep catches it,
+  and removes it. **Run tools WITHOUT a pipe, or read `${PIPESTATUS[0]}`.**
 
 ---
 
