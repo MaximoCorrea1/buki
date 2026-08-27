@@ -7,6 +7,7 @@
 // records an attempt on a tab whose content script never loaded.
 import { createOpenLibraryClient } from '../recognizer/openLibrary';
 import { handleSearchBooks } from './searchBooks';
+import { warmCovers } from './warmCovers';
 import { createLlmVision, MAX_IMAGES } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
@@ -293,6 +294,13 @@ async function recognize(
     outcome = result.source;
 
     if (keyWasMissing && !result.candidates.length) throw new NoKeyError('no key');
+
+    // FETCH THE COVERS NOW, not when the tray asks. The tray cannot fetch them itself
+    // (host-page CSP, see coverData.ts), so the request could not start until the card
+    // was already drawn - which is the second-or-so gap between the title appearing and
+    // the cover filling in. Never awaited: the card must not wait on this.
+    warmCovers(result.candidates, (url) => rememberCover(url, liveCoverDeps()));
+
     return { result, model: settings.model };
   } finally {
     // In `finally`, because the run that most needs explaining is the one that FAILED.
@@ -646,8 +654,14 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     // The tray asks for this because it is not allowed to fetch it. A failure is answered
     // with null rather than an error: the card falls back to its cloth, which is a real
     // design and not a broken state.
+    // Timed, so the warm-cache win is a number rather than a claim. A miss goes to the
+    // network; a hit is served from the Cache API store `warmCovers` filled moments ago.
+    const askedAt = Date.now();
     coverDataUrl(msg.url, liveCoverDeps())
-      .then((dataUrl) => sendResponse({ ok: true, dataUrl }))
+      .then((dataUrl) => {
+        console.log(`[Buki] cover ${Date.now() - askedAt}ms · ${dataUrl ? 'served' : 'none'}`);
+        sendResponse({ ok: true, dataUrl });
+      })
       .catch(() => sendResponse({ ok: true, dataUrl: null }));
     return true; // async response
   }
