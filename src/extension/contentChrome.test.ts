@@ -302,3 +302,39 @@ describe('what the content script is allowed to import', () => {
     expect(content).toContain('.documentElement');
   });
 });
+
+describe('the found card is headed by what it found, not by how', () => {
+  /**
+   * REORDERED 2026-08-27. The head was the mark, then the provenance eyebrow, then a
+   * count shown ONLY when a card held more than one book. So a single-book card was
+   * headed by "read from the cover" - a lowercase fragment standing where a heading
+   * belongs - and a nineteen-book card put that fragment ABOVE the sentence that
+   * actually said what had happened.
+   *
+   * Maximo asked for the head to say what the thing IS. foundHeading already does, for
+   * both counts, and already names Buki, which this card needs because it draws inside
+   * somebody else s page and must never be mistaken for part of it.
+   *
+   * content.ts cannot be imported by a test (OPENWORK item 55), so these read its
+   * source. The first is an ABSENCE proof, because the regression here is the RETURN
+   * of a condition rather than the loss of a call.
+   */
+  it('does not gate the heading on there being more than one book', () => {
+    // Scoped to THE HEAD. A blanket ban on candidates.length > 1 was wrong and the suite
+    // said so: the same expression decides whether to draw Save all, and a batch button
+    // on a single book is exactly what should not be drawn. What must not come back is
+    // the old head shape, which appended the mark and the provenance and nothing else.
+    expect(content).not.toMatch(/who\.append\(mk, provenanceOf\(card\)\)/);
+    expect(content).toMatch(/who\.append\(mk, count, provenanceOf\(card\)\)/);
+  });
+
+  it('builds the heading from the count, for every found card', () => {
+    expect(content).toMatch(/foundHeading\(card\.candidates\.length\)/);
+  });
+
+  it('still shows where the answer came from, beneath it', () => {
+    // Demoted, never deleted. It answers "will it get a book wrong" in
+    // .agents/product-marketing.md, and the store description has a section on it.
+    expect(content).toMatch(/provenanceOf\(card\)/);
+  });
+});

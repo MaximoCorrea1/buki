@@ -296,7 +296,14 @@ const STYLE = `
    many books are in it. Both sit on the axis. The rows below stay left-aligned, because
    a title is read from its first letter. */
 .buki-card[data-book] .buki-head { display: block; text-align: center; }
-.buki-count { margin-top: 3px; font-size: 13px; color: var(--ink-2); }
+/* THE HEAD'S FIRST LINE since 2026-08-27, where it used to be the second and only when a
+   card held more than one book. Hierarchy by SIZE AND WEIGHT, never by fading the line
+   beneath it: docs/brand.md, "Full contrast on every caption." So this gains weight and
+   the provenance keeps its contrast. */
+.buki-count { font: 600 13.5px/1.35 var(--ui); color: var(--ink); }
+/* Only when it follows the heading. The eyebrow serves three other cards where it is
+   still the first line and must not gain a gap above it. */
+.buki-count + .buki-eyebrow { margin-top: 2px; }
 .buki-thumb {
   position: relative; width: 32px; height: 47px; flex: none; border-radius: 2px 3px 3px 2px;
   overflow: hidden; box-shadow: 0 1px 6px -1px #000;
@@ -972,16 +979,28 @@ function foundBody(card: Card): Node[] {
 
   const who = document.createElement('div');
   who.className = 'buki-who';
-  // The mark leads the head, above where it came from and how many it found.
+  // The mark leads the head, then WHAT this is, then how it was found.
+  //
+  // REORDERED 2026-08-27 on Maximo's note that the head read oddly. It was mark, then the
+  // provenance eyebrow, then a count only when there was more than one book - so a
+  // single-book card was headed by "read from the cover", a lowercase fragment where a
+  // heading belongs, and a nineteen-book card put that fragment ABOVE the sentence that
+  // actually said what had happened.
+  //
+  // `foundHeading` already handles both counts and already names Buki, which matters more
+  // than it looks: the card draws inside somebody else's page and the one thing it must
+  // never be mistaken for is part of that page. It now heads every found card.
+  //
+  // The provenance stays, demoted rather than deleted. It is the answer to "will it get a
+  // book wrong" in `.agents/product-marketing.md`, and the store description has a whole
+  // section built on it. A heading that says what this is and a line beneath saying how it
+  // was found are two jobs; the old order had one element doing both, badly.
   const mk = markNode();
   mk.classList.add('buki-mk');
-  who.append(mk, provenanceOf(card));
-  if (card.candidates.length > 1) {
-    const count = document.createElement('div');
-    count.className = 'buki-count';
-    count.textContent = foundHeading(card.candidates.length);
-    who.append(count);
-  }
+  const count = document.createElement('div');
+  count.className = 'buki-count';
+  count.textContent = foundHeading(card.candidates.length);
+  who.append(mk, count, provenanceOf(card));
   head.append(who, closeButton(card));
 
   // The rows go in a bounded scroller so the card cannot outgrow the tray it lives in.
