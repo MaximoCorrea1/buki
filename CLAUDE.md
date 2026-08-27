@@ -9,21 +9,29 @@ and THE POINTERS to everything else.
 does. What Buki is and where it stands does. **The STORY BEHIND a rule does not** — that
 lives in `OPENWORK.md` §5, which is the case ledger with every measurement and its probe.
 
-⚠ **THE ONE EXCEPTION, AND IT IS MEASURED.** §5 spans `OPENWORK.md` lines **2063–2717**,
-and the Read tool takes **2000 lines by default**. This paragraph used to say *"only the
-first ~100 lines of §5 are reachable"*. **That stopped being true on 2026-08-27: §5 now
-BEGINS at 2063, so NONE of it is reachable by a default Read** — the whole case ledger,
-including every trap that has already cost this project time. On the morning of 08-27 the
-four below the cut were `heredoc`, `backtick`, `npx` and `0x08`, **the exact four that were
-hit five times in one session**; the same day, the backtick trap was hit a sixth time. A
-rule nobody can read is not a rule. **That is why the shell traps are spelled out below
-instead of pointed at, and it is why §5 needs extracting rather than trimming.**
+⚠ **THE ONE EXCEPTION, AND IT IS MEASURED — BY YOU, NOT BY THIS PARAGRAPH.**
 
-⚠ **SIZE BUDGET, AND IT MOVED AGAIN.** `OPENWORK.md` is **~215,700 chars / 2,751 lines**,
-up from 196,000 / 2,545 on 2026-08-27 morning. **§5 now starts 63 lines FURTHER past the
-2000-line Read cut than when this warning was written**, and §6 is 718 lines beyond it. The
-numbers in this paragraph are the thing most likely to be stale, so re-measure them
-(`wc -l -c OPENWORK.md`, `grep -n '^## ' OPENWORK.md`) rather than trusting them. **Read it with an
+```
+grep -n '^## [56]\.' OPENWORK.md    # where §5 and §6 begin
+```
+
+The Read tool takes **2000 lines by default**. This paragraph used to name the line numbers
+and it went stale TWICE ON 2026-08-27 ALONE — once overnight, once inside ninety minutes of
+the correction — because the file grows every session and a hand-copied number does not.
+**So it names the probe instead. Run it.**
+
+**The invariant, which does not go stale: §5 now BEGINS past the 2000-line cut, so NONE of
+the case ledger is reachable by a default Read** — every trap that has already cost this
+project time. On the morning of 08-27 the four below the cut were `heredoc`, `backtick`,
+`npx` and `0x08`, **the exact four that were hit five times in one session**; by the end of
+that day the shell-escaping trap had been hit **eight** times and a literal NUL byte had
+reached a source file. A rule nobody can read is not a rule. **That is why the shell traps
+are spelled out below instead of pointed at, and it is why §5 needs EXTRACTING rather than
+trimming.**
+
+⚠ **SIZE BUDGET, AND IT MOVES EVERY SESSION.** `wc -l -c OPENWORK.md`. It was 196,000 chars
+/ 2,545 lines on the morning of 2026-08-27 and **227,569 / 2,895 by that evening — a 16%
+growth in one day.** Do not trust a figure written here; take the measurement. **Read it with an
 explicit `offset`/`limit` or by section, never as one call**, or you silently lose §6 and
 most of §5. Keep THIS file small enough to survive any cut — if it grows past ~15k chars,
 move the cases to §5 and leave the law behind.

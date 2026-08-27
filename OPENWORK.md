@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **992 across 75 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **1,019 across 76 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -46,7 +46,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~48~~ | agent | ~~The activation lifecycle's last three holes~~ **TWO DONE 2026-08-27**, `261852c`. ADV-3: the server minted a session with no activation id, and undefined does not survive `JSON.stringify`, so **every renewal activated again** - five slots gone in five days. ADV-8: `ensureSession` says it never throws and both saves sat outside the `try`. **C-3 IS NOT FIXED AND THAT IS THE FINDING** - two fixes were written and both reverted, because item 27's premise does not expire and telling the two cases apart needs Polar's refusal codes, which cannot be probed until item 2. Split out as item **59** | every subscriber, eventually |
 | **59** | **Maximo**, then agent | **A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING STORAGE, which destroys the shelf** (C-3). Blocked on item 2: one probe against the live endpoint settles it | a subscriber who deactivates an install |
 | ~~49~~ | agent | ~~Four reliability holes on the path somebody is waiting on~~ **DONE 2026-08-27**, `0486712` + `b006efc`. **ALL FOUR.** R-1's comment in `licenseHandler.ts` - *"never during a catch"* - **was false from the day it was written**, which is why a missing timeout on the catch path went unnoticed. R-2's cooldown had to be PERSISTED, because an MV3 worker is torn down between catches and module scope does not survive. R-3's watchdog number is DERIVED from the pipeline's own ceilings rather than guessed, which is why this exports three of them. **25 mutations, 25 caught, 4 survived first pass** | a catch that hangs, on someone else’s page |
-| **50** | agent | **The measured performance set** — PERF-1/2/3 are the three a first user feels. Every number came off a probe | the first impression |
+| **50** | agent | **FIVE OF NINE DONE 2026-08-27**, `b08489c` + `12c9055` + `d4a96de`. **The biggest was not in the item**: the 08-27 429 fix bounded ONE of two fan-outs at the same host, and `groundText` was still firing **21 concurrent** searches - more than the nineteen that caused the outage. PERF-2 (half), PERF-4, PERF-5, PERF-7 closed with before/after numbers. **REMAINING: PERF-2's tray memo, PERF-3, PERF-8, PERF-10.** PERF-3's implied fix is a product regression - see the body | the first impression |
 | **51** | agent | **The server's remaining contract and edge gaps** (AC-5, AC-6, AC-10, AC-12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12) | — |
 | **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
 | **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
@@ -1068,6 +1068,50 @@ unblocks.
 
       **PERF-1, PERF-2 and PERF-3 are the three a first user actually feels.** PERF-9 is
       closed — it was the same root as item 41's host gate.
+
+      ---
+
+      ### FIVE CLOSED 2026-08-27, and the biggest was not in the list
+
+      **THE 429 FIX WENT TO ONE OF TWO FAN-OUTS.** `recognizeBook` was bounded that morning
+      after nineteen simultaneous connections to openlibrary.org earned an HTTP 429 and took
+      the catalogue down for two minutes. **`groundText` was not**, and it fires at the SAME
+      host over up to `MAX_QUERIES = 24` — measured at **21 concurrent** searches from one
+      twenty-line page of text, more than the nineteen that caused the outage. It is the
+      *"try the post's words"* door offered on every card that comes back empty.
+
+      `GROUND_AT_ONCE` moved to `mapPool.ts`, and that is the actual fix: it lived beside one
+      of its two callers, so the other could exceed it without anything noticing. **A ceiling
+      defined next to one caller is not a ceiling.** `MAX_QUERIES`'s own docblock called the
+      burst *"ACCEPTED rather than unnoticed"*, which is what made it invisible for a day.
+
+      | Finding | Before | After | Where |
+      | --- | --- | --- | --- |
+      | **PERF-1's sibling** — `groundText` fan-out | **21 concurrent** | **4** | `b08489c` |
+      | **PERF-2, first half** — `coverDataUrl` read the store and never wrote it, so every cover it fetched was a cache miss BY CONSTRUCTION | 2 fetches per cover | **1** | `b08489c` |
+      | **PERF-7** — the shelf lookup on the catch's RESPONSE path, extracted from `background.ts` and indexed | 5.16 / 16.48 / 57.09ms | **0.32 / 0.91 / 3.52ms** (16-18x) | `12c9055` |
+      | **PERF-4** — `paint()` fired `renderStats` and `renderPlan` per keystroke | **5** storage reads per letter, plus a render race | **0** | `d4a96de` |
+      | **PERF-5** — `weaveOf` rewove every drawn cover per keystroke | 3.11 / 11.18 / 44.33ms | **0.70 / 1.20 / 5.88ms** (4-9x) | `d4a96de` |
+
+      Shelf sizes are 119 / 500 / 2000 books, measured on this machine with the same bench
+      before and after. **PERF-7's ratio is 16-18x, not the 36x the review predicted** — the
+      index still calls `sameBook` inside each bucket, which is what keeps it correct.
+
+      ⚠ **PERF-3's IMPLIED FIX IS A PRODUCT REGRESSION and the item does not say so.** The
+      measurement is real — `isbn` in `FIELDS` costs 8,320 bytes against 398 — but the ISBN
+      it returns is what feeds `sameBook`'s unconditional match, every Buy link, and the
+      Goodreads export's dedup column. Dropping the field to save ~70KB per twenty-query
+      burst breaks all three. **There is no free version of this**, and the honest options are
+      to accept the bytes or to fetch the ISBN lazily for the book actually SAVED, which adds
+      a round trip to the save path. Not attempted on a guess.
+
+      **PERF-10 is half closed** by item 49's R-1: the licence renewal no longer sits in
+      front of the catch at all when the held session is still usable. The entitlement reads
+      remain serial.
+
+      **STILL OPEN: PERF-2's second half** (the tray re-requests cover BYTES on every card
+      repaint, which a per-session memo in `content.ts` would remove), **PERF-3**, **PERF-8**
+      (`/api/vision` buffers the whole image before opening upstream), **PERF-10's remainder**.
 
 - [ ] **51. THE SERVER'S REMAINING CONTRACT AND EDGE GAPS.** *(review §4 and §5)*
 
@@ -2786,6 +2830,32 @@ deleted, because the wrong belief explains the code above it.
   commit messages carry their own reasoning, that is the same class of lie as a stale doc.**
   `git show --stat` is the probe, and the session scratchpad directory is the fix — Git Bash
   and node resolve `/tmp` differently on this box.
+
+- **T17. A CEILING DEFINED NEXT TO ONE OF ITS TWO CALLERS IS NOT A CEILING.** `GROUND_AT_ONCE`
+  lived in `recognizer.ts`, which is one of the two places that fans out to openlibrary.org.
+  The other, `groundText`, kept a bare `Promise.all` over up to `MAX_QUERIES = 24` — **more
+  than the nineteen connections that earned the HTTP 429 and took the catalogue down for two
+  minutes on the morning of the same day.** The fix landed, was tested, was documented, and
+  covered half the surface. **Put a limit where the mechanism is** (`mapPool.ts`), not beside
+  whichever caller you were looking at. And when a docblock calls a burst *"ACCEPTED rather
+  than unnoticed"*, that word is doing the work of a measurement nobody took.
+- **T18. A CORRECT CACHE IS INVISIBLE, SO NO BEHAVIOURAL TEST CAN PROVE ONE EXISTS.** Deleting
+  `woven.set(key, made)` from `weaveOf`'s memo left every test green — same cloth, same
+  copies, same separation between books — because a cache that never populates changes
+  nothing except cost. The mutation survived a block written specifically to guard the memo.
+  **Cost is the only observable, so measure it RELATIVELY and in the same run**: N distinct
+  inputs against N repeats of one, so machine speed and CI load cancel. Worth writing only
+  when the real gap is an order of magnitude (7.5x here) and the threshold is far inside it
+  (4x). Run it three times before believing it.
+- **T19. A LITERAL CONTROL BYTE REACHED A SOURCE FILE, AND ONLY A MUTATION ABORT FOUND IT.**
+  `weaveOf`'s memo key was written with NUL separators instead of the escape — invisible in
+  the editor, invisible in `git diff`, and perfectly functional. Nothing was red. It surfaced
+  because a mutation plan could not find its own anchor text and the harness ABORTED rather
+  than reporting SURVIVED. Same family as the `0x08` that shipped into a doc. **The behaviour
+  was right and better than what was intended** (a space separator collides: `{title:'A B',
+  author:'C'}` and `{title:'A', author:'B C'}` give one key), so the separator stayed and the
+  SPELLING changed. `zzz-fix-nul.mjs` sweeps the tree for NUL and 0x08; run it after any
+  session that wrote source through a shell.
 
 ---
 

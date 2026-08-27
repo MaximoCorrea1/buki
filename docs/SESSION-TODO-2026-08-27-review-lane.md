@@ -25,7 +25,7 @@ streak of writing it late. The paths were printed in the first reply.
 | 8b | **Item 59** — C-3, a dead activation with no escape but wiping the shelf | [!] | **Maximo** | split out of 48. BLOCKED on item 2: one probe against the live endpoint settles it |
 | 7b | **Item 58** — ADV-7, two catch flows, two trial spends | [?] | **Maximo** | split out of 47. A decision about what a catch IS, not a fix |
 | 9 | **Item 49** — four reliability holes on the waited-on path | [x] | agent | `0486712` + `b006efc`. ALL FOUR. 25 mutations, 25 caught, 4 survived first pass |
-| 10 | **Item 50** — the measured performance set | [ ] | agent | PERF-1/2/3. Re-measure after, not before. **NEXT** |
+| 10 | **Item 50** — the measured performance set | [~] | agent | FIVE of nine. `b08489c`+`12c9055`+`d4a96de`. 19 mutations, 19 caught, 6 survived first pass. PERF-2 half, PERF-3, PERF-8, PERF-10 remain |
 | 11 | **Item 51** — server contract and edge gaps | [ ] | agent | AC-5/6/10/12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12 |
 | 12 | **Item 52** — the tray lives in the host page's light DOM | [ ] | agent | TM-9 exfiltration surface, TM-10 latent `javascript:` |
 | 13 | **Item 53** — types that do not type | [ ] | agent | TS-1/2/3/4/7 |
@@ -44,7 +44,7 @@ streak of writing it late. The paths were printed in the first reply.
 | 26 | Item 35 — affiliate tags empty | [ ] | Maximo | after launch; Amazon blocked BY launch |
 | 27 | Item 36 — install CTAs → store URL | [ ] | agent | launch day only. Five change, three must not |
 | 28 | Item 57 — find a book from a passage | [ ] | agent | AFTER launch. Naive design is dead |
-| 29 | **NEW.** `cover.ts:applyCover` fetches twice on a cache miss | [ ] | agent | `img.src = url` AND `rememberCover(url)`. Folds into item 50 (PERF-2) |
+| 29 | **NEW.** `cover.ts:applyCover` fetches twice on a cache miss | [ ] | agent | `img.src = url` AND `rememberCover(url)`. Folds into item 50 (PERF-2). NOT fixed: the second is likely an HTTP-cache hit and I could not measure that from node |
 | 30 | **NEW.** By hand: Buki's button still appears on x.com after TM-14 | [ ] | Maximo | no test can prove Chrome still injects. Filed into item 3 |
 | 31 | **NEW.** By hand: the Forget control, and that no required host is listed | [ ] | Maximo | filed into item 3 |
 | 32 | **NEW.** By hand: export a shelf with a title starting `=`, open in Excel | [ ] | Maximo | filed into item 3 |
@@ -87,6 +87,11 @@ streak of writing it late. The paths were printed in the first reply.
 | 26 | R-2's cooldown had to be PERSISTED | MV3 teardown kills module scope. Item 27's `Required<ProState>` fixture caught the missing `readPro` line |
 | 27 | R-3's number DERIVED from the pipeline's ceilings | 3 constants exported so the test computes the budget rather than trusting a comment |
 | 28 | R-2, R-3 committed | `b006efc`. 14 mutations, 2 survived: a NaN cooldown, and a FIXED test clock that cannot see a clock being re-read |
+| 29 | Item 50 re-probed | PERF-1 partly expired (mapPool landed 08-27) but its SIBLING in `groundText` was untouched at 21 concurrent |
+| 30 | groundText bounded, coverData caches | `b08489c`. `GROUND_AT_ONCE` moved to `mapPool.ts` so one ceiling covers both callers |
+| 31 | PERF-7 extracted from `background.ts` and indexed | `12c9055`. 5.16 -> 0.32ms at 119 books. 3 mutations survived: every fixture let the candidate and the shelf share a bookKey |
+| 32 | PERF-4, PERF-5 | `d4a96de`. A literal NUL byte reached the source and was caught by a mutation ABORT |
+| 33 | Item 50 left OPEN at five of nine | PERF-3's implied fix is a product regression; PERF-2's second half, PERF-8, PERF-10 remain |
 
 ---
 
