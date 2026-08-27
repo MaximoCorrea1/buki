@@ -2903,6 +2903,19 @@ deleted, because the wrong belief explains the code above it.
   `git show --stat` is the probe, and the session scratchpad directory is the fix — Git Bash
   and node resolve `/tmp` differently on this box.
 
+  ⭐ **HIT AGAIN 2026-08-27, SECOND LANE, BY A DIFFERENT MECHANISM — AND THAT IS THE POINT.**
+  `02af222`'s message says *"Filed as section 5 T20. T19 corrected in the same commit."*
+  **Both edits were in `bd2fa38`, the commit before it.** No heredoc, no path confusion: the
+  T19/T20 text was written to `OPENWORK.md` before the passage commit staged `OPENWORK.md`,
+  so it was swept into that commit, and the sweep commit that followed carried only the tool.
+  **Nothing complained, because nothing can.** `git add` of a file already staged-and-committed
+  is a no-op that reports success.
+  **The rule is therefore about ORDER, not about heredocs: stage and commit each task's files
+  BEFORE editing files for the next one, and run `git show --stat <sha>` against the message
+  rather than trusting the sequence you remember.** Corrected by a follow-up commit rather than
+  an amend, exactly as `a4c3b61` → `a72a721` was, because a force-push would delete the record
+  of the mistake along with the mistake.
+
 - **T17. A CEILING DEFINED NEXT TO ONE OF ITS TWO CALLERS IS NOT A CEILING.** `GROUND_AT_ONCE`
   lived in `recognizer.ts`, which is one of the two places that fans out to openlibrary.org.
   The other, `groundText`, kept a bare `Promise.all` over up to `MAX_QUERIES = 24` — **more
