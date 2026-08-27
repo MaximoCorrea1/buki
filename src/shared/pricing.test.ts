@@ -13,6 +13,7 @@ import { TRIAL_CATCHES } from '../extension/entitlement';
 import indexHtml from '../../docs/index.html?raw';
 import pricingMd from '../../docs/pricing.md?raw';
 import storeShots from '../../tools/store-shots.mjs?raw';
+import vercelIgnore from '../../.vercelignore?raw';
 
 /**
  * The price, defined once, and the copies refused permission to disagree.
@@ -163,6 +164,26 @@ const claims = (body: string): number[] => [...body.matchAll(CLAIM)].map((m) => 
  * exactly this reasoning. Those files are also dated design records; forcing a price change
  * to edit them would rewrite history to satisfy a guard.
  */
+/**
+ * THE THREE EXCLUSIONS, and they share ONE reason rather than three.
+ *
+ * A working document DISCUSSES prices, including other people's. Buki's price copy TELLS a
+ * reader what Buki costs. Only the second can be a false statement made to somebody about
+ * to pay, and only the second is what this guard is for.
+ *
+ * - `docs/superpowers/**` — plans and dated specs. One carries **Polar's** fee table
+ *   (`$15 per dispute, $2/month payout fee`), a third party's price, exactly as
+ *   `competitor-profiles/` carries a rival's and `host.test.ts` excludes that folder.
+ * - `docs/SESSION-*` — the session ledgers. **They went red on the day they were written**,
+ *   because the ledger explaining why an allowlist holding `4.99` would be dangerous has to
+ *   quote `$4.99 a month` to say so.
+ * - `docs/REVIEW-*` — a dated audit, which quotes the wall's own copy as evidence.
+ *
+ * ⚠ **AN EXCLUSION MUST NOT BE ABLE TO HIDE A PAGE.** That is the failure mode of every
+ * list like this, so it is not trusted: the test below re-derives what was excluded and
+ * requires `.vercelignore` to agree that none of it is served. `docs/store` is vercel-
+ * ignored too and is deliberately still IN — the rule is one-directional, and it has to be.
+ */
 const PRICED = import.meta.glob(
   [
     '../../docs/**/*.html',
@@ -170,6 +191,25 @@ const PRICED = import.meta.glob(
     '../../docs/**/*.txt',
     '../../README.md',
     '!../../docs/superpowers/**',
+    '!../../docs/SESSION-*',
+    '!../../docs/REVIEW-*',
+  ],
+  { query: '?raw', import: 'default', eager: true },
+) as Record<string, string>;
+
+/**
+ * The same sweep with NOTHING excluded, so the exclusion itself can be audited.
+ *
+ * Spelled out a second time rather than composed from a shared const: Vite requires a glob
+ * pattern to be a literal and refuses a spread with *"Could only use literals"*. The two
+ * lists must stay in step, which is what the audit test below actually enforces.
+ */
+const EVERY_DOC = import.meta.glob(
+  [
+    '../../docs/**/*.html',
+    '../../docs/**/*.md',
+    '../../docs/**/*.txt',
+    '../../README.md',
   ],
   { query: '?raw', import: 'default', eager: true },
 ) as Record<string, string>;
@@ -227,11 +267,40 @@ describe('every shipped surface that names a price names the declared one', () =
     expect(Object.keys(PRICED).length).toBeGreaterThan(10);
   });
 
-  it('leaves the internal plans out, because they carry a third party\'s fees', () => {
+  it('leaves the working documents out, because they discuss prices rather than state one', () => {
     // Stated as an ABSENCE proof rather than a presence one: the risk is the exclusion
     // silently stopping working, not the exclusion being absent.
     const swept = Object.keys(PRICED).map(shortPath);
     expect(swept.filter((p) => p.includes('docs/superpowers/'))).toEqual([]);
+    expect(swept.filter((p) => /docs\/(SESSION|REVIEW)-/.test(p))).toEqual([]);
+  });
+
+  it('CANNOT exclude a page, because .vercelignore has to agree it is not one', () => {
+    // The failure mode of every exclusion list is that it grows one entry at a time until
+    // it hides the thing the guard was written for. This makes that impossible to do
+    // quietly: whatever the glob drops must already be a file Vercel does not serve.
+    //
+    // One-directional on purpose. `docs/store` is vercel-ignored AND still swept, because
+    // `listing.md` is the most customer-facing price surface there is - which is also why
+    // deriving this population from `.vercelignore` alone was tried and rejected.
+    const ignored = vercelIgnore
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#'));
+    const notServed = (path: string): boolean =>
+      ignored.some((rule) =>
+        rule.endsWith('*')
+          ? path.startsWith(rule.slice(0, -1))
+          : path === rule || path.startsWith(`${rule}/`),
+      );
+
+    const dropped = Object.keys(EVERY_DOC)
+      .filter((p) => !(p in PRICED))
+      .map(shortPath);
+    // Guard the vacuous pass: an exclusion list that stopped excluding anything would
+    // otherwise report clean here while the test above reported clean too.
+    expect(dropped.length, 'nothing is being excluded: has the glob changed?').toBeGreaterThan(3);
+    expect(dropped.filter((p) => !notServed(p))).toEqual([]);
   });
 
   it('states no price this repo has not declared', () => {

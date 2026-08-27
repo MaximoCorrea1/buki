@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **867 across 72 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **907 across 74 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -15,7 +15,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27. `main` = `origin/main` at `60b98e4`, 0 ahead** (`git rev-list --count origin/main..HEAD`). Twenty-nine commits went up in one go: the push had been blocked by the permission classifier since 08-25 and cleared on this attempt. **This row asserted "28 UNPUSHED" for about thirty seconds before the push succeeded, which is the drift this file keeps paying for in miniature - it was corrected in the same session rather than inherited.** **63 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). `buki-hardening` was merged and pushed 2026-08-18; `buki-pro` is older history. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **18.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Six are Maximo's (2, 3, 9, 35, 37, 56); twelve are agent work (36, 46-55, 57).** Item 45 closed 2026-08-27. It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Six are Maximo's (2, 3, 9, 35, 37, 56); eleven are agent work (36, 47-55, 57).** Items 45 and 46 closed 2026-08-27. It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -40,7 +40,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~34~~ | ~~Maximo, then agent~~ | ~~**NOBODY CAN BUY.**~~ **DONE 2026-08-18.** Both checkout links are in `src/shared/pricing.ts` and on the Pro card, inside `#pricing` where the wall lands. Guarded, and earned with an A/B. Original text: Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
 | ~~45~~ | agent | ~~The price is spelled in three places `pricing.test.ts` cannot see~~ **DONE 2026-08-27.** **It was TWO places, not three, and the prescribed fix was wrong.** `launch.md` does not state the price - its only `$29` is *"subscriber pays $29, gets nothing to paste"*, prose about a failure mode. And *"widen the glob, same shape, one line"* is **red on arrival**: measured, the blunt `$N` rule finds ~40 undeclared figures across 12 files and every one is a COST (`$0.00011` a catch, the `$5` cap, `$3.46`, `$2.50/M`). The reflex answer is an allowlist, and an allowlist holding `4.99` waves through *"Buki Pro is $4.99 a month"*. The unit is a **price CLAIM** - a figure whose next words say how long it buys. **7 mutations, 7 caught, and the first pass caught 6: deleting the price sentence from `listing.md` left the guard green because line 23's editorial note QUOTING that copy satisfied it** | items 9 and 11, irreversibly |
-| **46** | agent | **Four privacy and permission claims that are not true**, one falsifiable with DevTools in thirty seconds (TM-4, TM-7, TM-8, TM-11, TM-14) | store review |
+| ~~46~~ | agent | ~~Four privacy and permission claims that are not true~~ **DONE 2026-08-27**, `9c2b268` + `24433f9`. **TM-8 was the only live hole and probing it found a SECOND vector the review did not file**: `isbnCell` writes `="<isbn>"`, which IS a formula, and `openLibrary.ts:44` casts `doc.isbn[0]` out of a wiki anyone may edit. **TM-11 was not a false claim at all** - `permissions.md` is right that Buki never holds access to a site nobody right-clicked - it was a missing feature, and the options page now lists every granted site with a Forget beside it. **18 mutations across the two commits, 18 caught.** ⚠ **One thing no test can prove: that Chrome still injects on x.com after TM-14 removed the host permission. Item 3, by hand** | store review |
 | **47** | agent | **Re-catching a book destroys the good record** (ADV-6, VERIFIED), plus five ways two books become one | the shelf, which is the product |
 | **48** | agent | **The activation lifecycle's last three holes** (ADV-3 VERIFIED, ADV-8, C-3). All three burn the five permanent slots | every subscriber, eventually |
 | **49** | agent | **Four reliability holes on the path somebody is waiting on** (R-1 to R-4) | a catch that hangs, on someone else’s page |
@@ -325,6 +325,24 @@ unblocks.
       prompt, because `chrome.permissions.request` needs the click's user gesture and no
       unit test can prove the gesture survived the await. Watch the service worker console:
       `could not ask for` means it threw.
+
+      > **THREE MORE, ADDED 2026-08-27 WITH ITEM 46. The first is the one that would be
+      > silent.**
+      >
+      > 1. **The Buki button still appears in a post's action bar on x.com.** TM-14 removed
+      >    `https://twitter.com/*` and `https://x.com/*` from `host_permissions`, because in
+      >    MV3 a declared content script carries its own access to the sites it matches and
+      >    those two entries granted nothing twice. That reasoning was checked against the
+      >    code — the content script makes ZERO fetches and the only `executeScript` call
+      >    site runs under `activeTab` from a gesture — but **no test can prove Chrome still
+      >    injects.** If it does not, catch-on-X is gone and nothing else would say so.
+      > 2. **Sites Buki can reach** (options page, last section). Grant one site by
+      >    right-clicking a cover somewhere new, confirm it appears, press Forget, confirm it
+      >    goes and the status line says so. Then confirm **no required host is ever listed** —
+      >    `pbs.twimg.com` and `openlibrary.org` must never get a Forget button, because
+      >    `permissions.remove` declines them and the button would lie.
+      > 3. **Export a shelf holding a book whose title starts with `=`** and open the CSV in
+      >    Excel or Sheets. The cell must read as text, and the ISBN column must still import.
 
       **A seventh check, added 2026-08-13 with item 6.** Decline the permission prompt, and
       right-click an image on `chrome://extensions`. Each should put a mark on the Buki
@@ -777,20 +795,37 @@ unblocks.
       failure of §5, one level up. The guard now reads the *Detailed description* section,
       and renaming that heading fails loudly.
 
-- [ ] **46. FOUR PRIVACY AND PERMISSION CLAIMS THAT ARE NOT TRUE, AND ONE A REVIEWER CAN
-      FALSIFY IN THIRTY SECONDS.** *(review §5, Client/privacy)*
+- [x] **46. FOUR PRIVACY AND PERMISSION CLAIMS THAT ARE NOT TRUE, AND ONE A REVIEWER CAN
+      FALSIFY IN THIRTY SECONDS.** *(review §5, Client/privacy)* **DONE 2026-08-27**,
+      `9c2b268` (the four claims) and `24433f9` (TM-11, which turned out to be a feature).
 
-      | ID | The claim | What actually happens |
-      | --- | --- | --- |
-      | **TM-4** | `privacy.html:55` — *"Never in the background"* | **Opening the popup fetches every saved book's cover**, disclosing the reader's IP to `pbs.twimg.com`, `openlibrary.org` and `archive.org` with no user action. **The one claim a reviewer can falsify with DevTools open on the popup** |
-      | **TM-7** | `permissions.md:36` — storage holds settings and *"none of it is transmitted"* | `visionSettings` contains `apiKey`, transmitted as a Bearer on every cover read. `privacy.html:53` gets this RIGHT; the store answer does not — so the two disagree and the store one is the one a reviewer reads |
-      | **TM-8** | — | **Prompt injection → CSV formula injection.** `goodreadsCsv` quotes on `/[",\n\r]/` but writes the title raw, so `=HYPERLINK(...)` survives into the export and executes in Excel |
-      | **TM-11** | — | **Host grants accumulate and are never revoked.** There is no "forget this site" path; a permission granted once for one cover is held for ever |
-      | **TM-14** | `manifest.json` | `https://twitter.com/*` and `https://x.com/*` in `host_permissions` are **unnecessary** — nothing fetches either host, and `content_scripts.matches` needs no host permission in MV3. **Two fewer entries a reviewer can ask about** |
+      | ID | The claim | What actually happens | Closed |
+      | --- | --- | --- | --- |
+      | **TM-4** | `privacy.html:55` — *"Never in the background"* | **Opening the popup fetches every saved book's cover**, disclosing the reader's IP to `pbs.twimg.com`, `openlibrary.org` and `archive.org` with no user action. **The one claim a reviewer can falsify with DevTools open on the popup** | Confirmed live at `cover.ts:applyCover`, which falls through to `img.src = url` **plus** `rememberCover(url)` on a cache miss. The sentence was TRUE of the picture, so it keeps its precision and moves down to the picture; the cover requests get their own disclosure, including that they carry an IP the way any image on any page does |
+      | **TM-7** | `permissions.md:36` — storage holds settings and *"none of it is transmitted"* | `visionSettings` contains `apiKey`, transmitted as a Bearer on every cover read. `privacy.html:53` gets this RIGHT; the store answer does not — so the two disagree and the store one is the one a reviewer reads | The store answer now matches `privacy.html`. Swept the other surfaces: `README.md:205` says the LOG is never transmitted, which is true, so this was wrong in exactly one place |
+      | **TM-8** | — | **Prompt injection → CSV formula injection.** `goodreadsCsv` quotes on `/[",\n\r]/` but writes the title raw, so `=HYPERLINK(...)` survives into the export and executes in Excel | Fixed, **and probing the fix found a SECOND vector the review did not file** — see below. 7 mutations, 7 caught |
+      | **TM-11** | — | **Host grants accumulate and are never revoked.** There is no "forget this site" path; a permission granted once for one cover is held for ever | **NOT a false claim.** `permissions.md`'s *"never holds access to a site the user has not right-clicked an image on"* is true; this was a missing FEATURE. Built: `grantedHosts.ts` + a section on the options page. 11 mutations, 11 caught |
+      | **TM-14** | `manifest.json` | `https://twitter.com/*` and `https://x.com/*` in `host_permissions` are **unnecessary** — nothing fetches either host, and `content_scripts.matches` needs no host permission in MV3. **Two fewer entries a reviewer can ask about** | Removed, after proving the content script makes **zero** fetches and the only `executeScript` call site is reached from the context-menu handler, which has `activeTab` from the gesture |
 
-      **TM-4 and TM-7 are store-review risk, not just honesty risk**, and TM-14 removes two
-      questions before they are asked. TM-8 is the only one that is a live vulnerability
-      rather than a false sentence.
+      **THE SECOND CSV VECTOR, which the review did not have.** `isbnCell` deliberately emits
+      `="9781449373320"` — Goodreads' own format, and the reason a bare ISBN does not become
+      `9.78145E+12`. **That is itself a formula**, so a quote in that position breaks out:
+      `="x"&cmd|'/c calc'!A0&""` is a live DDE concatenation and CSV quoting does not touch
+      it. The page cannot reach it (`extractIsbnFromLinks` validates to `[0-9X]{10}`), but
+      **OpenLibrary can**: `openLibrary.ts:44` takes `doc.isbn[0]` out of a JSON response and
+      casts it, and **openlibrary.org is a wiki anyone may edit**. Same class as AC-10 with a
+      worse sink. The formula form is now earned by shape.
+
+      **This is also why the obvious fix was wrong.** A blanket *"prefix any cell starting
+      with `=`"* breaks the ISBN silently, and the ISBN going missing is exactly the
+      duplicate-on-reimport failure `isbnCell` exists to prevent. Two of the seven mutations
+      are that half-fix and its sibling: decline to wrap, but DROP the value rather than
+      making it safe.
+
+      ⚠ **ONE THING NO TEST CAN PROVE, and it belongs to item 3.** Removing a host permission
+      cannot be verified anywhere but a real browser. Load unpacked, open x.com, and confirm
+      the Buki button still appears in a post's action bar. `permissions.md` says so at the
+      point of the change.
 
 - [ ] **47. RE-CATCHING A BOOK DESTROYS THE GOOD RECORD, AND FIVE WAYS TWO BOOKS BECOME
       ONE.** *(review §5, Data integrity)*
@@ -2544,6 +2579,35 @@ deleted, because the wrong belief explains the code above it.
   it**, because that test asserts the resolver still detects a see-through value rather than
   merely asserting no leaks were found. A guard that only proves absence cannot tell you it
   has stopped looking.
+
+- **T11. COMMENTARY ABOUT THE COPY SATISFIES A GUARD ON THE COPY.** `pricing.test.ts`
+  asked whether `docs/store/listing.md` mentions a price ANYWHERE, and a mutation deleting
+  the price sentence from the shipped copy left the suite green: the file states the price
+  twice, and line 23's editorial note *quoting* that copy — inside a blockquote explaining
+  why the till had to exist — satisfied the guard. **This is the `?raw` failure one level
+  up**: not the comment explaining the code standing in for the code, but the commentary
+  ABOUT the copy standing in for the copy. A doc that discusses its own store answers will
+  always contain the string you were about to assert on. **Assert on the SECTION that ships**,
+  and make renaming that heading fail loudly.
+- **T12. AN ABSENCE PROOF THAT COUNTS ITS OWN DOCBLOCKS.** *"There is no second way to remove
+  a permission"* scanned raw source for `permissions.remove` and found FIVE hits, four of
+  them JSDoc paragraphs explaining why there is exactly one call. Same failure as T11, in the
+  other direction: prose about a call standing in for the call. `optionsPage.test.ts` has
+  stripped HTML comments from `DOM` since it was written, for exactly this reason, and nobody
+  carried the move across to TypeScript. **Strip comments before scanning source**, and prove
+  the discrimination in BOTH directions with one mutation: comment out the real call, leave
+  the mentions, and watch the guard go red.
+- **T13. A MEASURING INSTRUMENT EDITED THROUGH THE SHELL GAVE THE RIGHT ANSWER FOR THE WRONG
+  REASON.** `zzz-mutate.mjs` took its target as one argv element, so two space-separated
+  paths became one filter. The patch to split them was applied with a shell heredoc, the
+  backslash in `/\s+/` was eaten — **the trap already recorded in §5 and in memory, hit for
+  the sixth session running** — and `split(/s+/)` produced fragments like `"rc/"` and
+  `"hared/manife"`, which vitest matched as substring filters against every path. **The
+  harness reported it was testing two files while running the whole 889-test suite.** It said
+  8/8 caught, which was true, and true for a reason it did not state. **The remedy is already
+  known: use the Write or Edit tool, not the shell.** What is new is where it matters most —
+  an instrument's output is the thing you would otherwise use to notice, so a shell edit to a
+  harness is the worst available place to take that risk.
 
 ---
 
