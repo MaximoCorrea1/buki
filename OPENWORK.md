@@ -5,6 +5,7 @@
 | | |
 | --- | --- |
 | Tests | **1,019 across 76 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Mutations | **94 run, 94 caught** on 2026-08-27 (`node tools/mutate.mjs tools/mutations/<plan>.json`, 14 plans). **13 survived first pass**, every one a real hole in a test written minutes earlier; **1 proved EQUIVALENT** and answered by deleting the condition; **1 ABORTED as INVALID** rather than scored. The harness and every plan were promoted out of `zzz-` in `bd0e628` — `.gitignore:17` is `zzz-*`, so all of it was one `rm` from being lost |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -166,6 +167,8 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 | The competitive landscape | `competitor-profiles/_summary.md` | — |
 | This session's reasoning and what was measured | `docs/SESSION-CONTEXT-<date>-<label>.md` | — |
 | This session's forget-nothing ledger | `docs/SESSION-TODO-<date>-<label>.md` | — |
+| **WHAT WAS ACTUALLY BROKEN ON PURPOSE**, per item, so *"N mutations, N caught"* can be re-run rather than believed | **`tools/mutations/`** + its `README.md`. Run with `node tools/mutate.mjs tools/mutations/<plan>.json` from the repo root | a commit message, which cannot be re-run |
+| **The before/after numbers for a performance change** | **`tools/bench/`** — one script per finding, run the SAME way before and after | a number quoted in prose, which the next session cannot reproduce |
 | **The 2026-08-24 pre-launch review**: every finding, its evidence, its attack path, its fix | **`docs/REVIEW-2026-08-24-prelaunch.md`** | this file, which owns the ORDER and the STATUS |
 
 > ### ⚠ TWO SESSIONS SHARE 2026-08-18. Filename order is not a reading order.
