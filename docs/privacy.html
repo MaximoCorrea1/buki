@@ -52,12 +52,13 @@
       <h2>What stays on your computer</h2>
       <ul><li><strong>Your shelf</strong> every book you save, its intent, and the link to the post you found it   in. Stored in your browser's local extension storage and never transmitted.</li><li><strong>The recognition log</strong> the most recent 200 attempts, so the shelf can show you how   often it identified a book correctly. Never transmitted. Clear it any time from the   options page.</li><li><strong>Your API key</strong>, if you add one. Sent only to the recognition provider you configured, and never to Buki.</li></ul>
       <h2>What leaves your computer, and where it goes</h2>
-      <p>Only when you press the Buki button on a post or use the right-click menu. Never in
-      the background, and never for a page you did not act on.</p>
+      <p>Three things, and this is all of them. There is no analytics, no telemetry, and
+      nothing Buki reports back about you.</p>
       <ul>
         <li>
-          <strong>The picture, and the words around it.</strong> Where they go depends on one
-          setting you control.
+          <strong>The picture, and the words around it.</strong> Only when you press the Buki
+          button on a post or use the right-click menu. Never in the background, and never for
+          a page you did not act on. Where they go depends on one setting you control.
           <ul>
             <li><strong>If you have added your own API key</strong>, they go straight from your
             browser to the provider you configured. Buki's server is not in the path and never
@@ -70,6 +71,11 @@
         <li><strong>The title and author it read</strong>, to openlibrary.org as a search query,
         to confirm the book exists and fetch its cover. OpenLibrary is a project of the Internet
         Archive.</li>
+        <li><strong>A request for each cover, when you open your shelf.</strong> A cover is a
+        picture, and a picture has to come from wherever it lives: openlibrary.org, which
+        redirects to archive.org, and pbs.twimg.com for a photograph you caught yourself. Those
+        requests carry your IP address, the way loading any image on any page does. Buki keeps
+        each cover after the first time, so a shelf you have opened before is quiet.</li>
       </ul>
 
       <h2>What Buki's reader keeps</h2>

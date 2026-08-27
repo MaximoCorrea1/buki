@@ -35,7 +35,9 @@ not right-clicked an image on.
 ```
 Stores the user's reading list, which pile each book is in, their recognition settings,
 and a local diagnostic log of the last 200 recognition attempts. All of it lives in
-chrome.storage.local on the user's own machine, and none of it is transmitted anywhere.
+chrome.storage.local on the user's own machine. The reading list and the log are never
+transmitted. The settings hold an optional API key, which is sent only to the recognition
+provider the user entered it for, and never to Buki.
 
 Cover images are deliberately not kept here. They go in the browser's Cache API, bounded
 by what is on the shelf, so that a shelf of covers cannot consume the storage quota and
@@ -87,25 +89,32 @@ that interaction. Buki requests no broad host permission to make this work.
 
 ## Host permissions
 
-> ### PASTE THIS ONE. 953 characters.
+> ### PASTE THIS ONE. 883 characters, and a test now says so.
 >
 > **The dashboard gives host permissions ONE justification field with a 1000-character
-> limit, not one field per host.** The five blocks below total 2,669 characters and will
-> not fit. They stay, because each is the honest long answer if a reviewer asks about a
+> limit, not one field per host.** The long blocks below total well over that and will not
+> fit. They stay, because each is the honest long answer if a reviewer asks about a
 > specific host, and because they are where the reasoning lives.
 >
-> Measured, not estimated: 953 characters with LF endings, 965 if the field counts CRLF.
-> Both clear 1000 with room, and the room is deliberate - a justification trimmed in the
-> browser gets trimmed at the END, and the end is where the wildcard answer lives.
+> Measured, not estimated: **883 characters with LF endings, 895 if the field counts
+> CRLF.** Both clear 1000 with room, and the room is deliberate - a justification trimmed
+> in the browser gets trimmed at the END, and the end is where the wildcard answer lives.
+>
+> **THIS NUMBER USED TO BE 953 AND WAS MEASURED BY HAND ONCE**, which is a number that
+> drifts the moment somebody edits a paragraph above it. It drifted on 2026-08-27, when
+> TM-14 removed a host and TM-4 added the sentence about covers. `storeCopy.test.ts` now
+> owns the fact: it re-measures with CRLF, and it separately asserts the three clauses of
+> the wildcard answer are still present, because a block that FITS can still have lost the
+> sentence the whole answer stands on.
 
 ```
 Buki identifies books in pictures and saves them to a list in the user's browser.
 
-x.com, twitter.com: Buki's button sits in a post's action bar and reads that post's text and links. A caption or retailer link often identifies a book an unreadable cover cannot.
-
 pbs.twimg.com: where x.com serves cover images; only the right-clicked one is fetched.
 
 openlibrary.org, covers.openlibrary.org: recognised titles are checked for canonical title, author, ISBN and cover, so a misread is not saved as a real book.
+
+Opening the shelf fetches each saved book's cover picture from the hosts above, once, then keeps it locally.
 
 generativelanguage.googleapis.com: the vision model, used only when the user supplied their own key.
 
@@ -129,7 +138,22 @@ to "their own key".
 ---
 
 
-**https://twitter.com/\*, https://x.com/\***
+> ### x.com and twitter.com are NO LONGER HOST PERMISSIONS, 2026-08-27. Item 46, TM-14.
+>
+> They were in `host_permissions` **and** in `content_scripts.matches`, which grants
+> nothing twice: in MV3 a statically declared content script carries its own access to the
+> sites it matches. So the two entries bought no capability and cost two questions in
+> review. Removed, with `manifestPermissions.test.ts` holding the absence as a rule rather
+> than a fact: no host in `content_scripts.matches` may appear in `host_permissions`.
+>
+> **Nothing about the behaviour changed**, which is why the answer below is kept rather
+> than deleted. It stopped being a host-permission justification and became the honest
+> description of what the content script does, and it belongs with **scripting** above.
+>
+> ⚠ **NO TEST CAN PROVE CHROME STILL INJECTS.** Verify by hand in item 3: load unpacked,
+> open x.com, confirm the Buki button appears in a post's action bar.
+
+**What the content script does on x.com and twitter.com**
 
 ```
 On x.com and twitter.com, Buki's content script adds its own button to a post's action bar
@@ -138,9 +162,9 @@ with the cover image, because the caption is often what makes an unreadable cove
 legible, and a retailer link in the post identifies the book outright with no image
 reading at all.
 
-Buki catches books on other sites too and does not use this permission to do so. Off
-these two hosts there is no content script, the result card is injected on demand under
-activeTab, and the picture is the only signal available.
+Buki catches books on other sites too, and does not use a content script to do so. Off
+these two hosts the result card is injected on demand under activeTab, and the picture is
+the only signal available.
 ```
 
 **https://pbs.twimg.com/\***
