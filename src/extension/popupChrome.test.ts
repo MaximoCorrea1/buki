@@ -71,3 +71,42 @@ describe('a removed book keeps its cover while the undo is on offer', () => {
     expect(popupCode).toMatch(/function hideUndo\(\): void \{\s*undoable = undefined;/);
   });
 });
+
+/**
+ * PERF-4. `OPENWORK.md` item 50. Five storage reads per keystroke, under a comment saying
+ * there were none.
+ *
+ * `paint()` ran on every keystroke and every pile tab, and fired `renderStats` and
+ * `renderPlan` with `void`. Between them those read the recognition log, the pro state, the
+ * settings, the trial's spent count and its attempt count — and `void` on an async call from
+ * a synchronous function means N keystrokes leave N renders in flight to land in whatever
+ * order they finish. The comment beside the call said *"synchronous: no storage read, no
+ * await, no render race"*, and all three clauses were false.
+ *
+ * Neither depends on the query or the pile. They belong in `refresh()`, which is the only
+ * path where the shelf or the plan can have changed.
+ */
+describe('typing in the search box reads nothing from storage', () => {
+  it('does not draw the count or the plan from paint()', () => {
+    // ABSENCE, and it has to be scoped to the function rather than to the file: both calls
+    // still exist, in `refresh()`, so "the file does not mention renderPlan" would be both
+    // wrong and impossible to satisfy.
+    const from = popupCode.indexOf('function paint(): void {');
+    expect(from, 'paint() has been renamed; re-scope this guard').toBeGreaterThan(-1);
+    const to = popupCode.indexOf('\nasync function refresh(', from);
+    expect(to, 'refresh() no longer follows paint(); re-scope this guard').toBeGreaterThan(from);
+    const body = popupCode.slice(from, to);
+    expect(body).not.toContain('renderStats(');
+    expect(body).not.toContain('renderPlan(');
+  });
+
+  it('draws them from refresh(), which is where the shelf actually changed', () => {
+    // The other direction. Removing them from `paint()` and forgetting to put them back
+    // leaves a popup whose masthead never fills in, and no other test would notice.
+    const from = popupCode.indexOf('async function refresh(): Promise<void> {');
+    expect(from).toBeGreaterThan(-1);
+    const body = popupCode.slice(from, from + 400);
+    expect(body).toContain('renderStats(shelf.length)');
+    expect(body).toContain('renderPlan()');
+  });
+});

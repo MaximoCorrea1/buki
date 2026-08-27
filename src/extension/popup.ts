@@ -796,8 +796,12 @@ function paint(): void {
   const hadFocus = active?.id === 'find';
   const caret = hadFocus ? (active?.selectionStart ?? 0) : 0;
 
-  void renderStats(shelf.length);
-  void renderPlan();
+  // NEITHER THE COUNT NOR THE PLAN IS DRAWN HERE ANY MORE. `OPENWORK.md` item 50, PERF-4.
+  // `paint()` runs on every keystroke and on every pile tab, and neither of those changes
+  // the shelf or the plan - but both of these read storage, five reads between them, and
+  // both were fired with `void` from a synchronous function, so N keystrokes left N
+  // renders in flight to land in whatever order they finished. They are drawn from
+  // `refresh()` now, which is the only path where their inputs actually change.
   const disclosure = document.getElementById('disclosure');
   if (disclosure) disclosure.hidden = shelf.length === 0;
 
@@ -824,6 +828,9 @@ function paint(): void {
   find.value = query;
   find.addEventListener('input', () => {
     query = find.value;
+    // TRUE AS OF 2026-08-27, and it was false in all three clauses until then: `paint()`
+    // fired `renderStats` and `renderPlan`, which between them read storage five times and
+    // were launched with `void` from a synchronous function. See PERF-4.
     paint(); // synchronous: no storage read, no await, no render race
   });
   search.appendChild(find);
@@ -874,6 +881,10 @@ function paint(): void {
 async function refresh(): Promise<void> {
   await load();
   paint();
+  // HERE rather than in `paint()`: this is the one path where the shelf and the plan can
+  // have changed. See PERF-4 above.
+  void renderStats(shelf.length);
+  void renderPlan();
 }
 
 document.addEventListener('keydown', (event) => {

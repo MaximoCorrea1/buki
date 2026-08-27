@@ -198,3 +198,81 @@ describe('weaveOf', () => {
     }
   });
 });
+
+/**
+ * PERF-5. `OPENWORK.md` item 50. The cloth is woven once per book, not once per keystroke.
+ *
+ * The popup rebuilds the whole shelf on every letter typed, and every drawn cover in it
+ * wove 36 rows of 26 characters from scratch. Measured on this machine, per keystroke:
+ * 119 books 3.11ms, 500 books 11.18ms, 2000 books 44.33ms. With the memo: 0.70ms, 1.20ms,
+ * 5.88ms.
+ *
+ * A cache is only safe because the function is PURE and deterministic in its three
+ * arguments. These are the ways that could stop being true.
+ */
+describe('the cloth is remembered, not rewoven', () => {
+  const dune = { title: 'Dune', author: 'Frank Herbert' };
+
+  it('gives the same book the same cloth every time', () => {
+    expect(weaveOf(dune, 26, 36)).toEqual(weaveOf(dune, 26, 36));
+  });
+
+  it('still gives two different books DIFFERENT cloth', () => {
+    // The failure a cache introduces: a key too coarse hands one book another's weave.
+    // `clothFor` had exactly this defect when it derived colour from a normalised name.
+    const other = { title: 'Ulysses', author: 'James Joyce' };
+    expect(weaveOf(dune, 26, 36)).not.toEqual(weaveOf(other, 26, 36));
+  });
+
+  it('separates two books that share a title but not an author', () => {
+    expect(weaveOf({ title: 'Ulysses', author: 'James Joyce' }, 26, 36)).not.toEqual(
+      weaveOf({ title: 'Ulysses', author: 'Alfred Tennyson' }, 26, 36),
+    );
+  });
+
+  it('keys on the DIMENSIONS as well, or a resize serves the old size', () => {
+    expect(weaveOf(dune, 26, 36)).not.toEqual(weaveOf(dune, 26, 12));
+    expect(weaveOf(dune, 26, 36)[0]).not.toBe(weaveOf(dune, 10, 36)[0]);
+  });
+
+  it('ACTUALLY caches, rather than recomputing and throwing the result away', () => {
+    // THE ONE PROPERTY BEHAVIOUR CANNOT SHOW. Deleting the cache write leaves every other
+    // test in this block passing, because a correct cache is invisible by construction —
+    // that mutation survived until this test existed. The only thing that distinguishes a
+    // live cache from a dead one is COST.
+    //
+    // Measured RELATIVELY and in the same run, so machine speed, CI load and JIT warmth all
+    // cancel: N distinct books against N repeats of one book. The real ratio measured on
+    // this machine is about 7.5x, so a threshold of 4x is a wide margin rather than a
+    // coin flip — a timing assertion is only worth writing when the gap is an order of
+    // magnitude and the comparison is against a number taken seconds earlier.
+    const N = 300;
+    const distinct = Array.from({ length: N }, (_, i) => ({
+      title: `Distinct Title ${i}`,
+      author: `Surname${i} Given`,
+    }));
+    const t0 = performance.now();
+    for (const b of distinct) weaveOf(b, 26, 36);
+    const cold = performance.now() - t0;
+
+    const one = { title: 'Repeated Title', author: 'Repeated Author' };
+    weaveOf(one, 26, 36); // prime, so the first call is not counted as a hit
+    const t1 = performance.now();
+    for (let i = 0; i < N; i++) weaveOf(one, 26, 36);
+    const warm = performance.now() - t1;
+
+    expect(cold, 'the cold loop was too fast to measure; raise N').toBeGreaterThan(0.5);
+    expect(warm, `${N} repeats cost ${warm.toFixed(2)}ms against ${cold.toFixed(2)}ms cold`).toBeLessThan(
+      cold / 4,
+    );
+  });
+
+  it('hands out a COPY, so one caller cannot reweave every other book', () => {
+    // The hazard a cache introduces that a fresh computation never had: returning the
+    // stored array means any caller that sorts, splices or edits its cloth silently
+    // rewrites what every later caller gets.
+    const first = weaveOf(dune, 26, 36);
+    first[0] = 'TAMPERED';
+    expect(weaveOf(dune, 26, 36)[0], 'the cache handed out its own array').not.toBe('TAMPERED');
+  });
+});

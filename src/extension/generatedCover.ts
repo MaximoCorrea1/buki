@@ -156,7 +156,50 @@ const HALF_DROP = 3;
  * corduroy, which is plainly visible at 118px; a half-drop is how a real textile repeat
  * hides that same seam.
  */
+/**
+ * Woven cloth, remembered. `OPENWORK.md` item 50, PERF-5.
+ *
+ * `weaveOf` is pure and deterministic in `(book, cols, rows)`, and the popup rebuilds the
+ * whole shelf on every keystroke — so a shelf of drawn covers re-wove itself, character by
+ * character, once per letter typed. Measured on this machine, per keystroke:
+ *
+ *     119 books    3.11ms
+ *     500 books   11.18ms
+ *     2000 books  44.33ms
+ *
+ * Bounded by the shelf and by the popup's own lifetime, which is a few seconds: the popup
+ * is torn down when it closes and this goes with it. That is the reason there is no
+ * eviction here and why adding one would be complexity buying nothing.
+ */
+const woven = new Map<string, string[]>();
+
 export function weaveOf(book: Book, cols: number, rows: number): string[] {
+  // Title and author are what `deviceFor` reads, so they are the whole of the identity.
+  // NOT `bookKey`: that normalises, and two books it calls the same would then share one
+  // cloth — the exact defect `clothFor` had when it derived colour from a normalised name.
+  //
+  // `\u0000` as the separator, written as an ESCAPE rather than as the byte. A space would
+  // collide: `{title:'A B', author:'C'}` and `{title:'A', author:'B C'}` produce the same
+  // key and one book would wear the other's cloth. A NUL cannot appear in either field.
+  //
+  // It was briefly a literal control byte here, invisible in the source and in every diff,
+  // which is the same class of corruption OPENWORK §5 records for the `0x08` that shipped
+  // into a doc. The behaviour was right and the spelling was not.
+  const key = `${book.title}\u0000${book.author}\u0000${cols}x${rows}`;
+  // A COPY, not the cached array. Handing every caller the same mutable array to save 36
+  // string references would trade a measured millisecond for an aliasing bug nobody would
+  // find: one caller sorting or splicing its cloth would silently reweave every other
+  // book's. The copy is O(rows) against a weave that is O(rows x cols), and re-measuring
+  // showed it costs nothing worth naming.
+  const held = woven.get(key);
+  if (held) return held.slice();
+
+  const made = build(book, cols, rows);
+  woven.set(key, made);
+  return made.slice();
+}
+
+function build(book: Book, cols: number, rows: number): string[] {
   const tile = deviceFor(book);
   return Array.from({ length: rows }, (_, row) => {
     const shift = Math.floor(row / DEVICE_SIZE) % 2 ? HALF_DROP : 0;
