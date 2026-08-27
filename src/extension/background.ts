@@ -12,8 +12,8 @@ import { createLlmVision, MAX_IMAGES } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
 import { readSettings, toVisionConfig, type Settings } from './settings';
-import { createLibrary, identityOf, type StorageArea } from './storage';
-import { sameBook } from './bookIdentity';
+import { createLibrary, type StorageArea } from './storage';
+import { shelvedAmong } from './shelvedAmong';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';
 import { bestQuality, distinctMedia, keepTweetMedia } from './twitterImage';
 import { inlineAll, livePrep } from './inlineImage';
@@ -39,7 +39,6 @@ import type {
   BackgroundResponse,
   ContentRequest,
   ShelfResponse,
-  Shelved,
   TweetContext,
 } from './messages';
 
@@ -364,16 +363,14 @@ function lookUp(
  * Which of these the shelf already holds, and in which pile. Never throws: an unreadable
  * shelf should cost a marker on the card, not the whole recognition.
  */
-async function shelvedAmong(candidates: { title: string; author: string; isbn?: string }[]) {
+async function heldAmong(candidates: { title: string; author: string; isbn?: string }[]) {
   try {
-    // sameBook against the shelf, not a key lookup: a matching ISBN counts even when the
-    // two records spell the title differently. The identity is then returned in the work
-    // key's form, which is what the page compares against.
-    const shelf = await library.list();
-    return candidates.flatMap((c) => {
-      const held = shelf.find((s) => sameBook(s.book, c));
-      return held ? [{ identity: identityOf(c), intent: held.intent } satisfies Shelved] : [];
-    });
+    // The DECISION is in `shelvedAmong.ts`, which a test can import; this is the read and
+    // the failure rule. It was one `shelf.find` per candidate here, which is
+    // O(candidates x shelf) on the catch's RESPONSE path with both identity keys recomputed
+    // per comparison - and unreachable by any test, because this file registers listeners at
+    // module scope. `OPENWORK.md` item 50, PERF-7.
+    return shelvedAmong(await library.list(), candidates);
   } catch (err) {
     console.error('[Buki] could not check the shelf', err);
     return [];
@@ -563,7 +560,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     job,
     candidates: result.candidates,
     source: result.source,
-    alreadySaved: await shelvedAmong(result.candidates),
+    alreadySaved: await heldAmong(result.candidates),
     draft,
     permalink: ctx?.permalink ?? null,
     tweet,
@@ -733,7 +730,7 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
         ok: true,
         result: recognized.result,
         draft: draftFrom(recognized, Date.now() - startedAt, 'button'),
-        alreadySaved: await shelvedAmong(recognized.result.candidates),
+        alreadySaved: await heldAmong(recognized.result.candidates),
       } satisfies BackgroundResponse);
     })
     .catch(async (err: unknown) => {
