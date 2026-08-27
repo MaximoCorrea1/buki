@@ -1,0 +1,47 @@
+{
+  "target": ["src/extension/lookupMemo.test.ts", "src/extension/coverSource.test.ts", "src/extension/catchTray.test.ts"],
+  "mutations": [
+    {
+      "label": "47j C-7 restored: postKey drops the host again",
+      "file": "src/extension/lookupMemo.ts",
+      "from": "        return `${parsed.host}${parsed.pathname}`;",
+      "to": "        return parsed.pathname;"
+    },
+    {
+      "label": "47k postKey starts including the query, splitting one picture into two catches",
+      "file": "src/extension/lookupMemo.ts",
+      "from": "        return `${parsed.host}${parsed.pathname}`;",
+      "to": "        return `${parsed.host}${parsed.pathname}${parsed.search}`;"
+    },
+    {
+      "label": "47l postKey starts including the scheme",
+      "file": "src/extension/lookupMemo.ts",
+      "from": "        return `${parsed.host}${parsed.pathname}`;",
+      "to": "        return `${parsed.protocol}${parsed.host}${parsed.pathname}`;"
+    },
+    {
+      "label": "47m C-9 restored: shotFor counts books only",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books === 1 && pictures === 1 ? image : undefined;",
+      "to": "  return books === 1 ? image : undefined;"
+    },
+    {
+      "label": "47n shotFor counts pictures only, losing the original five-books rule",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books === 1 && pictures === 1 ? image : undefined;",
+      "to": "  return pictures === 1 ? image : undefined;"
+    },
+    {
+      "label": "47o the card defaults its picture count to one even with no picture",
+      "file": "src/extension/catchTray.ts",
+      "from": "        pictures: pictures ?? (image ? 1 : 0),",
+      "to": "        pictures: pictures ?? 1,"
+    },
+    {
+      "label": "47p a state transition loses the picture count",
+      "file": "src/extension/catchTray.ts",
+      "from": "      pictures: held.pictures,",
+      "to": "      pictures: 1,"
+    }
+  ]
+}

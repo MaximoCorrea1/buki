@@ -1,0 +1,51 @@
+{
+  "target": [
+    "src/recognizer/groundText.test.ts",
+    "src/recognizer/recognizer.test.ts",
+    "src/extension/coverData.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "50a the words path is pooled at its own length, which is no bound at all",
+      "file": "src/recognizer/groundText.ts",
+      "from": "  const settled = await mapPool(queries, GROUND_AT_ONCE, async (q) => {",
+      "to": "  const settled = await mapPool(queries, queries.length, async (q) => {"
+    },
+    {
+      "label": "50b the pool is widened back past the burst that caused the 429",
+      "file": "src/recognizer/mapPool.ts",
+      "from": "export const GROUND_AT_ONCE = 4;",
+      "to": "export const GROUND_AT_ONCE = 24;"
+    },
+    {
+      "label": "50c the pool silently drops work past its limit",
+      "file": "src/recognizer/mapPool.ts",
+      "from": "  const out = new Array<R>(items.length);\n  let next = 0;",
+      "to": "  items = items.slice(0, Math.max(1, limit));\n  const out = new Array<R>(items.length);\n  let next = 0;"
+    },
+    {
+      "label": "50d the pool returns completion order, promoting the whole-text last resort",
+      "file": "src/recognizer/mapPool.ts",
+      "from": "      out[i] = await work(items[i]!, i);",
+      "to": "      out.push(await work(items[i]!, i));"
+    },
+    {
+      "label": "50e PERF-2 restored: the cover is fetched and never kept",
+      "file": "src/extension/coverData.ts",
+      "from": "    if (!hit) keep(url, blob, deps.store);",
+      "to": ""
+    },
+    {
+      "label": "50f an error page is cached as if it were art",
+      "file": "src/extension/coverData.ts",
+      "from": "    if (!blob.type.startsWith('image/')) return null;\n    if (blob.size === 0 || blob.size > MAX_BYTES) return null;",
+      "to": "    if (!blob.type.startsWith('image/')) { keep(url, blob, deps.store); return null; }\n    if (blob.size === 0 || blob.size > MAX_BYTES) return null;"
+    },
+    {
+      "label": "50g a store that throws synchronously nulls the cover it just read",
+      "file": "src/extension/coverData.ts",
+      "from": "  try {\n    void store\n      ?.put(url, new Response(blob, { headers: { 'content-type': blob.type } }))\n      .catch(() => undefined);\n  } catch {",
+      "to": "  {\n    void store\n      ?.put(url, new Response(blob, { headers: { 'content-type': blob.type } }))\n      .catch(() => undefined);\n  }\n  if (false) try {} catch {"
+    }
+  ]
+}

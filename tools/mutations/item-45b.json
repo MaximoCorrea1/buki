@@ -1,0 +1,17 @@
+{
+  "target": ["src/shared/pricing.test.ts"],
+  "mutations": [
+    {
+      "label": "45h a REAL PAGE is quietly added to the exclusion list",
+      "file": "src/shared/pricing.test.ts",
+      "from": "    '!../../docs/REVIEW-*',\n  ],",
+      "to": "    '!../../docs/REVIEW-*',\n    '!../../docs/llms.txt',\n  ],"
+    },
+    {
+      "label": "45i the exclusion list stops excluding anything (vacuous audit)",
+      "file": "src/shared/pricing.test.ts",
+      "from": "    '!../../docs/superpowers/**',\n    '!../../docs/SESSION-*',\n    '!../../docs/REVIEW-*',\n  ],\n  { query: '?raw', import: 'default', eager: true },",
+      "to": "  ],\n  { query: '?raw', import: 'default', eager: true },"
+    }
+  ]
+}

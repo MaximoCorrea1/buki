@@ -1,0 +1,47 @@
+{
+  "target": "src/extension/goodreadsCsv.test.ts",
+  "mutations": [
+    {
+      "label": "TM8a the title goes back to a plain CSV field",
+      "file": "src/extension/goodreadsCsv.ts",
+      "from": "      text(saved.book.title),",
+      "to": "      field(saved.book.title),"
+    },
+    {
+      "label": "TM8b the author goes back to a plain CSV field",
+      "file": "src/extension/goodreadsCsv.ts",
+      "from": "      text(saved.book.author),",
+      "to": "      field(saved.book.author),"
+    },
+    {
+      "label": "TM8c only = is treated as a formula, the OWASP set is trimmed",
+      "file": "src/extension/goodreadsCsv.ts",
+      "from": "const FORMULA = /^[=+\\-@\\t\\r]/;",
+      "to": "const FORMULA = /^[=]/;"
+    },
+    {
+      "label": "TM8d the fallacy: quote the cell instead of marking it text",
+      "file": "src/extension/goodreadsCsv.ts",
+      "from": "  return field(FORMULA.test(value) ? `'${value}` : value);",
+      "to": "  return `\"${value.replace(/\"/g, '\"\"')}\"`;"
+    },
+    {
+      "label": "TM8e the ISBN is wrapped as a formula unconditionally again",
+      "file": "src/extension/goodreadsCsv.ts",
+      "from": "  return ISBN_SHAPE.test(isbn) ? field(`=\"${isbn}\"`) : text(isbn);",
+      "to": "  return field(`=\"${isbn}\"`);"
+    },
+    {
+      "label": "TM8f the half-fix: decline to wrap, but drop the value instead of making it safe",
+      "file": "src/extension/goodreadsCsv.ts",
+      "from": "  return ISBN_SHAPE.test(isbn) ? field(`=\"${isbn}\"`) : text(isbn);",
+      "to": "  return ISBN_SHAPE.test(isbn) ? field(`=\"${isbn}\"`) : '';"
+    },
+    {
+      "label": "TM8g the ISBN shape admits a quote",
+      "file": "src/extension/goodreadsCsv.ts",
+      "from": "const ISBN_SHAPE = /^[0-9-]{9,16}[0-9X]$/i;",
+      "to": "const ISBN_SHAPE = /^.{9,16}[0-9X\"]$/i;"
+    }
+  ]
+}

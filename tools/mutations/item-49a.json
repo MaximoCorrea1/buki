@@ -1,0 +1,71 @@
+{
+  "target": ["src/extension/license.test.ts", "src/extension/inlineImage.test.ts", "src/extension/proState.test.ts"],
+  "mutations": [
+    {
+      "label": "49a R-1 restored: the exchange fetch carries no signal at all",
+      "file": "src/extension/license.ts",
+      "from": "          signal: AbortSignal.timeout(EXCHANGE_TIMEOUT_MS),",
+      "to": ""
+    },
+    {
+      "label": "49b a timeout is reported as being offline",
+      "file": "src/extension/license.ts",
+      "from": "        const timedOut = (err as { name?: string })?.name === 'TimeoutError';",
+      "to": "        const timedOut = false;"
+    },
+    {
+      "label": "49c a timeout is classified DEFINITIVE, signing a subscriber out for our slowness",
+      "file": "src/extension/license.ts",
+      "from": "          retryable: true,\n          message: timedOut",
+      "to": "          retryable: !timedOut,\n          message: timedOut"
+    },
+    {
+      "label": "49d canCatchOnHeldSession forgets the grace window",
+      "file": "src/extension/license.ts",
+      "from": "export function canCatchOnHeldSession(session: Session | null, now: number): boolean {\n  return isLicensed(session, now);\n}",
+      "to": "export function canCatchOnHeldSession(session: Session | null, now: number): boolean {\n  return !needsRenewal(session, now);\n}"
+    },
+    {
+      "label": "49e canCatchOnHeldSession lets a first pairing through with no token",
+      "file": "src/extension/license.ts",
+      "from": "export function canCatchOnHeldSession(session: Session | null, now: number): boolean {\n  return isLicensed(session, now);\n}",
+      "to": "export function canCatchOnHeldSession(session: Session | null, now: number): boolean {\n  return true;\n}"
+    },
+    {
+      "label": "49f R-4 restored: the download has a signal but no ceiling",
+      "file": "src/extension/inlineImage.ts",
+      "from": "  const ceiling = AbortSignal.timeout(ms);\n  return job ? AbortSignal.any([job, ceiling]) : ceiling;",
+      "to": "  return job ?? AbortSignal.timeout(ms);"
+    },
+    {
+      "label": "49g the ceiling replaces the catch's signal, so cancel stops reaching it",
+      "file": "src/extension/inlineImage.ts",
+      "from": "  return job ? AbortSignal.any([job, ceiling]) : ceiling;",
+      "to": "  return ceiling;"
+    },
+    {
+      "label": "49h the shipped download ceiling is quietly raised",
+      "file": "src/extension/inlineImage.ts",
+      "from": "export const DOWNLOAD_TIMEOUT_MS = 10_000;",
+      "to": "export const DOWNLOAD_TIMEOUT_MS = 600_000;"
+    },
+    {
+      "label": "49i livePrep goes back to the unbounded fetch",
+      "file": "src/extension/inlineImage.ts",
+      "from": "    const res = await fetch(url, { signal: downloadSignal(signal) });",
+      "to": "    const res = await fetch(url, signal ? { signal } : {});"
+    },
+    {
+      "label": "49j the catch waits for the renewal unconditionally again",
+      "file": "src/extension/background.ts",
+      "from": "  let pro = held;\n  if (canCatchOnHeldSession(held.session, Date.now())) {",
+      "to": "  let pro = await keepSession(held);\n  if (false) {"
+    },
+    {
+      "label": "49k the fire-and-forget renewal can escape as an unhandled rejection",
+      "file": "src/extension/background.ts",
+      "from": "    void keepSession(held).catch(() => undefined);",
+      "to": "    void keepSession(held);"
+    }
+  ]
+}

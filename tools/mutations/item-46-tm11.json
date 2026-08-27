@@ -1,0 +1,71 @@
+{
+  "target": ["src/extension/grantedHosts.test.ts", "src/extension/optionsPage.test.ts"],
+  "mutations": [
+    {
+      "label": "TM11a the section moves inside main()'s provider guard",
+      "file": "src/extension/options.ts",
+      "from": "void wireGrants();",
+      "to": "if (document.title) void wireGrants();"
+    },
+    {
+      "label": "TM11b a SECOND way to remove a permission appears elsewhere",
+      "file": "src/extension/imageOrigin.ts",
+      "from": "export async function mayFetch(srcUrl: string, deps: PermissionDeps): Promise<boolean> {",
+      "to": "export async function mayFetch(srcUrl: string, deps: PermissionDeps): Promise<boolean> {\n  if (srcUrl === 'never') await chrome.permissions.remove({ origins: [srcUrl] });"
+    },
+    {
+      "label": "TM11c the real call is commented out, so only PROSE mentions it",
+      "file": "src/extension/options.ts",
+      "from": "      const gone = await chrome.permissions.remove({ origins: [row.origin] });",
+      "to": "      // const gone = await chrome.permissions.remove({ origins: [row.origin] });\n      const gone = true;"
+    },
+    {
+      "label": "TM11d the wiring rebuilds the pattern from the displayed name",
+      "file": "src/extension/options.ts",
+      "from": "permissions.remove({ origins: [row.origin] })",
+      "to": "permissions.remove({ origins: [`https://${row.host}/*`] })"
+    },
+    {
+      "label": "TM11e the manifest host list is copied into options.ts",
+      "file": "src/extension/options.ts",
+      "from": "  const required = chrome.runtime.getManifest().host_permissions ?? [];",
+      "to": "  const required = ['https://pbs.twimg.com/*', 'https://openlibrary.org/*'];"
+    },
+    {
+      "label": "TM11f revocableHosts stops filtering the required hosts",
+      "file": "src/extension/grantedHosts.ts",
+      "from": "    if (held.has(origin) || seen.has(origin)) continue;",
+      "to": "    if (seen.has(origin)) continue;"
+    },
+    {
+      "label": "TM11g the whole-web wildcard is quietly filtered out as a weird pattern",
+      "file": "src/extension/grantedHosts.ts",
+      "from": "  return host === '*' ? 'every site' : host;",
+      "to": "  return host === '*' ? null : host;"
+    },
+    {
+      "label": "TM11h the list stops sorting, so a removal reshuffles the rows that remain",
+      "file": "src/extension/grantedHosts.ts",
+      "from": "  return rows.sort((a, b) => a.host.localeCompare(b.host));",
+      "to": "  return rows;"
+    },
+    {
+      "label": "TM11i the empty state becomes a status line instead of an invitation",
+      "file": "src/extension/grantedHosts.ts",
+      "from": "  'No sites yet. Buki asks for one when you right-click a cover on a site it has not read from before.';",
+      "to": "  'No sites.';"
+    },
+    {
+      "label": "TM11j the failure message apologises instead of naming what failed",
+      "file": "src/extension/grantedHosts.ts",
+      "from": "  `Chrome would not remove ${host}. It is still allowed.`;",
+      "to": "  `Sorry, something went wrong.`;"
+    },
+    {
+      "label": "TM11k the live region loses its role, so nothing is announced",
+      "file": "options.html",
+      "from": "<span id=\"grantStatus\" role=\"status\"></span>",
+      "to": "<span id=\"grantStatus\"></span>"
+    }
+  ]
+}

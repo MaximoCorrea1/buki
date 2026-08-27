@@ -1,0 +1,41 @@
+{
+  "target": ["src/extension/generatedCover.test.ts", "src/extension/popupChrome.test.ts"],
+  "mutations": [
+    {
+      "label": "50n the memo key drops the author, so two books share one cloth",
+      "file": "src/extension/generatedCover.ts",
+      "from": "const key = `${book.title}\\u0000${book.author}\\u0000${cols}x${rows}`;",
+      "to": "const key = `${book.title}\\u0000${cols}x${rows}`;"
+    },
+    {
+      "label": "50o the memo key drops the dimensions, so a resize serves the old size",
+      "file": "src/extension/generatedCover.ts",
+      "from": "const key = `${book.title}\\u0000${book.author}\\u0000${cols}x${rows}`;",
+      "to": "const key = `${book.title}\\u0000${book.author}`;"
+    },
+    {
+      "label": "50p the cache hands out its own array instead of a copy",
+      "file": "src/extension/generatedCover.ts",
+      "from": "  if (held) return held.slice();",
+      "to": "  if (held) return held;"
+    },
+    {
+      "label": "50q the cache is never written, so the memo does nothing at all",
+      "file": "src/extension/generatedCover.ts",
+      "from": "  woven.set(key, made);",
+      "to": ""
+    },
+    {
+      "label": "50r PERF-4 restored: the keystroke path reads storage again",
+      "file": "src/extension/popup.ts",
+      "from": "  const active = document.activeElement as HTMLInputElement | null;",
+      "to": "  void renderStats(shelf.length);\n  void renderPlan();\n  const active = document.activeElement as HTMLInputElement | null;"
+    },
+    {
+      "label": "50s the count and the plan stop being drawn at all",
+      "file": "src/extension/popup.ts",
+      "from": "  void renderStats(shelf.length);\n  void renderPlan();\n}",
+      "to": "}"
+    }
+  ]
+}

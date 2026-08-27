@@ -1,0 +1,53 @@
+{
+  "target": "src/shared/manifestPermissions.test.ts src/shared/storeCopy.test.ts",
+  "mutations": [
+    {
+      "label": "46a x.com comes back into host_permissions",
+      "file": "manifest.json",
+      "from": "  \"host_permissions\": [\n    \"https://pbs.twimg.com/*\",",
+      "to": "  \"host_permissions\": [\n    \"https://x.com/*\",\n    \"https://pbs.twimg.com/*\","
+    },
+    {
+      "label": "46b an unjustified host is added quietly",
+      "file": "manifest.json",
+      "from": "    \"https://pbs.twimg.com/*\",",
+      "to": "    \"https://pbs.twimg.com/*\",\n    \"https://example.test/*\","
+    },
+    {
+      "label": "46c activeTab is dropped, so the store framing becomes false",
+      "file": "manifest.json",
+      "from": "\"permissions\": [\"storage\", \"contextMenus\", \"scripting\", \"activeTab\"],",
+      "to": "\"permissions\": [\"storage\", \"contextMenus\", \"scripting\"],"
+    },
+    {
+      "label": "46d the per-image wildcard is promoted to a grant at install",
+      "file": "manifest.json",
+      "from": "  \"optional_host_permissions\": [\"https://*/*\"],",
+      "to": "  \"optional_host_permissions\": [],"
+    },
+    {
+      "label": "46e the paste block grows past the 1000-character field",
+      "file": "docs/store/permissions.md",
+      "from": "Opening the shelf fetches each saved book's cover picture from the hosts above, once, then keeps it locally.",
+      "to": "Opening the shelf fetches each saved book's cover picture from the hosts above, once, then keeps it locally in the browser's Cache API store, bounded by what is on the shelf, so that a shelf of covers cannot consume the extension storage quota and so that Buki does not have to ask for the unlimitedStorage permission at install time, which is a permission reviewers reliably ask about."
+    },
+    {
+      "label": "46f the wildcard answer loses the clause the whole thing stands on",
+      "file": "docs/store/permissions.md",
+      "from": "The optional https://*/* is never granted at install: Buki requests one host at a time, derived from the right-clicked image's own URL, because covers usually sit on a CDN activeTab cannot reach.",
+      "to": "The optional https://*/* is requested when needed."
+    },
+    {
+      "label": "46g the store answer keeps justifying a host the manifest lost",
+      "file": "docs/store/permissions.md",
+      "from": "pbs.twimg.com: where x.com serves cover images; only the right-clicked one is fetched.",
+      "to": "x.com, twitter.com: Buki's button sits in a post's action bar.\n\npbs.twimg.com: where x.com serves cover images; only the right-clicked one is fetched."
+    },
+    {
+      "label": "46h a manifest host stops being justified at all",
+      "file": "docs/store/permissions.md",
+      "from": "generativelanguage.googleapis.com: the vision model, used only when the user supplied their own key.",
+      "to": "The vision model is used only when the user supplied their own key."
+    }
+  ]
+}

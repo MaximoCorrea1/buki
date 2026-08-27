@@ -1,0 +1,89 @@
+{
+  "target": ["src/extension/proState.test.ts", "src/extension/catchTray.test.ts", "src/extension/contentSafety.test.ts"],
+  "mutations": [
+    {
+      "label": "49l R-2 restored: nothing records the failed renewal",
+      "file": "src/extension/proState.ts",
+      "from": "    await keep(marked(pro, deps.now()), deps.save);\n    return pro;",
+      "to": "    return pro;"
+    },
+    {
+      "label": "49m the cooldown is never consulted, so every catch exchanges again",
+      "file": "src/extension/proState.ts",
+      "from": "  if (coolingDown(pro, deps.now())) return pro;\n\n  let result: Exchange;",
+      "to": "\n  let result: Exchange;"
+    },
+    {
+      "label": "49n a definitive refusal is not marked, so it retries on every catch",
+      "file": "src/extension/proState.ts",
+      "from": "  const next = marked(forgetSession(pro), deps.now());",
+      "to": "  const next = forgetSession(pro);"
+    },
+    {
+      "label": "49o a successful renewal keeps the stale failure mark",
+      "file": "src/extension/proState.ts",
+      "from": "    const next: ProState = {\n      key: pro.key,\n      session: result.session,",
+      "to": "    const next: ProState = {\n      ...pro,\n      key: pro.key,\n      session: result.session,"
+    },
+    {
+      "label": "49p readPro drops the cooldown, so it never survives a worker teardown",
+      "file": "src/extension/proState.ts",
+      "from": "    ...(typeof renewFailedAt === 'number' && Number.isFinite(renewFailedAt)\n      ? { renewFailedAt }\n      : {}),",
+      "to": ""
+    },
+    {
+      "label": "49q a NaN cooldown out of storage makes every comparison false",
+      "file": "src/extension/proState.ts",
+      "from": "    ...(typeof renewFailedAt === 'number' && Number.isFinite(renewFailedAt)",
+      "to": "    ...(typeof renewFailedAt === 'number'"
+    },
+    {
+      "label": "49r the cooldown is shortened below the daily cap it exists to respect",
+      "file": "src/extension/proState.ts",
+      "from": "export const RENEW_COOLDOWN_MS = 45 * 60 * 1000;",
+      "to": "export const RENEW_COOLDOWN_MS = 5 * 60 * 1000;"
+    },
+    {
+      "label": "49s R-3 restored: stalledJobs never finds anything",
+      "file": "src/extension/catchTray.ts",
+      "from": "  return cards.filter((c) => c.state === 'looking' && now - c.openedAt >= ms).map((c) => c.job);",
+      "to": "  return [];"
+    },
+    {
+      "label": "49t the watchdog fires on answered cards too",
+      "file": "src/extension/catchTray.ts",
+      "from": "  return cards.filter((c) => c.state === 'looking' && now - c.openedAt >= ms).map((c) => c.job);",
+      "to": "  return cards.filter((c) => now - c.openedAt >= ms).map((c) => c.job);"
+    },
+    {
+      "label": "49u openedAt restarts on every state change, so the clock never runs out",
+      "file": "src/extension/catchTray.ts",
+      "from": "      openedAt: held.openedAt,",
+      "to": "      openedAt: now(),"
+    },
+    {
+      "label": "49v the stall ceiling drops inside the pipeline's own budget",
+      "file": "src/extension/catchTray.ts",
+      "from": "export const STALL_MS = 90_000;",
+      "to": "export const STALL_MS = 20_000;"
+    },
+    {
+      "label": "49w the watchdog is armed AFTER the guard that skips every looking card",
+      "file": "src/extension/content.ts",
+      "from": "    armWatchdog(card);\n    if (!card.transient || leaving.has(card.id)) continue;",
+      "to": "    if (!card.transient || leaving.has(card.id)) continue;\n    armWatchdog(card);"
+    },
+    {
+      "label": "49x the watchdog trusts the card it closed over instead of re-asking",
+      "file": "src/extension/content.ts",
+      "from": "      if (!stalledJobs(tray.list(), Date.now()).includes(card.job)) return;",
+      "to": "      if (card.state !== 'looking') return;"
+    },
+    {
+      "label": "49y watchdogs are disarmed only when the card vanishes, never when it answers",
+      "file": "src/extension/content.ts",
+      "from": "    if (cards.some((c) => c.id === id && c.state === 'looking')) continue;",
+      "to": "    if (cards.some((c) => c.id === id)) continue;"
+    }
+  ]
+}

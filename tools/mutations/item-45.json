@@ -1,0 +1,47 @@
+{
+  "target": "src/shared/pricing.test.ts",
+  "mutations": [
+    {
+      "label": "45a store listing drifts to $5 a month (the irreversible surface)",
+      "file": "docs/store/listing.md",
+      "from": "Buki Pro is $4 a month or $29 a year.",
+      "to": "Buki Pro is $5 a month or $29 a year."
+    },
+    {
+      "label": "45b llms.txt drifts to $39 a year (what an assistant tells a buyer)",
+      "file": "docs/llms.txt",
+      "from": "$4 per month or $29 per year",
+      "to": "$4 per month or $39 per year"
+    },
+    {
+      "label": "45c the SOURCE moves and no surface follows",
+      "file": "src/shared/pricing.ts",
+      "from": "export const PRO_MONTHLY_USD = 4;",
+      "to": "export const PRO_MONTHLY_USD = 5;"
+    },
+    {
+      "label": "45d the store listing stops naming a price at all (vacuous pass)",
+      "file": "docs/store/listing.md",
+      "from": "After that, Buki Pro is $4 a month or $29 a year.",
+      "to": "After that, Buki Pro costs money."
+    },
+    {
+      "label": "45e the superpowers exclusion silently stops working",
+      "file": "src/shared/pricing.test.ts",
+      "from": "    '!../../docs/superpowers/**',\n",
+      "to": ""
+    },
+    {
+      "label": "45f llms.txt stops naming a price at all",
+      "file": "docs/llms.txt",
+      "from": "Buki Pro is $4 per month or $29 per year:",
+      "to": "Buki Pro is a paid tier:"
+    },
+    {
+      "label": "45g the Detailed description heading is renamed under the guard",
+      "file": "docs/store/listing.md",
+      "from": "## Detailed description",
+      "to": "## Description, detailed"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "target": ["src/extension/storage.test.ts", "src/extension/mergeBook.test.ts", "src/extension/bookIdentity.test.ts"],
+  "mutations": [
+    {
+      "label": "47a ADV-6 restored: the reading is taken wholesale again",
+      "file": "src/extension/storage.ts",
+      "from": "          book: mergeBook(previous?.book, book),",
+      "to": "          book,"
+    },
+    {
+      "label": "47b THE REVIEW'S OWN PRESCRIBED FIX, applied verbatim",
+      "file": "src/extension/storage.ts",
+      "from": "          book: mergeBook(previous?.book, book),",
+      "to": "          book: previous ? { ...previous.book, ...book } : book,"
+    },
+    {
+      "label": "47c an empty string counts as a value the new reading knows",
+      "file": "src/extension/mergeBook.ts",
+      "from": "const known = (value: string | undefined): value is string => typeof value === 'string' && value !== '';",
+      "to": "const known = (value: string | undefined): value is string => typeof value === 'string';"
+    },
+    {
+      "label": "47d the merged record carries keys holding undefined",
+      "file": "src/extension/mergeBook.ts",
+      "from": "    ...(known(isbn) ? { isbn } : {}),\n    ...(known(coverUrl) ? { coverUrl } : {}),",
+      "to": "    isbn,\n    coverUrl,"
+    },
+    {
+      "label": "47e C-5 restored: sameBook is bookKey equality again",
+      "file": "src/extension/bookIdentity.ts",
+      "from": "  const subA = titleParts(a.title).sub;\n  const subB = titleParts(b.title).sub;\n  return !(subA && subB && subA !== subB);",
+      "to": "  return true;"
+    },
+    {
+      "label": "47f over-strict: a subtitle on ONE side is enough to split the book",
+      "file": "src/extension/bookIdentity.ts",
+      "from": "  return !(subA && subB && subA !== subB);",
+      "to": "  return subA === subB;"
+    },
+    {
+      "label": "47g C-6 restored: the surname is the longest token again",
+      "file": "src/extension/bookIdentity.ts",
+      "from": "  return words[words.length - 1] ?? '';",
+      "to": "  return [...words].sort().reduce((a, b) => (b.length > a.length ? b : a), '');"
+    },
+    {
+      "label": "47h the surname is taken from the wrong end of the name",
+      "file": "src/extension/bookIdentity.ts",
+      "from": "  return words[words.length - 1] ?? '';",
+      "to": "  return words[0] ?? '';"
+    },
+    {
+      "label": "47i the author list is no longer cut at the first comma",
+      "file": "src/extension/bookIdentity.ts",
+      "from": "  const first = fold(author).split(',')[0] ?? '';",
+      "to": "  const first = fold(author);"
+    }
+  ]
+}

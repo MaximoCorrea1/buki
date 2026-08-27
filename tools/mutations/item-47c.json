@@ -1,0 +1,35 @@
+{
+  "target": ["src/extension/coverSource.test.ts", "src/extension/popupChrome.test.ts"],
+  "mutations": [
+    {
+      "label": "47q C-8 restored: the prune ignores the pending book",
+      "file": "src/extension/popup.ts",
+      "from": "    void pruneCovers(coversToKeep(shelf, undoable), covers);",
+      "to": "    void pruneCovers(coversToKeep(shelf, undefined), covers);"
+    },
+    {
+      "label": "47r the pending book is recorded AFTER the refresh that prunes",
+      "file": "src/extension/popup.ts",
+      "from": "    undoable = saved;\n    await writeShelf({ type: 'removeBook', savedId: saved.id });\n    await refresh();",
+      "to": "    await writeShelf({ type: 'removeBook', savedId: saved.id });\n    await refresh();\n    undoable = saved;"
+    },
+    {
+      "label": "47s the pending book is never cleared, so the cache grows without bound",
+      "file": "src/extension/popup.ts",
+      "from": "  undoable = undefined;\n  window.clearTimeout(undoTimer);",
+      "to": "  window.clearTimeout(undoTimer);"
+    },
+    {
+      "label": "47t coversToKeep forgets the caught photograph and keeps only catalogue art",
+      "file": "src/extension/coverSource.ts",
+      "from": "    for (const url of [saved.book.coverUrl, saved.shot]) {",
+      "to": "    for (const url of [saved.book.coverUrl]) {"
+    },
+    {
+      "label": "47u coversToKeep ignores the pending book entirely",
+      "file": "src/extension/coverSource.ts",
+      "from": "  for (const saved of [...shelf, ...(pending ? [pending] : [])]) {",
+      "to": "  for (const saved of [...shelf]) {"
+    }
+  ]
+}

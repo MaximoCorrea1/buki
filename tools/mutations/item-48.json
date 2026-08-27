@@ -1,0 +1,38 @@
+{
+  "target": [
+    "src/server/licenseHandler.test.ts",
+    "src/extension/proState.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "48a ADV-3 restored: a session is minted with no activation id",
+      "file": "src/server/licenseHandler.ts",
+      "from": "  if (!claim.activationId) {",
+      "to": "  if (false) {"
+    },
+    {
+      "label": "48b the refusal becomes 403, so the client throws its session away",
+      "file": "src/server/licenseHandler.ts",
+      "from": "    return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);\n  }\n\n  const now = env.now();",
+      "to": "    return refuse('Buki got an unexpected answer from the payment provider.', 'licence', 403);\n  }\n\n  const now = env.now();"
+    },
+    {
+      "label": "48d the guard checks undefined only, so an empty id slips through",
+      "file": "src/server/licenseHandler.ts",
+      "from": "  if (!claim.activationId) {",
+      "to": "  if (claim.activationId === undefined) {"
+    },
+    {
+      "label": "48e ADV-8 restored: the save is not wrapped and rejects into the caller",
+      "file": "src/extension/proState.ts",
+      "from": "  try {\n    await save(next);\n  } catch (err) {\n    console.error('[Buki] could not store the licence session', err);\n  }",
+      "to": "  await save(next);"
+    },
+    {
+      "label": "48f keep() swallows the failure AND skips the write entirely",
+      "file": "src/extension/proState.ts",
+      "from": "  try {\n    await save(next);\n  } catch (err) {",
+      "to": "  try {\n    if (next.session) await save(next);\n  } catch (err) {"
+    }
+  ]
+}

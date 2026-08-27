@@ -1,0 +1,41 @@
+{
+  "target": ["src/extension/shelvedAmong.test.ts"],
+  "mutations": [
+    {
+      "label": "50h the index becomes a plain key lookup, merging two volumes of a series",
+      "file": "src/extension/shelvedAmong.ts",
+      "from": "    const viaKey = (byKey.get(bookKey(book)) ?? []).find((i) =>\n      sameBook((shelf[i] as SavedBook).book, book),\n    );",
+      "to": "    const viaKey = (byKey.get(bookKey(book)) ?? [])[0];"
+    },
+    {
+      "label": "50i the ISBN half is dropped, so differently-spelled titles stop matching",
+      "file": "src/extension/shelvedAmong.ts",
+      "from": "    const viaIsbn = book.isbn ? byIsbn.get(book.isbn) : undefined;",
+      "to": "    const viaIsbn = undefined;"
+    },
+    {
+      "label": "50j the LATER shelf record wins instead of the earlier one",
+      "file": "src/extension/shelvedAmong.ts",
+      "from": "    const at = Math.min(viaIsbn ?? Infinity, viaKey ?? Infinity);",
+      "to": "    const at = Math.max(viaIsbn ?? -Infinity, viaKey ?? -Infinity);"
+    },
+    {
+      "label": "50k a duplicate shelf record overwrites the earlier index entry",
+      "file": "src/extension/shelvedAmong.ts",
+      "from": "    if (isbn && !byIsbn.has(isbn)) byIsbn.set(isbn, i);",
+      "to": "    if (isbn) byIsbn.set(isbn, i);"
+    },
+    {
+      "label": "50l the identity returned is the SHELF's key rather than the candidate's",
+      "file": "src/extension/shelvedAmong.ts",
+      "from": "    out.push({ identity: bookKey(book), intent: (shelf[at] as SavedBook).intent });",
+      "to": "    out.push({ identity: bookKey((shelf[at] as SavedBook).book), intent: (shelf[at] as SavedBook).intent });"
+    },
+    {
+      "label": "50m the early return swallows a real shelf",
+      "file": "src/extension/shelvedAmong.ts",
+      "from": "  if (!shelf.length || !candidates.length) return [];",
+      "to": "  if (shelf.length || !candidates.length) return [];"
+    }
+  ]
+}
