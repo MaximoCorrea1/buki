@@ -45,6 +45,14 @@ export interface LicenseEnv {
    * daily would also be generous enough to burn every slot the customer has.
    */
   keyCap: (key: string, kind: 'activate' | 'validate', now: number) => boolean;
+  /**
+   * The cap an enumerator cannot choose the input to.
+   *
+   * `keyCap` counts the KEY, and the key is a string the caller picks — so N guesses are N
+   * buckets and N real calls on `POLAR_ACCESS_TOKEN`. **A per-key cap structurally cannot
+   * bound enumeration.** This one counts the caller. `OPENWORK.md` item 51, SEC-3.
+   */
+  ipCap: (request: Request, now: number) => boolean;
 }
 
 /** `activate`'s answer. The top-level `id` is the ACTIVATION. */
@@ -138,6 +146,28 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
     // `BUKI_EXTENSION_ID` is not the shipped id. It is not a statement about anybody’s
     // subscription, and `license.ts` must not erase a paying session over it.
     return refuse('Not authorised', 'origin', 403);
+  }
+
+  // THE PER-CALLER CAP, and it lands HERE — before the body is even read.
+  //
+  // `keyCap` below counts the KEY, which is a string the caller chooses, so N guessed keys
+  // are N separate buckets and N real calls on `POLAR_ACCESS_TOKEN`. It bounds abuse of ONE
+  // key and cannot bound enumeration of many. `OPENWORK.md` item 51, SEC-3.
+  //
+  // The damage is availability, and the org token makes it everybody's: it is ONE
+  // credential shared by every subscriber, so throttling it locks out every renewal at
+  // once — not the enumerator's, everyone's.
+  //
+  // BEFORE `keyCap`, not after, and the order is load-bearing. `keyCap` evicts to stay
+  // bounded, so letting a capped caller reach it lets them churn the map and push a real
+  // customer's counter out — handing back the allowance the eviction exists to protect.
+  //
+  // BEFORE the body parse, so a flood of unparseable bodies is counted too. Counting only
+  // well-formed requests would leave the cheapest attack free.
+  if (env.ipCap(request, env.now())) {
+    // No key in the message: this caller may not own one, and a refusal that quoted the
+    // string back would confirm what was sent.
+    return refuse('Too many licence checks from here today. Try again tomorrow.', 'cap', 429);
   }
 
   let key: string;

@@ -2974,6 +2974,24 @@ deleted, because the wrong belief explains the code above it.
   careful: it is to never write the two characters at all.** Say *"a /64"* with the bold opening
   on a letter, and spell the terminator in words when you must refer to it.
 
+- **T22. A MUTATION THAT READS A CLOCK GIVES A VERDICT THAT DEPENDS ON MACHINE SPEED.** A
+  mutation for *"the unidentifiable caller gets a fresh allowance each time"* replaced the
+  shared bucket with `String(Math.round(performance.now()))`. **It reported CAUGHT when the
+  harness's output was REDIRECTED to a file and SURVIVED when it was PIPED**, from the same
+  plan, the same code, seconds apart. `performance.now()` rounds to whole milliseconds, so
+  when all forty-two calls land inside one millisecond they share a key and the mutation
+  behaves exactly like the original. Piping changed the timing enough to flip it.
+
+  **The instrument was honest and the MUTATION was the lie**, which is a failure mode nothing
+  else in this section covers: everything else here is a harness or a doc being wrong. **A
+  mutation is a controlled experiment, so its replacement must be DETERMINISTIC** — no
+  `Date.now`, no `performance.now`, no `Math.random`. Where the mutation needs a value that
+  varies per call, use a counter: `String((globalThis.__mutN = (globalThis.__mutN ?? 0) + 1))`.
+
+  Found only because the same plan was run twice by chance and the two totals disagreed. **If
+  two runs of one plan disagree, the plan is at fault before the code is.** Re-run any new
+  plan twice before believing a SURVIVED.
+
 ---
 
 ## 6. Accepted risks, named so nobody rediscovers them

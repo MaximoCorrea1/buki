@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createIpCap, TRIAL_PER_IP_PER_DAY } from './ipCap';
+import { createIpCap, TRIAL_PER_IP_PER_DAY, LICENSE_PER_IP_PER_DAY } from './ipCap';
+import LICENSE_SHELL from '../../api/license.ts?raw';
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 7, 18, 12, 0, 0);
@@ -179,6 +180,59 @@ describe('the per-IP daily trial cap', () => {
     for (let i = 0; i < 100; i++) cap(from(`2001:db8:9:${i.toString(16)}::1`), NOW);
 
     expect(cap(from('2001:db8:1111:2222::1'), NOW)).toBe(false);
+  });
+
+  it('honours a caller-supplied ceiling, and defaults to the trial one', () => {
+    // `/api/license` needs a looser ceiling than `/api/vision`: five activation slots
+    // renewing daily, times a household, times retries. See LICENSE_PER_IP_PER_DAY.
+    const tight = createIpCap({ perDay: 2 });
+    expect(tight(from('203.0.113.7'), NOW)).toBe(false);
+    expect(tight(from('203.0.113.7'), NOW)).toBe(false);
+    expect(tight(from('203.0.113.7'), NOW)).toBe(true);
+
+    const dflt = createIpCap();
+    for (let i = 0; i < TRIAL_PER_IP_PER_DAY; i++) {
+      expect(dflt(from('198.51.100.4'), NOW)).toBe(false);
+    }
+    expect(dflt(from('198.51.100.4'), NOW)).toBe(true);
+  });
+
+  it('gives the licence endpoint room a real household needs', () => {
+    // The number itself, asserted rather than assumed: a value that drifted below a
+    // plausible household would lock out somebody who is paying, which is the worst
+    // outcome that endpoint has.
+    expect(LICENSE_PER_IP_PER_DAY).toBeGreaterThan(TRIAL_PER_IP_PER_DAY);
+    expect(LICENSE_PER_IP_PER_DAY).toBeGreaterThanOrEqual(120);
+  });
+
+  /**
+   * The shells are the one place a ceiling can be wired to the wrong constant invisibly.
+   *
+   * `api/license.ts` says of itself that it is "the shell only" and needs no test, which is
+   * true of its logic and false of its WIRING: passing `/api/vision`'s trial ceiling here
+   * would throttle paying subscribers, typecheck cleanly, and pass every test above.
+   *
+   * Written as an ABSENCE proof, per `CLAUDE.md`: the load-bearing half is that the trial
+   * ceiling does not appear, because "the right constant is mentioned somewhere" is a claim
+   * a comment satisfies. Comments are stripped first for exactly that reason.
+   */
+  it('wires the licence shell to the licence ceiling, and to no other', () => {
+    const code = LICENSE_SHELL.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+    // ⚠ THE FIRST VERSION OF THIS TEST ASSERTED `code.toContain('LICENSE_PER_IP_PER_DAY')`
+    // AND A MUTATION WALKED STRAIGHT THROUGH IT. Stripping comments was not enough,
+    // because the IMPORT LINE still names the constant — so a shell that imported it and
+    // then called `createIpCap()` with no arguments, silently taking the trial ceiling,
+    // satisfied every assertion. A mention is not a use. §5 T11's shape, one level up.
+    //
+    // So the guard reads the CALL, not the file.
+    expect(code).toMatch(/createIpCap\(\s*\{[^}]*perDay:\s*LICENSE_PER_IP_PER_DAY[^}]*\}\s*\)/);
+    expect(code).toContain('ipCap,');
+
+    // THE TWO HALVES THAT DISCRIMINATE. No other ceiling is reachable from this file, and
+    // there is no un-ceilinged construction of the cap anywhere in it.
+    expect(code).not.toContain('TRIAL_PER_IP_PER_DAY');
+    expect(code).not.toMatch(/createIpCap\(\s*\)/);
   });
 
   it('puts every unidentifiable caller in ONE bucket, which is the safe direction', () => {

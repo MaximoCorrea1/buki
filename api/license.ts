@@ -8,6 +8,7 @@
  */
 import { handleLicense } from '../src/server/licenseHandler';
 import { createKeyCap } from '../src/server/keyCap';
+import { createIpCap, LICENSE_PER_IP_PER_DAY } from '../src/server/ipCap';
 
 export const config = { runtime: 'edge' };
 
@@ -31,6 +32,17 @@ const POLAR_VALIDATE = 'https://api.polar.sh/v1/license-keys/validate';
  */
 const keyCap = createKeyCap();
 
+/**
+ * The second counter, and it counts what `keyCap` cannot.
+ *
+ * `keyCap` is keyed on the licence key, which the caller chooses, so guessing N keys costs
+ * N real calls on `POLAR_ACCESS_TOKEN`. This one is keyed on the caller. Its ceiling is
+ * higher than `/api/vision`'s because the traffic is different — five activation slots
+ * renewing daily, times a household behind one address, times retries — and locking out a
+ * paying subscriber is the worst outcome this endpoint has. `OPENWORK.md` item 51, SEC-3.
+ */
+const ipCap = createIpCap({ perDay: LICENSE_PER_IP_PER_DAY });
+
 export default async function handler(request: Request): Promise<Response> {
   return handleLicense(request, {
     secret: process.env['BUKI_TOKEN_SECRET'] ?? '',
@@ -44,5 +56,6 @@ export default async function handler(request: Request): Promise<Response> {
     fetch: (url, init) => fetch(url, init),
     now: () => Date.now(),
     keyCap,
+    ipCap,
   });
 }

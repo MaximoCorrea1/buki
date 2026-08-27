@@ -54,14 +54,14 @@
     {
       "label": "51k the ceiling is off by one",
       "file": "src/server/ipCap.ts",
-      "from": "    return seen.n > TRIAL_PER_IP_PER_DAY;",
-      "to": "    return seen.n > TRIAL_PER_IP_PER_DAY + 1;"
+      "from": "    return seen.n > perDay;",
+      "to": "    return seen.n > perDay + 1;"
     },
     {
-      "label": "51l the unidentifiable caller gets a fresh allowance each time",
+      "label": "51l the unidentifiable caller gets a fresh allowance each time (deterministic counter, NOT a clock)",
       "file": "src/server/ipCap.ts",
       "from": "  return first ? bucketFor(first) : 'unknown';",
-      "to": "  return first ? bucketFor(first) : String(Math.round(performance.now()));"
+      "to": "  return first ? bucketFor(first) : String((globalThis.__mutN = (globalThis.__mutN ?? 0) + 1));"
     },
     {
       "label": "51d IPv4 and IPv4-mapped lose their exemption, folding every mapped caller into 0:0:0:0",

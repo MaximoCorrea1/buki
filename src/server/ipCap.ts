@@ -33,6 +33,20 @@
 export const TRIAL_PER_IP_PER_DAY = 40;
 
 /**
+ * The same brake on `/api/license`, and it is deliberately six times looser.
+ *
+ * Different traffic, and a much worse failure. A licence key holds **five activation
+ * slots**, each renewing about once a day, and retries multiply that; several subscribers
+ * behind one NAT multiply it again. Fifteen a day is an ordinary household and forty-five
+ * is a plausible one, so `TRIAL_PER_IP_PER_DAY` would have thrown real subscribers out.
+ *
+ * **Locking out somebody who is paying is the worst outcome this endpoint has**, and the
+ * job here is only to make key ENUMERATION pointless — an enumerator needs thousands of
+ * guesses, not hundreds. 240 is far under that and far over any legitimate day.
+ */
+export const LICENSE_PER_IP_PER_DAY = 240;
+
+/**
  * Who is asking, from the one header that can answer.
  *
  * `x-forwarded-for` is a CHAIN: the client first, then every proxy that added itself.
@@ -144,7 +158,8 @@ export interface IpCap {
  * `maxTracked` is injectable for the same reason `keyCap`'s is: proving the bound holds
  * should not cost twenty thousand iterations per run.
  */
-export function createIpCap(opts: { maxTracked?: number } = {}): IpCap {
+export function createIpCap(opts: { perDay?: number; maxTracked?: number } = {}): IpCap {
+  const perDay = opts.perDay ?? TRIAL_PER_IP_PER_DAY;
   const maxTracked = opts.maxTracked ?? MAX_TRACKED;
   const hits = new Map<string, { day: number; n: number }>();
 
@@ -171,7 +186,7 @@ export function createIpCap(opts: { maxTracked?: number } = {}): IpCap {
       return false;
     }
     seen.n++;
-    return seen.n > TRIAL_PER_IP_PER_DAY;
+    return seen.n > perDay;
   };
 
   cap.size = () => hits.size;

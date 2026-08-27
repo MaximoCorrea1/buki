@@ -1,0 +1,59 @@
+{
+  "target": ["src/server/licenseHandler.test.ts", "src/server/ipCap.test.ts"],
+  "mutations": [
+    {
+      "label": "51m the per-IP cap is removed from /api/license entirely (the finding, restored)",
+      "file": "src/server/licenseHandler.ts",
+      "from": "  if (env.ipCap(request, env.now())) {",
+      "to": "  if (false) {"
+    },
+    {
+      "label": "51n the cap runs but its answer is ignored",
+      "file": "src/server/licenseHandler.ts",
+      "from": "  if (env.ipCap(request, env.now())) {",
+      "to": "  if (env.ipCap(request, env.now()) && false) {"
+    },
+    {
+      "label": "51o the cap moves AFTER keyCap, so enumeration can churn the key map again",
+      "file": "src/server/licenseHandler.ts",
+      "from": "  if (env.ipCap(request, env.now())) {\n    // No key in the message: this caller may not own one, and a refusal that quoted the\n    // string back would confirm what was sent.\n    return refuse('Too many licence checks from here today. Try again tomorrow.', 'cap', 429);\n  }\n\n  let key: string;",
+      "to": "  let key: string;"
+    },
+    {
+      "label": "51p the refusal quotes the key back, confirming what a prober sent",
+      "file": "src/server/licenseHandler.ts",
+      "from": "    return refuse('Too many licence checks from here today. Try again tomorrow.', 'cap', 429);",
+      "to": "    return refuse('Too many licence checks from here today for KEY-1.', 'cap', 429);"
+    },
+    {
+      "label": "51q the cap answers 200 instead of 429, so the client never learns it was capped",
+      "file": "src/server/licenseHandler.ts",
+      "from": "    return refuse('Too many licence checks from here today. Try again tomorrow.', 'cap', 429);",
+      "to": "    return refuse('Too many licence checks from here today. Try again tomorrow.', 'cap', 200);"
+    },
+    {
+      "label": "51r the injected ceiling is ignored and the trial one is always used",
+      "file": "src/server/ipCap.ts",
+      "from": "  const perDay = opts.perDay ?? TRIAL_PER_IP_PER_DAY;",
+      "to": "  const perDay = TRIAL_PER_IP_PER_DAY;"
+    },
+    {
+      "label": "51s the licence ceiling drifts below a plausible household",
+      "file": "src/server/ipCap.ts",
+      "from": "export const LICENSE_PER_IP_PER_DAY = 240;",
+      "to": "export const LICENSE_PER_IP_PER_DAY = 30;"
+    },
+    {
+      "label": "51t the licence shell is wired to the TRIAL ceiling, which typechecks fine",
+      "file": "api/license.ts",
+      "from": "const ipCap = createIpCap({ perDay: LICENSE_PER_IP_PER_DAY });",
+      "to": "const ipCap = createIpCap({ perDay: TRIAL_PER_IP_PER_DAY });"
+    },
+    {
+      "label": "51u the shell guard is satisfied by a COMMENT naming the right constant",
+      "file": "api/license.ts",
+      "from": "const ipCap = createIpCap({ perDay: LICENSE_PER_IP_PER_DAY });",
+      "to": "// LICENSE_PER_IP_PER_DAY\nconst ipCap = createIpCap();"
+    }
+  ]
+}

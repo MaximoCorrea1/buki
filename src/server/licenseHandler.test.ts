@@ -29,9 +29,10 @@ const env = (over: Partial<LicenseEnv> = {}): LicenseEnv => ({
   validateUrl: 'https://api.polar.test/v1/license-keys/validate',
   fetch: vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 })),
   now: () => NOW,
-  // Open by default, so every test above measures what it is about. The cap has its own
-  // describe block at the bottom.
+  // Open by default, so every test above measures what it is about. The caps have their
+  // own describe blocks at the bottom.
   keyCap: () => false,
+  ipCap: () => false,
   ...over,
 });
 
@@ -299,6 +300,64 @@ describe('who may ask for a session', () => {
  * validates. So the activate ceiling can be far below the renewal one without touching
  * anybody real.
  */
+/**
+ * SEC-3. `OPENWORK.md` item 51.
+ *
+ * `keyCap` counts the KEY, and the key is a string the attacker chooses. So N guessed keys
+ * are N separate buckets and N real calls on `POLAR_ACCESS_TOKEN` — **a per-key cap
+ * structurally cannot bound key ENUMERATION.**
+ *
+ * The impact is availability rather than disclosure, and it is worse than it sounds: the
+ * org token is ONE token shared by every subscriber, so throttling it locks out everybody's
+ * renewal at once. `/api/vision` has paired its Origin check with a per-IP cap since it was
+ * written. This endpoint had the Origin check and a per-key cap, and neither counts the
+ * thing an enumerator cannot change.
+ */
+describe('the per-IP cap, which is the one an enumerator cannot choose', () => {
+  it('refuses before Polar is called', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ fetch, ipCap: () => true }));
+
+    expect(res.status).toBe(429);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('fires BEFORE keyCap, so enumeration cannot churn the key map', async () => {
+    // ORDER IS THE POINT, not just presence. `keyCap` evicts to stay bounded, so letting a
+    // capped caller reach it lets them push a real customer's counter out of the map -
+    // which hands back the allowance the eviction was protecting.
+    const keyCap = vi.fn(() => false);
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ keyCap, ipCap: () => true }));
+
+    expect(res.status).toBe(429);
+    expect(keyCap).not.toHaveBeenCalled();
+  });
+
+  it('does not need a parseable body to count the request', async () => {
+    // An enumerator sending garbage still costs us. Counting only well-formed requests
+    // would leave the cheapest attack uncounted.
+    const ipCap = vi.fn(() => false);
+    const bad = new Request('https://get-buki.vercel.app/api/license', {
+      method: 'POST',
+      headers: { origin: `chrome-extension://${EXT}` },
+      body: 'not json',
+    });
+
+    await handleLicense(bad, env({ ipCap }));
+    expect(ipCap).toHaveBeenCalled();
+  });
+
+  it('says what happened without naming a key, because the caller may not own one', async () => {
+    const res = await handleLicense(post({ key: 'KEY-1' }), env({ ipCap: () => true }));
+    // The envelope is FLAT - `{ error, code }` - and this test asserted a nested one until
+    // it was run. See the 'one envelope' block below, which is the authority on the shape.
+    const body = (await res.json()) as { error?: string; code?: string };
+
+    expect(body.code).toBe('cap');
+    expect(body.error ?? '').not.toContain('KEY-1');
+  });
+});
+
 describe('the cap', () => {
   it('refuses before Polar is called, so a refusal cannot spend a slot', async () => {
     // The rule this endpoint already follows everywhere else: every refusal lands BEFORE
