@@ -3,6 +3,7 @@ import type { Book, BooksDb, GroundedBook } from './types';
 // books the same book is defined once, and duplicating it here is how `clothFor` once gave
 // one book two colours.
 import { sameBook } from '../extension/bookIdentity';
+import { mapPool, GROUND_AT_ONCE } from './mapPool';
 
 /**
  * Most queries one text may fire.
@@ -12,10 +13,17 @@ import { sameBook } from '../extension/bookIdentity';
  * a post can yield, and a thread listing twenty titles is one line each - so six lines
  * meant six books, whatever the post actually said.
  *
- * They are fired concurrently, so this is one round trip of latency and a burst of up to
- * twenty-four requests. That burst is the real cost, and it is accepted rather than
- * unnoticed: `breaker.ts` stops asking OpenLibrary at all after three consecutive
- * failures, so a rate limit degrades to unverified readings rather than to a hang.
+ * ⚠ **THIS PARAGRAPH USED TO END: "a burst of up to twenty-four requests. That burst is
+ * the real cost, and it is ACCEPTED rather than unnoticed."** It was neither, and the word
+ * "accepted" is what made it invisible for a day. Nineteen simultaneous connections to the
+ * same host earned an HTTP 429 on 2026-08-27 and took the catalogue down for two minutes;
+ * this path could fire twenty-four. `breaker.ts` does not save it — the breaker is what
+ * turns a rate limit into two minutes of unverified readings, which is the outage, not the
+ * mitigation.
+ *
+ * So the queries are now run through `mapPool` at `GROUND_AT_ONCE`, and this constant is a
+ * ceiling on COVERAGE alone rather than on concurrency. It costs about `MAX_QUERIES /
+ * GROUND_AT_ONCE` round trips instead of one, which is the price of not being throttled.
  */
 export const MAX_QUERIES = 24;
 
@@ -150,20 +158,29 @@ export async function groundText(text: string, books: BooksDb): Promise<Grounded
   const queries = [...lineQueries, ...(wholeIsOwnQuery ? [whole] : [])].slice(0, MAX_QUERIES);
   const wholeAt = wholeIsOwnQuery ? queries.indexOf(whole) : -1;
 
-  // Fired together, judged in order. Awaiting them one at a time cost up to MAX_QUERIES
-  // round trips (10s each by openLibrary's own timeout) against a 6s end-to-end budget;
-  // concurrently the whole step costs about one.
-  const settled = await Promise.all(
-    queries.map(async (q) => {
-      try {
-        return rank(q, await books.search({ title: q }));
-      } catch (err) {
-        // One query failing must not cancel the others - each is an independent guess.
-        console.error('[Buki] a grounding query failed', err);
-        return [];
-      }
-    }),
-  );
+  // Judged in order, and now POOLED rather than fired all at once. Awaiting them one at a
+  // time cost up to MAX_QUERIES round trips against a 6s end-to-end budget, which is what
+  // the original `Promise.all` fixed and it was a real fix. Four at a time costs about
+  // MAX_QUERIES / GROUND_AT_ONCE, which is the price of not being throttled.
+  //
+  // BOUNDED, 2026-08-27, and this was the SECOND fan-out at the same host. `recognizeBook`
+  // was bounded that morning after nineteen simultaneous connections earned an HTTP 429
+  // and took the catalogue down for two minutes — and this path was left firing up to
+  // `MAX_QUERIES = 24`, MORE than the nineteen that caused it. Measured before the fix: 21
+  // concurrent searches from one twenty-line page of text. `OPENWORK.md` item 50.
+  //
+  // `mapPool` keeps INPUT ORDER, which this function depends on: the whole-text query is
+  // scored differently because of WHERE it sits in `queries`, so a pool returning
+  // completion order would silently promote a last resort.
+  const settled = await mapPool(queries, GROUND_AT_ONCE, async (q) => {
+    try {
+      return rank(q, await books.search({ title: q }));
+    } catch (err) {
+      // One query failing must not cancel the others - each is an independent guess.
+      console.error('[Buki] a grounding query failed', err);
+      return [];
+    }
+  });
 
   const fromLines = settled.filter((_, i) => i !== wholeAt);
   // Only fall back to the blob when no individual line said anything. Letting it ground

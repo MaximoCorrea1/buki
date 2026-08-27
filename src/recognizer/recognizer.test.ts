@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { recognizeBook, GROUND_AT_ONCE } from './recognizer';
+import { recognizeBook } from './recognizer';
+import { GROUND_AT_ONCE } from './mapPool';
 import type { Tweet, VisionClient, BooksDb } from './types';
 
 describe('recognizeBook', () => {

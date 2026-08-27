@@ -56,7 +56,7 @@ function toBook(doc: OlDoc): Book {
  * is no published quota, which is not the same as no quota, and this sentence is very
  * likely what made an unbounded `Promise.all` over twenty guesses look safe to write.
  *
- * **Treat it as rate limited and be polite.** `GROUND_AT_ONCE` in `recognizer.ts` is
+ * **Treat it as rate limited and be polite.** `GROUND_AT_ONCE` in `mapPool.ts` is
  * the ceiling and `recognizer.test.ts` holds it there.
  */
 export function createOpenLibraryClient(deps: { fetch: FetchLike }): BooksDb {

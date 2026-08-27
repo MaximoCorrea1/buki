@@ -20,6 +20,19 @@
  * `OPENWORK.md` K-1 already tracks one edge against the module graph without adding a
  * second on speculation.
  */
+/**
+ * How many catalogue lookups a single catch may have open at once.
+ *
+ * FOUR, because nineteen earned an HTTP 429 on 2026-08-27 and the rate-limited address
+ * then stopped answering at all. It lives HERE rather than beside either caller because
+ * there are two of them - `recognizeBook` grounds a cover's guesses, `groundText` grounds a
+ * post's words - and they talk to the SAME host. A ceiling defined next to one of them is a
+ * ceiling the other can exceed without anything noticing, which is exactly what happened:
+ * the 08-27 fix bounded the cover path at 4 and left the words path firing up to
+ * `MAX_QUERIES = 24`, MORE than the nineteen that caused the outage. `OPENWORK.md` item 50.
+ */
+export const GROUND_AT_ONCE = 4;
+
 export async function mapPool<T, R>(
   items: readonly T[],
   limit: number,

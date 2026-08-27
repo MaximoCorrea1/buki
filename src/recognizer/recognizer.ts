@@ -1,5 +1,5 @@
 import { extractIsbnFromLinks } from './isbn';
-import { mapPool } from './mapPool';
+import { mapPool, GROUND_AT_ONCE } from './mapPool';
 import { groundText, rank } from './groundText';
 // Across the folder boundary on purpose: what makes two books the same book is defined
 // exactly once, and duplicating it here is how `clothFor` once gave one book two colours.
@@ -34,16 +34,6 @@ async function attempt<T>(work: Promise<T>): Promise<T | null> {
   }
 }
 
-/**
- * How many catalogue lookups one catch may have in flight.
- *
- * Four, and the number is a manners question rather than a throughput one. OpenLibrary is
- * free, keyless and donation-funded; nineteen sockets at once from one address is
- * indistinguishable from abuse and was answered as such. Four keeps almost all of the
- * latency win - nineteen books at roughly 400ms each finish in about two seconds instead
- * of seven and a half sequential - while never presenting as a burst.
- */
-export const GROUND_AT_ONCE = 4;
 
 export async function recognizeBook(
   tweet: Tweet,

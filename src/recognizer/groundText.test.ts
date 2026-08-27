@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { groundText, rank, MAX_QUERIES } from './groundText';
+import { GROUND_AT_ONCE } from './mapPool';
 import type { BooksDb } from './types';
 
 /** A BooksDb that only resolves the exact titles given, recording every query tried. */
@@ -351,5 +352,87 @@ describe('score outranks the tie-break', () => {
       { title: 'Dune', author: 'Someone Else' },
     ]);
     expect(hits[0]?.book.title).toBe('Dune Wormhole Chronicles');
+  });
+});
+
+/**
+ * PERF-1's SIBLING, and it is the 429 again. `OPENWORK.md` item 50.
+ *
+ * On 2026-08-27 `recognizeBook` was found opening nineteen simultaneous connections to
+ * openlibrary.org, which came back HTTP 429; the rate-limited address then stopped
+ * answering at all, sixteen 6s timeouts blew past the breaker's TOLERANCE of 3, and the
+ * catalogue was gone for the full two-minute COOLDOWN. It presented as "covers are not
+ * loading". `mapPool` and `GROUND_AT_ONCE = 4` were the fix, and `warmCovers` was pointed
+ * at the same pool so it could not be undone one hostname over.
+ *
+ * **THIS PATH WAS NOT.** `groundText` fires `Promise.all` over up to `MAX_QUERIES = 24`
+ * queries at the same host — MORE than the nineteen that earned the 429 — and it is the
+ * "try the post's words" door offered on every card that came back empty. The fix went to
+ * one of two fan-outs.
+ *
+ * The `Promise.all` was not careless, and its comment says so: it replaced up to 24
+ * SEQUENTIAL round trips against a 6s budget, which was a real fix. It just had no
+ * ceiling, which is exactly what `mapPool` records about the other one.
+ */
+describe('grounding the words does not burst the catalogue', () => {
+  /** A BooksDb that records how many searches are in flight at once. */
+  function counting(): { books: BooksDb; peak: () => number; calls: () => number } {
+    let live = 0;
+    let peak = 0;
+    let calls = 0;
+    return {
+      peak: () => peak,
+      calls: () => calls,
+      books: {
+        async lookupByIsbn() {
+          return null;
+        },
+        async search() {
+          calls++;
+          live++;
+          peak = Math.max(peak, live);
+          await new Promise((r) => setTimeout(r, 1));
+          live--;
+          return [];
+        },
+      },
+    };
+  }
+
+  it('never opens more connections at once than the pool allows', async () => {
+    // Twenty distinct lines, which is what a photographed page of text produces.
+    const text = Array.from({ length: 20 }, (_, i) => `a distinct line number ${i}`).join('\n');
+    const c = counting();
+    await groundText(text, c.books);
+    expect(c.calls(), 'the fixture did not actually fan out; the test proves nothing').toBeGreaterThan(
+      GROUND_AT_ONCE,
+    );
+    expect(c.peak(), 'the words path still bursts the catalogue').toBeLessThanOrEqual(
+      GROUND_AT_ONCE,
+    );
+  });
+
+  it('still tries every query, so the ceiling did not become a cap on coverage', async () => {
+    // A pool that silently dropped work would pass the check above and quietly make
+    // recognition worse. Twenty lines plus the whole-text last resort.
+    const text = Array.from({ length: 20 }, (_, i) => `a distinct line number ${i}`).join('\n');
+    const c = counting();
+    await groundText(text, c.books);
+    expect(c.calls()).toBe(21);
+  });
+
+  it('keeps judging the queries IN ORDER, which is what makes the whole text a last resort', async () => {
+    // `groundText` reads the settled results positionally: the whole-text query is scored
+    // differently because of WHERE it sits. A pool that returned completion order rather
+    // than input order would silently promote it.
+    const { books, queriesTried } = fakeBooks({
+      'Structure and Interpretation of Computer Programs': [
+        { title: 'Structure and Interpretation of Computer Programs', author: 'Abelson, Sussman' },
+      ],
+    });
+    const text = 'Second Eton Tm iT\nStructure and Interpretation of Computer Programs';
+    const result = await groundText(text, books);
+    expect(result[0]?.book.author).toBe('Abelson, Sussman');
+    expect(queriesTried[0]).toBe('Second Eton Tm iT');
   });
 });
