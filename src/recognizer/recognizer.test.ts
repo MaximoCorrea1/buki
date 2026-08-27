@@ -1,8 +1,89 @@
 import { describe, it, expect } from 'vitest';
-import { recognizeBook } from './recognizer';
+import { recognizeBook, GROUND_AT_ONCE } from './recognizer';
 import type { Tweet, VisionClient, BooksDb } from './types';
 
 describe('recognizeBook', () => {
+  it('never opens more catalogue lookups at once than GROUND_AT_ONCE', async () => {
+    /**
+     * THE 429 OF 2026-08-27, AS A TEST.
+     *
+     * This was a bare `Promise.all` over the guesses, and `MAX_BOOKS` is 20, so one
+     * photograph of nineteen books opened nineteen simultaneous connections to
+     * openlibrary.org from a single address. It came back HTTP 429; the rate-limited
+     * address then stopped answering entirely, sixteen 6s timeouts in a row cleared the
+     * breaker`s TOLERANCE of 3 six times over, and the catalogue was gone for the whole
+     * two-minute COOLDOWN_MS. Every catch in that window returned `unverified` with no
+     * cover art, which presented to the user as `covers are not loading`.
+     *
+     * A source guard would not have caught it: `Promise.all` is not wrong anywhere else
+     * in this file. Only the CONCURRENCY is wrong, and only behaviour can see it.
+     */
+    let live = 0;
+    let peak = 0;
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search() {
+        live += 1;
+        peak = Math.max(peak, live);
+        await new Promise((r) => setTimeout(r, 5));
+        live -= 1;
+        return [];
+      },
+    };
+    const nineteen = Array.from({ length: 19 }, (_, i) => ({
+      title: `Book ${i}`,
+      author: `Author ${i}`,
+    }));
+    const vision: VisionClient = {
+      async guessBooks() {
+        return nineteen;
+      },
+    };
+
+    await recognizeBook(
+      { text: '', imageUrls: ['https://pbs.twimg.com/media/stack.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(peak).toBeGreaterThan(0);
+
+    // PIN THE CONSTANT, not only the behaviour against it. Asserting `peak <=
+    // GROUND_AT_ONCE` alone is self-referential: raising the constant to 20 makes it
+    // `19 <= 20` and the test goes green while the 429 comes straight back. Caught by
+    // mutating the constant, which is the only way this kind of hole shows itself.
+    expect(GROUND_AT_ONCE).toBeLessThanOrEqual(6);
+    expect(peak).toBeLessThanOrEqual(GROUND_AT_ONCE);
+  });
+
+  it('still grounds every guess, not just the first few', async () => {
+    // Bounding the pool must not quietly drop the tail. Nineteen guesses is nineteen
+    // lookups, taken four at a time.
+    let calls = 0;
+    const books: BooksDb = {
+      async lookupByIsbn() {
+        return null;
+      },
+      async search() {
+        calls += 1;
+        return [];
+      },
+    };
+    const vision: VisionClient = {
+      async guessBooks() {
+        return Array.from({ length: 19 }, (_, i) => ({ title: `B${i}`, author: `A${i}` }));
+      },
+    };
+
+    await recognizeBook(
+      { text: '', imageUrls: ['https://pbs.twimg.com/media/stack.jpg'], links: [] },
+      { vision, books },
+    );
+
+    expect(calls).toBe(19);
+  });
+
   it('reads the cover rather than trusting a link to a different book', async () => {
     // A post that SHOWS one book and LINKS to another is common - a quote from the book
     // beside an affiliate link to something else. The link used to short-circuit before

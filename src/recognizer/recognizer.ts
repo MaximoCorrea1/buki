@@ -1,4 +1,5 @@
 import { extractIsbnFromLinks } from './isbn';
+import { mapPool } from './mapPool';
 import { groundText, rank } from './groundText';
 // Across the folder boundary on purpose: what makes two books the same book is defined
 // exactly once, and duplicating it here is how `clothFor` once gave one book two colours.
@@ -33,6 +34,17 @@ async function attempt<T>(work: Promise<T>): Promise<T | null> {
   }
 }
 
+/**
+ * How many catalogue lookups one catch may have in flight.
+ *
+ * Four, and the number is a manners question rather than a throughput one. OpenLibrary is
+ * free, keyless and donation-funded; nineteen sockets at once from one address is
+ * indistinguishable from abuse and was answered as such. Four keeps almost all of the
+ * latency win - nineteen books at roughly 400ms each finish in about two seconds instead
+ * of seven and a half sequential - while never presenting as a burst.
+ */
+export const GROUND_AT_ONCE = 4;
+
 export async function recognizeBook(
   tweet: Tweet,
   deps: { vision: VisionClient; books: BooksDb },
@@ -51,14 +63,20 @@ export async function recognizeBook(
       altText: tweet.altText,
     });
 
-    // Grounded together, not one after another. A stack of four books used to mean four
-    // sequential OpenLibrary round trips stapled onto the end of a catch.
-    const grounded = await Promise.all(
-      guesses.map(async (guess) => ({
-        guess,
-        matches: await attempt(deps.books.search({ title: guess.title, author: guess.author })),
-      })),
-    );
+    // Grounded together, not one after another, but NEVER ALL AT ONCE. The original
+    // here was a bare `Promise.all`, which fixed a real problem - four books used to mean
+    // four sequential round trips stapled onto the end of a catch - and left no ceiling.
+    //
+    // `MAX_BOOKS` is 20, so on 2026-08-27 a photograph of nineteen books opened nineteen
+    // simultaneous connections to openlibrary.org and was answered with HTTP 429. The
+    // rate-limited address then stopped answering at all, sixteen 6s timeouts in a row
+    // blew straight past the breaker's TOLERANCE of 3, and the catalogue was gone for the
+    // full two-minute COOLDOWN_MS. Every catch in that window came back `unverified` with
+    // no cover art. It presented as "covers are not loading".
+    const grounded = await mapPool(guesses, GROUND_AT_ONCE, async (guess) => ({
+      guess,
+      matches: await attempt(deps.books.search({ title: guess.title, author: guess.author })),
+    }));
 
     const found: Book[] = [];
     let best = 0;

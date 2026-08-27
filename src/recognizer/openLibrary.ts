@@ -47,9 +47,17 @@ function toBook(doc: OlDoc): Book {
 }
 
 /**
- * A BooksDb backed by OpenLibrary. Free, no API key, and no hard rate quota (unlike
- * keyless Google Books, which 429s), so this is the preferred primary grounding
+ * A BooksDb backed by OpenLibrary. Free, no API key, and the preferred primary grounding
  * source. `fetch` is injected so the mapping logic tests offline.
+ *
+ * ~~No hard rate quota (unlike keyless Google Books, which 429s).~~ **FALSE, and measured
+ * false on 2026-08-27**: a single catch that opened nineteen concurrent searches was
+ * answered `HTTP 429`, and the address then stopped answering at all for minutes. There
+ * is no published quota, which is not the same as no quota, and this sentence is very
+ * likely what made an unbounded `Promise.all` over twenty guesses look safe to write.
+ *
+ * **Treat it as rate limited and be polite.** `GROUND_AT_ONCE` in `recognizer.ts` is
+ * the ceiling and `recognizer.test.ts` holds it there.
  */
 export function createOpenLibraryClient(deps: { fetch: FetchLike }): BooksDb {
   async function getJson<T>(url: string): Promise<T | null> {
