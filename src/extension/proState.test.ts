@@ -6,10 +6,12 @@ import {
   ensureSession,
   createSessionKeeper,
   forgetSession,
+  RENEW_COOLDOWN_MS,
   PRO_KEY,
   type ProState,
 } from './proState';
 import { GRACE_MS } from '../server/token';
+import { CHECKS_PER_KEY_PER_DAY } from '../server/keyCap';
 import type { StorageArea } from './storage';
 import background from './background.ts?raw';
 import optionsSrc from './options.ts?raw';
@@ -68,9 +70,33 @@ describe('what the extension knows about being Pro', () => {
       key: 'KEY-1',
       session: { token: 'tok', expiresAt: NOW + 86_400_000 },
       activationId: 'act_1',
+      // Added 2026-08-27 with R-2, and NOT by choice: this literal stopped compiling the
+      // moment the field existed, which is the entire reason the fixture is typed
+      // `Required<ProState>`. `readPro` rebuilds a subset, so a field nobody names here is
+      // a field it silently drops — see item 27, which is exactly that bug.
+      renewFailedAt: NOW - 1_000,
     };
     await writePro(storage, full);
     expect(await readPro(storage)).toEqual(full);
+  });
+
+  it('refuses a cooldown that is not a finite number', async () => {
+    // `chrome.storage.local` is user-editable, and `typeof NaN === 'number'` is true. A NaN
+    // here makes `now - renewFailedAt < RENEW_COOLDOWN_MS` false for ever, so the backoff
+    // silently stops existing and every catch exchanges again — which is the exact failure
+    // R-2 was filed for, restored by a value rather than by code.
+    //
+    // Written after the mutation that removed `Number.isFinite` SURVIVED: the guard was
+    // there and nothing asked it anything.
+    const storage = fakeStorage();
+    for (const bad of [NaN, Infinity, '900', null]) {
+      await storage.set({
+        [PRO_KEY]: { key: 'K', session: null, renewFailedAt: bad },
+      });
+      expect(await readPro(storage), `storage carried ${String(bad)} into the cooldown`).not.toHaveProperty(
+        'renewFailedAt',
+      );
+    }
   });
 
   /**
@@ -226,10 +252,18 @@ describe('ensureSession', () => {
     // Polar is down, or the network blinked. The server honours the old token on grace,
     // so throwing it away here would sign a paying customer out during OUR outage - the
     // exact thing the grace window exists to prevent.
+    //
+    // THIS USED TO ASSERT `save` WAS NEVER CALLED, and that was stricter than the reason
+    // above. The rule is that the SESSION survives an outage, not that nothing is written:
+    // R-2 records `renewFailedAt` on exactly this branch so the next catch backs off
+    // instead of exchanging again. The assertion now says what the comment always meant.
     const d = deps({ exchange: vi.fn(async () => ({ ok: false, retryable: true })) });
     const got = await ensureSession({ key: 'K', session: nearlyDone }, d);
     expect(got.session).toBe(nearlyDone);
-    expect(d.save).not.toHaveBeenCalled();
+
+    const written = (d.save as unknown as { mock: { calls: [ProState][] } }).mock.calls[0]?.[0];
+    expect(written?.session, 'the outage cost the customer their session').toBe(nearlyDone);
+    expect(written?.key).toBe('K');
   });
 
   it('drops the session when the licence itself is refused', async () => {
@@ -686,5 +720,118 @@ describe('a catch waits for a renewal only when it has no usable session', () =>
     // otherwise worked perfectly. `warmCovers` records the same rule; this is the second
     // place in the worker that runs something without awaiting it.
     expect(backgroundCode).toMatch(/void keepSession\([^)]*\)\.catch\(/);
+  });
+});
+
+/**
+ * R-2. `OPENWORK.md` item 49. A failed renewal retried on EVERY catch.
+ *
+ * `createSessionKeeper` latches concurrent calls, which is what it is for, and remembers
+ * nothing across them. So after a failure the next catch exchanged again, and the one after
+ * that, with no backoff and no cooldown — burning `CHECKS_PER_KEY_PER_DAY = 40` against our
+ * own `keyCap`, whose 429 item 39 correctly made retryable, so it kept going.
+ *
+ * THE COOLDOWN HAS TO BE PERSISTED, and that is the part that is not obvious. An MV3 worker
+ * is torn down between clicks — the module docblock above says so, and it is why renewal
+ * happens on the catch rather than on a timer — so a cooldown held in module scope would be
+ * gone by the next catch. It lives in `ProState`, beside the session it protects.
+ */
+describe('a failed renewal does not retry on every catch', () => {
+  const NOW4 = Date.UTC(2026, 7, 17, 12, 0, 0);
+  const nearlyDone = { token: 'old', expiresAt: NOW4 + 60_000 };
+  const outage = () => vi.fn(async () => ({ ok: false as const, retryable: true }));
+
+  it('remembers WHEN the renewal failed', async () => {
+    const saved: ProState[] = [];
+    await ensureSession(
+      { key: 'K', session: nearlyDone },
+      { exchange: outage(), save: async (s) => void saved.push(s), now: () => NOW4 },
+    );
+    expect(saved[0]?.renewFailedAt, 'nothing recorded the failure, so nothing can back off').toBe(
+      NOW4,
+    );
+  });
+
+  it('remembers it for a definitive refusal too', async () => {
+    // A refusal sets `session: null`, and `needsRenewal(null)` is true for ever — so
+    // without this every catch after a revoked licence exchanges again.
+    const saved: ProState[] = [];
+    await ensureSession(
+      { key: 'K', session: nearlyDone },
+      {
+        exchange: vi.fn(async () => ({ ok: false as const, retryable: false })),
+        save: async (s) => void saved.push(s),
+        now: () => NOW4,
+      },
+    );
+    expect(saved[0]?.renewFailedAt).toBe(NOW4);
+  });
+
+  it('does NOT exchange again inside the cooldown', async () => {
+    const exchange = outage();
+    const held: ProState = { key: 'K', session: nearlyDone, renewFailedAt: NOW4 };
+    const out = await ensureSession(held, {
+      exchange,
+      save: vi.fn(async () => undefined),
+      now: () => NOW4 + RENEW_COOLDOWN_MS - 1,
+    });
+    expect(exchange, 'the licence server is called on every catch again').not.toHaveBeenCalled();
+    expect(out, 'the held state must come back untouched').toEqual(held);
+  });
+
+  it('DOES exchange again once the cooldown is over', async () => {
+    // A backoff that never lifts is an outage made permanent. The grace window is seven
+    // days; there has to be a way back inside it.
+    const exchange = outage();
+    await ensureSession(
+      { key: 'K', session: nearlyDone, renewFailedAt: NOW4 },
+      {
+        exchange,
+        save: vi.fn(async () => undefined),
+        now: () => NOW4 + RENEW_COOLDOWN_MS,
+      },
+    );
+    expect(exchange).toHaveBeenCalledTimes(1);
+  });
+
+  it('CLEARS the mark when a renewal succeeds', async () => {
+    // Otherwise the next failure is measured from a stale timestamp and the backoff is
+    // already spent before it starts.
+    const saved: ProState[] = [];
+    await ensureSession(
+      { key: 'K', session: nearlyDone, renewFailedAt: NOW4 - 1 },
+      {
+        exchange: vi.fn(async () => ({
+          ok: true as const,
+          session: { token: 'new', expiresAt: NOW4 + 86_400_000 },
+          activationId: 'act_1',
+        })),
+        save: async (s) => void saved.push(s),
+        now: () => NOW4 + RENEW_COOLDOWN_MS,
+      },
+    );
+    expect(saved[0]).not.toHaveProperty('renewFailedAt');
+  });
+
+  it('keeps the key and the activation while it backs off', async () => {
+    // The cooldown must not become a quiet way to lose the pairing.
+    const saved: ProState[] = [];
+    await ensureSession(
+      { key: 'K', session: nearlyDone, activationId: 'act_1' },
+      { exchange: outage(), save: async (s) => void saved.push(s), now: () => NOW4 },
+    );
+    expect(saved[0]?.key).toBe('K');
+    expect(saved[0]?.activationId).toBe('act_1');
+  });
+
+  it('is long enough to stay under the cap that made this a bug', () => {
+    // The number and its reason, together. `keyCap` allows 40 checks per key per day, so a
+    // cooldown shorter than 36 minutes lets a broken licence exhaust it again and the fix
+    // is decorative. Asserted against the REAL cap rather than a copy of it.
+    const perDay = Math.floor(86_400_000 / RENEW_COOLDOWN_MS);
+    expect(perDay).toBeLessThan(CHECKS_PER_KEY_PER_DAY);
+    // And pinned against a literal, separately: the check above also passes if somebody
+    // raises the cooldown to a week, which would be an outage made permanent.
+    expect(RENEW_COOLDOWN_MS).toBe(45 * 60 * 1000);
   });
 });

@@ -74,6 +74,16 @@ export interface Card {
   readonly pictures: number;
   /** May the renderer put this on a timer? Only true where no decision is pending. */
   readonly transient: boolean;
+  /**
+   * When this catch started, so a card that never finishes can be found. `OPENWORK.md` 49, R-3.
+   *
+   * A `looking` card had no watchdog in either direction: nothing timed it out, and nothing
+   * noticed a worker that died holding it. An MV3 worker is torn down aggressively, and on
+   * the context-menu flow the tray is injected into a page Buki does not own — so
+   * "Reading the cover…" sat there for the life of the tab, dismissible only by hand, on
+   * somebody else's site.
+   */
+  readonly openedAt: number;
 }
 
 export interface CatchTray {
@@ -119,9 +129,47 @@ export interface CatchTray {
  * transition can learn a different answer. The compiler enumerating this list is what
  * caught it — adding the field to `Card` turned every transition red until it was named.
  */
-type Update = Omit<Card, 'id' | 'job' | 'image' | 'pictures'>;
+type Update = Omit<Card, 'id' | 'job' | 'image' | 'pictures' | 'openedAt'>;
 
-export function createCatchTray(): CatchTray {
+/**
+ * How long a catch may sit on "Reading the cover…" before the tray gives up on it.
+ * `OPENWORK.md` item 49, R-3.
+ *
+ * **THE NUMBER IS A CEILING ON THE PIPELINE, not a guess at it.** Every stage already
+ * bounds itself, and this has to clear the sum of them or it fires on catches that were
+ * going to succeed — which is worse than the bug, because it replaces a slow answer with a
+ * wrong error:
+ *
+ *     picture download        10s   `inlineImage.DOWNLOAD_TIMEOUT_MS`
+ *     vision, twice           24s   `llmVision.TIMEOUT_MS` × `ATTEMPTS`
+ *     catalogue grounding      6s   `openLibrary.TIMEOUT_MS`
+ *     licence exchange         8s   `license.EXCHANGE_TIMEOUT_MS`, when it blocks at all
+ *     ------------------------------
+ *                             48s
+ *
+ * 90s is that with room. `catchTray.test.ts` computes the sum from the real constants
+ * rather than trusting this comment, so raising any stage's ceiling without raising this
+ * one goes red.
+ *
+ * WHY THE TRAY NEEDS ONE AT ALL. The worker is what answers a catch, and an MV3 worker is
+ * torn down aggressively. If it dies mid-catch nothing ever arrives, and on the
+ * context-menu flow the card is sitting in a page Buki does not own — so it stayed for the
+ * life of the tab, dismissible only by hand.
+ */
+export const STALL_MS = 90_000;
+
+/**
+ * The catches that have stopped answering.
+ *
+ * Data rather than a timer, because the timer belongs in `content.ts` and nothing there can
+ * be imported by a test. Only `looking` counts: every other state is either an answer or
+ * already on its way out under `transient`.
+ */
+export function stalledJobs(cards: readonly Card[], now: number, ms: number = STALL_MS): string[] {
+  return cards.filter((c) => c.state === 'looking' && now - c.openedAt >= ms).map((c) => c.job);
+}
+
+export function createCatchTray(now: () => number = () => Date.now()): CatchTray {
   let seq = 0;
   let cards: Card[] = [];
 
@@ -152,6 +200,7 @@ export function createCatchTray(): CatchTray {
       id: held.id,
       job,
       pictures: held.pictures,
+      openedAt: held.openedAt,
       ...(held.image ? { image: held.image } : {}),
     };
   };
@@ -175,6 +224,7 @@ export function createCatchTray(): CatchTray {
         // flow makes: `background.ts` builds its Tweet as `imageUrls: [info.srcUrl]`, so
         // exactly one picture was sent to the model. The feed flow passes the real count.
         pictures: pictures ?? (image ? 1 : 0),
+        openedAt: now(),
         ...(image ? { image } : {}),
       });
       return true;
@@ -237,6 +287,7 @@ export function createCatchTray(): CatchTray {
         candidates: [],
         transient: true,
         pictures: 0, // a bare message is about no picture at all
+        openedAt: now(),
       });
     },
 

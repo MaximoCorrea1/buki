@@ -35,6 +35,20 @@ export interface ProState {
    * an error: it means "activate once more, then keep what comes back."
    */
   activationId?: string;
+  /**
+   * When the last renewal failed, so the next catch can decline to try again.
+   *
+   * **PERSISTED RATHER THAN HELD IN MEMORY, AND THAT IS THE WHOLE POINT.** `OPENWORK.md`
+   * item 49, R-2. An MV3 worker is torn down between clicks — it is why renewal happens on
+   * the catch instead of on a timer — so a cooldown in module scope is gone by the next
+   * catch and every catch exchanges again. `createSessionKeeper`'s latch is not this: it
+   * stops two catches in the same SECOND from exchanging twice, and remembers nothing after.
+   *
+   * Absent means "no failure outstanding", which is also every record written before
+   * 2026-08-27. Cleared on success, or the next failure is measured from a stale timestamp
+   * and the backoff is spent before it starts.
+   */
+  renewFailedAt?: number;
 }
 
 const EMPTY: ProState = { key: '', session: null };
@@ -60,10 +74,20 @@ export async function readPro(storage: StorageArea): Promise<ProState> {
   const got = await storage.get(PRO_KEY);
   const raw = (got as Record<string, unknown>)[PRO_KEY];
   if (!raw || typeof raw !== 'object') return EMPTY;
-  const { key, activationId } = raw as Record<string, unknown>;
+  const { key, activationId, renewFailedAt } = raw as Record<string, unknown>;
   return {
     key: typeof key === 'string' ? key : '',
     session: sessionFrom((raw as Record<string, unknown>)['session']),
+    // Same rule as `activationId` below, and the same trap: a reader that rebuilds a subset
+    // silently drops whatever it forgot, and the whole fix is inert. `Required<ProState>`
+    // in the round-trip test is what makes the compiler enumerate this interface, so a new
+    // field cannot be added without this line being written.
+    //
+    // `Number.isFinite`, not `typeof === 'number'`: a NaN out of user-editable storage
+    // makes every cooldown comparison false, which is the failure mode being fixed.
+    ...(typeof renewFailedAt === 'number' && Number.isFinite(renewFailedAt)
+      ? { renewFailedAt }
+      : {}),
     // WITHOUT THIS LINE THE WHOLE "activate once, validate forever" FIX IS INERT.
     //
     // `writePro` stores the whole state, but this reader rebuilt a two-field subset, so
@@ -139,6 +163,7 @@ export async function ensureSession(
 ): Promise<ProState> {
   if (!pro.key) return pro;
   if (!needsRenewal(pro.session, deps.now())) return pro;
+  if (coolingDown(pro, deps.now())) return pro;
 
   let result: Exchange;
   try {
@@ -162,7 +187,14 @@ export async function ensureSession(
     return next;
   }
 
-  if (result.retryable) return pro;
+  if (result.retryable) {
+    // The session is untouched — an outage must never sign a paying customer out — but the
+    // ATTEMPT is recorded, so the next catch backs off instead of exchanging again. Without
+    // this, a licence server having a bad afternoon burned all 40 of the day's checks and
+    // then met our own 429, which item 39 correctly made retryable, so it kept going.
+    await keep(marked(pro, deps.now()), deps.save);
+    return pro;
+  }
 
   /**
    * THE PAIRING SURVIVES A REFUSED RENEWAL, and C-3 is NOT fixed here. `OPENWORK.md` 48.
@@ -184,9 +216,37 @@ export async function ensureSession(
    * while unpaired.** The lapsed case self-heals with no re-paste at all, because renewal
    * resumes on the stored id. See `activateKey.activationFor`.
    */
-  const next = forgetSession(pro);
+  // Marked here too. A refusal sets `session: null`, and `needsRenewal(null)` is true for
+  // ever, so without the cooldown every catch after a revoked licence exchanges again.
+  const next = marked(forgetSession(pro), deps.now());
   await keep(next, deps.save);
   return next;
+}
+
+/**
+ * How long a failed renewal waits before the next catch tries again. `OPENWORK.md` 49, R-2.
+ *
+ * **The number comes from the cap it exists to respect.** `keyCap` allows
+ * `CHECKS_PER_KEY_PER_DAY = 40`, so anything shorter than 86,400,000 / 40 — thirty-six
+ * minutes — lets a broken licence exhaust the day's checks again and the backoff is
+ * decorative. 45 minutes leaves headroom for the one legitimate daily renewal and for a
+ * customer pressing Activate on the options page.
+ *
+ * It is also a CEILING on how long Pro stays dark after the customer fixes their card, and
+ * that is the trade. The grace window is seven days, so there are still 32 chances a day
+ * inside it — and pressing Activate goes through `activateKey.activate`, which does not
+ * consult this at all, so the deliberate fix is always immediate.
+ */
+export const RENEW_COOLDOWN_MS = 45 * 60 * 1000;
+
+/** Is a failed renewal still inside its backoff? One place, so two callers cannot disagree. */
+export function coolingDown(pro: ProState, now: number): boolean {
+  return pro.renewFailedAt !== undefined && now - pro.renewFailedAt < RENEW_COOLDOWN_MS;
+}
+
+/** The same state, carrying the moment its renewal failed. */
+function marked(pro: ProState, now: number): ProState {
+  return { ...pro, renewFailedAt: now };
 }
 
 /**
@@ -280,6 +340,10 @@ export function createSessionKeeper(deps: {
     // nothing never touches the latch and never waits behind somebody else's exchange.
     if (!pro.key) return Promise.resolve(pro);
     if (!needsRenewal(pro.session, deps.now())) return Promise.resolve(pro);
+    // The third, added with R-2. Through the SAME predicate `ensureSession` uses, because
+    // two places deciding when a backoff is over is how they come to disagree — and the
+    // one that would be wrong is this one, which is on the catch path.
+    if (coolingDown(pro, deps.now())) return Promise.resolve(pro);
 
     if (flight && flight.key === pro.key) return flight.run;
 

@@ -9,7 +9,13 @@ import { shiftOf, travelFrom } from './slotTravel';
 import { foundHeading, INTENT_LABEL, PROVENANCE, WALL } from './trayCopy';
 import { resolveTheme, THEME_KEY } from './themeChoice';
 import manrope from '../../fonts/manrope.woff2';
-import { createCatchTray, type Candidate, type Card } from './catchTray';
+import {
+  createCatchTray,
+  stalledJobs,
+  STALL_MS,
+  type Candidate,
+  type Card,
+} from './catchTray';
 import { postKey } from './lookupMemo';
 import { onRealClick } from './realClick';
 import { isFeedHost } from './feedHost';
@@ -923,9 +929,38 @@ function swapCard(card: Card): void {
   );
 }
 
+/**
+ * THE WATCHDOG ON A CATCH THAT NEVER ANSWERS. `OPENWORK.md` item 49, R-3.
+ *
+ * Armed from `tick` rather than from its own interval, because `tick` already runs on every
+ * paint and a card opening IS a paint — so the timer exists from the moment the card does,
+ * with no second clock to keep alive in a content script.
+ *
+ * `stalledJobs` decides; this only asks. The check is re-run at fire time because a card
+ * that answered in the meantime is no longer looking, and failing it then would replace a
+ * real answer with an error.
+ */
+const watching = new Map<number, number>();
+
+function armWatchdog(card: Card): void {
+  if (card.state !== 'looking' || watching.has(card.id)) return;
+  watching.set(
+    card.id,
+    window.setTimeout(() => {
+      watching.delete(card.id);
+      if (!stalledJobs(tray.list(), Date.now()).includes(card.job)) return;
+      // Names what failed and does not apologise, and says what to do next. A worker that
+      // was torn down is not something the reader did.
+      tray.fail(card.job, 'Buki stopped reading that cover. Press again to try.');
+      paintTray();
+    }, STALL_MS),
+  );
+}
+
 /** Only a message with nothing left to decide is allowed to leave on its own. */
 function tick(cards: Card[]): void {
   for (const card of cards) {
+    armWatchdog(card);
     if (!card.transient || leaving.has(card.id)) continue;
     leaving.set(
       card.id,
@@ -944,6 +979,14 @@ function tick(cards: Card[]): void {
     if (cards.some((c) => c.id === id)) continue;
     window.clearTimeout(timer);
     leaving.delete(id);
+  }
+  // The same sweep for the watchdogs, and for the same reason: a card dismissed while its
+  // catch was still running leaves a timer holding a closure over it. Also disarms a card
+  // that ANSWERED, so a slow-but-successful catch cannot be failed by its own watchdog.
+  for (const [id, timer] of watching) {
+    if (cards.some((c) => c.id === id && c.state === 'looking')) continue;
+    window.clearTimeout(timer);
+    watching.delete(id);
   }
 }
 

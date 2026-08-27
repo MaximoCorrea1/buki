@@ -9,7 +9,7 @@ const FIELDS = 'title,author_name,cover_i,isbn';
  * on 2026-08-04). Waiting 10s to learn that buys nothing - the recognizer now treats a
  * silent catalogue as "unverified" rather than as failure, so failing fast IS the feature.
  */
-const TIMEOUT_MS = 6_000;
+export const TIMEOUT_MS = 6_000;
 
 interface OlDoc {
   title?: string;

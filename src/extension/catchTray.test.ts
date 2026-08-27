@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createCatchTray } from './catchTray';
+import { createCatchTray, stalledJobs, STALL_MS } from './catchTray';
+import { DOWNLOAD_TIMEOUT_MS } from './inlineImage';
+import { EXCHANGE_TIMEOUT_MS } from './license';
+import { TIMEOUT_MS as VISION_MS, ATTEMPTS as VISION_TRIES } from '../recognizer/llmVision';
+import { TIMEOUT_MS as CATALOGUE_MS } from '../recognizer/openLibrary';
 
 const DUNE = { title: 'Dune', author: 'Frank Herbert' };
 const UBIK = { title: 'Ubik', author: 'Philip K. Dick' };
@@ -366,5 +370,86 @@ describe('the picture count a card carries', () => {
 
     tray.done('j', 'Saved');
     expect(tray.list()[0]?.pictures, 'lost on done').toBe(4);
+  });
+});
+
+/**
+ * R-3. `OPENWORK.md` item 49. A card that never finishes.
+ *
+ * The worker answers a catch, and an MV3 worker is torn down aggressively. If it dies
+ * mid-catch nothing ever arrives — and on the context-menu flow the card is injected into a
+ * page Buki does not own, so "Reading the cover…" stayed for the life of the tab,
+ * dismissible only by hand. Nothing timed it out and nothing noticed.
+ */
+describe('a catch that stops answering', () => {
+  const T0 = Date.UTC(2026, 7, 17, 12, 0, 0);
+  const at = (ms: number) => createCatchTray(() => T0 + ms);
+
+  it('records when the catch started', () => {
+    const tray = at(0);
+    tray.open('j', 'Reading the cover…', 'https://p.test/1.jpg');
+    expect(tray.list()[0]?.openedAt).toBe(T0);
+  });
+
+  it('finds a looking card that has run past the ceiling', () => {
+    const tray = at(0);
+    tray.open('j', 'Reading the cover…');
+    expect(stalledJobs(tray.list(), T0 + STALL_MS)).toEqual(['j']);
+  });
+
+  it('leaves a catch that is merely slow alone', () => {
+    // Firing early replaces a slow answer with a wrong error, which is worse than the bug.
+    const tray = at(0);
+    tray.open('j', 'Reading the cover…');
+    expect(stalledJobs(tray.list(), T0 + STALL_MS - 1)).toEqual([]);
+  });
+
+  it('ignores every state that is not still looking', () => {
+    // An answer is an answer however old the card is, and the other states already leave
+    // on their own under `transient`. Only `looking` can be stuck.
+    const tray = at(0);
+    tray.open('a', 'Reading the cover…');
+    tray.open('b', 'Reading the cover…');
+    tray.open('c', 'Reading the cover…');
+    tray.resolve('a', [{ book: { title: 'Dune', author: 'Frank Herbert' } }], 'vision');
+    tray.fail('b', 'no');
+    expect(stalledJobs(tray.list(), T0 + STALL_MS * 10)).toEqual(['c']);
+  });
+
+  it('keeps openedAt across a state change, so age is measured from the START', () => {
+    // Measuring from the last transition would restart the clock on a retry and the
+    // watchdog would never fire on the catch that needs it most.
+    //
+    // AN ADVANCING CLOCK, and that is the whole test. The first version used the fixed one
+    // above, so `openedAt: now()` on every transition was INVISIBLE to it — the mutation
+    // survived because a clock that never moves cannot detect a clock being re-read.
+    let clock = T0;
+    const tray = createCatchTray(() => clock);
+    tray.open('j', 'Reading the cover…');
+    clock = T0 + 30_000;
+    tray.retry('j', 'Trying the words');
+    expect(tray.list()[0]?.openedAt, 'the retry restarted the catch clock').toBe(T0);
+  });
+
+  it('still counts a retried catch as stalled once the ORIGINAL start is old enough', () => {
+    // The consequence, at the boundary that matters. A catch that retries at 60s and then
+    // dies must still be reachable by the watchdog at 90s from when it began.
+    let clock = T0;
+    const tray = createCatchTray(() => clock);
+    tray.open('j', 'Reading the cover…');
+    clock = T0 + 60_000;
+    tray.retry('j', 'Trying the words');
+    expect(stalledJobs(tray.list(), T0 + STALL_MS)).toEqual(['j']);
+  });
+
+  it('clears the ceiling the pipeline can legitimately need', () => {
+    // THE NUMBER, DERIVED. Computed from the real constants rather than from the comment
+    // beside it, so raising any stage's own ceiling without raising this one goes red —
+    // and a watchdog that fires inside the budget turns slow catches into false errors.
+    const budget = DOWNLOAD_TIMEOUT_MS + VISION_MS * VISION_TRIES + CATALOGUE_MS + EXCHANGE_TIMEOUT_MS;
+    expect(STALL_MS).toBeGreaterThan(budget);
+    // Pinned against a literal too. The check above also passes at a week, which would
+    // leave the card exactly as stuck as it was.
+    expect(STALL_MS).toBe(90_000);
   });
 });

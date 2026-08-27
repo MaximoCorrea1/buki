@@ -47,10 +47,10 @@ export const GEMINI: Omit<VisionConfig, 'apiKey'> = {
  * With two attempts the ceiling is unchanged; what changes is that a hung request no
  * longer takes the whole catch down with it.
  */
-const TIMEOUT_MS = 12_000;
+export const TIMEOUT_MS = 12_000;
 
 /** One retry. A second failure is a pattern rather than a blip, and someone is waiting. */
-const ATTEMPTS = 2;
+export const ATTEMPTS = 2;
 
 /** Long enough for a rate-limit window to move, short enough not to be felt. */
 const BACKOFF_MS = 400;

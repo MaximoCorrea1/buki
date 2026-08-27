@@ -106,3 +106,41 @@ describe('a picture is only a picture X served', () => {
     );
   });
 });
+
+/**
+ * THE WATCHDOG'S WIRING. `OPENWORK.md` item 49, R-3.
+ *
+ * `stalledJobs` and `STALL_MS` are proved in `catchTray.test.ts` with real values. What
+ * cannot be proved there is that `content.ts` arms anything at all — and there is an
+ * ordering trap in the one place it does.
+ */
+describe('a stuck card is armed with a watchdog', () => {
+  const code = content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+
+  it('arms it BEFORE the transient guard, which would otherwise skip every looking card', () => {
+    // THE TRAP, and it is one line wide. `tick` continues on `!card.transient`, and a
+    // `looking` card is precisely the one with `transient: false` — so an `armWatchdog`
+    // call placed after that guard is never reached by the only state it exists for. The
+    // code would read correctly and do nothing.
+    const arm = code.indexOf('armWatchdog(card);');
+    const guard = code.indexOf('if (!card.transient');
+    expect(arm, 'nothing arms a watchdog').toBeGreaterThan(-1);
+    expect(guard, 'the transient guard has moved; re-check this ordering').toBeGreaterThan(-1);
+    expect(arm, 'the watchdog is armed after a guard that skips every looking card').toBeLessThan(
+      guard,
+    );
+  });
+
+  it('RE-ASKS at fire time rather than trusting the card it closed over', () => {
+    // A catch that answered between arming and firing must not be failed by its own
+    // watchdog. The timer holds a card from 90 seconds ago; the tray holds the truth.
+    expect(code).toMatch(/stalledJobs\(tray\.list\(\), Date\.now\(\)\)/);
+  });
+
+  it('disarms on any state that is no longer looking, not merely on the card vanishing', () => {
+    // The sweep has to include `state === 'looking'`. Clearing only when the card is GONE
+    // leaves a live timer on every answered catch, and each one wakes up 90 seconds later
+    // to ask a question it can no longer act on.
+    expect(code).toMatch(/watching\)\s*\{[\s\S]{0,160}?c\.state === 'looking'/);
+  });
+});
