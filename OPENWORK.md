@@ -1,20 +1,21 @@
 # Open work
 
-**State as of 2026-08-25**, verified by running the commands, not from memory:
+**State as of 2026-08-27**, verified by running the commands, not from memory:
 
 | | |
 | --- | --- |
-| Tests | **808 across 66 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **856 across 71 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
+| Reliability | **The catch path had a self-inflicted outage and it is fixed, 2026-08-27** (item 58 in §5, commit `18f89d7`). `recognizeBook` grounded its guesses with a bare `Promise.all` and `MAX_BOOKS` is 20, so a nineteen-book photograph opened **nineteen simultaneous connections to openlibrary.org** and was answered `HTTP 429`. The rate-limited address then went silent, sixteen 6s timeouts cleared `TOLERANCE` of 3 six times over, and the catalogue was gone for the full two-minute `COOLDOWN_MS`. It presented as *"covers are not loading"*. Bounded at `GROUND_AT_ONCE = 4` by `src/recognizer/mapPool.ts`, and `warmCovers` reuses the same pool so the fix was not undone one hostname over |
 | Mark | **the catcher** — a blue ball with two eyes, from Maximo's drawing, 2026-08-17. It replaced three spines on all six surfaces plus the rasteriser. `tools/mark.mjs` |
 | Generations | landing **third**; popup, setup page and catch tray **fourth** (iOS neutrals, 2026-08-16). They are deliberately different — see `docs/brand.md`, *The iOS turn* |
 | Security | **The six pre-launch P0s are closed, 2026-08-25** (items 38-43), **and item 44 with them**. `/api/vision` rebuilds the request body instead of relaying it, the licensed path has a ceiling and an off switch, a Polar 5xx no longer deletes a subscriber's session, a hostile page cannot drive the tray, the card's × is not a free read, and the activation reuse is extracted and tested with real values. **Evidence: `docs/REVIEW-2026-08-24-prelaunch.md`; order and status: THE LANE below.** The wire contract (item 44) is closed too, which was the one piece of work with a real deadline: AC-3, AC-4, AC-7, AC-8 and the extension-id blind spot. **Nothing security-shaped is open.** |
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
-| Branch | **`main`**, and `main` = `origin/main`, tree clean. `buki-hardening` (15 commits) was merged and pushed 2026-08-18; `buki-pro` is older history. Both still exist on the remote as markers. **41 commits since `d3e5923`, 2026-08-18 through 08-25** (was 33 at the end of 08-24) (`git rev-list --count d3e5923..HEAD`). **The figure beside it is written INTO the commit that changes it and is therefore wrong by one the moment it lands — that has happened four times. Run the probe.** |
+| Branch | **`main`**, tree clean. **28 commits are UNPUSHED** as of 2026-08-27 (`git rev-list --count origin/main..HEAD`) - the push has been blocked by the permission classifier since 08-25 and needs Maximo. **63 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). `buki-hardening` was merged and pushed 2026-08-18; `buki-pro` is older history. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **20**, and the number went UP on purpose. It read 14 at the start of 2026-08-25, fell to 8 as the six P0s and item 44 closed, then rose to 20 when **the entire rest of the 2026-08-24 review was filed as items 45-56** rather than left inside a 593-line document. **Eight are Maximo's (1, 2, 3, 9, 26, 35, 37, 56); twelve are agent work.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`) |
+| Open items | **19.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Six are Maximo's (2, 3, 9, 35, 37, 56); thirteen are agent work (36, 45-55, 57).** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -182,7 +183,7 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 kept because the reasoning explains the product's shape, and it carries its own
 `PARTLY SUPERSEDED` banner naming what stopped being true. Do not update it; supersede it.
 
-**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-25-p0-fixes.md`
+**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-27-launch-prep.md`
 (2026-08-25, the six P0s fixed and the rest of the review filed). It supersedes
 `buki-handoff-2026-08-24-prelaunch-review.md`, which described the same findings before any
 of them were fixed, which in turn superseded `buki-handoff-2026-08-18-launch-readiness.md`.
@@ -259,7 +260,15 @@ unblocks.
 > TypeScript**, so it compiled, passed every test, and dropped the id. Both call sites now
 > forward it, asserted in `proState.test.ts`.
 
-- [ ] **1. Create the Polar product.** **Field by field, with the reasoning and a curl that
+- [x] **1. Create the Polar product.** **DONE 2026-08-27.** The License Key benefit is
+  attached to **both** products. Every field was already right - prefix `BUKI`, expiry off,
+  activation limit 5, customer can deactivate, usage limit empty - but the benefit had never
+  been ATTACHED, which is the silent failure `polar-setup.md` warns about by name: a
+  subscriber pays, gets no key, and refunds rather than filing a bug. The LANE row was struck
+  the same day and this checkbox was not, which is how the file came to disagree with itself.
+  Original text follows.
+
+- [ ] ~~**1. Create the Polar product.**~~ **Field by field, with the reasoning and a curl that
       proves it before any code exists: `docs/superpowers/polar-setup.md`.**
 
       The short version. Two products, one per billing interval: Buki Pro Monthly $4 and
@@ -954,6 +963,48 @@ unblocks.
         `content.ts:941`. `trayCopy.ts` lists four rules the wall must obey; the tests check
         the STRINGS. **Nothing checks that `wallBody` renders `WALL.free` as a real button —
         rule 3, the line between an offer and a dark pattern.**
+
+- [ ] **57. Find a book from a PASSAGE, not a cover.** Maximo, 2026-08-27:
+  *"HUGE IDEA: FIND ANY BOOK FROM A PASSAGE, PHRASE, PAGE, IS THAT DOABLE?"*
+
+  **Reading it was never the hard part** - a photograph of a page is just another image and
+  the vision model already takes images. **Grounding it is the feature.** A cover read is
+  checkable (title and author against the catalogue, which is what lets the tray say *read
+  from the cover*); a passage appears nowhere in catalogue metadata, so without a check the
+  model answers confidently and often wrongly, which is this product's trust story inverted.
+
+  **PROBED 2026-08-27, and the probe killed the obvious design.**
+  `https://openlibrary.org/search/inside.json`, three queries, one at a time with a 2.5s
+  pause because nineteen concurrent searches had earned an HTTP 429 the same morning:
+
+  | Query | Result |
+  | --- | --- |
+  | *"It is a truth universally acknowledged..."* | 200, **4850ms**, 2,228 hits. **Pride and Prejudice is NOT in the top three.** A KS3 revision guide is, and a volume of criticism |
+  | An Ecclesiastes passage | 200, 4194ms, 1,100 hits. Thematically adjacent books, not the source |
+  | A deliberately generic sentence | 200, 5025ms, 102 hits, all noise |
+
+  Not a fluke: anthologies, textbooks, criticism and quotation collections all contain the
+  passage and compete with the source on equal footing. Also **4-5s against `openLibrary.ts`'s
+  6s `TIMEOUT_MS`**, and a raw Elasticsearch document (`hits.hits[]` with `highlight`,
+  `_score`, `fields`) where titles are often absent and authors always are, so every hit
+  costs a second lookup. **One encouraging result:** the generic sentence returned noise rather
+  than a confident wrong answer, so the failure mode is "nothing useful" and not "the wrong
+  book stated firmly".
+
+  **So "search the passage, take the top hit" would put a revision guide on the shelf and call
+  it Jane Austen.** Dead.
+
+  **The inverted design might live:** the model names a book, and full text is scoped to THAT
+  book to ask a precision question - *is this passage in it?* - rather than a ranking one. It
+  is the shape `recognizeBook` already has (the model proposes, the catalogue disposes) and
+  it fails the same honest way, landing on `unverified`. **Unprobed and blocking: whether
+  `search/inside` can be scoped to a work or edition at all.** One request answers it. If it
+  cannot, the answer becomes Google Books full text - better ranking, a key, a quota.
+
+  **AFTER LAUNCH, and the next step is that one probe rather than a spec.** The idea stays
+  worth doing: passage screenshots are more common on X than photographs of covers, and
+  *"reads the picture, not the caption"* bends to *"whether it is a cover or a page"* without
+  breaking. Full record: `docs/superpowers/specs/2026-08-27-passage-probe.md`.
 
 - [ ] **56. THE ONE THING THAT COULD NOT BE VERIFIED STATICALLY. Maximo, one command.**
       *(review §7)*
@@ -1701,7 +1752,16 @@ needs a credential or a dashboard is the shell around it.
       privacy policy, because Chrome Web Store policy permits affiliate links only when they
       are disclosed. So this is one paste, not a feature.
 
-- [ ] **26. Set a hard spend cap and an alert on the Gemini key.** Maximo only, in Google
+- [x] **26. Set a hard spend cap and an alert on the Gemini key.** **CAP SET 2026-08-27, at
+  $5.** At the `$0.00011` per catch that `entitlement.ts` and `policy.ts` both assume,
+  that is roughly **45,000 catches, or 4,500 users' entire free trials** - ample for launch.
+  **TWO FOLLOW-UPS REMAIN AND BOTH ARE MAXIMO'S**, tracked here rather than as a new item
+  because they are the same control: (a) confirm it STOPS spending rather than emailing,
+  because a Google Cloud *budget* is an alert by default and caps nothing; (b) set the alert
+  BELOW the cap, around 50%, so the first news is not the outage. **Raise it the day there is
+  a paying subscriber** - a tripped cap takes Pro down with it. Original text follows.
+
+- [ ] ~~**26. Set a hard spend cap and an alert on the Gemini key.**~~ Maximo only, in Google
       Cloud billing, and it is the **only** control that bounds what abuse can cost. Both
       APIs identify the caller by an `Origin` header, which anything that is not a browser
       can set, and the extension id is public the moment the item is listed. Everything
@@ -1838,6 +1898,79 @@ proxy makes false, and both are rewritten in the same commit as the proxy.
 ---
 
 ## 5. Traps that have already cost time
+
+### THE 2026-08-27 SET. Every one of these made an instrument LIE, not a test fail.
+
+**They are grouped because they share a shape: each produced a confident GREEN over broken
+work.** A red test is a gift. These are the other kind.
+
+**T1. A self-referential assertion pins nothing.**
+`expect(peak).toBeLessThanOrEqual(GROUND_AT_ONCE)` looks like a ceiling and is not one:
+raise `GROUND_AT_ONCE` to 20 and it becomes `19 <= 20`, green, with the HTTP 429 fully
+restored. **Pin the CONSTANT against a literal, separately from the behaviour asserted
+against the constant.** Found by mutating the constant, which is the only thing that shows
+it - reading the test does not, because it reads correctly.
+
+**T2. A fixture smaller than the thing it guards proves nothing.**
+`mapPool`'s completeness tests used two and three items against a pool of four, so a
+mutation that stopped after the first batch survived. **The guard's fixture must be bigger
+than the guard's own bound.**
+
+**T3. Scattered failures are not the failure mode. Total failure is.**
+The first attempt at "one bad cover must not strand the rest" failed two of eight and passed
+either way, because the surviving pool workers drain the cursor between them. The tail is
+only stranded when EVERY worker dies. **Fail exactly `COVERS_AT_ONCE` - the workers take
+items 0..n-1 before any of them awaits.** Two attempts before the test could tell the two
+implementations apart.
+
+**T4. A `?raw` presence guard is satisfied by the COMMENT that explains it.**
+`expect(storeShots).toContain('ten catches free')` passed with the phrase DELETED from the
+frame, because the comment above the frame saying *"pricing.test.ts holds 'Ten catches free'
+to TRIAL_CATCHES"* satisfied it. **Extract the displayed strings and assert over those**
+(`/\b(?:head|sub):\s*'([^']*)'/g`), never over the file. This is §5's oldest lesson in its
+purest form and it was re-learned the same week it was written down.
+
+**T5. An ABSENCE proof can be too broad, and the suite will say so.**
+Banning `candidates.length > 1` from `content.ts` to stop a heading being gated turned red
+on the line that decides whether to draw *Save all* - where a batch button on one book is
+exactly what should not be drawn. **Scope an absence proof to the exact shape that was
+removed**, here `who.append(mk, provenanceOf(card))`.
+
+**T6. `execSync` from a node script does NOT get the Bash tool's shell.**
+It spawns **cmd.exe**, which cannot resolve `./node_modules/.bin/vitest` *or even the bare
+word* `node`, because the inherited PATH is Unix-form (`/c/Program Files/nodejs`). The
+error returns in Spanish. **Build the command from `process.execPath`.**
+
+**T7. STRIP THE ESC BYTE, not just the `[32m` tail. Three occurrences in one session.**
+`out.replace(/\[[0-9;]*m/g, '')` leaves `\x1b` in place, so `/Tests\s+(\d+)/` never
+matches - `\s` does not match ESC - and **every mutation reports SURVIVED against a harness
+that read nothing.** It cost five round trips and two wrong hypotheses (maxBuffer, then a
+network call) before the raw bytes were printed. **Use `/\x1b\[[0-9;]*m/g`, and make the
+harness ABORT when it cannot parse a total rather than scoring it as zero.**
+
+**T8. Backticks, again, and now inside CSS-in-a-template-literal.**
+`.buki-eyebrow` written with backticks inside a CSS comment in `content.ts` **closed the
+template literal**, and `tsc` reported `Property 'buki' does not exist`. `String.raw` does
+not help - a backtick terminates the literal regardless. **Five occurrences across this
+session**, every one from reaching for `node -e` with a regex or an apostrophe in it. The
+remedy is written in the `buki-shell-traps` memory and was not followed: **write content
+with the Write tool, apply it with `node <file>.mjs`.**
+
+**T9. THE LANE AND THE ITEM BODIES DRIFT APART, and the stale half is read second.**
+Items 1 and 26 had their LANE rows struck the moment they closed and their Part 2 checkboxes
+left open, so this file disagreed with itself for half a day and the header's open count was
+wrong. Item 57 got a LANE row and no body at all - a row pointing at nothing. **The probe:
+the numbers in `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must be the same SET as
+`grep -o '^- \[ \] \*\*[0-9]*' OPENWORK.md`.** Run it before trusting the header.
+
+**T10. A comment can be the reason a bug was reasonable to write.**
+`openLibrary.ts` said *"no hard rate quota (unlike keyless Google Books, which 429s)"*.
+There is no PUBLISHED quota, which is not the same as no quota, and that sentence is very
+likely why an unbounded `Promise.all` over twenty guesses looked safe. **When a bug is
+found, read what the code says about itself and correct THAT too** - struck rather than
+deleted, because the wrong belief explains the code above it.
+
+
 
 - **THE GUARD YOU JUST WROTE IS THE ONE YOU ARE LEAST ABLE TO SEE THROUGH. Mutate it. 2026-08-25.**
   Every P0 fix this session was mutation-tested after it went green, and **one of the new
