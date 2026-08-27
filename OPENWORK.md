@@ -190,8 +190,9 @@ kept because the reasoning explains the product's shape, and it carries its own
 `PARTLY SUPERSEDED` banner naming what stopped being true. Do not update it; supersede it.
 
 **The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-27-review-lane.md`
-(2026-08-27, the second pair on that date: items 45-48 closed, items 58 and 59 filed out of
-them). It supersedes `buki-handoff-2026-08-27-launch-prep.md`
+(2026-08-27 evening, the second pair on that date: **items 45, 46, 47, 48 and 49 closed, item
+50 taken to five of nine**, items 58 and 59 filed out of 47 and 48, and the mutation harness
+promoted out of `zzz-` into `tools/`). It supersedes `buki-handoff-2026-08-27-launch-prep.md`
 (2026-08-25, the six P0s fixed and the rest of the review filed). It supersedes
 `buki-handoff-2026-08-24-prelaunch-review.md`, which described the same findings before any
 of them were fixed, which in turn superseded `buki-handoff-2026-08-18-launch-readiness.md`.
