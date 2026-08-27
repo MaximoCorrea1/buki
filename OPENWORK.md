@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **856 across 71 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-25). **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **867 across 72 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -15,7 +15,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27. `main` = `origin/main` at `60b98e4`, 0 ahead** (`git rev-list --count origin/main..HEAD`). Twenty-nine commits went up in one go: the push had been blocked by the permission classifier since 08-25 and cleared on this attempt. **This row asserted "28 UNPUSHED" for about thirty seconds before the push succeeded, which is the drift this file keeps paying for in miniature - it was corrected in the same session rather than inherited.** **63 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). `buki-hardening` was merged and pushed 2026-08-18; `buki-pro` is older history. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **19.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Six are Maximo's (2, 3, 9, 35, 37, 56); thirteen are agent work (36, 45-55, 57).** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **18.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Six are Maximo's (2, 3, 9, 35, 37, 56); twelve are agent work (36, 46-55, 57).** Item 45 closed 2026-08-27. It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -39,7 +39,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~30~~ | agent | ~~Extract `handleSaveBook` so the `?raw` guard's blind spot closes~~ **DONE 2026-08-18** (`99d6cae`) | — |
 | ~~34~~ | ~~Maximo, then agent~~ | ~~**NOBODY CAN BUY.**~~ **DONE 2026-08-18.** Both checkout links are in `src/shared/pricing.ts` and on the Pro card, inside `#pricing` where the wall lands. Guarded, and earned with an A/B. Original text: Polar gives each product a checkout link and neither exists yet, so all three in-extension CTAs land on the landing's `#pricing`, whose Pro button sends you to GitHub to install the extension you already have. **The funnel is a loop with no till in it.** Recorded in `polar-setup.md` §9 and in a superseded ledger, never in this table until 2026-08-18 | every sale |
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
-| **45** | agent | **The price is spelled in three places `pricing.test.ts` cannot see**, and one of them is store copy that cannot be edited after submission without another review cycle (M-4) | items 9 and 11, irreversibly |
+| ~~45~~ | agent | ~~The price is spelled in three places `pricing.test.ts` cannot see~~ **DONE 2026-08-27.** **It was TWO places, not three, and the prescribed fix was wrong.** `launch.md` does not state the price - its only `$29` is *"subscriber pays $29, gets nothing to paste"*, prose about a failure mode. And *"widen the glob, same shape, one line"* is **red on arrival**: measured, the blunt `$N` rule finds ~40 undeclared figures across 12 files and every one is a COST (`$0.00011` a catch, the `$5` cap, `$3.46`, `$2.50/M`). The reflex answer is an allowlist, and an allowlist holding `4.99` waves through *"Buki Pro is $4.99 a month"*. The unit is a **price CLAIM** - a figure whose next words say how long it buys. **7 mutations, 7 caught, and the first pass caught 6: deleting the price sentence from `listing.md` left the guard green because line 23's editorial note QUOTING that copy satisfied it** | items 9 and 11, irreversibly |
 | **46** | agent | **Four privacy and permission claims that are not true**, one falsifiable with DevTools in thirty seconds (TM-4, TM-7, TM-8, TM-11, TM-14) | store review |
 | **47** | agent | **Re-catching a book destroys the good record** (ADV-6, VERIFIED), plus five ways two books become one | the shelf, which is the product |
 | **48** | agent | **The activation lifecycle's last three holes** (ADV-3 VERIFIED, ADV-8, C-3). All three burn the five permanent slots | every subscriber, eventually |
@@ -736,23 +736,46 @@ unblocks.
 > means a number came off a running probe. Everything else is an agent's claim with evidence
 > cited — good, and not the same thing. **Probe before you plan around any of it.**
 
-- [ ] **45. THE PRICE IS SPELLED IN THREE PLACES THE GUARD CANNOT SEE, AND ONE OF THEM
-      CANNOT BE EDITED AFTER SUBMISSION.** *(review §4, M-4)*
+- [x] **45. THE PRICE IS SPELLED IN THREE PLACES THE GUARD CANNOT SEE, AND ONE OF THEM
+      CANNOT BE EDITED AFTER SUBMISSION.** *(review §4, M-4)* **DONE 2026-08-27.**
 
-      `pricing.test.ts:34` guards exactly two surfaces: the landing and `docs/pricing.md`.
-      **The Web Store listing, the launch runbook and `llms.txt` all spell the price and all
-      sit outside it.** `host.test.ts` already globs all three files for the production
-      domain; the price guard does not glob them.
+      `pricing.test.ts:34` guarded exactly two surfaces: the landing and `docs/pricing.md`.
 
-      **Why this is first.** `docs/store/listing.md` is the copy pasted into the store form,
+      **Why this was first.** `docs/store/listing.md` is the copy pasted into the store form,
       and **store copy cannot be changed after submission without another review cycle** —
       days to weeks, per `launch.md`. A price that drifts between `pricing.ts` and the store
       listing is a false statement made to somebody at the moment they decide to pay, and it
-      is the one class of error you cannot quietly fix the next morning.
+      is the one class of error you cannot quietly fix the next morning. That reasoning held.
 
-      Fix: widen `pricing.test.ts`'s glob to the three files `host.test.ts` already covers.
-      Same shape, same mechanism, one line. **Do it before item 9's screenshots**, because a
-      screenshot showing a stale price is a fourth uneditable copy.
+      **TWO THINGS THE ITEM SAID WERE FALSE, and both were found by probing before planning.**
+
+      1. **It is two surfaces, not three.** `docs/store/launch.md` does not state the price.
+         Its only `$29` is *"subscriber pays $29, gets nothing to paste"* — prose about a
+         failure mode — and its other figures are costs and caps: `$5`, `$3.46`, `$0.00011`,
+         `$1.20`, `$0.54`. The real surfaces are **`docs/store/listing.md`** (uneditable after
+         submission) and **`docs/llms.txt`** (what an assistant answers when somebody asks
+         what Buki costs).
+      2. **The prescribed fix — *"widen the glob to the three files `host.test.ts` already
+         covers, same shape, one line"* — is RED ON ARRIVAL.** Measured across 223 files: the
+         blunt *"every `$N` must be declared"* rule finds ~40 undeclared figures in 12 files,
+         and **every one of them is a cost, not a price.** The reflex response is an
+         allowlist, and an allowlist holding `4.99` waves through a store listing reading
+         *"Buki Pro is $4.99 a month"*. **The one-line fix destroys the guard it is meant to
+         extend.**
+
+      **The unit is a PRICE CLAIM, not a dollar figure**: a number whose next words say how
+      long it buys. `$4 a month` is a claim; `$0.00011` a catch is arithmetic; `$15 per
+      dispute` is Polar's fee. Measured: 36 claims across the repo, and the only non-Buki ones
+      are a rival's in `competitor-profiles/` (already excluded by `host.test.ts`'s own
+      precedent) and **Polar's `$2/month payout fee` inside `docs/superpowers/`** — which is
+      the single, measured exclusion the new glob carries.
+
+      **7 mutations, 7 caught — AND THE FIRST PASS CAUGHT 6.** Deleting the price sentence
+      from `listing.md` left the suite green: the file states the price twice, and line 23's
+      editorial note *quoting* that copy satisfied a guard that asked whether the FILE
+      mentions a price. **Commentary about the copy standing in for the copy** — the `?raw`
+      failure of §5, one level up. The guard now reads the *Detailed description* section,
+      and renaming that heading fails loudly.
 
 - [ ] **46. FOUR PRIVACY AND PERMISSION CLAIMS THAT ARE NOT TRUE, AND ONE A REVIEWER CAN
       FALSIFY IN THIRTY SECONDS.** *(review §5, Client/privacy)*

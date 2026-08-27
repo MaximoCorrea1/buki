@@ -117,6 +117,156 @@ describe('the price is one number', () => {
 });
 
 /**
+ * THE PRICE ON THE SURFACES THE GUARD ABOVE CANNOT SEE. `OPENWORK.md` item 45.
+ *
+ * `SURFACES` covers the landing and `docs/pricing.md` with a blunt rule: every `$N` must be
+ * one this repo declared. That works there because those two files talk about nothing but
+ * what Buki costs. It does not generalise, and the item's own prescription — *"widen the
+ * glob to the three files `host.test.ts` already covers, same shape, one line"* — was
+ * MEASURED on 2026-08-27 and is wrong twice over:
+ *
+ * 1. **It is red on arrival.** Across the shipped docs the blunt rule finds ~40 undeclared
+ *    figures in 12 files, and every single one is a COST rather than a price: `$0.00011` a
+ *    catch, the `$5` Gemini cap, `$3.46` for the attacker request, `$2.50/M` in and `$15/M`
+ *    out, `$1.20 per 1 million events`. The reflex answer is to allowlist those numbers,
+ *    and an allowlist containing `4.99` is a guard that waves through a listing reading
+ *    *"Buki Pro is $4.99 a month"*. The fix that looks like one line destroys the guard.
+ * 2. **It names three files and there are two.** `docs/store/launch.md` does not state the
+ *    price. Its only `$29` sits in *"subscriber pays $29, gets nothing to paste"* — prose
+ *    about a failure mode, with no period beside it.
+ *
+ * So the unit is not a dollar figure, it is a PRICE CLAIM: a figure whose next words say
+ * how long it buys. `$4 a month` is a claim; `$0.00011` a catch is arithmetic; `$15 per
+ * dispute` is Polar's fee. Only the first can be a false statement made to somebody at the
+ * moment they decide to pay, and `docs/store/listing.md` is the copy pasted into the store
+ * form, which CANNOT BE EDITED AFTER SUBMISSION without another review cycle.
+ */
+
+/**
+ * A per-period price claim, tolerating markup between the number and the period because
+ * the landing splits them: `<b>$4</b><span>a month`.
+ */
+const CLAIM =
+  /\$([0-9]+(?:\.[0-9]{1,2})?)\s*(?:<[^>]*>\s*)*(?:a|an|per|each|\/)\s*(?:<[^>]*>\s*)*(?:month|year|mo|yr|mth)\b/gi;
+
+const claims = (body: string): number[] => [...body.matchAll(CLAIM)].map((m) => Number(m[1]));
+
+/**
+ * Every shipped document, found by LOOKING rather than by list — the same argument
+ * `host.test.ts` makes, and for the same reason: the last rename broke on files the list
+ * did not know about.
+ *
+ * `docs/superpowers/**` is the one exclusion and it is measured, not assumed:
+ * `specs/2026-08-09-buki-pro-design.md` carries **Polar's** fee table — `$15 per dispute,
+ * $2/month payout fee` — so it states a third party's price the same way
+ * `competitor-profiles/` states a rival's, and `host.test.ts` excludes that folder on
+ * exactly this reasoning. Those files are also dated design records; forcing a price change
+ * to edit them would rewrite history to satisfy a guard.
+ */
+const PRICED = import.meta.glob(
+  [
+    '../../docs/**/*.html',
+    '../../docs/**/*.md',
+    '../../docs/**/*.txt',
+    '../../README.md',
+    '!../../docs/superpowers/**',
+  ],
+  { query: '?raw', import: 'default', eager: true },
+) as Record<string, string>;
+
+const shortPath = (p: string): string => p.replace(/^(\.\.\/)+/, '');
+
+/** One globbed file by its repo-relative name, loud when the glob stops reaching it. */
+function surface(name: string): string {
+  const hit = Object.entries(PRICED).find(([p]) => shortPath(p) === name);
+  if (!hit) throw new Error(`the glob no longer reaches ${name}`);
+  return hit[1];
+}
+
+/** One markdown section, so a guard can read the copy rather than the commentary on it. */
+function section(body: string, heading: string): string {
+  const start = body.indexOf(heading);
+  if (start < 0) throw new Error(`lost the heading ${heading}`);
+  const next = body.indexOf('\n## ', start + heading.length);
+  return body.slice(start, next < 0 ? undefined : next);
+}
+
+describe('a price claim, as distinct from a dollar figure', () => {
+  it('reads the claim however a surface spells it', () => {
+    expect(claims('Buki Pro is $4 a month or $29 a year')).toEqual([4, 29]);
+    expect(claims('- Price: $4/month, or $29/year')).toEqual([4, 29]);
+    expect(claims('Buki Pro is $4 per month or $29 per year')).toEqual([4, 29]);
+    expect(claims('<b>$4</b><span>a month, or $29 a year</span>')).toEqual([4, 29]);
+    expect(claims('StoryGraph Plus is $4.99/mo or $49.99/yr')).toEqual([4.99, 49.99]);
+  });
+
+  it('does NOT read a cost, a cap or a fee as a price', () => {
+    // These six strings are verbatim from this repo, and they are the reason the item's
+    // own one-line prescription cannot be taken. A guard that trips on them gets an
+    // allowlist, and an allowlist is how `$4.99 a month` gets onto a store listing.
+    expect(claims('a catch costs about $0.00011')).toEqual([]);
+    expect(claims('the Gemini cap is $5')).toEqual([]);
+    expect(claims('$2.50/M in, $15/M out')).toEqual([]);
+    expect(claims('$1.20 per 1 million events')).toEqual([]);
+    expect(claims('$15 per dispute')).toEqual([]);
+    expect(claims('subscriber pays $29, gets nothing to paste')).toEqual([]);
+  });
+
+  it('does not mistake a word that merely starts like a period', () => {
+    // `mo` and `yr` are real abbreviations on rival pricing pages, so the alternation has
+    // to end on a word boundary or `$5 a moment` becomes a monthly plan.
+    expect(claims('$5 a moment later')).toEqual([]);
+    expect(claims('$5 a year')).toEqual([5]);
+  });
+});
+
+describe('every shipped surface that names a price names the declared one', () => {
+  it('reads real files rather than passing on a glob that matched nothing', () => {
+    // Without this the whole block is satisfied by a broken pattern, which is the same
+    // silent pass as `str.replace` matching nothing.
+    expect(Object.keys(PRICED).length).toBeGreaterThan(10);
+  });
+
+  it('leaves the internal plans out, because they carry a third party\'s fees', () => {
+    // Stated as an ABSENCE proof rather than a presence one: the risk is the exclusion
+    // silently stopping working, not the exclusion being absent.
+    const swept = Object.keys(PRICED).map(shortPath);
+    expect(swept.filter((p) => p.includes('docs/superpowers/'))).toEqual([]);
+  });
+
+  it('states no price this repo has not declared', () => {
+    const allowed = new Set([FREE_USD, PRO_MONTHLY_USD, PRO_YEARLY_USD]);
+    // Named rather than counted. "Two files are stale" sends you hunting; this says which
+    // file and what it claims, which is the whole value of catching it here.
+    const stale = Object.entries(PRICED).flatMap(([path, body]) =>
+      [...new Set(claims(body).filter((n) => !allowed.has(n)))].map(
+        (n) => `${shortPath(path)} claims $${n}`,
+      ),
+    );
+    expect(stale).toEqual([]);
+  });
+
+  it('still finds the price in the copy that is PASTED INTO THE FORM, not merely in the file', () => {
+    // THE FIRST VERSION OF THIS TEST ASKED WHETHER `listing.md` MENTIONS A PRICE ANYWHERE,
+    // AND A MUTATION DELETING THE PRICE SENTENCE FROM THE SHIPPED COPY LEFT IT GREEN.
+    // The file states the price twice: once in the Detailed description, which is what a
+    // customer reads, and once at line 23 inside an editorial note QUOTING that copy while
+    // explaining why the till had to exist. The note satisfied the guard. That is the
+    // `?raw` failure OPENWORK section 5 records, one level up — commentary about the copy
+    // standing in for the copy — and it is why this reads the SECTION.
+    const detailed = section(surface('docs/store/listing.md'), '## Detailed description');
+    expect(claims(detailed)).toContain(PRO_MONTHLY_USD);
+    expect(claims(detailed)).toContain(PRO_YEARLY_USD);
+
+    // `llms.txt` is what an assistant answers when somebody asks what Buki costs, and it is
+    // shipped prose end to end, so the file IS the copy.
+    const llms = claims(surface('docs/llms.txt'));
+    expect(llms).toContain(PRO_MONTHLY_USD);
+    expect(llms).toContain(PRO_YEARLY_USD);
+  });
+});
+
+/**
  * THE TILL, and until 2026-08-18 there was not one.
  *
  * Every purchase CTA in the extension - the wall's *Get Buki Pro*, the popup's plan badge,
