@@ -1,0 +1,47 @@
+{
+  "target": ["src/extension/coverSource.test.ts"],
+  "mutations": [
+    {
+      "label": "60a the old C-9 rule comes back verbatim (several books refused again)",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books >= 1 && pictures === 1 ? image : undefined;",
+      "to": "  return books === 1 && pictures === 1 ? image : undefined;"
+    },
+    {
+      "label": "60b the PICTURES half is dropped, so a 1-of-4 guess is stored as a cover",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books >= 1 && pictures === 1 ? image : undefined;",
+      "to": "  return books >= 1 ? image : undefined;"
+    },
+    {
+      "label": "60c pictures loosened to >= 1, which is the same hole worn as a comparison",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books >= 1 && pictures === 1 ? image : undefined;",
+      "to": "  return books >= 1 && pictures >= 1 ? image : undefined;"
+    },
+    {
+      "label": "60d the books floor is dropped, so a catch that found NOTHING stores an orphan",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books >= 1 && pictures === 1 ? image : undefined;",
+      "to": "  return pictures === 1 ? image : undefined;"
+    },
+    {
+      "label": "60e the books floor is off by one (books >= 0 is books >= 1 that forgot why)",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books >= 1 && pictures === 1 ? image : undefined;",
+      "to": "  return books >= 0 && pictures === 1 ? image : undefined;"
+    },
+    {
+      "label": "60f the guard is bypassed entirely and always stores the picture",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books >= 1 && pictures === 1 ? image : undefined;",
+      "to": "  return image;"
+    },
+    {
+      "label": "60g coverSources reverts to picture-first, which would undo the 08-16 fix this change RESTS on",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return [saved.book.coverUrl, saved.shot]",
+      "to": "  return [saved.shot, saved.book.coverUrl]"
+    }
+  ]
+}

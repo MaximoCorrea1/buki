@@ -1321,9 +1321,9 @@ async function choose(
       cand.book,
       intent,
       contexts.get(card.job)?.source,
-      // Only when this picture depicts only this book. See shotFor: one photograph was
-      // being written to every book a stack contained, so five books arrived on the
-      // shelf wearing the same photograph instead of their own covers.
+      // Only when the post held ONE picture, so "the picture holds this book" is a fact
+      // rather than a one-in-four guess. Several BOOKS in that one picture is fine and
+      // was refused until 08-27; see shotFor for which half of C-9 expired and why.
       shotFor(card.image, card.candidates.length, card.pictures),
     );
     settle(card.job, { outcome: 'confirmed', savedId: saved.id });

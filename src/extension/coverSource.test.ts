@@ -70,11 +70,36 @@ describe('shotFor', () => {
     expect(shotFor(SHOT, 1, 1)).toBe(SHOT);
   });
 
-  it('drops it when the catch found several, so each book keeps its own cover', () => {
-    // The bug, stated as a test: five books share one photograph, so the photograph is
-    // not a cover for any of them and coverSources falls through to the catalogue art.
-    expect(shotFor(SHOT, 5, 1)).toBeUndefined();
-    expect(shotFor(SHOT, 2, 1)).toBeUndefined();
+  it('keeps the picture for every book of a one-photograph catch', () => {
+    // CHANGED 2026-08-27, and the ORIGINAL objection has expired rather than been
+    // ignored. C-9 refused this because "five books share one photograph, so the
+    // photograph is not a cover for any of them" - and the harm it named was real:
+    // five books arrived on the shelf *wearing the photograph INSTEAD OF their own
+    // covers*.
+    //
+    // That harm was fixed on 08-16, in `coverSources`, by putting `coverUrl` first.
+    // A stored photograph can no longer displace catalogue art, so the only case
+    // where it is ever drawn is the case where there IS no art - and there the
+    // choice is not photograph-vs-cover, it is photograph-vs-a-board-Buki-drew.
+    //
+    // Founder's rule, 2026-08-27: *"when we find no cover book, we use the original
+    // image."* A photograph that demonstrably contains this book beats a drawn board.
+    expect(shotFor(SHOT, 5, 1)).toBe(SHOT);
+    expect(shotFor(SHOT, 2, 1)).toBe(SHOT);
+  });
+
+  it('drops it when the post held several pictures, because nothing says WHICH one holds this book', () => {
+    // THE OTHER HALF OF C-9, AND IT DOES NOT EXPIRE. `content.ts` opens the card with
+    // `tweet.imageUrls[0]` and `VisionGuess` is `{title, author}` - no image index - so
+    // for a four-picture post the stored URL is a one-in-four guess at a photograph
+    // that may not contain this book at all.
+    //
+    // That is a different claim from the one above. "Several books, one picture" still
+    // means the picture holds the book. "One book, several pictures" means it might
+    // hold a different book entirely, and a cover that shows the wrong book is the lie
+    // the whole feature exists to avoid.
+    expect(shotFor(SHOT, 1, 4)).toBeUndefined();
+    expect(shotFor(SHOT, 3, 2)).toBeUndefined();
   });
 
   it('drops it when the catch found nothing, so no orphan picture is stored', () => {
@@ -125,10 +150,20 @@ describe('shotFor counts pictures as well as books', () => {
     expect(shotFor(PIC, 1, 4)).toBeUndefined();
   });
 
-  it('still stores nothing when one picture yielded five books', () => {
-    // The original rule, which must survive: a stack of five reached the shelf as five
-    // copies of the same photograph and each book's real cover was never used.
-    expect(shotFor(PIC, 5, 1)).toBeUndefined();
+  it('now stores it when one picture yielded five books, because that half of C-9 expired', () => {
+    // WHAT THE ORIGINAL RULE SAID: "a stack of five reached the shelf as five copies of
+    // the same photograph AND EACH BOOK'S REAL COVER WAS NEVER USED." Read the second
+    // clause: the harm was the photograph WINNING over catalogue art.
+    //
+    // `coverSources` stopped that on 08-16 by ordering `[coverUrl, shot]`. A book with
+    // art now shows its art whatever is stored beside it, so refusing to store the
+    // photograph buys nothing that the ordering does not already buy - it only empties
+    // the fallback for the books that have NO art, which is the exact case the founder's
+    // rule is about.
+    //
+    // The `pictures` half of C-9 is untouched and still refuses, one test above. That is
+    // the half whose premise is still true.
+    expect(shotFor(PIC, 5, 1)).toBe(PIC);
   });
 
   it('stores nothing when the catch covered no picture at all', () => {

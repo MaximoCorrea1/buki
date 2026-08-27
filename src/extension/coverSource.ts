@@ -32,35 +32,48 @@ export function coverSources(saved: SavedBook): string[] {
  * The picture to STORE as this book's cover, given the catch it came out of.
  *
  * The rule above rests on one sentence: *the picture cannot be the wrong book, because it
- * IS the book that was read.* That is true of a photograph holding one book and false of
- * a photograph holding five, and nothing enforced the difference. A catch kept one
- * picture and wrote it to every book it found, so a stack of five reached the shelf as
- * five copies of the same photograph and each book's real cover was never used.
+ * IS the book that was read.* C-9 (`OPENWORK.md` item 47) found two ways that sentence
+ * could be false and refused both. **One of them is still false. The other stopped being
+ * false on 2026-08-16, and this function went on refusing it for eleven days.**
  *
- * So the invariant is enforced at the WRITE rather than repaired at the read: a `shot` is
- * only stored when it depicts exactly the book it is stored on. Fixing it in
- * `coverSources` instead was the wrong place twice over - that function is handed one
- * `SavedBook` and cannot know how many books shared its picture, and the shelf would have
- * gone on holding data that says something untrue about itself.
+ * **STILL REFUSED - several PICTURES.** `content.ts` opens the card with
+ * `tweet.imageUrls[0]`, photograph ONE whatever the post holds, and `VisionGuess` is
+ * `{title, author}` with no image index - so a four-picture post yielding one book would
+ * store photograph one even when the book was read from photograph three. That is a
+ * one-in-four guess at a picture that may show a completely different book, and a cover
+ * showing the wrong book is the exact lie this product exists to not tell.
+ *
+ * **NO LONGER REFUSED - several BOOKS.** The harm C-9 recorded was precise: five books
+ * arrived on the shelf *"as five copies of the same photograph AND EACH BOOK'S REAL COVER
+ * WAS NEVER USED."* The photograph was BEATING catalogue art. That was fixed on 08-16 in
+ * `coverSources`, by ordering `[coverUrl, shot]` - a stored photograph can no longer
+ * displace art, so the only moment it is ever drawn is the moment there is none.
+ *
+ * And in that moment the choice is not photograph-versus-cover. It is
+ * photograph-versus-a-board-Buki-drew, and a photograph that demonstrably contains this
+ * book wins. Founder, 2026-08-27: *"when we find no cover book, we use the original
+ * image."*
+ *
+ * **What that trades away, stated rather than discovered later:** several artless books
+ * from one photograph now show the same tile. They are not wrong - each was read out of
+ * that picture - but a face-out shelf repeats itself where the drawn boards, hashed per
+ * book, did not. `OPENWORK.md` item 60.
  *
  * The books from a multi-book catch keep their `source` either way, so the post that sold
- * you survives. It is the *cover* that stops being a lie.
+ * you survives.
  */
 export function shotFor(
   image: string | undefined,
   books: number,
   pictures: number,
 ): string | undefined {
-  // BOTH COUNTS, because the invariant needs both. Counting only books left the other half
-  // open: `content.ts` opens the card with `tweet.imageUrls[0]`, photograph ONE whatever
-  // the post holds, so a four-photo post yielding a single book stored photograph one as
-  // that book's cover even when the book was read from photograph three. One-of-four
-  // breaks "the picture IS the book that was read" exactly as five-books-one-photo did.
-  // `OPENWORK.md` item 47, C-9.
+  // `books >= 1` rather than dropping the count entirely: a catch that found nothing has
+  // no book to store a picture ON, and returning one would leave an orphan URL in the
+  // cache that `coversToKeep` can never justify keeping.
   //
   // The scheme check lives in `coverSources` and only there: two places deciding what a
   // usable picture is, is how they come to disagree.
-  return books === 1 && pictures === 1 ? image : undefined;
+  return books >= 1 && pictures === 1 ? image : undefined;
 }
 
 /**
