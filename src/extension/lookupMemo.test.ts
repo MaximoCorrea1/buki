@@ -128,3 +128,40 @@ describe('postKey', () => {
     expect(a).toBe(b);
   });
 });
+
+/**
+ * C-7. `OPENWORK.md` item 47. The key dropped the HOST, so two images sharing a path on
+ * different sites were one catch.
+ *
+ * On X alone this could not bite: every picture comes from `pbs.twimg.com`. Catch-anywhere
+ * is what made it reachable, and the cost is not a duplicate row - it is a MEMO HIT. The
+ * second post's press returns the first post's books, so the reader saves a book that was
+ * never on the page they were looking at, and the recognition log records a catch that did
+ * not happen.
+ */
+describe('postKey tells two sites apart', () => {
+  it('does not fold two hosts sharing an image path into one catch', () => {
+    const a = postKey({ text: 'look', imageUrls: ['https://one.test/img/cover.jpg'] });
+    const b = postKey({ text: 'look', imageUrls: ['https://two.test/img/cover.jpg'] });
+    expect(a).not.toBe(b);
+  });
+
+  it('still ignores the query string, which is why the path was used', () => {
+    // Twitter serves the same media under several `?format=&name=` variants and the
+    // right-click menu reports a different one from the DOM. That reason survives intact.
+    const a = postKey({ text: 't', imageUrls: ['https://pbs.twimg.com/media/x.jpg?name=small'] });
+    const b = postKey({ text: 't', imageUrls: ['https://pbs.twimg.com/media/x.jpg?name=large'] });
+    expect(a).toBe(b);
+  });
+
+  it('ignores the scheme, so an http and https variant are one picture', () => {
+    const a = postKey({ text: 't', imageUrls: ['https://p.test/a.jpg'] });
+    const b = postKey({ text: 't', imageUrls: ['http://p.test/a.jpg'] });
+    expect(a).toBe(b);
+  });
+
+  it('still falls back to the raw string for something that is not a URL', () => {
+    expect(() => postKey({ text: 't', imageUrls: ['not a url'] })).not.toThrow();
+    expect(postKey({ text: 't', imageUrls: ['not a url'] })).toContain('not a url');
+  });
+});

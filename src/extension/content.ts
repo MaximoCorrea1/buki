@@ -1281,7 +1281,7 @@ async function choose(
       // Only when this picture depicts only this book. See shotFor: one photograph was
       // being written to every book a stack contained, so five books arrived on the
       // shelf wearing the same photograph instead of their own covers.
-      shotFor(card.image, card.candidates.length),
+      shotFor(card.image, card.candidates.length, card.pictures),
     );
     settle(card.job, { outcome: 'confirmed', savedId: saved.id });
     tray.savedOne(card.job, index, intent);
@@ -1310,7 +1310,7 @@ async function saveAll(card: Card, button: HTMLButtonElement): Promise<void> {
     // only queues them somewhere nobody can see.
     for (const [i, cand] of card.candidates.entries()) {
       if (cand.savedTo) continue;
-      const saved = await saveBook(cand.book, 'someday', source, shotFor(card.image, card.candidates.length));
+      const saved = await saveBook(cand.book, 'someday', source, shotFor(card.image, card.candidates.length, card.pictures));
       firstId ||= saved.id;
       tray.savedOne(card.job, i, 'someday');
     }
@@ -1493,7 +1493,7 @@ function addButton(article: HTMLElement): void {
         images: tweet.imageUrls,
       });
 
-      if (!tray.open(job, 'Reading the cover…', tweet.imageUrls[0])) {
+      if (!tray.open(job, 'Reading the cover…', tweet.imageUrls[0], tweet.imageUrls.length)) {
         nudge(job);
         return;
       }

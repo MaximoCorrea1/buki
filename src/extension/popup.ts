@@ -14,6 +14,7 @@ import {
 import { buyLink, type Store } from './buyLink';
 import { coverFor } from './cover';
 import { pruneCovers, liveCoverDeps } from './coverCache';
+import { coversToKeep } from './coverSource';
 import {
   PILES,
   PILE_LABEL,
@@ -131,10 +132,10 @@ async function load(): Promise<void> {
     // fetching a cover for right now.
     // Both urls per book: pruning on coverUrl alone would delete every caught picture
     // on the next open, which is the cache going from a speed-up to a liability.
-    void pruneCovers(
-      shelf.flatMap((s) => [s.shot, s.book.coverUrl]),
-      covers,
-    );
+    // `undoable` is in here because `remove()` prunes BEFORE it offers the undo, so
+    // without it the cover is gone by the time the reader is asked whether they meant it.
+    // See `coversToKeep`. OPENWORK item 47, C-8.
+    void pruneCovers(coversToKeep(shelf, undoable), covers);
   } catch (err) {
     console.error('[Buki] could not read the shelf', err);
     loadFailed = true;
@@ -330,9 +331,17 @@ function movePiles(saved: SavedBook): HTMLElement {
  */
 const UNDO_MS = 8000;
 let undoTimer: number | undefined;
+/**
+ * The book an undo could still bring back, so `refresh()`'s prune spares its pictures.
+ * Shares its lifetime with `undoTimer`: set when the offer is made, cleared by `hideUndo`.
+ */
+let undoable: SavedBook | undefined;
 
 async function unshelve(saved: SavedBook): Promise<void> {
   try {
+    // BEFORE the refresh, not after: `refresh()` is what prunes the cover cache, and a
+    // book whose undo is still on offer must keep its pictures. OPENWORK item 47, C-8.
+    undoable = saved;
     await writeShelf({ type: 'removeBook', savedId: saved.id });
     await refresh();
     offerUndo(saved);
@@ -375,6 +384,8 @@ function offerUndo(saved: SavedBook): void {
 }
 
 function hideUndo(): void {
+  // The offer is over, so the pictures are no longer worth keeping. The next paint prunes.
+  undoable = undefined;
   window.clearTimeout(undoTimer);
   const host = document.getElementById('undo');
   if (host) {

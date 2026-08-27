@@ -65,6 +65,13 @@ export interface Card {
   readonly source?: RecognitionSource;
   /** The picture this catch is about. Three identical "Reading…" cards are indistinguishable. */
   readonly image?: string;
+  /**
+   * How many pictures this catch COVERED, which is not the same as how many the card
+   * shows. The card shows one: `content.ts` opens it with `tweet.imageUrls[0]`. `shotFor`
+   * needs the real count, because storing photograph one as a book's cover is only honest
+   * when photograph one was the only photograph. `OPENWORK.md` item 47, C-9.
+   */
+  readonly pictures: number;
   /** May the renderer put this on a timer? Only true where no decision is pending. */
   readonly transient: boolean;
 }
@@ -76,7 +83,7 @@ export interface CatchTray {
    * post is already on screen, and the caller should draw attention to that card rather
    * than stacking a second one behind it.
    */
-  open(job: string, text: string, image?: string): boolean;
+  open(job: string, text: string, image?: string, pictures?: number): boolean;
   /** It came back. Candidates make it a choice; none makes it a dead end worth saying. */
   resolve(job: string, candidates: Candidate[], source?: RecognitionSource): void;
   /**
@@ -104,8 +111,15 @@ export interface CatchTray {
   dismiss(id: number): void;
 }
 
-/** Everything an update decides. `id`, `job` and `image` outlive it. */
-type Update = Omit<Card, 'id' | 'job' | 'image'>;
+/**
+ * Everything an update decides. `id`, `job`, `image` and `pictures` outlive it.
+ *
+ * `pictures` belongs with `image` rather than with the state: how many photographs a catch
+ * covered is a fact about the post, fixed the moment the card opens, and no later
+ * transition can learn a different answer. The compiler enumerating this list is what
+ * caught it — adding the field to `Card` turned every transition red until it was named.
+ */
+type Update = Omit<Card, 'id' | 'job' | 'image' | 'pictures'>;
 
 export function createCatchTray(): CatchTray {
   let seq = 0;
@@ -133,13 +147,19 @@ export function createCatchTray(): CatchTray {
     const held = cards[at] as Card;
     // `image` survives every update: it is what this catch is LOOKING at, not part of
     // any particular answer about it.
-    cards[at] = { ...next, id: held.id, job, ...(held.image ? { image: held.image } : {}) };
+    cards[at] = {
+      ...next,
+      id: held.id,
+      job,
+      pictures: held.pictures,
+      ...(held.image ? { image: held.image } : {}),
+    };
   };
 
   return {
     list: () => cards.map((c) => ({ ...c })),
 
-    open(job, text, image) {
+    open(job, text, image, pictures) {
       // Pressing one post ten times is one catch asked about ten times. Returning early
       // also protects an answer that already landed: a late repeat press must not drag a
       // found card back to "Reading the cover…".
@@ -151,6 +171,10 @@ export function createCatchTray(): CatchTray {
         text,
         candidates: [],
         transient: false,
+        // Defaults to one when a picture was given, which is the guarantee the context-menu
+        // flow makes: `background.ts` builds its Tweet as `imageUrls: [info.srcUrl]`, so
+        // exactly one picture was sent to the model. The feed flow passes the real count.
+        pictures: pictures ?? (image ? 1 : 0),
         ...(image ? { image } : {}),
       });
       return true;
@@ -212,6 +236,7 @@ export function createCatchTray(): CatchTray {
         text,
         candidates: [],
         transient: true,
+        pictures: 0, // a bare message is about no picture at all
       });
     },
 

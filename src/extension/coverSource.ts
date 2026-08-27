@@ -46,8 +46,48 @@ export function coverSources(saved: SavedBook): string[] {
  * The books from a multi-book catch keep their `source` either way, so the post that sold
  * you survives. It is the *cover* that stops being a lie.
  */
-export function shotFor(image: string | undefined, books: number): string | undefined {
+export function shotFor(
+  image: string | undefined,
+  books: number,
+  pictures: number,
+): string | undefined {
+  // BOTH COUNTS, because the invariant needs both. Counting only books left the other half
+  // open: `content.ts` opens the card with `tweet.imageUrls[0]`, photograph ONE whatever
+  // the post holds, so a four-photo post yielding a single book stored photograph one as
+  // that book's cover even when the book was read from photograph three. One-of-four
+  // breaks "the picture IS the book that was read" exactly as five-books-one-photo did.
+  // `OPENWORK.md` item 47, C-9.
+  //
   // The scheme check lives in `coverSources` and only there: two places deciding what a
   // usable picture is, is how they come to disagree.
-  return books === 1 ? image : undefined;
+  return books === 1 && pictures === 1 ? image : undefined;
+}
+
+/**
+ * Every picture that must survive a prune: the shelf, plus anything an undo could bring
+ * back.
+ *
+ * WHY THE SECOND ARGUMENT EXISTS. `popup.remove()` runs `removeBook`, then `refresh()`,
+ * then `offerUndo()` — and `refresh()` is what prunes. So the cover was dropped BEFORE the
+ * reader had even been offered the way back, and pressing Undo restored the book to a drawn
+ * board while its picture was refetched over a redirect chain measured at 1-4 seconds.
+ * The undo failed to undo the part the reader can actually see. `OPENWORK.md` item 47, C-8.
+ *
+ * A book that is both on the shelf and pending is not double-counted, because `pruneCovers`
+ * builds a Set from this anyway — but returning duplicates would still be this function
+ * saying something untrue about itself.
+ */
+export function coversToKeep(
+  shelf: readonly SavedBook[],
+  pending: SavedBook | undefined,
+): string[] {
+  const wanted = new Set<string>();
+  for (const saved of [...shelf, ...(pending ? [pending] : [])]) {
+    // Both pictures per book. Pruning on `coverUrl` alone deletes every caught photograph
+    // on the next open, which turns the cache from a speed-up into a liability.
+    for (const url of [saved.book.coverUrl, saved.shot]) {
+      if (url) wanted.add(url);
+    }
+  }
+  return [...wanted];
 }

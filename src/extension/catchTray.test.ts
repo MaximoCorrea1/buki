@@ -301,3 +301,70 @@ describe('the wall', () => {
     expect(tray.list()).toHaveLength(0);
   });
 });
+
+/**
+ * HOW MANY PICTURES THE CATCH COVERED. `OPENWORK.md` item 47, C-9.
+ *
+ * The card SHOWS one picture — `content.ts` opens it with `tweet.imageUrls[0]` — and that
+ * is not the same number as how many the catch was about. `shotFor` needs the real one,
+ * because storing photograph one as a book's cover is only honest when photograph one was
+ * the only photograph.
+ *
+ * Written after two mutations SURVIVED: the field was added to `Card` and threaded through
+ * `content.ts`, and nothing at this level asserted either the default or that it survives a
+ * state change. A field a test never reads is a field the compiler protects and nothing
+ * else does.
+ */
+describe('the picture count a card carries', () => {
+  it('records the count it was given', () => {
+    const tray = createCatchTray();
+    tray.open('j', 'Reading the cover…', 'https://p.test/1.jpg', 4);
+    expect(tray.list()[0]?.pictures).toBe(4);
+  });
+
+  it('defaults to ONE when a picture was given and no count was', () => {
+    // The context-menu flow's guarantee, encoded: `background.ts` builds its Tweet as
+    // `imageUrls: [info.srcUrl]`, so exactly one picture reached the model.
+    const tray = createCatchTray();
+    tray.open('j', 'Reading the cover…', 'https://p.test/1.jpg');
+    expect(tray.list()[0]?.pictures).toBe(1);
+  });
+
+  it('defaults to NONE when there was no picture at all', () => {
+    // Not one. A catch with no picture must not let `shotFor` store anything, and
+    // defaulting to 1 here would make the guard depend on `image` being undefined
+    // somewhere else instead of on the count.
+    const tray = createCatchTray();
+    tray.open('j', 'Looking…');
+    expect(tray.list()[0]?.pictures).toBe(0);
+  });
+
+  it('a standalone message covers no picture', () => {
+    const tray = createCatchTray();
+    tray.say('Something worth saying');
+    expect(tray.list()[0]?.pictures).toBe(0);
+  });
+
+  it('SURVIVES every state change, because it is a fact about the post', () => {
+    // The count is fixed when the card opens. No later transition can learn a different
+    // answer, and one that quietly reset it to 1 would put photograph one back on a book
+    // from a four-photo post — the original bug, arriving one state later.
+    const tray = createCatchTray();
+    tray.open('j', 'Reading the cover…', 'https://p.test/1.jpg', 4);
+
+    tray.resolve('j', [{ book: { title: 'Dune', author: 'Frank Herbert' } }], 'vision');
+    expect(tray.list()[0]?.pictures, 'lost on resolve').toBe(4);
+
+    tray.retry('j', 'Trying the words');
+    expect(tray.list()[0]?.pictures, 'lost on retry').toBe(4);
+
+    tray.wall('j');
+    expect(tray.list()[0]?.pictures, 'lost on wall').toBe(4);
+
+    tray.fail('j', "Couldn't read that");
+    expect(tray.list()[0]?.pictures, 'lost on fail').toBe(4);
+
+    tray.done('j', 'Saved');
+    expect(tray.list()[0]?.pictures, 'lost on done').toBe(4);
+  });
+});

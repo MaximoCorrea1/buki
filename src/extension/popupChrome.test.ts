@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import popup from '../../popup.html?raw';
+import popupTs from './popup.ts?raw';
 
 /**
  * Rules about popup.html that nothing else can check.
@@ -33,5 +34,40 @@ describe('the detail sheet', () => {
     const fixedFullBleed = [...popup.matchAll(/([#.][\w-]+)[^{}]*\{[^}]*position:\s*fixed[^}]*\}/g)]
       .map((m) => m[1]);
     expect([...new Set(fixedFullBleed)].sort()).toEqual(['#scrim', '#sheet']);
+  });
+});
+
+/**
+ * THE COVER CACHE IS PRUNED INSIDE THE UNDO WINDOW. `OPENWORK.md` item 47, C-8.
+ *
+ * `coversToKeep` is tested directly. What no test can reach is `popup.ts`, which registers
+ * listeners at module scope — and the bug was never in the decision, it was in WHERE the
+ * decision was called from: `remove()` ran `removeBook`, then `refresh()` (which prunes),
+ * and only then `offerUndo()`. So this is an ABSENCE proof of the shape
+ * `contentSafety.test.ts` uses: there is no route to `pruneCovers` that skips the pending
+ * book, and comments are stripped first so the paragraph explaining the rule cannot satisfy
+ * it. See `optionsPage.test.ts` for why that stripping is not optional.
+ */
+const popupCode = popupTs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+
+describe('a removed book keeps its cover while the undo is on offer', () => {
+  it('has NO call to pruneCovers that skips the pending book', () => {
+    const calls = popupCode.match(/pruneCovers\(/g) ?? [];
+    expect(calls, 'pruneCovers is not called at all any more').toHaveLength(1);
+    expect(popupCode).toMatch(/pruneCovers\(coversToKeep\(shelf, undoable\), covers\)/);
+  });
+
+  it('records the pending book BEFORE the refresh that prunes', () => {
+    // Order is the whole bug. `undoable = saved` after `await refresh()` would be a change
+    // that looks right in review and fixes nothing at all.
+    const set = popupCode.indexOf('undoable = saved');
+    const removed = popupCode.indexOf("type: 'removeBook'");
+    expect(set, 'nothing records the pending book').toBeGreaterThan(-1);
+    expect(removed).toBeGreaterThan(-1);
+    expect(set, 'the pending book is recorded after the book is removed').toBeLessThan(removed);
+  });
+
+  it('clears it when the offer ends, or the cache grows without bound', () => {
+    expect(popupCode).toMatch(/function hideUndo\(\): void \{\s*undoable = undefined;/);
   });
 });

@@ -1,6 +1,7 @@
 import type { Book } from '../recognizer/types';
 import { createWriteQueue } from './writeQueue';
 import { bookKey, sameBook } from './bookIdentity';
+import { mergeBook } from './mergeBook';
 
 /**
  * What you mean to do about a book. `read` is an end state rather than an intention, but
@@ -94,7 +95,17 @@ export function createLibrary(deps: {
         // stacking duplicates (easy to do when a save gives no visible feedback).
         const saved: SavedBook = {
           id: previous?.id ?? deps.newId(),
-          book,
+          // Merged, not replaced. This line took the reading WHOLESALE while the two below
+          // it defended `source` and `shot`, so re-catching a book destroyed whatever this
+          // reading did not happen to know — worst exactly when it is most likely, because
+          // a catalogue outage produces a bare guess with no ISBN and no cover and saving
+          // it deleted both from disk. `OPENWORK.md` item 47, ADV-6.
+          //
+          // NOT `{ ...previous.book, ...book }`, which is what the review prescribed: a
+          // spread keeps a previous value only when the incoming KEY IS ABSENT, and
+          // `openLibrary.toBook` always writes `isbn` and `coverUrl` even when they are
+          // undefined. See `mergeBook.ts`.
+          book: mergeBook(previous?.book, book),
           intent,
           source: source ?? previous?.source,
           // Keep the picture across a move. Moving Someday to Now goes through add(),

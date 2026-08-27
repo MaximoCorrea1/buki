@@ -225,3 +225,75 @@ describe('what survives a book changing pile', () => {
     expect(moved.shot).toBeUndefined();
   });
 });
+
+/**
+ * ADV-6. `OPENWORK.md` item 47, and it is the same shape as the block above with one more
+ * line missing.
+ *
+ * `add()` defended `source` and `shot` and took `book` WHOLESALE on the line above them, so
+ * re-catching a book you already had replaced its record with whatever this reading knew.
+ * That is worst exactly when it is most likely: when OpenLibrary is down the recogniser
+ * correctly emits a bare guess with no ISBN and no cover, and saving it deleted both from
+ * disk while the tray said "Moved · Dune → now".
+ *
+ * The tests above pass a book that never had an ISBN or a cover, so none of them could see
+ * this. That is the same blind spot the block above records, one field to the left.
+ */
+describe('what survives re-catching a book you already have', () => {
+  const rich = {
+    title: 'Dune',
+    author: 'Frank Herbert',
+    isbn: '9780441013593',
+    coverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg',
+  };
+
+  it('keeps the ISBN and the cover when the catalogue could not be asked', async () => {
+    const lib = makeLibrary();
+    await lib.add(rich, 'next');
+    // The bare guess `recognizer.ts:94` emits when the catalogue answered nothing.
+    const again = await lib.add({ title: 'Dune', author: 'Frank Herbert' }, 'now');
+
+    expect(again.moved, 'this was not treated as a re-catch at all').toBe(true);
+    expect(again.book.isbn, 'the ISBN was destroyed, so Buy falls back to a title search').toBe(
+      rich.isbn,
+    );
+    expect(again.book.coverUrl, 'the cover was destroyed, so the shelf draws a board').toBe(
+      rich.coverUrl,
+    );
+  });
+
+  it('keeps them when the new reading carries the KEYS but with undefined in them', async () => {
+    // The case a spread cannot fix, and the common one. `openLibrary.toBook` always writes
+    // both keys, so a sparse-but-matching doc arrives as `{ isbn: undefined, coverUrl:
+    // undefined }` and `{ ...previous.book, ...book }` overwrites with undefined.
+    const lib = makeLibrary();
+    await lib.add(rich, 'next');
+    const again = await lib.add(
+      { title: 'Dune', author: 'Frank Herbert', isbn: undefined, coverUrl: undefined },
+      'now',
+    );
+    expect(again.book.isbn).toBe(rich.isbn);
+    expect(again.book.coverUrl).toBe(rich.coverUrl);
+  });
+
+  it('TAKES the ISBN and cover when the new reading has them and the old did not', async () => {
+    // The other direction, which is the whole reason somebody re-catches a book saved
+    // during an outage. A merge that only ever kept the old value would be just as wrong.
+    const lib = makeLibrary();
+    await lib.add({ title: 'Dune', author: 'Frank Herbert' }, 'next');
+    const again = await lib.add(rich, 'now');
+    expect(again.book.isbn).toBe(rich.isbn);
+    expect(again.book.coverUrl).toBe(rich.coverUrl);
+  });
+
+  it('stores a record with no key holding undefined', async () => {
+    // Structured clone drops undefined values, so a record that emitted them would differ
+    // from the one that comes back out of storage. Item 27's bug, in miniature.
+    // The RE-catch, not the first save: a first save has no previous record, so `mergeBook`
+    // returns the reading unchanged and the assertion would never reach the merged object.
+    const lib = makeLibrary();
+    await lib.add({ title: 'Dune', author: 'Frank Herbert' }, 'next');
+    const saved = await lib.add({ title: 'Dune', author: 'Frank Herbert' }, 'now');
+    expect(Object.keys(saved.book).sort()).toEqual(['author', 'title']);
+  });
+});

@@ -102,3 +102,89 @@ describe('bookKey', () => {
     );
   });
 });
+
+/**
+ * C-5 AND C-6. `OPENWORK.md` item 47, and both are FALSE MERGES — the expensive direction.
+ * A missed match costs a duplicate row the reader can see and delete. A false match
+ * overwrites a book they already had, silently, and the tray says "Moved".
+ */
+describe('two volumes of one series are two books', () => {
+  const TOLKIEN = 'J. R. R. Tolkien';
+
+  it('does not merge The Two Towers into The Return of the King', () => {
+    // `normTitle` takes everything before the first colon, so both reduced to "lord of the
+    // rings" and shared a surname. Saving the second REPLACED the first, and a differing
+    // ISBN could not veto because the ISBN check can only ADD a match.
+    expect(
+      sameBook(
+        { title: 'The Lord of the Rings: The Two Towers', author: TOLKIEN },
+        { title: 'The Lord of the Rings: The Return of the King', author: TOLKIEN },
+      ),
+    ).toBe(false);
+  });
+
+  it('STILL merges a subtitle one catalogue omits, which is why the split exists', () => {
+    // The case the subtitle strip was written for, and it must survive the fix. One
+    // catalogue writes "Sapiens" and another writes the full title; they are one book.
+    expect(
+      sameBook(
+        { title: 'Sapiens', author: 'Yuval Noah Harari' },
+        { title: 'Sapiens: A Brief History of Humankind', author: 'Yuval Noah Harari' },
+      ),
+    ).toBe(true);
+  });
+
+  it('merges two spellings of the SAME subtitle', () => {
+    expect(
+      sameBook(
+        { title: 'The Lord of the Rings: The Two Towers', author: TOLKIEN },
+        { title: 'the lord of the rings: the two towers!', author: TOLKIEN },
+      ),
+    ).toBe(true);
+  });
+
+  it('lets a matching ISBN override the subtitle difference', () => {
+    // Identity is the WORK, and an ISBN is direct evidence of it. If two records carry the
+    // same ISBN they are the same edition of the same book, whatever the titles say.
+    expect(
+      sameBook(
+        { title: 'The Lord of the Rings: The Two Towers', author: TOLKIEN, isbn: '9780261102361' },
+        { title: 'The Lord of the Rings: Book Two', author: TOLKIEN, isbn: '9780261102361' },
+      ),
+    ).toBe(true);
+  });
+});
+
+describe('the surname is the surname, not the longest word', () => {
+  it('matches a full name against one with an initial', () => {
+    // `normAuthor` took the LONGEST token after sorting. "gabriel" and "marquez" are both
+    // seven letters, so the tie resolved alphabetically to "gabriel" for the full name and
+    // to "marquez" for the initialled one. Two keys, one author, one book filed twice.
+    expect(bookKey({ title: 'Cien años de soledad', author: 'Gabriel García Márquez' })).toBe(
+      bookKey({ title: 'Cien años de soledad', author: 'G. García Márquez' }),
+    );
+  });
+
+  it('takes the surname from either name order', () => {
+    expect(bookKey({ title: 'A Wizard of Earthsea', author: 'Ursula K. Le Guin' })).toBe(
+      bookKey({ title: 'A Wizard of Earthsea', author: 'Le Guin, Ursula K.' }),
+    );
+  });
+
+  it('takes the FIRST author when a catalogue lists several', () => {
+    expect(bookKey({ title: 'SICP', author: 'Harold Abelson, Gerald Jay Sussman' })).toBe(
+      bookKey({ title: 'SICP', author: 'Abelson, Sussman' }),
+    );
+  });
+
+  it('still keeps two different authors of the same title apart', () => {
+    expect(bookKey({ title: 'Ulysses', author: 'James Joyce' })).not.toBe(
+      bookKey({ title: 'Ulysses', author: 'Alfred Tennyson' }),
+    );
+  });
+
+  it('survives an author string with nothing usable in it', () => {
+    expect(() => bookKey({ title: 'Anon', author: '' })).not.toThrow();
+    expect(() => bookKey({ title: 'Anon', author: '   ,  ' })).not.toThrow();
+  });
+});

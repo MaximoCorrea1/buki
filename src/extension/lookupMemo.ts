@@ -55,16 +55,28 @@ export function createLookupMemo<T>(deps: { now: () => number; ttlMs?: number })
 }
 
 /**
- * What makes two presses "the same post". Image identity is the URL *path*: Twitter serves
- * the same media under several `?format=&name=` query strings, and the right-click menu
- * reports a different variant from the one sitting in the DOM. Sorted, because the order
- * images come back in is not part of what the post is.
+ * What makes two presses "the same post". Image identity is the HOST plus the URL *path*:
+ * Twitter serves the same media under several `?format=&name=` query strings, and the
+ * right-click menu reports a different variant from the one sitting in the DOM, so the
+ * query has to go. Sorted, because the order images come back in is not part of what the
+ * post is.
+ *
+ * THE HOST WAS MISSING AND IT WAS NOT COSMETIC. `OPENWORK.md` item 47, C-7. Two images
+ * sharing a path on different sites were one catch, and the cost is not a duplicate row -
+ * it is a MEMO HIT. The second post's press returns the FIRST post's books, so the reader
+ * saves a book that was never on the page they were looking at and the recognition log
+ * records a catch that did not happen. On X alone it could not bite, because every picture
+ * comes from `pbs.twimg.com`; catch-anywhere is what made it reachable.
+ *
+ * The SCHEME is still dropped. `https://p.test/a.jpg` and `http://p.test/a.jpg` are one
+ * picture, and including the scheme would split a catch on a detail of how it was linked.
  */
 export function postKey(post: { text: string; imageUrls: string[] }): string {
   const media = post.imageUrls
     .map((url) => {
       try {
-        return new URL(url).pathname;
+        const parsed = new URL(url);
+        return `${parsed.host}${parsed.pathname}`;
       } catch {
         return url;
       }
