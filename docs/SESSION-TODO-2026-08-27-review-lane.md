@@ -20,8 +20,9 @@ streak of writing it late. The paths were printed in the first reply.
 | 4 | Re-probe every inherited item BEFORE ranking (Rule 4) | [x] | agent | done for 45 and 46; both had false statements in the item text |
 | 5 | **Item 45** — the price in three places `pricing.test.ts` cannot see | [x] | agent | `e521839`. It was TWO places and the prescribed fix was wrong. 7 mutations, 7 caught |
 | 6 | **Item 46** — four privacy/permission claims that are not true | [x] | agent | `9c2b268` + `24433f9`. 18 mutations, 18 caught. TM-11 was a feature, not a false claim |
-| 7 | **Item 47** — re-catching a book destroys the good record (ADV-6) | [~] | agent | + five ways two books become one. NEXT |
-| 8 | **Item 48** — the activation lifecycle's last three holes | [ ] | agent | ADV-3 VERIFIED, ADV-8, C-3. Burns the five permanent slots |
+| 7 | **Item 47** — re-catching a book destroys the good record (ADV-6) | [x] | agent | `ff09658`. SIX of seven. 21 mutations, 21 caught, 3 survived first pass |
+| 8 | **Item 48** — the activation lifecycle's last three holes | [ ] | agent | ADV-3 VERIFIED, ADV-8, C-3. Burns the five permanent slots. **NEXT** |
+| 7b | **Item 58** — ADV-7, two catch flows, two trial spends | [?] | **Maximo** | split out of 47. A decision about what a catch IS, not a fix |
 | 9 | **Item 49** — four reliability holes on the waited-on path | [ ] | agent | R-1 to R-4 |
 | 10 | **Item 50** — the measured performance set | [ ] | agent | PERF-1/2/3. Re-measure after, not before |
 | 11 | **Item 51** — server contract and edge gaps | [ ] | agent | AC-5/6/10/12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12 |
@@ -68,6 +69,11 @@ streak of writing it late. The paths were printed in the first reply.
 | 11 | TM-11 built: `grantedHosts.ts` + options section | absence proof failed on its own docblocks first. 11/11 |
 | 12 | TM-11 committed | `24433f9` |
 | 13 | Harness caught running the wrong target and fixed | reported two files, ran 889. Right answer, wrong reason |
+| 14 | Item 47 re-probed | ADV-6's prescribed fix is WRONG for the common case; C-5's correct rule is not transitive |
+| 15 | ADV-6, C-5, C-6 fixed and mutated | 9/9. Mutation 47b applies the review's own fix and is caught |
+| 16 | C-7, C-9 fixed | 7/7 after two tray tests were added for a field only the compiler protected |
+| 17 | C-8 fixed | 5/5. `coversToKeep` + an absence proof on the popup wiring |
+| 18 | Item 47 committed, ADV-7 filed as item 58 | `ff09658`. 949 tests / 76 files |
 
 ---
 
@@ -87,6 +93,9 @@ here is how two docs start disagreeing.
 | 2 | **`cover.ts:applyCover` fetches a cover TWICE on a cache miss** - `img.src = url` and `rememberCover(url)` | Task 29. Folds into item 50, PERF-2 |
 | 3 | **The store's host-permissions answer described two permissions the manifest no longer held** - created by fixing TM-14, caught before commit | Fixed in the same commit, and `storeCopy.test.ts` now fails in both directions |
 | 4 | **The paste block's character count was measured by hand once and had drifted** | `storeCopy.test.ts` owns it now, counted with CRLF |
+| 5 | **`shotFor` counted books and never pictures**, so a four-photo post yielding one book stored photograph ONE as that book's cover | Fixed in `ff09658`, C-9 |
+| 6 | **`postKey` dropped the host**, so two sites sharing an image path were one catch - a MEMO HIT, returning the first post's books for the second | Fixed in `ff09658`, C-7 |
+| 7 | **The cover cache was pruned INSIDE the 8s undo window**, so Undo restored a book to a drawn board | Fixed in `ff09658`, C-8 |
 
 ---
 

@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **907 across 74 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **949 across 76 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -15,7 +15,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27. `main` = `origin/main` at `60b98e4`, 0 ahead** (`git rev-list --count origin/main..HEAD`). Twenty-nine commits went up in one go: the push had been blocked by the permission classifier since 08-25 and cleared on this attempt. **This row asserted "28 UNPUSHED" for about thirty seconds before the push succeeded, which is the drift this file keeps paying for in miniature - it was corrected in the same session rather than inherited.** **63 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). `buki-hardening` was merged and pushed 2026-08-18; `buki-pro` is older history. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Six are Maximo's (2, 3, 9, 35, 37, 56); eleven are agent work (36, 47-55, 57).** Items 45 and 46 closed 2026-08-27. It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Seven are Maximo's (2, 3, 9, 35, 37, 56, 58); ten are agent work (36, 48-55, 57).** Items 45, 46 and 47 closed 2026-08-27; item 58 filed out of 47, so the count held at 17 while three items closed. It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -41,7 +41,8 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **36** | agent, on launch day | **Every install CTA on the landing points at GitHub.** Honest today, wrong the moment the item is listed. **Five change, three must not** - two `Source` links and `Report a problem` stay GitHub, and a find-and-replace would move them. Guarded: `host.test.ts` fails a half-migration | the whole funnel, on day one |
 | ~~45~~ | agent | ~~The price is spelled in three places `pricing.test.ts` cannot see~~ **DONE 2026-08-27.** **It was TWO places, not three, and the prescribed fix was wrong.** `launch.md` does not state the price - its only `$29` is *"subscriber pays $29, gets nothing to paste"*, prose about a failure mode. And *"widen the glob, same shape, one line"* is **red on arrival**: measured, the blunt `$N` rule finds ~40 undeclared figures across 12 files and every one is a COST (`$0.00011` a catch, the `$5` cap, `$3.46`, `$2.50/M`). The reflex answer is an allowlist, and an allowlist holding `4.99` waves through *"Buki Pro is $4.99 a month"*. The unit is a **price CLAIM** - a figure whose next words say how long it buys. **7 mutations, 7 caught, and the first pass caught 6: deleting the price sentence from `listing.md` left the guard green because line 23's editorial note QUOTING that copy satisfied it** | items 9 and 11, irreversibly |
 | ~~46~~ | agent | ~~Four privacy and permission claims that are not true~~ **DONE 2026-08-27**, `9c2b268` + `24433f9`. **TM-8 was the only live hole and probing it found a SECOND vector the review did not file**: `isbnCell` writes `="<isbn>"`, which IS a formula, and `openLibrary.ts:44` casts `doc.isbn[0]` out of a wiki anyone may edit. **TM-11 was not a false claim at all** - `permissions.md` is right that Buki never holds access to a site nobody right-clicked - it was a missing feature, and the options page now lists every granted site with a Forget beside it. **18 mutations across the two commits, 18 caught.** ⚠ **One thing no test can prove: that Chrome still injects on x.com after TM-14 removed the host permission. Item 3, by hand** | store review |
-| **47** | agent | **Re-catching a book destroys the good record** (ADV-6, VERIFIED), plus five ways two books become one | the shelf, which is the product |
+| ~~47~~ | agent | ~~Re-catching a book destroys the good record, plus five ways two books become one~~ **DONE 2026-08-27**, `ff09658`. Six of the seven closed. **THE PRESCRIBED FIX FOR ADV-6 IS WRONG**: a spread keeps a previous value only when the incoming KEY IS ABSENT, and `openLibrary.toBook` ALWAYS writes `isbn` and `coverUrl` even when undefined - so `{...previous.book, ...book}` wipes the cover on any sparse-but-matching doc, which is ordinary. **C-5's correct rule is NOT TRANSITIVE** and therefore cannot live in a Map key, so `bookKey` and `sameBook` now sit at different resolutions on purpose. **21 mutations, 21 caught, 3 survived first pass.** ADV-7 split out as item **58** | the shelf, which is the product |
+| **58** | **Maximo** | **Two catch flows, two jobs, two trial spends for one post** (ADV-7). Not a bug an agent may fix: the flows key differently ON PURPOSE, and folding them changes what the model is asked | one trial catch, per post caught both ways |
 | **48** | agent | **The activation lifecycle's last three holes** (ADV-3 VERIFIED, ADV-8, C-3). All three burn the five permanent slots | every subscriber, eventually |
 | **49** | agent | **Four reliability holes on the path somebody is waiting on** (R-1 to R-4) | a catch that hangs, on someone else’s page |
 | **50** | agent | **The measured performance set** — PERF-1/2/3 are the three a first user feels. Every number came off a probe | the first impression |
@@ -827,8 +828,36 @@ unblocks.
       the Buki button still appears in a post's action bar. `permissions.md` says so at the
       point of the change.
 
-- [ ] **47. RE-CATCHING A BOOK DESTROYS THE GOOD RECORD, AND FIVE WAYS TWO BOOKS BECOME
-      ONE.** *(review §5, Data integrity)*
+- [x] **47. RE-CATCHING A BOOK DESTROYS THE GOOD RECORD, AND FIVE WAYS TWO BOOKS BECOME
+      ONE.** *(review §5, Data integrity)* **SIX OF SEVEN DONE 2026-08-27**, `ff09658`.
+      ADV-7 was split out as item **58** because it is a decision, not a fix.
+
+      **THE PRESCRIBED FIX FOR ADV-6 IS WRONG, and the reason generalises.** It reads
+      `book: previous ? { ...previous.book, ...book } : book`. A spread keeps a previous
+      value only when the incoming KEY IS ABSENT, and this repo produces both shapes:
+      `recognizer.ts:94` emits `{ title, author }` with the keys absent, while
+      `openLibrary.toBook` ALWAYS writes `isbn: (doc.isbn ?? [])[0]` and `coverUrl: … :
+      undefined`. OpenLibrary records are patchy, so a doc that MATCHES but carries neither
+      is ordinary - and then the spread overwrites with `undefined` and the cover is gone as
+      if nothing had been guarded. **`src/extension/mergeBook.ts` states the rule once
+      instead: a re-catch never makes the record worse.** One of the 21 mutations applies
+      the review's fix verbatim, and it is caught. **This is exactly the distinction item
+      53's TS-7 (`exactOptionalPropertyTypes`) exists to make.**
+
+      **C-5's CORRECT RULE IS NOT TRANSITIVE, so it cannot live in a key.** "Sapiens"
+      matches both "Sapiens: A Brief History" and "Sapiens: An Illustrated History", while
+      those two do not match each other. `content.ts:721` and `manualAdd.ts:67` both build a
+      `Map` from `identityOf`, and a Map needs an equivalence relation. So `bookKey` stays
+      COARSE for the Map and `sameBook` is EXACT and decides whether a save overwrites - the
+      residual imprecision (a shelf holding *The Two Towers* may badge *The Return of the
+      King* as held) is named in the docblock rather than hidden. A wrong label on a screen,
+      recoverable in one press; not a book overwritten on disk.
+
+      **21 mutations, 21 caught. THREE SURVIVED FIRST PASS**, every one a real hole in a
+      test written minutes earlier: a merge test calling `mergeBook(undefined, …)` that
+      returned on the first line and never reached the branch it was written to check, and
+      two tray tests that did not exist at all because the new field had only been threaded
+      through the compiler.
 
       - **ADV-6 · VERIFIED.** `storage.ts:96` takes `book` WHOLESALE while defending
         `source: source ?? previous?.source` and `shot: shot ?? previous?.shot` on the two
@@ -852,6 +881,27 @@ unblocks.
         four-photo post yielding one book stores photograph one as that book's cover.
       - **ADV-7 · The two catch flows derive different job keys for a multi-image post** —
         two cards, two vision calls, **two trial spends for one post**.
+
+- [ ] **58. TWO CATCH FLOWS, TWO JOBS, TWO TRIAL SPENDS FOR ONE POST.** *(review §5,
+      ADV-7)* **A DECISION, NOT A BUG, and that is why it is Maximo's.**
+
+      The two flows derive different job keys for a multi-image post, and they do it on
+      purpose. `background.ts:499` builds its Tweet as `imageUrls: [info.srcUrl]` - the
+      right-click means *read THIS cover* - while `content.ts:1486` scrapes the whole post.
+      `postKey` hashes the images, so the keys differ, `lookups` does not dedupe, and
+      catching one post both ways costs two vision calls and two trial catches.
+
+      **Folding them into one job changes what the model is asked**, which is a product
+      decision about what a catch IS, not a correctness fix. The alternatives, with what
+      each costs: (a) leave it - two different questions cost two catches, and nobody has
+      complained because nobody has used it; (b) key on the POST rather than its pictures -
+      one catch per post, but two right-clicks on two different books in one post become one
+      job and the second book is never read; (c) let the context-menu flow adopt the post's
+      full image list - one job, but the model is now sent four pictures when the reader
+      pointed at one, which is slower and costs more.
+
+      Probed 2026-08-27. Nothing here is urgent: the cost is one trial catch, and only for
+      somebody who catches the same post twice by two different routes.
 
 - [ ] **48. THE ACTIVATION LIFECYCLE'S LAST THREE HOLES.** *(review §4)*
 
