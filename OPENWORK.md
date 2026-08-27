@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **949 across 76 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
+| Tests | **958 across 75 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-27). **This row read 856/71 for half a day and both the header and the handoff carried it**: `5461211` added `agentRules.test.ts` after the 08:29 handoff was written, and item 45 added six more. Re-derive it; do not carry it. **The caveat has changed rather than gone.** On 2026-08-24 the review mutation-tested six behaviours and FIVE survived. On 2026-08-25 the six P0 fixes were each mutation-tested as they landed — **55 mutations, 52 caught immediately, and the three that survived were real holes in tests written minutes earlier.** The review's OWN mutation table (§3) was then re-run against the suite: **all six now fail, where five used to pass.** Both are now closed and recorded in §5. Green still is not covered; what is different is that the parts touched this session have been shown to fail |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
 | Working tree | clean |
@@ -15,7 +15,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27. `main` = `origin/main` at `60b98e4`, 0 ahead** (`git rev-list --count origin/main..HEAD`). Twenty-nine commits went up in one go: the push had been blocked by the permission classifier since 08-25 and cleared on this attempt. **This row asserted "28 UNPUSHED" for about thirty seconds before the push succeeded, which is the drift this file keeps paying for in miniature - it was corrected in the same session rather than inherited.** **63 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). `buki-hardening` was merged and pushed 2026-08-18; `buki-pro` is older history. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Seven are Maximo's (2, 3, 9, 35, 37, 56, 58); ten are agent work (36, 48-55, 57).** Items 45, 46 and 47 closed 2026-08-27; item 58 filed out of 47, so the count held at 17 while three items closed. It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27.) **Eight are Maximo's (2, 3, 9, 35, 37, 56, 58, 59); nine are agent work (36, 49-55, 57).** **Items 45, 46, 47 and 48 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so a flat count of 17 hides four closures and two new decisions. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -43,7 +43,8 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~46~~ | agent | ~~Four privacy and permission claims that are not true~~ **DONE 2026-08-27**, `9c2b268` + `24433f9`. **TM-8 was the only live hole and probing it found a SECOND vector the review did not file**: `isbnCell` writes `="<isbn>"`, which IS a formula, and `openLibrary.ts:44` casts `doc.isbn[0]` out of a wiki anyone may edit. **TM-11 was not a false claim at all** - `permissions.md` is right that Buki never holds access to a site nobody right-clicked - it was a missing feature, and the options page now lists every granted site with a Forget beside it. **18 mutations across the two commits, 18 caught.** ⚠ **One thing no test can prove: that Chrome still injects on x.com after TM-14 removed the host permission. Item 3, by hand** | store review |
 | ~~47~~ | agent | ~~Re-catching a book destroys the good record, plus five ways two books become one~~ **DONE 2026-08-27**, `ff09658`. Six of the seven closed. **THE PRESCRIBED FIX FOR ADV-6 IS WRONG**: a spread keeps a previous value only when the incoming KEY IS ABSENT, and `openLibrary.toBook` ALWAYS writes `isbn` and `coverUrl` even when undefined - so `{...previous.book, ...book}` wipes the cover on any sparse-but-matching doc, which is ordinary. **C-5's correct rule is NOT TRANSITIVE** and therefore cannot live in a Map key, so `bookKey` and `sameBook` now sit at different resolutions on purpose. **21 mutations, 21 caught, 3 survived first pass.** ADV-7 split out as item **58** | the shelf, which is the product |
 | **58** | **Maximo** | **Two catch flows, two jobs, two trial spends for one post** (ADV-7). Not a bug an agent may fix: the flows key differently ON PURPOSE, and folding them changes what the model is asked | one trial catch, per post caught both ways |
-| **48** | agent | **The activation lifecycle's last three holes** (ADV-3 VERIFIED, ADV-8, C-3). All three burn the five permanent slots | every subscriber, eventually |
+| ~~48~~ | agent | ~~The activation lifecycle's last three holes~~ **TWO DONE 2026-08-27**, `261852c`. ADV-3: the server minted a session with no activation id, and undefined does not survive `JSON.stringify`, so **every renewal activated again** - five slots gone in five days. ADV-8: `ensureSession` says it never throws and both saves sat outside the `try`. **C-3 IS NOT FIXED AND THAT IS THE FINDING** - two fixes were written and both reverted, because item 27's premise does not expire and telling the two cases apart needs Polar's refusal codes, which cannot be probed until item 2. Split out as item **59** | every subscriber, eventually |
+| **59** | **Maximo**, then agent | **A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING STORAGE, which destroys the shelf** (C-3). Blocked on item 2: one probe against the live endpoint settles it | a subscriber who deactivates an install |
 | **49** | agent | **Four reliability holes on the path somebody is waiting on** (R-1 to R-4) | a catch that hangs, on someone else’s page |
 | **50** | agent | **The measured performance set** — PERF-1/2/3 are the three a first user feels. Every number came off a probe | the first impression |
 | **51** | agent | **The server's remaining contract and edge gaps** (AC-5, AC-6, AC-10, AC-12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12) | — |
@@ -185,7 +186,9 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 kept because the reasoning explains the product's shape, and it carries its own
 `PARTLY SUPERSEDED` banner naming what stopped being true. Do not update it; supersede it.
 
-**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-27-launch-prep.md`
+**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-27-review-lane.md`
+(2026-08-27, the second pair on that date: items 45-48 closed, items 58 and 59 filed out of
+them). It supersedes `buki-handoff-2026-08-27-launch-prep.md`
 (2026-08-25, the six P0s fixed and the rest of the review filed). It supersedes
 `buki-handoff-2026-08-24-prelaunch-review.md`, which described the same findings before any
 of them were fixed, which in turn superseded `buki-handoff-2026-08-18-launch-readiness.md`.
@@ -903,7 +906,32 @@ unblocks.
       Probed 2026-08-27. Nothing here is urgent: the cost is one trial catch, and only for
       somebody who catches the same post twice by two different routes.
 
-- [ ] **48. THE ACTIVATION LIFECYCLE'S LAST THREE HOLES.** *(review §4)*
+- [x] **48. THE ACTIVATION LIFECYCLE'S LAST THREE HOLES.** *(review §4)* **TWO OF THREE DONE
+      2026-08-27**, `261852c`. C-3 split out as item **59**, because it needs a probe nobody
+      can run until item 2 exists.
+
+      **ADV-3, and it is item 27's P0 through a different door.** On the ACTIVATE path
+      `claim.activationId` is Polar's `id` with no fallback - there is no prior id to fall
+      back TO - so a missing key gives `undefined`, and **undefined does not survive
+      `JSON.stringify`**: it vanishes from the signed claim AND from the response body. The
+      client's `?? ''` yields `''`, `writePro`'s `&& activationId` guard omits the field, and
+      **the next renewal ACTIVATES AGAIN.** Renewal runs daily against five permanent slots,
+      so the subscriber is locked out inside a week. Now refused **502**, not 403: our
+      upstream failed its own contract, and 502 is in `worthRetrying` so a client holding a
+      session keeps it.
+
+      > **One mutation was proved EQUIVALENT and the code was simplified rather than the
+      > number inflated.** The guard was first written `!renewing && !claim.activationId`.
+      > `renewing` is `Boolean(activationId)` and the renewing branch ends `?? activationId`,
+      > so a renewal always carries an id by construction and the excluded case cannot occur.
+      > A condition that can never be false is one a reader reasons about for nothing.
+
+      **ADV-8.** `ensureSession`'s docblock says *"It never throws"* and both `deps.save`
+      calls sat OUTSIDE the `try`. It runs on the path of a catch somebody is waiting on, so
+      a storage-quota failure did not degrade to *"carry on with what we have"* - it rejected
+      into the caller and took the catch with it. **Worse on a first pairing: `exchange` has
+      ALREADY SPENT A SLOT by then**, so throwing lost the catch AND the slot, and the id
+      that would have stopped the next renewal spending another was never written.
 
       - **ADV-3 · VERIFIED. The licence server mints a session without proving the claim
         carries an activation id.** On the ACTIVATE path there is no fallback: if Polar's
@@ -916,15 +944,43 @@ unblocks.
         outside the `try`.** `proState.ts:126`. A storage-quota failure rejects into the
         catch. Worse: it happens AFTER `exchange` returned ok, **so on a first pairing Polar
         has already spent a slot and the id was never persisted.**
-      - **C-3 · A dead `activationId` is never cleared.** `proState.ts:166`. If the id becomes
-        invalid at Polar (the customer deactivates that install to free a slot), every
-        exchange validates a nonexistent activation and re-stores the same dead id.
-        **Re-pasting the key does not help** — `activateKey.activationFor` reuses it by
-        design. **The only escape is clearing extension storage.**
+      - **C-3 · MOVED TO ITEM 59, 2026-08-27.** Not fixed, and not for want of trying.
 
       All three are about the five permanent slots, which is the only finite resource this
       product can burn. `activateKey.ts` (item 43) made the CLIENT half testable; none of
       these three is fixed by it.
+
+- [ ] **59. A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING EXTENSION STORAGE, WHICH DESTROYS
+      THE SHELF.** *(review §4, C-3.)* **Split out of item 48 on 2026-08-27. BLOCKED ON ITEM 2.**
+
+      If the activation is removed at Polar - the customer deactivates that install to free
+      one of five slots - every later exchange validates an activation that no longer exists
+      and is refused for ever. `activateKey.activationFor` reuses the stored id by design, so
+      re-pasting the key does not help.
+
+      **TWO FIXES WERE WRITTEN AND BOTH REVERTED. The reasons are the item.**
+
+      1. **Drop the id on a refused renewal.** Item 27's premise does not expire there, it
+         just does not cover everything. A subscription that lapsed and was fixed **still has
+         its activation at Polar**, so dropping the id makes the next success activate a
+         SECOND time for the same machine - item 27 exactly. A deactivated install wants the
+         opposite. Nothing in the code can tell the two apart.
+      2. **Re-pasting while unpaired asks to pair again** (`activationFor` requires a live
+         session). Broke five existing tests that encode the prior decision, and degrades the
+         commoner case to fix the rarer one: the lapsed customer who re-pastes out of
+         impatience spends a slot that automatic renewal would not have.
+
+      **WHAT WOULD SETTLE IT, and it is one request.** Once item 2's variables exist,
+      deactivate an install at Polar and call the validate endpoint with its id. If Polar
+      distinguishes *"this activation does not exist"* (404) from *"this licence is refused"*
+      (403), the server can say which, and the client drops the id **only** in the first
+      case. If it cannot be distinguished, the answer is a deliberate control on the options
+      page - *"pair this install again"* - because the customer knows which case they are in
+      and the code does not.
+
+      **The asymmetry is why this is worth the wait:** keeping the id costs a permanent
+      lockout whose only escape destroys the reader's books; dropping it wrongly costs one
+      of five slots, recoverable from the Polar dashboard.
 
 - [ ] **49. FOUR RELIABILITY HOLES ON THE PATH SOMEBODY IS WAITING ON.** *(review §4)*
 
@@ -2658,6 +2714,28 @@ deleted, because the wrong belief explains the code above it.
   known: use the Write or Edit tool, not the shell.** What is new is where it matters most —
   an instrument's output is the thing you would otherwise use to notice, so a shell edit to a
   harness is the worst available place to take that risk.
+
+- **T14. `tsc` PROVES A FIELD IS CARRIED, NEVER THAT IT IS CARRIED CORRECTLY.** Adding
+  `pictures` to `Card` turned every state transition red until each one named it, which felt
+  like proof and was not: two mutations survived afterwards — defaulting the count to 1 when
+  there was no picture, and resetting it to 1 on a state change. The compiler enumerates the
+  fields a literal must have and has nothing to say about the values. **A new field on a
+  shared type needs a test per BRANCH, not a green typecheck.**
+- **T15. AN EQUIVALENT MUTANT IS A SIGNAL TO SIMPLIFY, NOT A NUMBER TO EXPLAIN AWAY.** The
+  ADV-3 guard was written `!renewing && !claim.activationId`. `renewing` is
+  `Boolean(activationId)` and the renewing branch ends `?? activationId`, so the excluded
+  case cannot occur and removing `!renewing` changed no test. The temptation is to write a
+  test that reaches it — there is none — or to count it as caught. **The right move is to
+  delete the condition**, because one that can never be false is one every future reader
+  reasons about for nothing. Then say in the docblock which existing test still guards the
+  invariant, or the simplification looks like a weakening.
+- **T16. A COMMIT MESSAGE CAN DESCRIBE WORK THAT IS NOT IN ITS OWN DIFF, AND NOTHING
+  COMPLAINS.** A heredoc wrote to `/tmp`, node read `E:\tmp`, `ENOENT`. `git add` on the
+  unchanged file said nothing, `git status --porcelain` came back clean, and the commit
+  landed asserting a section had been added to a file it never touched. **In a repo whose
+  commit messages carry their own reasoning, that is the same class of lie as a stale doc.**
+  `git show --stat` is the probe, and the session scratchpad directory is the fix — Git Bash
+  and node resolve `/tmp` differently on this box.
 
 ---
 

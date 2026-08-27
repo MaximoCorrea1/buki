@@ -21,9 +21,10 @@ streak of writing it late. The paths were printed in the first reply.
 | 5 | **Item 45** — the price in three places `pricing.test.ts` cannot see | [x] | agent | `e521839`. It was TWO places and the prescribed fix was wrong. 7 mutations, 7 caught |
 | 6 | **Item 46** — four privacy/permission claims that are not true | [x] | agent | `9c2b268` + `24433f9`. 18 mutations, 18 caught. TM-11 was a feature, not a false claim |
 | 7 | **Item 47** — re-catching a book destroys the good record (ADV-6) | [x] | agent | `ff09658`. SIX of seven. 21 mutations, 21 caught, 3 survived first pass |
-| 8 | **Item 48** — the activation lifecycle's last three holes | [ ] | agent | ADV-3 VERIFIED, ADV-8, C-3. Burns the five permanent slots. **NEXT** |
+| 8 | **Item 48** — the activation lifecycle's last three holes | [x] | agent | `261852c`. TWO of three. 5 mutations, 5 caught, 1 proved equivalent and removed |
+| 8b | **Item 59** — C-3, a dead activation with no escape but wiping the shelf | [!] | **Maximo** | split out of 48. BLOCKED on item 2: one probe against the live endpoint settles it |
 | 7b | **Item 58** — ADV-7, two catch flows, two trial spends | [?] | **Maximo** | split out of 47. A decision about what a catch IS, not a fix |
-| 9 | **Item 49** — four reliability holes on the waited-on path | [ ] | agent | R-1 to R-4 |
+| 9 | **Item 49** — four reliability holes on the waited-on path | [ ] | agent | R-1 to R-4. **NEXT** |
 | 10 | **Item 50** — the measured performance set | [ ] | agent | PERF-1/2/3. Re-measure after, not before |
 | 11 | **Item 51** — server contract and edge gaps | [ ] | agent | AC-5/6/10/12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12 |
 | 12 | **Item 52** — the tray lives in the host page's light DOM | [ ] | agent | TM-9 exfiltration surface, TM-10 latent `javascript:` |
@@ -47,6 +48,8 @@ streak of writing it late. The paths were printed in the first reply.
 | 30 | **NEW.** By hand: Buki's button still appears on x.com after TM-14 | [ ] | Maximo | no test can prove Chrome still injects. Filed into item 3 |
 | 31 | **NEW.** By hand: the Forget control, and that no required host is listed | [ ] | Maximo | filed into item 3 |
 | 32 | **NEW.** By hand: export a shelf with a title starting `=`, open in Excel | [ ] | Maximo | filed into item 3 |
+| 33 | **NEW.** `OPENWORK.md` is over its own size budget: §5 begins at line 2063 and Read takes 2000 | [?] | founder | the whole case ledger is unreachable in one read. Extract §5's CASES, provably. Rule 8 |
+| 34 | **NEW.** Push 9 commits to `origin/main` | [?] | founder | not pushed; not asked |
 
 `[x]` done+verified · `[~]` in progress · `[ ]` open · `[?]` founder decision · `[!]` blocked
 
@@ -74,6 +77,11 @@ streak of writing it late. The paths were printed in the first reply.
 | 16 | C-7, C-9 fixed | 7/7 after two tray tests were added for a field only the compiler protected |
 | 17 | C-8 fixed | 5/5. `coversToKeep` + an absence proof on the popup wiring |
 | 18 | Item 47 committed, ADV-7 filed as item 58 | `ff09658`. 949 tests / 76 files |
+| 19 | Item 48 re-probed | ADV-3 confirmed: undefined does not survive JSON.stringify, so every renewal re-activates |
+| 20 | C-3 attempted twice and REVERTED twice | item 27's premise does not expire; five existing tests encode it; the probe needs live endpoints |
+| 21 | Item 48 committed | `261852c`. One mutation proved equivalent and the condition was deleted rather than counted |
+| 22 | `CLAUDE.md`'s size warning corrected | it claimed ~100 lines of §5 were reachable; §5 now BEGINS past the cut |
+| 23 | Handoff written, pointer updated, `cat -A` clean | `%TEMP%/buki-handoff-2026-08-27-review-lane.md` |
 
 ---
 
