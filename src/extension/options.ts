@@ -10,6 +10,13 @@ import { readPro, writePro, standingOf } from './proState';
 import { activate as activateLicence } from './activateKey';
 import { createTrial } from './trial';
 import { planLabel } from './entitlement';
+import {
+  revocableHosts,
+  forgotten,
+  stillAllowed,
+  NO_HOSTS_YET,
+  type GrantedHost,
+} from './grantedHosts';
 import { BUKI_HOST } from '../shared/host';
 import { PRICING_URL } from '../shared/pricing';
 import { priceLine } from '../shared/pricing';
@@ -276,3 +283,104 @@ void main();
  * now, because a module-scope call is the only version of this that cannot inherit one.
  */
 void wirePro();
+
+/**
+ * SITES BUKI CAN REACH, and the way to take one back. `OPENWORK.md` item 46, TM-11.
+ *
+ * `mayFetch` asks for one host at a time and the endpoint field asks for one more. Both
+ * are per-use asks, which is what `docs/store/permissions.md` tells a reviewer and it is
+ * true. What was not true by implication is that the grant is temporary: nothing in this
+ * extension had ever called `chrome.permissions.remove`, so a permission given once for
+ * one cover was held for the life of the install and the reader could not even see it.
+ *
+ * AT MODULE SCOPE, for the same reason `wirePro` is, and the comment above it is the
+ * record of why: `main()` returns early when any of seven PROVIDER ids is missing, and
+ * none of them has anything to do with a permission. Inside `main()` this section would go
+ * dark the day somebody renamed `#store`.
+ *
+ * The decisions are in `grantedHosts.ts` because no test can import THIS file. What is
+ * left here is DOM.
+ */
+function wireGrants(): void {
+  const list = $<HTMLUListElement>('grants');
+  const status = $<HTMLElement>('grantStatus');
+  if (!list) return;
+
+  const say = (text: string): void => {
+    if (status) status.textContent = text;
+  };
+
+  /** The manifest itself, rather than a second copy of its host list in this file. */
+  const required = chrome.runtime.getManifest().host_permissions ?? [];
+
+  function emptyRow(text: string): HTMLLIElement {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.className = 'empty';
+    span.textContent = text;
+    li.appendChild(span);
+    return li;
+  }
+
+  async function forget(row: GrantedHost, button: HTMLButtonElement): Promise<void> {
+    button.disabled = true;
+    try {
+      const gone = await chrome.permissions.remove({ origins: [row.origin] });
+      say(gone ? forgotten(row.host) : stillAllowed(row.host));
+      if (gone) {
+        await paint();
+        return;
+      }
+    } catch (err) {
+      console.error('[Buki] could not remove', row.origin, err);
+      say(stillAllowed(row.host));
+    }
+    button.disabled = false;
+  }
+
+  async function paint(): Promise<void> {
+    let rows: GrantedHost[] = [];
+    try {
+      const held = await chrome.permissions.getAll();
+      rows = revocableHosts(held.origins, required);
+    } catch (err) {
+      // A section that throws here would take every section below it with it, and this one
+      // is last on the page precisely so it cannot. Say what failed rather than nothing.
+      console.error('[Buki] could not read the granted origins', err);
+      list?.replaceChildren(emptyRow("Chrome would not say which sites are allowed."));
+      return;
+    }
+
+    if (!rows.length) {
+      list?.replaceChildren(emptyRow(NO_HOSTS_YET));
+      return;
+    }
+
+    list?.replaceChildren(
+      ...rows.map((row) => {
+        const li = document.createElement('li');
+
+        const site = document.createElement('span');
+        site.className = 'site';
+        site.textContent = row.host;
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ghost';
+        button.textContent = 'Forget';
+        // The visible word is "Forget" on every row, so a screen reader announcing four of
+        // them announces the same button four times. The label names WHICH, and it starts
+        // with the visible text, which is what WCAG's Label in Name asks for.
+        button.setAttribute('aria-label', `Forget ${row.host}`);
+        button.addEventListener('click', () => void forget(row, button));
+
+        li.append(site, button);
+        return li;
+      }),
+    );
+  }
+
+  void paint();
+}
+
+void wireGrants();

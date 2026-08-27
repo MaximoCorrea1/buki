@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import options from '../../options.html?raw';
 import optionsTs from './options.ts?raw';
+import manifestJson from '../../manifest.json?raw';
 
 /**
  * The page markup, with comments and CSS stripped.
@@ -33,6 +34,23 @@ const DOM = options.replace(/<!--[\s\S]*?-->/g, '').replace(/<style>[\s\S]*?<\/s
 
 /** Anchored on the opening TAG, not a bare attribute, for the same reason. */
 const at = (needle: string): number => DOM.indexOf(needle);
+
+/**
+ * TypeScript with its comments removed, for the same reason `DOM` has its comments removed.
+ *
+ * This repo's house style is unusually comment-dense, and a guard that scans raw source is
+ * satisfied — or broken — by the paragraph explaining the guard. Line comments are stripped
+ * only when the `//` opens the line, so a `https://` inside a string literal survives.
+ */
+const code = (body: string): string =>
+  body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+
+/** Every module the extension ships, for absence proofs that must span all of them. */
+const EXTENSION_SOURCE = import.meta.glob(['./*.ts', '../shared/*.ts', '../recognizer/*.ts'], {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
 
 describe('the setup page leads with what most people need', () => {
   it('puts the licence field above the API key field', () => {
@@ -144,5 +162,78 @@ describe('the setup page leads with what most people need', () => {
     // that branch silently made false — it would spend the reader's free catches on our
     // proxy while they believed they were talking to their own.
     expect(options).not.toContain('leave the key field blank');
+  });
+});
+
+/**
+ * SITES BUKI CAN REACH. `OPENWORK.md` item 46, TM-11.
+ *
+ * `grantedHosts.test.ts` proves the DECISION: which grants are revocable, what each row
+ * says, and that a required host never gets a button that cannot work. None of that helps
+ * if the wiring in `options.ts` reaches `chrome.permissions.remove` some other way, and
+ * `options.ts` is one of the four files no test can import.
+ *
+ * So these are written as ABSENCE proofs, the way `contentSafety.test.ts` is: not "the safe
+ * call is present somewhere", which a comment satisfies, but THERE IS NO SECOND WAY IN.
+ */
+describe('taking a granted site back', () => {
+  it('has a section on the page, with a live region for what happened', () => {
+    expect(at('id="grants"'), 'the grants list is missing').toBeGreaterThan(-1);
+    expect(at('id="grantStatus"'), 'the grants status line is missing').toBeGreaterThan(-1);
+    expect(DOM).toMatch(/id="grantStatus"[^>]*role="status"/);
+  });
+
+  it('wires it OUTSIDE main()’s provider guard', () => {
+    // Same failure `wirePro` records above: `main()` returns early when any of seven
+    // PROVIDER ids is missing, and a permission has nothing to do with any of them. Column
+    // 0 IS the assertion, because a module-scope call cannot inherit a function's guard.
+    expect(optionsTs, 'wireGrants() must be called at module scope, not inside main()').toMatch(
+      /^void wireGrants\(\);$/m,
+    );
+  });
+
+  it('has NO second way to remove a permission', () => {
+    // The absence proof. One call site across the whole extension, so there is nowhere a
+    // raw origin string could reach `permissions.remove` without passing through
+    // `revocableHosts` — which is what keeps a REQUIRED host from getting a button that
+    // resolves false and changes nothing while the reader believes it worked.
+    //
+    // THE FIRST VERSION OF THIS SCANNED THE RAW SOURCE AND FAILED ON ITS OWN DOCBLOCKS:
+    // four JSDoc paragraphs explaining why `chrome.permissions.remove` is called once were
+    // counted as four call sites. That is the `?raw` failure of OPENWORK section 5 in its
+    // exact form — prose ABOUT the call standing in for the call — and it is why `DOM` at
+    // the top of this file strips HTML comments before asserting on order.
+    const callers = Object.entries(EXTENSION_SOURCE)
+      .filter(([path]) => !path.includes('.test.'))
+      .flatMap(([path, body]) =>
+        (code(body).match(/permissions\s*\.\s*remove\s*\(/g) ?? []).map(() =>
+          path.replace(/^\.\//, ''),
+        ),
+      );
+    expect(callers).toEqual(['options.ts']);
+  });
+
+  it('removes the origin it was given, rather than one it recomputed', () => {
+    // The call site takes a `GrantedHost` and passes that row's own `origin`. A wiring that
+    // rebuilt the pattern from the displayed host name would reintroduce every case
+    // `revocableHosts` already refuses, one string concatenation later.
+    expect(code(optionsTs)).toMatch(/async function forget\(row: GrantedHost/);
+    expect(code(optionsTs)).toMatch(/permissions\.remove\(\{ origins: \[row\.origin\] \}\)/);
+  });
+
+  it('holds NO second copy of the manifest host list', () => {
+    // One fact, one home. The wiring reads `chrome.runtime.getManifest().host_permissions`,
+    // so a host added to the manifest is filtered out of this list on the same day. A
+    // literal copy here would drift, and the drift would surface as a Forget button that
+    // silently does nothing — the exact failure `revocableHosts` exists to prevent.
+    const required = (JSON.parse(manifestJson) as { host_permissions: string[] })
+      .host_permissions;
+    for (const host of required) {
+      expect(
+        code(optionsTs),
+        `options.ts spells ${host} instead of reading the manifest`,
+      ).not.toContain(host);
+    }
+    expect(code(optionsTs)).toContain('getManifest().host_permissions');
   });
 });

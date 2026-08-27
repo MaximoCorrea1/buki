@@ -282,6 +282,60 @@
       details > div { padding-top: 14px; }
 
       .actions { display: flex; align-items: center; gap: 12px; }
+
+      /* SITES BUKI CAN REACH. An inset grouped list, which is the idiom this page already
+         speaks since the iOS turn and the right one for "a set of things, each with its own
+         control". It sits on --card like `.why` does, so nothing new was invented for it.
+
+         The separator is a ::before inset to the row's own left padding rather than a
+         full-width border. That inset is the whole difference between a system list and a
+         stack of divs, and it is the detail this page's other surfaces already earn. */
+      .grants {
+        list-style: none;
+        margin: 0 0 14px;
+        padding: 0;
+        background: var(--card);
+        border-radius: var(--r-lg);
+        box-shadow: 0 1px 2px var(--shadow);
+        overflow: hidden;
+      }
+      .grants li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 9px 11px 9px 16px;
+      }
+      .grants li + li { position: relative; }
+      .grants li + li::before {
+        content: "";
+        position: absolute;
+        left: 16px;
+        right: 0;
+        top: 0;
+        height: 1px;
+        background: var(--hairline);
+      }
+      /* Mono, because a hostname is a machine's string and reading it as prose invites
+         mistaking `evi1.example` for `evil.example`. Same argument the API key field makes
+         one section up. */
+      .grants .site {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 13px;
+        color: var(--ink);
+        overflow-wrap: anywhere;
+      }
+      /* The empty state is a row, not a hidden section. A section that disappears when it
+         has nothing in it reads as broken; a row that says when one would appear does not. */
+      .grants .empty {
+        display: block;
+        padding: 13px 16px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      /* The page's pill at one size down. A control inside a list row is smaller than one
+         in an .actions bar; it is the same control, not a different language. */
+      .grants button { flex: none; padding: 7px 15px; font-size: 12.5px; }
       /* THE ANCHOR IS IN THIS LIST BECAUSE IT IS A CONTROL. `#getPro` is an <a>, so a rule
          selecting `button` never touched it, and it sat in the same .actions row as
          "Activate" with none of the shape. Measured in Chrome against the real page:
@@ -570,6 +624,18 @@
       <div class="actions">
         <button class="ghost" type="button" id="clearLog">Clear the log</button>
         <span id="logStatus" role="status"></span>
+      </div>
+
+      <h2>Sites Buki can reach</h2>
+      <p class="hint">
+        A cover usually lives on a different site from the post it appears in, so Buki asks
+        for that one site the first time it reads a cover there. These are the ones you said
+        yes to. Removing a site leaves your shelf untouched, and Buki will ask again the next
+        time you catch a book there.
+      </p>
+      <ul class="grants" id="grants"></ul>
+      <div class="actions">
+        <span id="grantStatus" role="status"></span>
       </div>
     </main>
     <script src="dist/options.js"></script>
