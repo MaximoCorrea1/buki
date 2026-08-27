@@ -2960,6 +2960,20 @@ deleted, because the wrong belief explains the code above it.
   failing*: `node tools/control-bytes.mjs --verify` plants a NUL, confirms the sweep catches it,
   and removes it. **Run tools WITHOUT a pipe, or read `${PIPESTATUS[0]}`.**
 
+- **T21. MARKDOWN BOLD RUNNING ONTO A SLASH ENDS THE DOCBLOCK.** Writing a CIDR prefix in a
+  docblock as bold-immediately-then-slash puts two asterisks against a slash, which **is the
+  block-comment terminator**. `ipCap.ts` stopped parsing, and the symptom was not an error on
+  that line — it was `esbuild` failing the TRANSFORM, so vitest reported **"no tests"** for the
+  whole file. That is the same reading trap as §5's compile-failure rule: *a file that does not
+  load looks like a file with nothing wrong in it.*
+
+  ⭐ **AND THE FIRST ATTEMPT TO WARN ABOUT IT HERE RE-SPELLED THE TERMINATOR**, inside
+  backticks, because **a block comment does not respect backticks.** Two failures, the second
+  inside the fix for the first — exactly as the backtick trap's sixth occurrence landed inside
+  the `node -e` that was mutation-testing the backtick warning. **The remedy is not to be
+  careful: it is to never write the two characters at all.** Say *"a /64"* with the bold opening
+  on a letter, and spell the terminator in words when you must refer to it.
+
 ---
 
 ## 6. Accepted risks, named so nobody rediscovers them

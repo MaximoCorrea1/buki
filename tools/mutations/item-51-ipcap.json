@@ -1,0 +1,73 @@
+{
+  "target": [
+    "src/server/ipCap.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "51a the IPv6 /64 collapse is removed, restoring the 2^64 bypass verbatim",
+      "file": "src/server/ipCap.ts",
+      "from": "  return groups.slice(0, 4).join(':');",
+      "to": "  return groups.join(':');"
+    },
+    {
+      "label": "51b the prefix widens to a /48, which buckets unrelated customers of one ISP together",
+      "file": "src/server/ipCap.ts",
+      "from": "  return groups.slice(0, 4).join(':');",
+      "to": "  return groups.slice(0, 3).join(':');"
+    },
+    {
+      "label": "51c the prefix narrows to a /80, which is still free for the caller to vary",
+      "file": "src/server/ipCap.ts",
+      "from": "  return groups.slice(0, 4).join(':');",
+      "to": "  return groups.slice(0, 5).join(':');"
+    },
+    {
+      "label": "51f the bracket/port form is no longer recognised, so it gets a second allowance",
+      "file": "src/server/ipCap.ts",
+      "from": "  const bare = address.startsWith('[')\n    ? (address.slice(1).split(']')[0] ?? address)\n    : address;",
+      "to": "  const bare = address;"
+    },
+    {
+      "label": "51g hextet normalisation is dropped, so 0db8 and db8 become two buckets",
+      "file": "src/server/ipCap.ts",
+      "from": "    const trimmed = g.replace(/^0+/, '').toLowerCase();\n    return trimmed === '' ? '0' : trimmed;",
+      "to": "    return g;"
+    },
+    {
+      "label": "51h the eviction is removed, restoring the unbounded map",
+      "file": "src/server/ipCap.ts",
+      "from": "    if (hits.size > maxTracked) {",
+      "to": "    if (false) {"
+    },
+    {
+      "label": "51i eviction closes the brake instead of opening it (refuse everybody on overflow)",
+      "file": "src/server/ipCap.ts",
+      "from": "      for (const [at, seen] of hits) if (seen.day !== day) hits.delete(at);\n      if (hits.size > maxTracked) hits.clear();",
+      "to": "      return true;"
+    },
+    {
+      "label": "51j the day rollover stops resetting, so yesterday's count is permanent",
+      "file": "src/server/ipCap.ts",
+      "from": "    if (!seen || seen.day !== day) {",
+      "to": "    if (!seen) {"
+    },
+    {
+      "label": "51k the ceiling is off by one",
+      "file": "src/server/ipCap.ts",
+      "from": "    return seen.n > TRIAL_PER_IP_PER_DAY;",
+      "to": "    return seen.n > TRIAL_PER_IP_PER_DAY + 1;"
+    },
+    {
+      "label": "51l the unidentifiable caller gets a fresh allowance each time",
+      "file": "src/server/ipCap.ts",
+      "from": "  return first ? bucketFor(first) : 'unknown';",
+      "to": "  return first ? bucketFor(first) : String(Math.round(performance.now()));"
+    },
+    {
+      "label": "51d IPv4 and IPv4-mapped lose their exemption, folding every mapped caller into 0:0:0:0",
+      "file": "src/server/ipCap.ts",
+      "from": "  if (bare.includes('.')) return bare;",
+      "to": "  if (false) return bare;"
+    }
+  ]
+}

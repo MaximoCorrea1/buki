@@ -85,6 +85,102 @@ describe('the per-IP daily trial cap', () => {
     expect(cap(from('  203.0.113.7 , 70.41.3.18'), NOW)).toBe(true);
   });
 
+  /**
+   * PERF-6 / SEC-4. `OPENWORK.md` item 51.
+   *
+   * The module used to carry an explicit argument for having no eviction: *"an attacker
+   * cannot mint new source IPs the way they can mint candidate licence keys."* **That is
+   * IPv4 reasoning.** A residential IPv6 customer is delegated a /64 at minimum — often a
+   * /56 or /48 — and every address inside it routes back to them. So they can mint 2^64
+   * source addresses at no cost, which is both a free bypass of the cap and an unbounded
+   * map. A comment vouching for a hole is worse than no comment.
+   */
+  it('counts a whole IPv6 /64 as ONE caller, because its owner can mint every address in it', () => {
+    const cap = createIpCap();
+    for (let i = 0; i <= TRIAL_PER_IP_PER_DAY; i++) cap(from('2001:db8:1234:5678::1'), NOW);
+    expect(cap(from('2001:db8:1234:5678::1'), NOW)).toBe(true);
+
+    // A different address in the SAME delegation. Free to choose, so it must not be free
+    // to use: this is the request that used to reset the allowance.
+    expect(cap(from('2001:db8:1234:5678:dead:beef:cafe:1'), NOW)).toBe(true);
+    expect(cap(from('2001:db8:1234:5678:ffff::9'), NOW)).toBe(true);
+  });
+
+  it('still gives a DIFFERENT /64 its own allowance', () => {
+    // The prefix is the caller. Collapsing more than the /64 would put unrelated customers
+    // of one ISP into a single bucket, which is the opposite failure.
+    const cap = createIpCap();
+    for (let i = 0; i <= TRIAL_PER_IP_PER_DAY; i++) cap(from('2001:db8:1234:5678::1'), NOW);
+
+    expect(cap(from('2001:db8:1234:5678::1'), NOW)).toBe(true);
+    expect(cap(from('2001:db8:1234:9999::1'), NOW)).toBe(false);
+  });
+
+  it('reads an IPv6 address a proxy wrote with brackets and a port', () => {
+    // `[2001:db8::1]:443` is a legal way for a proxy to write it. Treating that as a
+    // different caller from the bare form would hand out a second allowance for a
+    // formatting difference, exactly as the spaces test says about the chain.
+    const cap = createIpCap();
+    for (let i = 0; i <= TRIAL_PER_IP_PER_DAY; i++) cap(from('2001:db8:1234:5678::1'), NOW);
+
+    expect(cap(from('[2001:db8:1234:5678::1]:443'), NOW)).toBe(true);
+  });
+
+  it('leaves IPv4 alone: a whole address, not a prefix', () => {
+    // IPv4 has no per-customer delegation to collapse. Two addresses that share three
+    // octets are two different customers, and folding them would throttle strangers.
+    const cap = createIpCap();
+    for (let i = 0; i <= TRIAL_PER_IP_PER_DAY; i++) cap(from('203.0.113.7'), NOW);
+
+    expect(cap(from('203.0.113.7'), NOW)).toBe(true);
+    expect(cap(from('203.0.113.8'), NOW)).toBe(false);
+  });
+
+  it('keeps an IPv4-mapped address whole, because its /64 is the same for everyone', () => {
+    // FOUND BY A SURVIVING MUTATION, not by writing the test first. `::ffff:203.0.113.7`
+    // folded to a /64 is `0:0:0:0` — every mapped caller in the world in one bucket, which
+    // is an outage for strangers rather than a brake on a prober.
+    const cap = createIpCap();
+    for (let i = 0; i <= TRIAL_PER_IP_PER_DAY; i++) cap(from('::ffff:203.0.113.7'), NOW);
+
+    expect(cap(from('::ffff:203.0.113.7'), NOW)).toBe(true);
+    expect(cap(from('::ffff:198.51.100.4'), NOW)).toBe(false);
+  });
+
+  it('reads 0db8 and db8 as the same hextet', () => {
+    // ALSO FOUND BY A SURVIVING MUTATION. Leading zeros are optional in IPv6, so a caller
+    // that writes them out would otherwise get a second allowance for a spelling — the
+    // same failure the spaces-in-the-chain test exists to prevent.
+    const cap = createIpCap();
+    for (let i = 0; i <= TRIAL_PER_IP_PER_DAY; i++) cap(from('2001:db8:1234:5678::1'), NOW);
+
+    expect(cap(from('2001:0db8:1234:5678::1'), NOW)).toBe(true);
+    expect(cap(from('2001:0DB8:1234:5678::9'), NOW)).toBe(true);
+  });
+
+  it('bounds the map, so no caller can grow an isolate without limit', () => {
+    // The /64 rule removes the cheap way to mint keys; it does not remove the map's
+    // ability to grow forever across a long-lived isolate. `keyCap` already carries this
+    // exact shape, and the sibling rule in §5 is that when one handler has a guard you ask
+    // what the other one has.
+    const cap = createIpCap({ maxTracked: 50 });
+    for (let i = 0; i < 200; i++) cap(from(`2001:db8:0:${i.toString(16)}::1`), NOW);
+
+    expect(cap.size()).toBeLessThanOrEqual(51);
+  });
+
+  it('forgetting OPENS the brake rather than closing it', () => {
+    // Same deliberate direction as keyCap: refusing everybody once the bookkeeping
+    // overflows would turn a probing attack into an outage for people who are not probing.
+    const cap = createIpCap({ maxTracked: 10 });
+    for (let i = 0; i <= TRIAL_PER_IP_PER_DAY; i++) cap(from('2001:db8:1111:2222::1'), NOW);
+    expect(cap(from('2001:db8:1111:2222::1'), NOW)).toBe(true);
+
+    for (let i = 0; i < 100; i++) cap(from(`2001:db8:9:${i.toString(16)}::1`), NOW);
+
+    expect(cap(from('2001:db8:1111:2222::1'), NOW)).toBe(false);
+  });
+
   it('puts every unidentifiable caller in ONE bucket, which is the safe direction', () => {
     // No header at all should not mean a fresh allowance each time. Sharing one bucket
     // makes the anonymous case TIGHTER than a named one rather than a way around the cap.
