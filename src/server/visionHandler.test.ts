@@ -542,8 +542,19 @@ describe('the mutations that survived a green suite', () => {
     for (const [name, value] of res.headers) {
       expect(value, `${name} carried the provider key home`).not.toContain('PROVIDER-KEY-SECRET');
     }
-    // And the whole header set is ours, not theirs: an allowlist of one, proven by its size.
-    expect([...res.headers.keys()].sort()).toEqual(['content-type']);
+    // And the whole header set is ours, not theirs: an EXACT allowlist, proven by its size
+    // rather than by naming the headers we happen to fear.
+    //
+    // This read `['content-type']` until 2026-08-27, when TM-12 added `no-store` and
+    // `nosniff` at the three places a response is built. **The rule did not change and the
+    // test still proves it** — the set is still exactly what this file writes, and still
+    // contains nothing the upstream sent. Widening it by hand is the only way an upstream
+    // header can get in, which is why the assertion stays exhaustive.
+    expect([...res.headers.keys()].sort()).toEqual([
+      'cache-control',
+      'content-type',
+      'x-content-type-options',
+    ]);
   });
 
   it('does not relay an upstream header even when it is harmless', async () => {

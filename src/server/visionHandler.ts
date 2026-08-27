@@ -12,6 +12,7 @@
  */
 import { decideAccess } from './policy';
 import { MAX_BODY_BYTES, rebuildVisionBody } from './visionBody';
+import { SAFE_HEADERS } from './responseHeaders';
 
 export interface VisionEnv {
   secret: string;
@@ -44,7 +45,7 @@ export interface VisionEnv {
 const json = (body: unknown, status: number): Response =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...SAFE_HEADERS },
   });
 
 /** The provider's shape for an error, so the extension's existing parser reads it. */
@@ -195,6 +196,8 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
   // an upstream header is the one place our own credential could ride home.
   return new Response(await upstream.text(), {
     status: upstream.status,
-    headers: { 'content-type': 'application/json' },
+    // Ours, not the upstream's - no header crosses back, per the note above. The body is a
+    // paid answer and must not be stored by anything between here and the extension.
+    headers: { 'content-type': 'application/json', ...SAFE_HEADERS },
   });
 }

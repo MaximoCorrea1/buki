@@ -1,0 +1,53 @@
+{
+  "target": ["src/server/responseHeaders.test.ts", "src/server/visionHandler.test.ts"],
+  "mutations": [
+    {
+      "label": "51v no-store is dropped, so the bearer-token response becomes cacheable (the finding, restored)",
+      "file": "src/server/responseHeaders.ts",
+      "from": "  'cache-control': 'no-store',",
+      "to": "  'cache-control': 'public, max-age=60',"
+    },
+    {
+      "label": "51w nosniff is dropped",
+      "file": "src/server/responseHeaders.ts",
+      "from": "  'x-content-type-options': 'nosniff',",
+      "to": "  'x-content-type-options': 'sniff-away',"
+    },
+    {
+      "label": "51x the LICENCE response stops spreading them - the endpoint with the token in its body",
+      "file": "src/server/licenseHandler.ts",
+      "from": "    headers: { 'content-type': 'application/json', ...SAFE_HEADERS },",
+      "to": "    headers: { 'content-type': 'application/json' },"
+    },
+    {
+      "label": "51y the vision RELAY stops spreading them, while its refusals keep them",
+      "file": "src/server/visionHandler.ts",
+      "from": "    // Ours, not the upstream's - no header crosses back, per the note above. The body is a\n    // paid answer and must not be stored by anything between here and the extension.\n    headers: { 'content-type': 'application/json', ...SAFE_HEADERS },",
+      "to": "    headers: { 'content-type': 'application/json' },"
+    },
+    {
+      "label": "51z the vision REFUSALS stop spreading them, while the relay keeps them",
+      "file": "src/server/visionHandler.ts",
+      "from": "  new Response(JSON.stringify(body), {\n    status,\n    headers: { 'content-type': 'application/json', ...SAFE_HEADERS },\n  });",
+      "to": "  new Response(JSON.stringify(body), {\n    status,\n    headers: { 'content-type': 'application/json' },\n  });"
+    },
+    {
+      "label": "51aa vercel.json goes back to excluding /api/ from every header",
+      "file": "vercel.json",
+      "from": "      \"source\": \"/api/(.*)\",",
+      "to": "      \"source\": \"/nothing/(.*)\","
+    },
+    {
+      "label": "51ab vercel.json keeps an /api/ block but drops no-store from it",
+      "file": "vercel.json",
+      "from": "          \"key\": \"Cache-Control\",\n          \"value\": \"no-store\"",
+      "to": "          \"key\": \"Cache-Control\",\n          \"value\": \"public, max-age=60\""
+    },
+    {
+      "label": "51ac an upstream header is relayed again, which the exhaustive allowlist must still catch",
+      "file": "src/server/visionHandler.ts",
+      "from": "    headers: { 'content-type': 'application/json', ...SAFE_HEADERS },\n  });\n}",
+      "to": "    headers: { 'content-type': 'application/json', ...SAFE_HEADERS, 'x-request-id': upstream.headers.get('x-request-id') ?? '' },\n  });\n}"
+    }
+  ]
+}

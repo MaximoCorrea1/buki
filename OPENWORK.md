@@ -48,7 +48,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **59** | **Maximo**, then agent | **A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING STORAGE, which destroys the shelf** (C-3). Blocked on item 2: one probe against the live endpoint settles it | a subscriber who deactivates an install |
 | ~~49~~ | agent | ~~Four reliability holes on the path somebody is waiting on~~ **DONE 2026-08-27**, `0486712` + `b006efc`. **ALL FOUR.** R-1's comment in `licenseHandler.ts` - *"never during a catch"* - **was false from the day it was written**, which is why a missing timeout on the catch path went unnoticed. R-2's cooldown had to be PERSISTED, because an MV3 worker is torn down between catches and module scope does not survive. R-3's watchdog number is DERIVED from the pipeline's own ceilings rather than guessed, which is why this exports three of them. **25 mutations, 25 caught, 4 survived first pass** | a catch that hangs, on someone else’s page |
 | **50** | agent | **FIVE OF NINE DONE 2026-08-27**, `b08489c` + `12c9055` + `d4a96de`. **The biggest was not in the item**: the 08-27 429 fix bounded ONE of two fan-outs at the same host, and `groundText` was still firing **21 concurrent** searches - more than the nineteen that caused the outage. PERF-2 (half), PERF-4, PERF-5, PERF-7 closed with before/after numbers. **REMAINING: PERF-2's tray memo, PERF-3, PERF-8, PERF-10.** PERF-3's implied fix is a product regression - see the body | the first impression |
-| **51** | agent | **The server's remaining contract and edge gaps** (AC-5, AC-6, AC-10, AC-12, SEC-3, AC-9/TM-6, R-6/TM-13, PERF-6/SEC-4, TM-12) | — |
+| **51** | agent | **THREE OF NINE DONE 2026-08-27** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **REMAINING SIX: AC-5, AC-6, AC-10, AC-12, AC-9/TM-6, R-6/TM-13.** All re-probed and confirmed still open on 08-27 | — |
 | **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
 | **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
@@ -1133,23 +1133,39 @@ unblocks.
         subscriber whose licence is fine.** The honest 502 is only reachable on malformed JSON.
       - **AC-12 · `expiresAt` is a server timestamp evaluated against the client's clock**,
         with no skew tolerance and no `expiresIn` to anchor locally.
-      - **SEC-3 · `/api/license` has no per-IP cap**, and `keyCap` is keyed on the string the
-        attacker chooses, so N distinct guesses produce N real calls on our Polar org token.
-        Impact is availability: **a throttled `POLAR_ACCESS_TOKEN` locks out every
-        subscriber's renewal at once.** `createIpCap` already exists and is tested.
+      - ~~**SEC-3 · `/api/license` has no per-IP cap.**~~ **DONE 2026-08-27, `fa5ab8f`.**
+        `keyCap` counts the KEY, which the caller chooses, so a per-key cap structurally
+        cannot bound ENUMERATION. `ipCap` now runs BEFORE `keyCap` (so a capped caller cannot
+        churn the key map's eviction and push a real customer out) and BEFORE the body parse
+        (so a flood of garbage is counted too). Ceiling `LICENSE_PER_IP_PER_DAY = 240`, six
+        times the trial one, because five activation slots renewing daily behind one NAT is a
+        real household and locking out a subscriber is this endpoint's worst outcome.
+        **9 mutations, 9 caught — one found the shell guard was satisfied by the IMPORT
+        line**, so a shell calling `createIpCap()` bare took the trial ceiling silently.
       - **AC-9 / TM-6 · `/api/vision` relays the upstream body with no redaction and no length
         cap**, while `/api/license` scrubs and truncates the same class of data. **The
         endpoint that holds the money-spending credential is the one without the scrub.**
       - **R-6 / TM-13 · Neither edge function bounds its upstream call** with a timeout.
-      - **PERF-6 / SEC-4 · `ipCap` has no eviction** and keys on the full IPv6 address. A
-        residential /64 gives one client 2^64 keys — both unbounded memory and a free bypass.
-        **The `x-forwarded-for` question is SETTLED: Vercel overwrites it at the edge** (threat
-        model, with a docs citation), so it is NOT spoofable today. **But the safety comes
-        from the platform, not the code**, and `ipCap.ts:38-41` reasons from generic HTTP
-        semantics. Move hosts or add a proxy and the only automated brake evaporates silently.
-      - **TM-12 · `vercel.json` excludes `/api/` from the headers block**, so API responses
-        carry no `nosniff` and no `Cache-Control: no-store` — **and the licence response body
-        is a bearer token.**
+      - ~~**PERF-6 / SEC-4 · `ipCap` has no eviction and keys on the full IPv6 address.**~~
+        **DONE 2026-08-27, `b8b33fa`.** The module carried an explicit argument for needing no
+        eviction — *"an attacker cannot mint new source IPs the way they can mint candidate
+        licence keys"* — **and that argument was IPv4 reasoning written beside an IPv6-capable
+        edge.** A residential delegation is a /64 at minimum, so one customer holds 2^64
+        addresses and could mint them per request. IPv6 now collapses to its /64 (no wider: a
+        /48 buckets unrelated customers of one ISP); IPv4 and IPv4-mapped stay whole. Eviction
+        mirrors `keyCap`, including the direction — forgetting OPENS the brake, because
+        refusing everybody on overflow turns a probe into an outage. **11 mutations, 11 caught;
+        3 survived the first pass and one was EQUIVALENT and answered by simplifying.**
+        **STILL TRUE and unchanged by this:** the `x-forwarded-for` safety comes from Vercel
+        overwriting it at the edge, not from this code. Move hosts and the brake evaporates.
+      - ~~**TM-12 · `vercel.json` excludes `/api/` from the headers block.**~~ **DONE
+        2026-08-27.** Fixed at the THREE places a response is built (`src/server/
+        responseHeaders.ts`), with `vercel.json` kept as a second layer rather than the only
+        one — a header applied by hosting configuration disappears silently when the hosting
+        changes and cannot be tested without a deploy, which is the same failure shape as the
+        `x-forwarded-for` note directly above. Guarded by an ABSENCE proof: every `new
+        Response(` in both handlers spreads `SAFE_HEADERS`, counted, not spot-checked.
+        **8 mutations, 8 caught.**
 
 - [ ] **52. THE TRAY LIVES IN THE HOST PAGE'S LIGHT DOM.** *(review §5)*
 

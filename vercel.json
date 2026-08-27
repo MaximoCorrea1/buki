@@ -5,6 +5,24 @@
   "trailingSlash": false,
   "headers": [
     {
+      "_comment": "The API, as a SECOND layer only. The headers that matter are set where each response is built, in src/server/responseHeaders.ts, because a header applied by hosting configuration disappears silently when the hosting changes and cannot be tested without a deploy. no-store is here because /api/license returns an eight-day bearer token in its body. OPENWORK item 51, TM-12.",
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
       "source": "/((?!api/).*)",
       "headers": [
         {

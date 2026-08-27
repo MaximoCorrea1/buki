@@ -23,6 +23,7 @@
 import { fromExtension } from './policy';
 import { sign, TOKEN_TTL_MS } from './token';
 import { worthRetrying } from '../shared/retry';
+import { SAFE_HEADERS } from './responseHeaders';
 
 export interface LicenseEnv {
   secret: string;
@@ -84,7 +85,12 @@ interface Claim {
 }
 
 const json = (body: unknown, status: number): Response =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  new Response(JSON.stringify(body), {
+    status,
+    // EVERY response, refusals included. A 403 is as cacheable as a 200, and the 200 here
+    // carries an eight-day bearer token in its body. See responseHeaders.ts, TM-12.
+    headers: { 'content-type': 'application/json', ...SAFE_HEADERS },
+  });
 
 /**
  * WHY THIS WAS REFUSED, as a string a client can branch on.
