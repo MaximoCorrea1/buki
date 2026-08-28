@@ -1,0 +1,77 @@
+{
+  "target": ["src/server/polarClaim.test.ts", "src/server/licenseHandler.test.ts"],
+  "mutations": [
+    {
+      "label": "51az the shape refusal answers 403, which is the finding restored exactly",
+      "file": "src/server/licenseHandler.ts",
+      "from": "    console.error('[buki] polar answered a shape Buki cannot read');\n    return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);",
+      "to": "    return refuse('That licence is not active.', 'licence', 403);"
+    },
+    {
+      "label": "51ba the shape check is removed and a bad shape falls through to the status test",
+      "file": "src/server/licenseHandler.ts",
+      "from": "  if (!claim) {\n    console.error('[buki] polar answered a shape Buki cannot read');\n    return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);\n  }",
+      "to": "  if (!claim) return refuse('That licence is not active.', 'licence', 403);"
+    },
+    {
+      "label": "51bb a revoked licence is now called a shape error, hiding a real cancellation",
+      "file": "src/server/licenseHandler.ts",
+      "from": "  if (claim.status !== 'granted') {\n    return refuse('That licence is not active.', 'licence', 403);\n  }",
+      "to": "  if (claim.status !== 'granted') {\n    return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);\n  }"
+    },
+    {
+      "label": "51bc readClaim stops checking the status is a string",
+      "file": "src/server/polarClaim.ts",
+      "from": "  if (!text(parsed['id']) || !text(key['id']) || !text(key['status'])) return null;",
+      "to": "  if (!text(parsed['id']) || !text(key['id'])) return null;"
+    },
+    {
+      "label": "51bd readClaim stops checking the activation id on the ACTIVATE path (ADV-3 reopened)",
+      "file": "src/server/polarClaim.ts",
+      "from": "  if (!text(parsed['id']) || !text(key['id']) || !text(key['status'])) return null;",
+      "to": "  if (!text(key['id']) || !text(key['status'])) return null;"
+    },
+    {
+      "label": "51be readClaim stops checking the licence id",
+      "file": "src/server/polarClaim.ts",
+      "from": "  if (!text(parsed['id']) || !text(key['id']) || !text(key['status'])) return null;",
+      "to": "  if (!text(parsed['id']) || !text(key['status'])) return null;"
+    },
+    {
+      "label": "51bf the RENEWAL branch stops validating, so activate's shape reads as a renewal",
+      "file": "src/server/polarClaim.ts",
+      "from": "    if (!text(parsed['id']) || !text(parsed['status']) || !text(activationId)) return null;",
+      "to": "    if (!text(parsed['id'])) return null;"
+    },
+    {
+      "label": "51bg `text` accepts the empty string, so status:'' passes as a value",
+      "file": "src/server/polarClaim.ts",
+      "from": "const text = (v: unknown): v is string => typeof v === 'string' && v !== '';",
+      "to": "const text = (v: unknown): v is string => typeof v === 'string';"
+    },
+    {
+      "label": "51bh `text` accepts anything truthy, so status:42 passes as a cast would have",
+      "file": "src/server/polarClaim.ts",
+      "from": "const text = (v: unknown): v is string => typeof v === 'string' && v !== '';",
+      "to": "const text = (v: unknown): v is string => Boolean(v);"
+    },
+    {
+      "label": "51bi `object` accepts arrays and null, so [] and null read as a body",
+      "file": "src/server/polarClaim.ts",
+      "from": "  typeof v === 'object' && v !== null && !Array.isArray(v);",
+      "to": "  typeof v === 'object';"
+    },
+    {
+      "label": "51bj the renewal fallback is dropped, so a validate answer with no activation is refused",
+      "file": "src/server/polarClaim.ts",
+      "from": "      : sentActivationId;",
+      "to": "      : '';"
+    },
+    {
+      "label": "51bk the two branches are swapped, reading each shape as the other",
+      "file": "src/server/polarClaim.ts",
+      "from": "  if (renewing) {",
+      "to": "  if (!renewing) {"
+    }
+  ]
+}

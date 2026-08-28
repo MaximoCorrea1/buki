@@ -104,6 +104,51 @@ describe('exchanging a licence for a session', () => {
     });
   });
 
+  /**
+   * AC-10. `OPENWORK.md` item 51. **The status code IS the finding.**
+   *
+   * 403 is not in `worthRetrying`, so `license.ts` throws the session away and the
+   * subscriber meets the wall they paid to pass. 502 is, so they keep it and ride the grace
+   * window. One number decides whether a bad minute at Polar is invisible or a lockout —
+   * which is the lesson `shared/retry.ts` exists to record, arriving through a new door.
+   */
+  it('calls a body it cannot read a 502, NOT "that licence is not active"', async () => {
+    for (const body of [{}, { id: 'lk_1' }, { license_key: {} }, { error: 'nope' }]) {
+      const fetch = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+      const res = await handleLicense(post({ key: 'K' }), env({ fetch }));
+
+      expect(res.status, `${JSON.stringify(body)} became ${res.status}`).toBe(502);
+      const parsed = (await res.json()) as { code?: string; error?: string };
+      expect(parsed.code).toBe('shape');
+      expect(parsed.error ?? '').not.toContain('not active');
+    }
+  });
+
+  it('calls ACTIVATE’s shape on the RENEWAL path a 502, which is the documented trap', async () => {
+    // The two shapes are inverted. Reading one as the other gave `status === undefined`,
+    // and undefined is not 'granted', so a healthy renewal looked exactly like a revoked
+    // subscription. The file's own docblock described this as a reason to be careful; it
+    // is a check now.
+    const fetch = vi.fn(async () => new Response(JSON.stringify(granted), { status: 200 }));
+    const res = await handleLicense(post({ key: 'K', activationId: 'act_1' }), env({ fetch }));
+
+    expect(res.status).toBe(502);
+  });
+
+  it('still calls a genuinely revoked licence a 403, because that IS about the customer', async () => {
+    // The separation is the point. "Polar says revoked" is an answer about this licence.
+    // "Polar sent something unreadable" is our upstream failing its contract. Collapsing
+    // them is what made an outage look like a cancellation.
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ ...granted, license_key: { id: 'lk_1', status: 'revoked' } }),
+          { status: 200 },
+        ),
+    );
+    expect((await handleLicense(post({ key: 'K' }), env({ fetch }))).status).toBe(403);
+  });
+
   it('refuses a licence Polar accepted but has not granted', async () => {
     const fetch = vi.fn(
       async () =>

@@ -25,6 +25,7 @@ import { sign, TOKEN_TTL_MS } from './token';
 import { worthRetrying } from '../shared/retry';
 import { SAFE_HEADERS } from './responseHeaders';
 import { LICENSE_UPSTREAM_MS, boundedSignal, timedOut } from './upstreamTimeout';
+import { readClaim, type PolarClaim } from './polarClaim';
 
 export interface LicenseEnv {
   secret: string;
@@ -62,33 +63,18 @@ export interface LicenseEnv {
   ipCap: (request: Request, now: number) => boolean;
 }
 
-/** `activate`'s answer. The top-level `id` is the ACTIVATION. */
-interface PolarActivation {
-  id: string;
-  license_key: { id: string; status: string; expires_at: string | null };
-}
-
 /**
- * `validate`'s answer, and it is INVERTED from activate's — this is the trap.
+ * ⚠ `PolarActivation`, `PolarValidation` and `Claim` USED TO LIVE HERE, and they were
+ * removed on 2026-08-28 with AC-10 rather than left behind — three interfaces nothing
+ * referenced is exactly what item 54 is a list of.
  *
- *   activate   { id: <activation>,  license_key: { id: <key>, status } }
- *   validate   { id: <key>, status, activation: { id: <activation> } }
- *
- * Read one as the other and `status` is `undefined`, so every renewal 403s with "That
- * licence is not active" and looks exactly like a revoked subscription.
+ * **What they described was real and is not lost.** The two Polar shapes are INVERTED,
+ * which is the trap the whole thing turns on, and `PolarValidation`'s docblock said so:
+ * *"Read one as the other and `status` is `undefined`, so every renewal 403s with 'That
+ * licence is not active' and looks exactly like a revoked subscription."* That sentence,
+ * and both shapes, now sit in `polarClaim.ts` — beside the code that CHECKS them instead
+ * of beside a cast that only asserted them.
  */
-interface PolarValidation {
-  id: string;
-  status: string;
-  activation?: { id: string };
-}
-
-/** What both shapes are normalised to, so one branch decides below. */
-interface Claim {
-  licenseKeyId: string;
-  activationId: string;
-  status: string;
-}
 
 const json = (body: unknown, status: number): Response =>
   new Response(JSON.stringify(body), {
@@ -306,24 +292,32 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
     );
   }
 
-  let claim: Claim;
+  let parsed: unknown;
   try {
-    const parsed: unknown = await res.json();
-    claim = renewing
-      ? {
-          licenseKeyId: (parsed as PolarValidation).id,
-          activationId: (parsed as PolarValidation).activation?.id ?? activationId,
-          status: (parsed as PolarValidation).status,
-        }
-      : {
-          licenseKeyId: (parsed as PolarActivation).license_key?.id,
-          activationId: (parsed as PolarActivation).id,
-          status: (parsed as PolarActivation).license_key?.status,
-        };
+    parsed = await res.json();
   } catch {
     return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);
   }
 
+  // VALIDATED, NOT CAST. `parsed as PolarActivation` checks nothing at runtime, so a
+  // well-formed body with different keys gave `status === undefined`, which is not
+  // `'granted'`, which was a 403 - "That licence is not active" - to a subscriber whose
+  // licence is fine. The honest 502 was reachable only on MALFORMED JSON, the one failure
+  // mode a large API almost never has. `OPENWORK.md` item 51, AC-10.
+  //
+  // 502 rather than 403 is the whole finding: 403 is not in `worthRetrying`, so the
+  // extension throws its session away; 502 is, so the customer keeps it and rides the
+  // grace window.
+  const claim: PolarClaim | null = readClaim(parsed, renewing, activationId);
+  if (!claim) {
+    console.error('[buki] polar answered a shape Buki cannot read');
+    return refuse('Buki got an unexpected answer from the payment provider.', 'shape', 502);
+  }
+
+  // A VALID SHAPE CARRYING A BAD STATUS IS A DIFFERENT THING, and stays a 403. "Polar says
+  // this licence is revoked" is an answer ABOUT THE CUSTOMER; "Polar sent something Buki
+  // cannot read" is our upstream failing its contract. Collapsing them is what made an
+  // outage look like a cancellation.
   if (claim.status !== 'granted') {
     return refuse('That licence is not active.', 'licence', 403);
   }
