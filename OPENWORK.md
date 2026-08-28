@@ -48,7 +48,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **59** | **Maximo**, then agent | **A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING STORAGE, which destroys the shelf** (C-3). Blocked on item 2: one probe against the live endpoint settles it | a subscriber who deactivates an install |
 | ~~49~~ | agent | ~~Four reliability holes on the path somebody is waiting on~~ **DONE 2026-08-27**, `0486712` + `b006efc`. **ALL FOUR.** R-1's comment in `licenseHandler.ts` - *"never during a catch"* - **was false from the day it was written**, which is why a missing timeout on the catch path went unnoticed. R-2's cooldown had to be PERSISTED, because an MV3 worker is torn down between catches and module scope does not survive. R-3's watchdog number is DERIVED from the pipeline's own ceilings rather than guessed, which is why this exports three of them. **25 mutations, 25 caught, 4 survived first pass** | a catch that hangs, on someone else’s page |
 | **50** | agent | **FIVE OF NINE DONE 2026-08-27**, `b08489c` + `12c9055` + `d4a96de`. **The biggest was not in the item**: the 08-27 429 fix bounded ONE of two fan-outs at the same host, and `groundText` was still firing **21 concurrent** searches - more than the nineteen that caused the outage. PERF-2 (half), PERF-4, PERF-5, PERF-7 closed with before/after numbers. **REMAINING: PERF-2's tray memo, PERF-3, PERF-8, PERF-10.** PERF-3's implied fix is a product regression - see the body | the first impression |
-| **51** | agent | **THREE OF NINE DONE 2026-08-27** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **REMAINING SIX: AC-5, AC-6, AC-10, AC-12, AC-9/TM-6, R-6/TM-13.** All re-probed and confirmed still open on 08-27 | — |
+| **51** | agent | **FOUR OF NINE DONE** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **REMAINING FIVE: AC-5, AC-6, AC-10, AC-12, AC-9/TM-6.** R-6/TM-13 closed 08-28 All re-probed and confirmed still open on 08-27 | — |
 | **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
 | **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
@@ -1145,7 +1145,18 @@ unblocks.
       - **AC-9 / TM-6 · `/api/vision` relays the upstream body with no redaction and no length
         cap**, while `/api/license` scrubs and truncates the same class of data. **The
         endpoint that holds the money-spending credential is the one without the scrub.**
-      - **R-6 / TM-13 · Neither edge function bounds its upstream call** with a timeout.
+      - ~~**R-6 / TM-13 · Neither edge function bounds its upstream call.**~~ **DONE
+        2026-08-28.** `src/server/upstreamTimeout.ts`. `visionHandler` passed
+        `request.signal`, which is abort PROPAGATION and not a timeout — it covers *"the
+        caller gave up"* and does nothing when nobody does. **That is not hypothetical here:
+        the reason that signal exists at all is that a dismissed card left Gemini generating
+        and billing, so the fix closed only the half where somebody pressed the ×.**
+        `licenseHandler` passed no signal at all, so an UNRESPONSIVE Polar — distinct from an
+        unreachable one, which was handled — held the request until the platform killed it.
+        **The ceilings are chosen RELATIVE to the client's and asserted against those
+        constants, not against copied numbers:** above the client's, a server bound can never
+        fire. Same status either way (502/503, both retryable), different sentence, because
+        *down* and *slow* are different incidents. **11 mutations, 11 caught, twice.**
       - ~~**PERF-6 / SEC-4 · `ipCap` has no eviction and keys on the full IPv6 address.**~~
         **DONE 2026-08-27, `b8b33fa`.** The module carried an explicit argument for needing no
         eviction — *"an attacker cannot mint new source IPs the way they can mint candidate

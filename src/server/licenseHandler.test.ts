@@ -123,6 +123,43 @@ describe('exchanging a licence for a session', () => {
     expect((await handleLicense(post({ key: 'K' }), env({ fetch }))).status).toBe(503);
   });
 
+  /**
+   * R-6 / TM-13. `OPENWORK.md` item 51.
+   *
+   * This handler passed **no signal at all**, so a Polar that accepted the connection and
+   * then went quiet held the request until the platform killed it, with a customer watching
+   * a spinner and no answer either way. Unreachable was handled; UNRESPONSIVE was not, and
+   * they are different failures.
+   */
+  it('gives up on a Polar that accepts the connection and then goes quiet', async () => {
+    const fetch = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+          const stop = (): void =>
+            reject(new DOMException('The operation timed out.', 'TimeoutError'));
+          if (signal?.aborted) return stop();
+          signal?.addEventListener('abort', stop);
+        }),
+    );
+
+    // 503 for the same reason unreachable is 503: a 4xx makes the extension throw away a
+    // session during OUR bad minute, which is exactly when the grace window should carry it.
+    const res = await handleLicense(post({ key: 'K' }), env({ fetch, upstreamMs: 5 }));
+    expect(res.status).toBe(503);
+  });
+
+  it('hands Polar a signal at all, which it never used to', async () => {
+    let seen: AbortSignal | undefined;
+    const fetch = vi.fn(async (_url: string, init?: RequestInit) => {
+      seen = init?.signal ?? undefined;
+      return new Response(JSON.stringify(granted), { status: 200 });
+    });
+
+    await handleLicense(post({ key: 'K' }), env({ fetch }));
+    expect(seen, 'the outbound call carried no signal').toBeInstanceOf(AbortSignal);
+  });
+
   it('NEVER lets the Polar token reach the client', async () => {
     const fetch = vi.fn(async () => new Response('POLAR-TOKEN-SECRET leaked', { status: 403 }));
     const res = await handleLicense(post({ key: 'K' }), env({ fetch }));

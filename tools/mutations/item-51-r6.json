@@ -1,0 +1,75 @@
+{
+  "target": [
+    "src/server/upstreamTimeout.test.ts",
+    "src/server/visionHandler.test.ts",
+    "src/server/licenseHandler.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "51ad the vision ceiling is removed, leaving only the caller's signal (the finding, restored)",
+      "file": "src/server/visionHandler.ts",
+      "from": "      signal: boundedSignal(request.signal, env.upstreamMs ?? VISION_UPSTREAM_MS),",
+      "to": "      signal: request.signal,"
+    },
+    {
+      "label": "51ae the vision signal loses its CALLER half, so a dismissed card bills again",
+      "file": "src/server/visionHandler.ts",
+      "from": "      signal: boundedSignal(request.signal, env.upstreamMs ?? VISION_UPSTREAM_MS),",
+      "to": "      signal: boundedSignal(undefined, env.upstreamMs ?? VISION_UPSTREAM_MS),"
+    },
+    {
+      "label": "51af the licence call goes back to carrying no signal at all",
+      "file": "src/server/licenseHandler.ts",
+      "from": "      signal: boundedSignal(request.signal, env.upstreamMs ?? LICENSE_UPSTREAM_MS),",
+      "to": "      signal: undefined,"
+    },
+    {
+      "label": "51ag boundedSignal drops the ceiling and returns the caller's signal unchanged",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "  const ceiling = AbortSignal.timeout(ms);\n  return caller ? AbortSignal.any([caller, ceiling]) : ceiling;",
+      "to": "  return caller ?? AbortSignal.timeout(ms);"
+    },
+    {
+      "label": "51ah boundedSignal drops the caller and returns only the ceiling",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "  return caller ? AbortSignal.any([caller, ceiling]) : ceiling;",
+      "to": "  return ceiling;"
+    },
+    {
+      "label": "51ai the vision ceiling rises ABOVE the client's, so it can never fire",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "export const VISION_UPSTREAM_MS = 10_000;",
+      "to": "export const VISION_UPSTREAM_MS = 30_000;"
+    },
+    {
+      "label": "51aj the licence ceiling rises ABOVE the client's, so it can never fire",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "export const LICENSE_UPSTREAM_MS = 6_000;",
+      "to": "export const LICENSE_UPSTREAM_MS = 9_000;"
+    },
+    {
+      "label": "51ak the vision ceiling is set so tight it cuts off a slow-but-fine provider",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "export const VISION_UPSTREAM_MS = 10_000;",
+      "to": "export const VISION_UPSTREAM_MS = 11_500;"
+    },
+    {
+      "label": "51al timedOut always says false, so every timeout is logged as unreachable",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "  return /timeout|abort/i.test(`${err.name} ${err.message}`);",
+      "to": "  return false;"
+    },
+    {
+      "label": "51am timedOut always says true, so a refused connection is called slow",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "  if (!(err instanceof Error)) return false;\n  return /timeout|abort/i.test(`${err.name} ${err.message}`);",
+      "to": "  return true;"
+    },
+    {
+      "label": "51an timedOut reads only the message, missing the NAME that actually carries it",
+      "file": "src/server/upstreamTimeout.ts",
+      "from": "  return /timeout|abort/i.test(`${err.name} ${err.message}`);",
+      "to": "  return /timeout|abort/i.test(err.message);"
+    }
+  ]
+}

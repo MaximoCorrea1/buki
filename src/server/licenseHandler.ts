@@ -24,6 +24,7 @@ import { fromExtension } from './policy';
 import { sign, TOKEN_TTL_MS } from './token';
 import { worthRetrying } from '../shared/retry';
 import { SAFE_HEADERS } from './responseHeaders';
+import { LICENSE_UPSTREAM_MS, boundedSignal, timedOut } from './upstreamTimeout';
 
 export interface LicenseEnv {
   secret: string;
@@ -36,6 +37,11 @@ export interface LicenseEnv {
   /** Polar's per-session check. Takes an activation_id and creates NOTHING. */
   validateUrl: string;
   fetch: (url: string, init?: RequestInit) => Promise<Response>;
+  /**
+   * How long to wait on Polar. Injectable ONLY so a test can prove the bound fires without
+   * waiting seconds for it; the shell never sets it. R-6 / TM-13, `OPENWORK.md` item 51.
+   */
+  upstreamMs?: number;
   now: () => number;
   /**
    * True when this key has had too many of THIS KIND of request today.
@@ -250,11 +256,18 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
               label: 'Buki for Chrome',
             },
       ),
+      // BOUNDED. This call carried no signal at all, so a Polar that accepted the
+      // connection and then went quiet held the request until the platform killed it, with
+      // a customer watching a spinner. Unreachable was handled; UNRESPONSIVE was not.
+      signal: boundedSignal(request.signal, env.upstreamMs ?? LICENSE_UPSTREAM_MS),
     });
   } catch (err) {
     // Polar is unreachable. 503, NOT 403: a 4xx makes the extension throw its session
     // away during OUR outage, which is the exact moment the grace window exists to cover.
-    console.error('[buki] polar unreachable', err);
+    // Same 503 for both - the grace window is what carries the customer either way - but
+    // the log has to say WHICH, because "Polar is down" and "Polar is slow" are answered
+    // differently by whoever is reading it.
+    console.error(timedOut(err) ? '[buki] polar timed out' : '[buki] polar unreachable', err);
     return refuse('upstream', 'upstream', 503);
   }
 

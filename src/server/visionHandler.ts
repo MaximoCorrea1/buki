@@ -13,6 +13,7 @@
 import { decideAccess } from './policy';
 import { MAX_BODY_BYTES, rebuildVisionBody } from './visionBody';
 import { SAFE_HEADERS } from './responseHeaders';
+import { VISION_UPSTREAM_MS, boundedSignal, timedOut } from './upstreamTimeout';
 
 export interface VisionEnv {
   secret: string;
@@ -23,6 +24,11 @@ export interface VisionEnv {
   trialClosed: boolean;
   providerUrl: string;
   fetch: (url: string, init?: RequestInit) => Promise<Response>;
+  /**
+   * How long to wait on the provider. Injectable ONLY so a test can prove the bound fires
+   * without waiting ten seconds; the shell never sets it. R-6 / TM-13, `OPENWORK.md` 51.
+   */
+  upstreamMs?: number;
   now: () => number;
   /** True when this caller has had too many unlicensed requests today. */
   ipCap: (request: Request, now: number) => boolean;
@@ -183,11 +189,24 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
       //
       // Both halves shipped together. This one stops the waste; `entitlement.TRIAL_ATTEMPTS`
       // bounds how many times somebody can do it deliberately.
-      signal: request.signal,
+      //
+      // AND A CEILING BESIDE IT, because `request.signal` is abort PROPAGATION and not a
+      // timeout: it covers "the caller gave up" and does nothing when nobody does. That is
+      // not hypothetical here - the reason this signal exists at all is that a dismissed
+      // card left the provider generating and billing, and the fix closed only the half
+      // where somebody pressed the x. R-6 / TM-13, `OPENWORK.md` item 51.
+      signal: boundedSignal(request.signal, env.upstreamMs ?? VISION_UPSTREAM_MS),
     });
   } catch (err) {
-    console.error('[buki] provider unreachable', err);
-    return refuse('The reading service is unreachable.', 502);
+    // SAME STATUS, DIFFERENT SENTENCE. Down and slow are different incidents and need
+    // different responses from whoever reads the alert; 502 is right for both, because from
+    // here the provider did not answer either way and `worthRetrying` says retry to both.
+    const slow = timedOut(err);
+    console.error(slow ? '[buki] provider timed out' : '[buki] provider unreachable', err);
+    return refuse(
+      slow ? 'The reading service took too long.' : 'The reading service is unreachable.',
+      502,
+    );
   }
 
   // VERBATIM, including the status. A 429 from the provider means "slow down" and the

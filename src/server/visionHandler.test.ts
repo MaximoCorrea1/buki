@@ -180,6 +180,88 @@ describe('the recognition proxy', () => {
     const res = await handleVision(post(), env({ fetch }));
     expect(res.status).toBe(502);
   });
+
+  /**
+   * R-6 / TM-13. `OPENWORK.md` item 51.
+   *
+   * `signal: request.signal` is abort PROPAGATION, not a timeout. It covers "the caller
+   * gave up" and does nothing at all when nobody does — and this endpoint has already had
+   * that failure once: a dismissed card used to leave Gemini generating and billing, which
+   * is why the signal was added. **The fix closed only the half where somebody pressed ×.**
+   */
+  it('gives up on a provider that never answers, even when nobody is waiting', async () => {
+    // No caller abort anywhere in this test. Without a ceiling this hangs until the
+    // platform kills the isolate, with the provider generating the whole time.
+    const fetch = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+          const stop = (): void =>
+            reject(new DOMException('The operation timed out.', 'TimeoutError'));
+          if (signal?.aborted) return stop();
+          signal?.addEventListener('abort', stop);
+        }),
+    );
+
+    const res = await handleVision(post(), env({ fetch, upstreamMs: 5 }));
+    expect(res.status).toBe(502);
+
+    // SAME STATUS as unreachable, DIFFERENT SENTENCE. 502 is right for both and
+    // `worthRetrying` says retry to both, so no contract moves — but "down" and "slow" are
+    // different incidents, and the reader is told which. Names what failed, does not
+    // apologise: `docs/brand.md`.
+    const body = (await res.json()) as { error?: { message?: string } };
+    expect(body.error?.message).toBe('The reading service took too long.');
+  });
+
+  it('still says unreachable when the provider is actually unreachable', async () => {
+    // The other half. A message that said "took too long" for a refused connection would
+    // be the same lie in the opposite direction.
+    const fetch = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    const res = await handleVision(post(), env({ fetch }));
+    const body = (await res.json()) as { error?: { message?: string } };
+
+    expect(body.error?.message).toBe('The reading service is unreachable.');
+  });
+
+  it('still hands the provider the caller’s own signal, so × keeps stopping the bill', async () => {
+    // The ceiling must be COMPOSED with the caller's signal, not replace it. Dropping the
+    // caller half would silently re-open the free-read hole item 42 closed.
+    let seen: AbortSignal | undefined;
+    const fetch = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+          seen = signal ?? undefined;
+          // ALREADY-aborted counts. Listening only for the event misses the case where the
+          // caller left before the fetch started, and the promise then never settles - which
+          // is a hung TEST wearing the costume of a hung handler.
+          if (signal?.aborted) return reject(new Error('aborted'));
+          signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        }),
+    );
+
+    const caller = new AbortController();
+    const req = new Request('https://get-buki.vercel.app/api/vision', {
+      method: 'POST',
+      headers: { origin: `chrome-extension://${EXT}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'x',
+        messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      }),
+      signal: caller.signal,
+    });
+
+    // A ceiling far away, so the ONLY thing that can end this is the caller.
+    const answered = handleVision(req, env({ fetch, upstreamMs: 60_000 }));
+    await Promise.resolve();
+    caller.abort(new Error('dismissed'));
+
+    expect((await answered).status).toBe(502);
+    expect(seen?.aborted).toBe(true);
+  });
 });
 
 /**
@@ -432,12 +514,47 @@ describe('a licence can be turned off without rotating the secret', () => {
  * `entitlement.TRIAL_ATTEMPTS`, which bound how many times somebody can do it on purpose.
  */
 describe('calling a catch off reaches the provider', () => {
-  it('hands the provider the caller\'s own abort signal', async () => {
+  it('hands the provider a signal the caller can still abort', async () => {
+    // ⚠ THIS ASSERTED IDENTITY — `toBe(request.signal)` — until 2026-08-27, when R-6 added
+    // a timeout ceiling and the handler began passing a COMPOSED signal. **The rule did not
+    // change and the identity check was never the rule**; it was a cheap stand-in for it,
+    // and it broke the moment the implementation grew a second reason to abort.
+    //
+    // So it asserts the thing that actually matters: aborting the caller aborts what the
+    // provider was handed. That survives any composition and fails if the caller half is
+    // ever dropped, which is the regression this test exists to catch.
     const fetch = vi.fn(async () => new Response('{"choices":[]}', { status: 200 }));
     const request = post();
     await handleVision(request, env({ fetch }));
     const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
-    expect(init.signal, 'the upstream call was not cancellable').toBe(request.signal);
+
+    expect(init.signal, 'the upstream call was not cancellable').toBeInstanceOf(AbortSignal);
+    expect(init.signal!.aborted).toBe(false);
+
+    // The composed signal must follow the caller. `post()` builds its request without one,
+    // so this drives the same path with a controller in hand.
+    const caller = new AbortController();
+    const withSignal = new Request(request.url, {
+      method: 'POST',
+      headers: { origin: `chrome-extension://${EXT}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'x',
+        messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      }),
+      signal: caller.signal,
+    });
+    let upstream: AbortSignal | undefined;
+    await handleVision(
+      withSignal,
+      env({
+        fetch: vi.fn(async (_u: string, init2?: RequestInit) => {
+          upstream = init2?.signal ?? undefined;
+          return new Response('{"choices":[]}', { status: 200 });
+        }),
+      }),
+    );
+    caller.abort(new Error('dismissed'));
+    expect(upstream?.aborted, 'the caller half of the signal was dropped').toBe(true);
   });
 
   it('actually stops the upstream call when the caller goes away mid-read', async () => {
