@@ -3047,6 +3047,21 @@ deleted, because the wrong belief explains the code above it.
   after any session that wrote source through a shell. *(This line said `zzz-fix-nul.mjs` until
   08-27 — a path that is gitignored and no longer exists. See T20, which is the same file.)*
 
+  ⭐ **THE SWEEP PAID FOR ITSELF THE SAME DAY IT WAS REPAIRED, and then the trap recurred
+  twice more within the hour.** On 08-28 `cardSignature.ts` was written with a NUL separator,
+  spelled as an escape and rendered as the BYTE — caught by the sweep minutes later, in a file
+  created after T20 fixed it. Then **the COMMIT MESSAGE describing that catch carried a
+  literal NUL of its own**, in the sentence about the NUL, and would have gone into git
+  history unswept.
+
+  **Three occurrences in one day, the third inside the description of the second.** Exactly
+  the backtick trap's shape, whose sixth occurrence landed inside the `node -e` that was
+  mutation-testing the backtick warning. **The remedy is not care and never has been: it is
+  to not need the character.** `cardSignature` uses `JSON.stringify`, which is unambiguous by
+  construction and spells nothing — the better answer rather than a safer spelling of the
+  worse one. **And sweep anything you are about to commit, message included**, not just the
+  tree.
+
 - **T20. THE SWEEP IN T19 COULD NOT RUN, AND TWO DOCS TOLD THE NEXT READER TO RUN IT.**
   `tools/control-bytes.mjs` was a one-shot REPAIR for T19's specific NUL, with the sweep bolted
   on after a `process.exit(1)` that fired whenever the repair found nothing to repair. **So from
