@@ -5,6 +5,8 @@ import type { Book, RecognitionSource, Tweet } from '../recognizer/types';
 import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
 import { shotFor } from './coverSource';
+import { signature } from './cardSignature';
+import { permalinkOf } from './permalink';
 import { shiftOf, travelFrom } from './slotTravel';
 import { foundHeading, INTENT_LABEL, PROVENANCE, WALL } from './trayCopy';
 import { resolveTheme, THEME_KEY } from './themeChoice';
@@ -533,8 +535,13 @@ document.head.appendChild(styleEl);
 // ---------------------------------------------------------------- scraping
 
 function tweetPermalink(article: HTMLElement): string | null {
-  const link = article.querySelector<HTMLAnchorElement>('a[href*="/status/"]');
-  return link?.href ?? null;
+  // EVERY anchor, checked - not the first one whose attribute happens to CONTAIN
+  // "/status/". `a[href*="/status/"]` matched `javascript:...#/status/1`, and `.href` was
+  // returned verbatim into `source.url`. `OPENWORK.md` item 52, TM-10; the rule lives in
+  // `permalink.ts` because `content.ts` cannot be imported by a test.
+  return permalinkOf(
+    Array.from(article.querySelectorAll<HTMLAnchorElement>('a[href]')).map((a) => a.href),
+  );
 }
 
 /**
@@ -741,7 +748,10 @@ const TRAVEL_MS = 280;
 
 let trayEl: HTMLElement | null = null;
 /** Card id -> the nodes drawing it. The slot travels; the card fades, blurs and holds. */
-const drawn = new Map<number, { slot: HTMLElement; card: HTMLElement }>();
+// `sig` LIVES HERE, not on the element. This map already existed and already had one
+// record per card, so the repaint check had a private home the whole time - the attribute
+// was never buying anything. TM-9.
+const drawn = new Map<number, { slot: HTMLElement; card: HTMLElement; sig: string }>();
 /** Per card, not per page: one shared timer let a second swap cancel the first's text. */
 const swaps = new Map<number, number>();
 /** Transient cards that are already on their way out. */
@@ -853,17 +863,10 @@ function reflow(mutate: () => void): void {
   });
 }
 
-/** Everything the DOM depends on, so a repaint only rebuilds what actually changed. */
-const signature = (c: Card): string =>
-  [
-    c.state,
-    c.text,
-    c.source ?? '',
-    c.image ?? '',
-    c.candidates
-      .map((x) => `${x.book.title}/${x.book.coverUrl ?? ''}/${x.shelvedIn ?? ''}/${x.savedTo ?? ''}`)
-      .join(),
-  ].join('|');
+// The repaint signature lives in `cardSignature.ts` now. It used to be defined here AND
+// written to `el.dataset['sig']`, which put every book title and pile on an attribute in
+// x.com's own light DOM - readable by CSS attribute selectors with no script at all.
+// `OPENWORK.md` item 52, TM-9.
 
 /** Reconcile the corner to whatever the tray now says, keyed by card id. */
 function paintTray(): void {
@@ -894,7 +897,7 @@ function paintTray(): void {
       paintCard(el, card);
       slot.appendChild(el);
       host.appendChild(slot);
-      drawn.set(card.id, { slot, card: el });
+      drawn.set(card.id, { slot, card: el, sig: signature(card) });
       fresh.push(el);
     }
   });
@@ -903,7 +906,7 @@ function paintTray(): void {
 
   for (const card of cards) {
     const held = drawn.get(card.id);
-    if (held && held.card.dataset['sig'] !== signature(card)) swapCard(card);
+    if (held && held.sig !== signature(card)) swapCard(card);
   }
 
   tick(cards);
@@ -1008,7 +1011,10 @@ function paintCard(el: HTMLElement, card: Card): void {
         ? wallBody(card)
         : messageBody(card)),
   );
-  el.dataset['sig'] = signature(card);
+  // NOT `el.dataset['sig']`. See `cardSignature.ts`: the value carries book titles and
+  // piles, and an attribute in the host page's DOM is readable by CSS alone.
+  const held = drawn.get(card.id);
+  if (held) held.sig = signature(card);
 }
 
 /**

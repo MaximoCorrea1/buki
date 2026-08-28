@@ -1,0 +1,104 @@
+{
+  "target": [
+    "src/extension/cardSignature.test.ts",
+    "src/extension/permalink.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "52a the signature goes back into the host page's DOM (TM-9 restored verbatim)",
+      "file": "src/extension/content.ts",
+      "from": "  const held = drawn.get(card.id);\n  if (held) held.sig = signature(card);",
+      "to": "  el.dataset['sig'] = signature(card);"
+    },
+    {
+      "label": "52b the signature is kept in the Map AND leaked to the DOM, which a presence check would allow",
+      "file": "src/extension/content.ts",
+      "from": "  const held = drawn.get(card.id);\n  if (held) held.sig = signature(card);",
+      "to": "  const held = drawn.get(card.id);\n  if (held) held.sig = signature(card);\n  el.dataset['leak'] = signature(card);"
+    },
+    {
+      "label": "52c a computed value reaches dataset by another name",
+      "file": "src/extension/content.ts",
+      "from": "  if (book) el.dataset['book'] = '';",
+      "to": "  if (book) el.dataset['book'] = book.title;"
+    },
+    {
+      "label": "52d the signature drops the pile, so moving a book never repaints the card",
+      "file": "src/extension/cardSignature.ts",
+      "from": "      x.shelvedIn ?? '',\n      x.savedTo ?? '',",
+      "to": "      '',\n      '',"
+    },
+    {
+      "label": "52e the signature drops the cover, so art arriving never repaints",
+      "file": "src/extension/cardSignature.ts",
+      "from": "      x.book.coverUrl ?? '',",
+      "to": "      '',"
+    },
+    {
+      "label": "52f the signature drops the state, so a card never leaves \"Reading the cover…\"",
+      "file": "src/extension/cardSignature.ts",
+      "from": "    c.state,\n    c.text,",
+      "to": "    c.text,"
+    },
+    {
+      "label": "52g JSON goes back to the ORIGINAL join verbatim, so a crafted title collides",
+      "file": "src/extension/cardSignature.ts",
+      "from": "  return JSON.stringify([\n    c.state,\n    c.text,\n    c.source ?? '',\n    c.image ?? '',\n    c.candidates.map((x) => [\n      x.book.title,\n      x.book.coverUrl ?? '',\n      x.shelvedIn ?? '',\n      x.savedTo ?? '',\n    ]),\n  ]);",
+      "to": "  return [\n    c.state,\n    c.text,\n    c.source ?? '',\n    c.image ?? '',\n    c.candidates\n      .map((x) => `${x.book.title}/${x.book.coverUrl ?? ''}/${x.shelvedIn ?? ''}/${x.savedTo ?? ''}`)\n      .join(),\n  ].join('|');"
+    },
+    {
+      "label": "52h the substring selector comes back (TM-10 restored verbatim)",
+      "file": "src/extension/content.ts",
+      "from": "  return permalinkOf(\n    Array.from(article.querySelectorAll<HTMLAnchorElement>('a[href]')).map((a) => a.href),\n  );",
+      "to": "  return article.querySelector<HTMLAnchorElement>('a[href*=\"/status/\"]')?.href ?? null;"
+    },
+    {
+      "label": "52i the protocol check is dropped, so javascript: is stored again",
+      "file": "src/extension/permalink.ts",
+      "from": "  if (url.protocol !== 'https:') return false;",
+      "to": "  if (false) return false;"
+    },
+    {
+      "label": "52j https is loosened to also accept http, which X has not served in years",
+      "file": "src/extension/permalink.ts",
+      "from": "  if (url.protocol !== 'https:') return false;",
+      "to": "  if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;"
+    },
+    {
+      "label": "52k the host check is dropped, so any site's /status/ url is a permalink",
+      "file": "src/extension/permalink.ts",
+      "from": "  if (!isFeedHost(url.hostname)) return false;",
+      "to": "  if (false) return false;"
+    },
+    {
+      "label": "52l the host is matched by SUBSTRING, which is item 41's bug moved one file over",
+      "file": "src/extension/permalink.ts",
+      "from": "  if (!isFeedHost(url.hostname)) return false;",
+      "to": "  if (!raw.includes('x.com') && !raw.includes('twitter.com')) return false;"
+    },
+    {
+      "label": "52m the path check becomes a substring, so /someone/notstatus/1 is a post",
+      "file": "src/extension/permalink.ts",
+      "from": "const STATUS_PATH = /(^|\\/)status\\/\\d+(\\/|$)/;",
+      "to": "const STATUS_PATH = /status\\/\\d+/;"
+    },
+    {
+      "label": "52n the id is no longer required to be digits",
+      "file": "src/extension/permalink.ts",
+      "from": "const STATUS_PATH = /(^|\\/)status\\/\\d+(\\/|$)/;",
+      "to": "const STATUS_PATH = /(^|\\/)status(\\/|$)/;"
+    },
+    {
+      "label": "52o it stops walking and takes the first candidate, so one forged anchor shadows the real one",
+      "file": "src/extension/permalink.ts",
+      "from": "  return hrefs.find(isPermalink) ?? null;",
+      "to": "  return hrefs[0] !== undefined && isPermalink(hrefs[0]) ? hrefs[0] : null;"
+    },
+    {
+      "label": "52p a bad URL throws instead of answering null",
+      "file": "src/extension/permalink.ts",
+      "from": "  let url: URL;\n  try {\n    url = new URL(raw);\n  } catch {\n    return false;\n  }",
+      "to": "  const url: URL = new URL(raw);"
+    }
+  ]
+}
