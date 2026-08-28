@@ -250,3 +250,14 @@ Four, and none of them was wrong — each had encoded a stand-in for its own rul
 **The pattern: a cheap proxy for a rule breaks the moment the implementation grows a second
 reason to do the thing.** That is not the test being brittle; it is the test having asserted
 something narrower than the rule it was protecting.
+
+15. ⭐ **MY OWN MEMORY, TWICE IN ONE HOUR, ON THINGS I HAD JUST DONE.** The item-51 mutation
+    total was written as **74** and `ls tools/mutations/item-51-*.json` says **81**. The R-6
+    commit hash was written as **`da01ad9`** and `git log` says **`9fe7165`** — a hash that
+    does not exist in this repo at all.
+
+    **Both were about work finished minutes earlier, which is exactly when recall feels most
+    reliable.** Neither would have failed a test, a build, or a review; they would simply have
+    been inherited. This is Rule 2 — *measure, do not recall* — landing on the author of the
+    thing being measured, and it is the reason that rule is phrased as an order rather than as
+    advice. **The probe goes in the same line as the number.**
