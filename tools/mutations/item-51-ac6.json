@@ -1,0 +1,43 @@
+{
+  "target": [
+    "src/recognizer/llmVision.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "51bl the silent empty array comes back (the finding, restored verbatim)",
+      "file": "src/recognizer/llmVision.ts",
+      "from": "      if (typeof raw !== 'string' || raw.trim() === '') {",
+      "to": "      if (false) {"
+    },
+    {
+      "label": "51bm the check loosens to null-only, so content:42 is still a silent empty shelf",
+      "file": "src/recognizer/llmVision.ts",
+      "from": "      if (typeof raw !== 'string' || raw.trim() === '') {",
+      "to": "      if (raw === undefined) {"
+    },
+    {
+      "label": "51bn it throws for EVERY answer, so a model that truly found no book becomes an error",
+      "file": "src/recognizer/llmVision.ts",
+      "from": "      if (typeof raw !== 'string' || raw.trim() === '') {",
+      "to": "      if (true) {"
+    },
+    {
+      "label": "51bo the error is marked PERMANENT, sending the reader to settings over an outage",
+      "file": "src/recognizer/llmVision.ts",
+      "from": "        throw new VisionHttpError(\n          502,\n          'The reading service sent an answer Buki could not read.',\n        );",
+      "to": "        throw new VisionHttpError(\n          400,\n          'The reading service sent an answer Buki could not read.',\n        );"
+    },
+    {
+      "label": "51bp the empty-completion clause is dropped, so content:'' is a silent empty shelf again",
+      "file": "src/recognizer/llmVision.ts",
+      "from": "      if (typeof raw !== 'string' || raw.trim() === '') {",
+      "to": "      if (typeof raw !== 'string') {"
+    },
+    {
+      "label": "51bq the guard reads the wrong field, so every real answer is unreadable",
+      "file": "src/recognizer/llmVision.ts",
+      "from": "      const raw = data?.choices?.[0]?.message?.content;",
+      "to": "      const raw = (data?.choices?.[0] as { text?: string } | undefined)?.text;"
+    }
+  ]
+}

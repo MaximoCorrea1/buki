@@ -48,7 +48,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **59** | **Maximo**, then agent | **A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING STORAGE, which destroys the shelf** (C-3). Blocked on item 2: one probe against the live endpoint settles it | a subscriber who deactivates an install |
 | ~~49~~ | agent | ~~Four reliability holes on the path somebody is waiting on~~ **DONE 2026-08-27**, `0486712` + `b006efc`. **ALL FOUR.** R-1's comment in `licenseHandler.ts` - *"never during a catch"* - **was false from the day it was written**, which is why a missing timeout on the catch path went unnoticed. R-2's cooldown had to be PERSISTED, because an MV3 worker is torn down between catches and module scope does not survive. R-3's watchdog number is DERIVED from the pipeline's own ceilings rather than guessed, which is why this exports three of them. **25 mutations, 25 caught, 4 survived first pass** | a catch that hangs, on someone else’s page |
 | **50** | agent | **FIVE OF NINE DONE 2026-08-27**, `b08489c` + `12c9055` + `d4a96de`. **The biggest was not in the item**: the 08-27 429 fix bounded ONE of two fan-outs at the same host, and `groundText` was still firing **21 concurrent** searches - more than the nineteen that caused the outage. PERF-2 (half), PERF-4, PERF-5, PERF-7 closed with before/after numbers. **REMAINING: PERF-2's tray memo, PERF-3, PERF-8, PERF-10.** PERF-3's implied fix is a product regression - see the body | the first impression |
-| **51** | agent | **SIX OF NINE DONE** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **REMAINING THREE: AC-5, AC-6, AC-12.** R-6/TM-13, AC-9/TM-6 and AC-10 closed 08-28 All re-probed and confirmed still open on 08-27 | — |
+| **51** | agent | **SEVEN OF NINE DONE** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **REMAINING TWO: AC-5 and AC-12**, which are one contract (the token lifetime crossing the wire). R-6/TM-13, AC-9/TM-6, AC-10 and AC-6 closed 08-28 All re-probed and confirmed still open on 08-27 | — |
 | **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
 | **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
@@ -1125,9 +1125,20 @@ unblocks.
         bundle.** `license.ts:10`. Change either server-side and **every shipped client
         desynchronises.** *(Item 44 closed the version marker; this is the other half of the
         same class and is NOT closed.)*
-      - **AC-6 · A response-shape change on `/api/vision` fails silently as "no books
-        found"**, not as an error. `llmVision.ts:251` — `typeof raw !== 'string' → return []`
-        is indistinguishable from an empty picture.
+      - ~~**AC-6 · A response-shape change on `/api/vision` fails silently as "no books
+        found".**~~ **DONE 2026-08-28.** `typeof raw !== 'string' → return []`, and an empty
+        array is what *"there is no book in this picture"* looks like — so a provider that
+        changed its shape, answered 200 with an error envelope, or was replaced by a gateway
+        page reached the reader as **"No book on that cover"**, on a card offering to try the
+        post's words instead. A wrong answer stated calmly, on the surface the product is
+        named for. **The line is whether the MODEL ANSWERED**, not whether we liked the
+        answer: a string saying no book is still `[]`. 502, so `permanent` is false and the
+        card offers try-again rather than sending the reader to settings over an outage.
+        ⚠ **A SURVIVING MUTATION WIDENED THE FIX:** `content: ''` is a string, so an EMPTY
+        COMPLETION slipped past into `parseGuesses('')` and became the same silent empty
+        shelf through the one shape the guard missed. **6 mutations, 6 caught, twice** — and
+        a seventh proved `.rejects.toThrow()` too weak, since `parseGuesses(42)` throws a
+        TypeError of its own and the test passed while the guard was gone.
       - ~~**AC-10 · Polar's response is cast, never validated.**~~ **DONE 2026-08-28.**
         `src/server/polarClaim.ts`. **`parsed as PolarActivation` checks nothing at runtime**,
         so a well-formed body with different keys gave `status === undefined`, which is not

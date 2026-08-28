@@ -254,7 +254,33 @@ export function createLlmVision(deps: { fetch: FetchLike; config: VisionConfig }
       }
 
       const raw = data?.choices?.[0]?.message?.content;
-      if (typeof raw !== 'string') return [];
+      if (typeof raw !== 'string' || raw.trim() === '') {
+        // ⚠ THIS USED TO `return []`, AND AN EMPTY ARRAY IS WHAT "there is no book in this
+        // picture" LOOKS LIKE. So a provider that changed its response shape - or answered
+        // 200 with an error envelope, or was replaced by a gateway page - reached the reader
+        // as "No book on that cover", on a card offering to try the post's words instead.
+        // A wrong answer, stated calmly, on the surface the product is named for.
+        // `OPENWORK.md` item 51, AC-6.
+        //
+        // THE LINE IS WHETHER THE MODEL ANSWERED, not whether we liked the answer. A string
+        // that says no book is an answer and still returns `[]` - see the two tests that say
+        // STILL. No string at all is not an answer about the picture.
+        //
+        // AN EMPTY COMPLETION COUNTS AS NO ANSWER, and that clause was added because a
+        // MUTATION SURVIVED without it: `content: ''` is a string, so it slipped past the
+        // type check into `parseGuesses('')`, which returns `[]` - the same silent "No book
+        // on that cover" this whole guard exists to remove, arriving through the one shape
+        // the guard did not cover. The model produced nothing; that is not a finding about
+        // the picture.
+        //
+        // 502 so `worthRetrying` says yes and `permanent` is false: a shape that changed
+        // today may be back tomorrow, and sending the reader to settings over a provider
+        // outage is an instruction they cannot act on.
+        throw new VisionHttpError(
+          502,
+          'The reading service sent an answer Buki could not read.',
+        );
+      }
 
       // No confidence attached, deliberately: grounding decides what is real, so a
       // reading here is a QUERY, never an answer.

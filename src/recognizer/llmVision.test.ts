@@ -34,7 +34,14 @@ function fakeModel(reply: string | null, opts: { ok?: boolean; status?: number }
       ok: opts.ok ?? true,
       status: opts.status ?? 200,
       async json() {
-        return reply === null ? {} : { choices: [{ message: { content: reply } }] };
+        // `null` means "the reply is not what this test is about" - these tests assert what
+        // was SENT. It used to return `{}`, and after AC-6 an answer with no `choices` is an
+        // ERROR rather than an empty shelf, so a don't-care reply has to be WELL-FORMED and
+        // empty rather than absent. Four tests turned red on exactly this, and they were
+        // right to: `{}` had been standing in for two different things.
+        return reply === null
+          ? { choices: [{ message: { content: '{"title":null,"author":null}' } }] }
+          : { choices: [{ message: { content: reply } }] };
       },
     };
   };
@@ -48,7 +55,16 @@ describe('createLlmVision', () => {
     const seen: (string | undefined)[] = [];
     const fetch: FetchLike = async (_url, init) => {
       seen.push(init?.headers?.Authorization);
-      return { ok: true, status: 200, async json() { return {}; } };
+      // Well-formed and empty, not `{}`. This test is about the HEADER, and after AC-6 a
+      // reply with no `choices` is an error rather than an empty shelf — so a body that
+      // stands for "not what this test is about" has to be a real answer that found nothing.
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { choices: [{ message: { content: '{"title":null,"author":null}' } }] };
+        },
+      };
     };
     const img = { imageUrls: ['http://c.jpg'], text: '' };
 
@@ -106,6 +122,96 @@ describe('createLlmVision', () => {
   });
 
   it('returns nothing on unparseable prose instead of throwing', async () => {
+    const { fetch } = fakeModel("I'm sorry, I can't identify that image.");
+    expect(
+      await createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
+    ).toEqual([]);
+  });
+
+  /**
+   * AC-6. `OPENWORK.md` item 51.
+   *
+   * `const raw = data?.choices?.[0]?.message?.content; if (typeof raw !== 'string') return []`
+   *
+   * **An empty array is what "there is no book in this picture" looks like.** So a provider
+   * that changed its response shape — or answered 200 with an error envelope, or was
+   * replaced by a gateway page — came back as *"No book on that cover"*, on a card that
+   * offers to try the post's words instead. A wrong answer, stated calmly, on the one
+   * surface the whole product is named for.
+   *
+   * **The distinction is whether the MODEL answered**, not whether we liked the answer. A
+   * string came back and said no book → that is an answer, and stays `[]`. No string came
+   * back at all → that is not an answer about the picture, and must say so.
+   */
+  const rawReply = (payload: unknown): FetchLike => async () => ({
+    ok: true,
+    status: 200,
+    async json() {
+      return payload;
+    },
+  });
+
+  it('throws when the response has no answer in it, instead of saying “no book”', async () => {
+    for (const payload of [
+      {},
+      { choices: [] },
+      { choices: [{}] },
+      { choices: [{ message: {} }] },
+      { choices: [{ message: { content: null } }] },
+      { choices: [{ message: { content: 42 } }] },
+      { error: { message: 'quota exceeded' } },
+      null,
+      // AN EMPTY COMPLETION, added because a mutation survived without it. `''` is a
+      // string, so it slipped past the type check into `parseGuesses('')`, which returns
+      // `[]` — the same silent "No book on that cover", through the one shape the guard did
+      // not cover. The model produced nothing; that is not a finding about the picture.
+      { choices: [{ message: { content: '' } }] },
+      { choices: [{ message: { content: '   \n  ' } }] },
+    ]) {
+      // ⚠ NOT a bare `.rejects.toThrow()`. A MUTATION PROVED that too weak: loosening the
+      // check to `raw === undefined` lets `content: 42` reach `parseGuesses`, which throws a
+      // TypeError of its own — so the test passed while the guard was gone. **"It threw" and
+      // "it threw for the right reason" are different assertions**, and only the second one
+      // is the finding. So this names the error.
+      const err = await createLlmVision({ fetch: rawReply(payload), config: CFG })
+        .guessBooks({ imageUrls: ['http://c.jpg'], text: '' })
+        .catch((e: unknown) => e);
+
+      expect((err as Error).name, JSON.stringify(payload)).toBe('VisionHttpError');
+      expect((err as Error).message, JSON.stringify(payload)).toMatch(/could not read/i);
+    }
+  });
+
+  it('says the service failed, not that the picture was empty', async () => {
+    await expect(
+      createLlmVision({ fetch: rawReply({}), config: CFG }).guessBooks({
+        imageUrls: ['http://c.jpg'],
+        text: '',
+      }),
+    ).rejects.toThrow(/answer|read|unexpected/i);
+  });
+
+  it('calls it RETRYABLE, because a shape that changed today may be back tomorrow', async () => {
+    // `permanent` decides whether the card offers "try again" or sends the reader to
+    // settings. A provider outage that answers 200 with a gateway page is not something the
+    // reader can fix in settings, and telling them to look there is the wrong instruction.
+    const err = await createLlmVision({ fetch: rawReply({}), config: CFG })
+      .guessBooks({ imageUrls: ['http://c.jpg'], text: '' })
+      .catch((e: unknown) => e);
+
+    expect((err as { permanent?: boolean }).permanent).toBe(false);
+  });
+
+  it('STILL returns nothing when the model genuinely reports no book', async () => {
+    // The half that must not move. A string came back and it said no book: that is an
+    // answer about the picture, and the empty shelf is the honest response to it.
+    const { fetch } = fakeModel('{"title":null,"author":null}');
+    expect(
+      await createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
+    ).toEqual([]);
+  });
+
+  it('STILL returns nothing on unparseable prose, because the model did answer', async () => {
     const { fetch } = fakeModel("I'm sorry, I can't identify that image.");
     expect(
       await createLlmVision({ fetch, config: CFG }).guessBooks({ imageUrls: ['http://c.jpg'], text: '' }),
