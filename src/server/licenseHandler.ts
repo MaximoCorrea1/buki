@@ -21,7 +21,7 @@
  * WAITS for it when the held session is no longer usable.
  */
 import { fromExtension } from './policy';
-import { sign, TOKEN_TTL_MS } from './token';
+import { sign, TOKEN_TTL_MS, GRACE_MS } from './token';
 import { worthRetrying } from '../shared/retry';
 import { SAFE_HEADERS } from './responseHeaders';
 import { LICENSE_UPSTREAM_MS, boundedSignal, timedOut } from './upstreamTimeout';
@@ -364,5 +364,24 @@ export async function handleLicense(request: Request, env: LicenseEnv): Promise<
   // `activationId` travels back so the extension can persist it and stop activating. It
   // was always in the signed claim and never came out, which is why the client had no way
   // to renew without spending another slot.
-  return json({ token, expiresAt: now + TOKEN_TTL_MS, activationId: claim.activationId }, 200);
+  return json(
+    {
+      token,
+      expiresAt: now + TOKEN_TTL_MS,
+      // THE LIFETIME, TOLD RATHER THAN ASSUMED. `license.ts` imported both of these from
+      // `src/server/token` and COMPILED THEM INTO THE BUNDLE, so changing either one here
+      // left every shipped install disagreeing with this proxy about when a token dies -
+      // and a published extension updates on Chrome's schedule, not ours. `OPENWORK.md`
+      // item 51, AC-5.
+      //
+      // `expiresIn` is a DURATION and `expiresAt` is kept beside it: the client anchors the
+      // duration to its OWN clock, which makes clock skew structurally irrelevant instead of
+      // merely tolerated, and falls back to the timestamp when talking to a proxy that has
+      // not been redeployed. AC-12.
+      expiresIn: TOKEN_TTL_MS,
+      graceMs: GRACE_MS,
+      activationId: claim.activationId,
+    },
+    200,
+  );
 }

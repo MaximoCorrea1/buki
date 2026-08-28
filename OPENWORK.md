@@ -16,7 +16,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27 (evening). `main` = `origin/main` at `640d451`, 0 ahead** (`git rev-list --count origin/main..HEAD`). **Eighteen commits went up in one go**: items 45-49 closed, item 50 taken to five of nine, the mutation harness promoted out of `zzz-`, and the whole session captured. **84 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). ⚠ **THIS ROW NAMED `60b98e4` UNTIL THE PUSH ABOVE HAD ALREADY LANDED**, which is the drift this file keeps paying for, in miniature, for the second time in one day - it was corrected in the same session rather than inherited. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **17.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27, second lane.) **Ten are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, and 57 now needs his call first); seven are agent work (36, 50-55).** **Item 57 moved from agent to Maximo without closing**, because the second probe answered the engineering question and left a positioning one. **Item 60 was filed by the commit that CAUSED it**, which is the only honest moment to file a trade-off. **Items 45, 46, 47, 48 and 49 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so this number moved by one while FIVE items closed. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **16.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27, second lane; 16 on 08-28 after item 51 closed.) **Ten are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, and 57 now needs his call first); six are agent work (36, 50, 52-55).** **ITEM 51 CLOSED 2026-08-28** - all nine findings, **81 mutations, 81 caught**, every plan re-run to check determinism. **Item 57 moved from agent to Maximo without closing**, because the second probe answered the engineering question and left a positioning one. **Item 60 was filed by the commit that CAUSED it**, which is the only honest moment to file a trade-off. **Items 45, 46, 47, 48 and 49 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so this number moved by one while FIVE items closed. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -48,7 +48,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **59** | **Maximo**, then agent | **A DEAD ACTIVATION HAS NO ESCAPE BUT CLEARING STORAGE, which destroys the shelf** (C-3). Blocked on item 2: one probe against the live endpoint settles it | a subscriber who deactivates an install |
 | ~~49~~ | agent | ~~Four reliability holes on the path somebody is waiting on~~ **DONE 2026-08-27**, `0486712` + `b006efc`. **ALL FOUR.** R-1's comment in `licenseHandler.ts` - *"never during a catch"* - **was false from the day it was written**, which is why a missing timeout on the catch path went unnoticed. R-2's cooldown had to be PERSISTED, because an MV3 worker is torn down between catches and module scope does not survive. R-3's watchdog number is DERIVED from the pipeline's own ceilings rather than guessed, which is why this exports three of them. **25 mutations, 25 caught, 4 survived first pass** | a catch that hangs, on someone else’s page |
 | **50** | agent | **FIVE OF NINE DONE 2026-08-27**, `b08489c` + `12c9055` + `d4a96de`. **The biggest was not in the item**: the 08-27 429 fix bounded ONE of two fan-outs at the same host, and `groundText` was still firing **21 concurrent** searches - more than the nineteen that caused the outage. PERF-2 (half), PERF-4, PERF-5, PERF-7 closed with before/after numbers. **REMAINING: PERF-2's tray memo, PERF-3, PERF-8, PERF-10.** PERF-3's implied fix is a product regression - see the body | the first impression |
-| **51** | agent | **SEVEN OF NINE DONE** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **REMAINING TWO: AC-5 and AC-12**, which are one contract (the token lifetime crossing the wire). R-6/TM-13, AC-9/TM-6, AC-10 and AC-6 closed 08-28 All re-probed and confirmed still open on 08-27 | — |
+| ~~51~~ | agent | **ALL NINE DONE 2026-08-27/28** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **NOTHING REMAINS.** All nine closed, each mutation-tested twice All re-probed and confirmed still open on 08-27 | — |
 | **52** | agent | **The tray lives in the host page's light DOM** (TM-9 exfiltration surface, TM-10 latent `javascript:`) | — |
 | **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
@@ -1119,12 +1119,16 @@ unblocks.
       repaint, which a per-session memo in `content.ts` would remove), **PERF-3**, **PERF-8**
       (`/api/vision` buffers the whole image before opening upstream), **PERF-10's remainder**.
 
-- [ ] **51. THE SERVER'S REMAINING CONTRACT AND EDGE GAPS.** *(review §4 and §5)*
+- [x] **51. THE SERVER'S REMAINING CONTRACT AND EDGE GAPS.** *(review §4 and §5)* **ALL NINE CLOSED 2026-08-27/28.** Every one mutation-tested twice; **81 mutations across the item, 81 caught** (`ls tools/mutations/item-51-*.json`, counted 2026-08-28, not remembered), and five of them found real holes in tests written minutes earlier.
 
-      - **AC-5 · The client compiles the server's `TOKEN_TTL_MS` and `GRACE_MS` into its
-        bundle.** `license.ts:10`. Change either server-side and **every shipped client
-        desynchronises.** *(Item 44 closed the version marker; this is the other half of the
-        same class and is NOT closed.)*
+      - ~~**AC-5 · The client compiles the server's `TOKEN_TTL_MS` and `GRACE_MS`.**~~
+        **DONE 2026-08-28**, with AC-12 — they are ONE contract. The lifetime crosses the wire
+        now (`expiresIn`, `graceMs`), because a number the SERVER owns cannot change while
+        every shipped install disagrees with it — **a published extension updates on Chrome's
+        schedule, not ours.** `TOKEN_TTL_MS` is gone from the client entirely: it was imported
+        to be RE-EXPORTED, and **nothing imported the re-export**. `GRACE_MS` survives as the
+        last-known fallback for a session stored before the field existed, and
+        `licenseImports.test.ts` is an ABSENCE proof that no second route exists.
       - ~~**AC-6 · A response-shape change on `/api/vision` fails silently as "no books
         found".**~~ **DONE 2026-08-28.** `typeof raw !== 'string' → return []`, and an empty
         array is what *"there is no book in this picture"* looks like — so a provider that
@@ -1153,8 +1157,15 @@ unblocks.
         reason to be careful rather than as a reason to CHECK. Same family as `ipCap`'s
         eviction comment. Three now-dead interfaces removed with it, their knowledge moved
         rather than deleted. **12 mutations, 12 caught, twice.**
-      - **AC-12 · `expiresAt` is a server timestamp evaluated against the client's clock**,
-        with no skew tolerance and no `expiresIn` to anchor locally.
+      - ~~**AC-12 · `expiresAt` is a server timestamp evaluated against the client's
+        clock.**~~ **DONE 2026-08-28.** The server sends a DURATION and the client adds it to
+        its OWN clock, so **skew is structurally irrelevant rather than tolerated** — there is
+        no cross-clock comparison left to be wrong. The absolute timestamp stays as the
+        fallback, so a client talking to a proxy that has not been redeployed still works: the
+        fix must not itself be what signs somebody out. **13 mutations, 13 caught, twice**, and
+        one of them found the two copies of the validation rule were not equally exercised —
+        `Infinity` cannot cross JSON, so the wire could never reach `Number.isFinite`, while
+        `chrome.storage.local` is structured-clone and can. One `duration`, shared.
       - ~~**SEC-3 · `/api/license` has no per-IP cap.**~~ **DONE 2026-08-27, `fa5ab8f`.**
         `keyCap` counts the KEY, which the caller chooses, so a per-key cap structurally
         cannot bound ENUMERATION. `ipCap` now runs BEFORE `keyCap` (so a capped caller cannot

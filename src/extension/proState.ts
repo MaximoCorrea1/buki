@@ -13,7 +13,7 @@
  * a signed token, and the two having different lifetimes is the point.
  */
 import type { StorageArea } from './storage';
-import { isLicensed, needsRenewal, type Exchange, type Session } from './license';
+import { duration, isLicensed, needsRenewal, type Exchange, type Session } from './license';
 import type { Standing } from './entitlement';
 
 export const PRO_KEY = 'buki-pro';
@@ -56,10 +56,20 @@ const EMPTY: ProState = { key: '', session: null };
 /** A stored session, or null for anything that is not one. */
 function sessionFrom(raw: unknown): Session | null {
   if (!raw || typeof raw !== 'object') return null;
-  const { token, expiresAt } = raw as Record<string, unknown>;
+  const { token, expiresAt, graceMs } = raw as Record<string, unknown>;
   if (typeof token !== 'string' || token === '') return null;
   if (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)) return null;
-  return { token, expiresAt };
+  // `graceMs` READ BACK AS WELL AS WRITTEN. A field the exchange stores and the reader
+  // drops is a field that exists for exactly one process lifetime - which is how the
+  // activation id was lost for a fortnight (`OPENWORK.md` item 48).
+  //
+  // THE SAME `duration` `license.ts` uses, imported rather than re-spelled. This was a
+  // second copy until a mutation showed the copies were not equally exercised: `Infinity`
+  // cannot cross JSON, so the wire could never reach the `Number.isFinite` clause - and
+  // `chrome.storage.local` is structured-clone AND user-editable, so it can. An Infinity
+  // grace here is a session that never expires, set by editing storage.
+  const grace = duration(graceMs);
+  return { token, expiresAt, ...(grace === undefined ? {} : { graceMs: grace }) };
 }
 
 /**

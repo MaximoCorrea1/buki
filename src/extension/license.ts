@@ -7,13 +7,44 @@
  * carries. That is what keeps a stolen `chrome.storage.local` from being a stolen
  * subscription for longer than a day, and it is why `src/server/token.ts` exists.
  */
-import { GRACE_MS, TOKEN_TTL_MS } from '../server/token';
+/**
+ * ⚠ `GRACE_MS` ONLY, AND ONLY AS A FALLBACK. `TOKEN_TTL_MS` came through here too until
+ * 2026-08-28, and it was imported for one reason: to be RE-EXPORTED. Nothing imported the
+ * re-export. So the server's token lifetime was compiled into every shipped bundle to
+ * satisfy no caller at all. `OPENWORK.md` item 51, AC-5.
+ *
+ * The lifetime now arrives in the exchange response (`expiresIn`, `graceMs`), which is the
+ * only way a number the SERVER owns can change without waiting on Chrome's update schedule.
+ * This constant survives as the last value we knew, for a session stored before the field
+ * existed — `licenseImports.test.ts` proves nothing else crosses this line.
+ */
+import { GRACE_MS } from '../server/token';
 import { worthRetrying } from '../shared/retry';
 
 /** A session as the extension stores it: the bearer token and when it stops being fresh. */
 export interface Session {
   token: string;
+  /**
+   * When this stops being fresh, **on the CLIENT'S clock**.
+   *
+   * AC-12. It used to be the server's timestamp stored verbatim and then compared against
+   * `Date.now()`, with no skew tolerance — so a machine running a few minutes fast treated a
+   * live session as dead, and one running slow rode a session the proxy had stopped
+   * honouring. The server now sends a DURATION and this is that duration added to the
+   * client's own clock, which makes skew structurally irrelevant rather than tolerated.
+   */
   expiresAt: number;
+  /**
+   * How long past expiry the proxy will still honour this token, **as the server said on
+   * the day it was issued**.
+   *
+   * AC-5. `GRACE_MS` was imported from `src/server/token` and COMPILED INTO THE BUNDLE, so
+   * changing it server-side left every shipped install disagreeing with the proxy — and a
+   * published extension updates on Chrome's schedule, not ours. Optional because sessions
+   * written before this field existed are still on disk; absent means fall back to the
+   * compiled number, which is the last value we knew.
+   */
+  graceMs?: number;
 }
 
 export type Exchange =
@@ -63,7 +94,12 @@ export function needsRenewal(session: Session | null, now: number): boolean {
  */
 export function isLicensed(session: Session | null, now: number): boolean {
   if (!session) return false;
-  return now < session.expiresAt + GRACE_MS;
+  // THE SERVER'S NUMBER FIRST, the compiled one only as a last-known fallback. AC-5: with
+  // the constant alone, a proxy that shortened its grace went on being contradicted by
+  // every install already out there. The fallback is not decoration - sessions stored
+  // before this field existed have none, and treating that as zero would sign every
+  // existing subscriber out the moment they updated.
+  return now < session.expiresAt + (session.graceMs ?? GRACE_MS);
 }
 
 /**
@@ -98,12 +134,38 @@ export function canCatchOnHeldSession(session: Session | null, now: number): boo
 }
 
 /** A body that is actually a session, rather than anything a 200 might carry. */
-function sessionFrom(body: unknown): Session | null {
+/**
+ * A span of milliseconds, or nothing.
+ *
+ * EXPORTED, and used by `proState.ts` for the stored copy of the same field. It was written
+ * twice, and a MUTATION PROVED THE DIFFERENCE MATTERED: `Number.isFinite` is unreachable
+ * from the wire, because `JSON.stringify(Infinity)` is `null` — so the mutation removing it
+ * survived here and was meaningless. It is NOT unreachable from `chrome.storage.local`,
+ * which is structured-clone and user-editable, and an Infinity grace there is a session that
+ * never expires.
+ *
+ * One rule in one place rather than two that agree today. `shared/retry.ts` exists because
+ * two copies of one rule had drifted, and the copy in `proState` was the same setup.
+ */
+export const duration = (v: unknown): number | undefined =>
+  typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined;
+
+function sessionFrom(body: unknown, now: number): Session | null {
   if (!body || typeof body !== 'object') return null;
-  const { token, expiresAt } = body as Record<string, unknown>;
+  const { token, expiresAt, expiresIn, graceMs } = body as Record<string, unknown>;
   if (typeof token !== 'string' || token === '') return null;
   if (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)) return null;
-  return { token, expiresAt };
+
+  // THE DURATION WINS WHEN THERE IS ONE, anchored to OUR clock. AC-12: the absolute
+  // timestamp is the server's, and comparing it to `Date.now()` made every skewed machine
+  // wrong in one direction or the other. `expiresAt` stays as the fallback so a proxy that
+  // has not been redeployed yet still works - the fix must not itself sign anybody out.
+  const local = duration(expiresIn);
+  return {
+    token,
+    expiresAt: local === undefined ? expiresAt : now + local,
+    ...(duration(graceMs) === undefined ? {} : { graceMs: duration(graceMs)! }),
+  };
 }
 
 export function createLicense(deps: LicenseDeps): {
@@ -214,7 +276,7 @@ export function createLicense(deps: LicenseDeps): {
         };
       }
 
-      const session = sessionFrom(body);
+      const session = sessionFrom(body, deps.now());
       if (!session) {
         // A 200 that is not a session: a proxy error page, a login redirect, a changed
         // shape. Storing it would make isLicensed() true and every catch fail at the
@@ -238,5 +300,9 @@ export function createLicense(deps: LicenseDeps): {
   };
 }
 
-/** Re-exported so callers do not each import from `src/server/` to know one number. */
-export { TOKEN_TTL_MS, GRACE_MS };
+/**
+ * ⚠ THIS USED TO RE-EXPORT `TOKEN_TTL_MS` AND `GRACE_MS`, *"so callers do not each import
+ * from `src/server/` to know one number"* — and **no caller ever did.** A convenience for
+ * nobody, which is also how the server's lifetime ended up compiled into the client.
+ * Removed with AC-5; `licenseImports.test.ts` is what keeps it removed.
+ */

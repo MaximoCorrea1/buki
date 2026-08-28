@@ -1,0 +1,88 @@
+{
+  "target": [
+    "src/extension/license.test.ts",
+    "src/extension/licenseImports.test.ts",
+    "src/server/licenseHandler.test.ts",
+    "src/extension/proState.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "51br the server stops sending the duration, so every client is back on skewed timestamps",
+      "file": "src/server/licenseHandler.ts",
+      "from": "      expiresIn: TOKEN_TTL_MS,",
+      "to": ""
+    },
+    {
+      "label": "51bs the server stops sending its grace, so the compiled constant is in charge again",
+      "file": "src/server/licenseHandler.ts",
+      "from": "      graceMs: GRACE_MS,",
+      "to": ""
+    },
+    {
+      "label": "51bt the server sends a duration that disagrees with its own timestamp",
+      "file": "src/server/licenseHandler.ts",
+      "from": "      expiresIn: TOKEN_TTL_MS,",
+      "to": "      expiresIn: TOKEN_TTL_MS * 2,"
+    },
+    {
+      "label": "51bu the client ignores the duration and keeps the server's absolute timestamp (AC-12 restored)",
+      "file": "src/extension/license.ts",
+      "from": "    expiresAt: local === undefined ? expiresAt : now + local,",
+      "to": "    expiresAt: expiresAt,"
+    },
+    {
+      "label": "51bv the client anchors to the SERVER's timestamp plus the duration, which is skew twice over",
+      "file": "src/extension/license.ts",
+      "from": "    expiresAt: local === undefined ? expiresAt : now + local,",
+      "to": "    expiresAt: local === undefined ? expiresAt : expiresAt + local,"
+    },
+    {
+      "label": "51bw the client drops the fallback, so an un-redeployed proxy signs everybody out",
+      "file": "src/extension/license.ts",
+      "from": "    expiresAt: local === undefined ? expiresAt : now + local,",
+      "to": "    expiresAt: now + (local ?? 0),"
+    },
+    {
+      "label": "51bx the client ignores the server's grace and uses the compiled constant (AC-5 restored)",
+      "file": "src/extension/license.ts",
+      "from": "  return now < session.expiresAt + (session.graceMs ?? GRACE_MS);",
+      "to": "  return now < session.expiresAt + GRACE_MS;"
+    },
+    {
+      "label": "51by the compiled fallback is dropped, signing out every session stored before the field",
+      "file": "src/extension/license.ts",
+      "from": "  return now < session.expiresAt + (session.graceMs ?? GRACE_MS);",
+      "to": "  return now < session.expiresAt + (session.graceMs ?? 0);"
+    },
+    {
+      "label": "51bz a negative grace is accepted, so a hostile stored value shortens the session",
+      "file": "src/extension/license.ts",
+      "from": "export const duration = (v: unknown): number | undefined =>\n  typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined;",
+      "to": "export const duration = (v: unknown): number | undefined =>\n  typeof v === 'number' ? v : undefined;"
+    },
+    {
+      "label": "51ca an infinite duration is accepted, so a stored grace can make a session never expire",
+      "file": "src/extension/license.ts",
+      "from": "export const duration = (v: unknown): number | undefined =>\n  typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined;",
+      "to": "export const duration = (v: unknown): number | undefined =>\n  typeof v === 'number' && v >= 0 ? v : undefined;"
+    },
+    {
+      "label": "51cb proState drops graceMs on read, so the field lives one process only",
+      "file": "src/extension/proState.ts",
+      "from": "  return { token, expiresAt, ...(grace === undefined ? {} : { graceMs: grace }) };",
+      "to": "  return { token, expiresAt };"
+    },
+    {
+      "label": "51cc proState re-spells the rule instead of importing it, and gets it wrong",
+      "file": "src/extension/proState.ts",
+      "from": "  const grace = duration(graceMs);",
+      "to": "  const grace = typeof graceMs === 'number' ? graceMs : undefined;"
+    },
+    {
+      "label": "51cd the server's token lifetime is compiled back into the client",
+      "file": "src/extension/license.ts",
+      "from": "import { GRACE_MS } from '../server/token';",
+      "to": "import { GRACE_MS, TOKEN_TTL_MS } from '../server/token';\nvoid TOKEN_TTL_MS;"
+    }
+  ]
+}

@@ -80,6 +80,40 @@ describe('what the extension knows about being Pro', () => {
     expect(await readPro(storage)).toEqual(full);
   });
 
+  /**
+   * AC-5. `OPENWORK.md` item 51. **Written after mutations 51cb and 51cc SURVIVED** — the
+   * field was written on every exchange and dropped on every read, so the server's grace
+   * lived exactly one process lifetime and the compiled constant took over the moment the
+   * worker was torn down. Which, in MV3, is between two clicks.
+   *
+   * Precisely the shape of item 48's activation id: written, never read back, gone.
+   */
+  it('carries the server’s grace back out of storage', async () => {
+    const storage = fakeStorage();
+    const session = { token: 'tok', expiresAt: NOW + 86_400_000, graceMs: 3 * 86_400_000 };
+    await writePro(storage, { key: 'KEY-1', session });
+
+    expect(await readPro(storage)).toEqual({ key: 'KEY-1', session });
+  });
+
+  it('refuses a stored grace that is not a finite, non-negative number', async () => {
+    // ⚠ **THIS IS REACHABLE HERE AND NOT ON THE WIRE**, which is why the test lives in this
+    // file. `JSON.stringify(Infinity)` is `null`, so no HTTP response can carry one — but
+    // `chrome.storage.local` is structured-clone AND user-editable, so it can. An Infinity
+    // grace makes `now < expiresAt + grace` true for ever: a session that never expires,
+    // set by editing storage. A negative one shortens it.
+    const storage = fakeStorage();
+    for (const bad of [NaN, Infinity, -1, '900', null]) {
+      await storage.set({
+        [PRO_KEY]: { key: 'K', session: { token: 't', expiresAt: NOW, graceMs: bad } },
+      });
+      const got = await readPro(storage);
+      expect(got.session, `storage carried ${String(bad)} into the grace`).not.toHaveProperty(
+        'graceMs',
+      );
+    }
+  });
+
   it('refuses a cooldown that is not a finite number', async () => {
     // `chrome.storage.local` is user-editable, and `typeof NaN === 'number'` is true. A NaN
     // here makes `now - renewFailedAt < RENEW_COOLDOWN_MS` false for ever, so the backoff

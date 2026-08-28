@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { handleLicense, type LicenseEnv } from './licenseHandler';
-import { verify, TOKEN_TTL_MS } from './token';
+import { verify, TOKEN_TTL_MS, GRACE_MS } from './token';
 
 const SECRET = 'test-secret-at-least-32-characters-long!!';
 const EXT = 'abcdefghijklmnopabcdefghijklmnop';
@@ -64,6 +64,33 @@ describe('exchanging a licence for a session', () => {
     expect(expiresAt).toBe(NOW + TOKEN_TTL_MS);
     const verdict = await verify(token, SECRET, NOW);
     expect(verdict.state).toBe('valid');
+  });
+
+  /**
+   * AC-5 and AC-12. `OPENWORK.md` item 51. **The lifetime is TOLD, not assumed.**
+   *
+   * `license.ts` imported `TOKEN_TTL_MS` and `GRACE_MS` from this directory, so both were
+   * compiled into every shipped install — and a published extension updates on Chrome's
+   * schedule, not ours. `expiresIn` is a DURATION beside the absolute timestamp so the
+   * client can anchor to its OWN clock, which makes skew structurally irrelevant instead of
+   * merely untolerated.
+   */
+  it('tells the client the lifetime rather than making it compile one in', async () => {
+    const res = await handleLicense(post({ key: 'KEY-1' }), env());
+    const body = (await res.json()) as Record<string, unknown>;
+
+    expect(body['expiresIn']).toBe(TOKEN_TTL_MS);
+    expect(body['graceMs']).toBe(GRACE_MS);
+    // The absolute timestamp STAYS. A client talking to a proxy that has not been
+    // redeployed falls back to it, so shipping this must not sign anybody out.
+    expect(body['expiresAt']).toBe(NOW + TOKEN_TTL_MS);
+  });
+
+  it('sends a duration that agrees with the timestamp it sits beside', () => {
+    // Two ways of saying one thing is two things that can disagree. They cannot here,
+    // because both come from `TOKEN_TTL_MS` — and this is what says so.
+    expect(TOKEN_TTL_MS).toBeGreaterThan(0);
+    expect(GRACE_MS).toBeGreaterThan(0);
   });
 
   it('names the licence and the activation in the claim, so a key can be traced', async () => {

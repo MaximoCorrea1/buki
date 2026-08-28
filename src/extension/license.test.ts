@@ -53,6 +53,105 @@ describe('isLicensed', () => {
   });
 });
 
+/**
+ * AC-5 and AC-12, and they are ONE contract. `OPENWORK.md` item 51.
+ *
+ * **AC-5.** `license.ts:10` imported `TOKEN_TTL_MS` and `GRACE_MS` from `src/server/token`,
+ * so the server's lifetime numbers were COMPILED INTO EVERY SHIPPED CLIENT. Change either
+ * one server-side and every install already out there disagrees with the proxy about when
+ * a token dies — silently, and in the direction that shows a paywall to somebody who paid.
+ * A published extension updates on Chrome's schedule, not ours.
+ *
+ * **AC-12.** `expiresAt` is a SERVER timestamp compared against the CLIENT'S clock, with no
+ * skew tolerance. A machine running a few minutes fast treats a live session as expired; a
+ * few minutes slow, and it rides one the proxy has already stopped honouring.
+ *
+ * **One fix answers both, because both are the same mistake: the client deciding a question
+ * the server owns.** The server now sends `expiresIn` (a DURATION) and `graceMs`, the client
+ * anchors the duration to its OWN clock — which makes skew structurally irrelevant rather
+ * than tolerated — and reads grace from the response instead of from a constant. The
+ * compiled numbers survive only as a last-known fallback for a response missing the fields.
+ */
+describe('the lifetime contract crosses the wire', () => {
+  const ok = (body: unknown, status = 200): Response =>
+    new Response(JSON.stringify(body), { status });
+
+  it('anchors expiry to the CLIENT clock, so a skewed machine cannot be wrong', async () => {
+    // The server's absolute `expiresAt` is deliberately absurd here — twenty minutes in the
+    // past by our clock. `expiresIn` is what must win.
+    const fetch = vi.fn(async () =>
+      ok({ token: 'tok', expiresAt: NOW - 1_200_000, expiresIn: 86_400_000, graceMs: GRACE_MS }),
+    );
+    const out = await createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW }).exchange('K');
+
+    expect(out.ok && out.session.expiresAt).toBe(NOW + 86_400_000);
+  });
+
+  it('falls back to the absolute timestamp when no duration is sent', async () => {
+    // A response from a proxy that has not been redeployed yet. Older behaviour, kept, so
+    // the fix cannot itself be the thing that signs somebody out.
+    const fetch = vi.fn(async () => ok({ token: 'tok', expiresAt: NOW + 3_600_000 }));
+    const out = await createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW }).exchange('K');
+
+    expect(out.ok && out.session.expiresAt).toBe(NOW + 3_600_000);
+  });
+
+  it('carries the server’s grace, rather than the number compiled into the bundle', async () => {
+    const server = 3 * 24 * 60 * 60 * 1000; // deliberately NOT the compiled GRACE_MS
+    const fetch = vi.fn(async () =>
+      ok({ token: 'tok', expiresAt: NOW + 1000, expiresIn: 1000, graceMs: server }),
+    );
+    const out = await createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW }).exchange('K');
+
+    expect(out.ok && out.session.graceMs).toBe(server);
+  });
+
+  it('honours THAT grace, so a server change reaches the client on the next renewal', () => {
+    // The finding, as a behaviour. A server that shortened its grace to three days would
+    // otherwise go on being told seven by every install already out there.
+    const short = 3 * 24 * 60 * 60 * 1000;
+    const session = { token: 't', expiresAt: NOW - short - 1000, graceMs: short };
+
+    expect(isLicensed(session, NOW)).toBe(false);
+    // And the compiled constant would have said yes, which is what makes this a real test.
+    expect(isLicensed({ token: 't', expiresAt: NOW - short - 1000 }, NOW)).toBe(true);
+  });
+
+  it('falls back to the compiled grace for a session stored before the field existed', () => {
+    // Sessions already on disk have no `graceMs`. Treating that as zero would sign every
+    // existing subscriber out the moment they updated.
+    expect(isLicensed({ token: 't', expiresAt: NOW - GRACE_MS + 1000 }, NOW)).toBe(true);
+    expect(isLicensed({ token: 't', expiresAt: NOW - GRACE_MS - 1000 }, NOW)).toBe(false);
+  });
+
+  it('ignores a grace that is not a usable number', async () => {
+    // ⚠ `NaN` and `Infinity` ARE NOT IN THIS LIST, and leaving them in was a vacuous test.
+    // `JSON.stringify` turns both into `null`, so no HTTP response can carry one and the
+    // case was being "passed" by the serialiser rather than by the guard. A mutation that
+    // accepted Infinity survived here and was caught in `proState.test.ts` instead, where
+    // `chrome.storage.local` is structured-clone and CAN hold one.
+    for (const graceMs of [null, 'seven days', -1, true, {}]) {
+      const fetch = vi.fn(async () => ok({ token: 'tok', expiresAt: NOW + 1000, graceMs }));
+      const out = await createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW }).exchange('K');
+
+      expect(out.ok && out.session.graceMs, String(graceMs)).toBeUndefined();
+    }
+  });
+
+  it('ignores a duration that is not a usable number', async () => {
+    // Same reason as above: NaN and Infinity cannot cross JSON, so testing them here tests
+    // `JSON.stringify`. The reachable shapes are these.
+    for (const expiresIn of [null, '1000', -1, true, {}]) {
+      const fetch = vi.fn(async () =>
+        ok({ token: 'tok', expiresAt: NOW + 3_600_000, expiresIn }),
+      );
+      const out = await createLicense({ fetch, endpoint: ENDPOINT, now: () => NOW }).exchange('K');
+
+      expect(out.ok && out.session.expiresAt, String(expiresIn)).toBe(NOW + 3_600_000);
+    }
+  });
+});
+
 describe('createLicense', () => {
   const ok = (body: unknown, status = 200): Response =>
     new Response(JSON.stringify(body), { status });
