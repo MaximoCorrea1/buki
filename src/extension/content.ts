@@ -31,6 +31,7 @@ import type {
   Shelved,
   TweetContext,
 } from './messages';
+import { unhandled } from './messages';
 
 const BTN_CLASS = 'buki-save-btn';
 
@@ -1691,5 +1692,8 @@ chrome.runtime.onMessage.addListener((msg: ContentRequest, _sender, sendResponse
     sendResponse({ permalink: context.permalink, text: context.text, links: context.links });
     return true;
   }
+  // TS-4, the other receiver. Same reason: a bare `return undefined` made an unhandled
+  // variant indistinguishable from one that was handled and had nothing to say.
+  unhandled(msg);
   return undefined;
 });

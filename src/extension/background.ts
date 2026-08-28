@@ -41,6 +41,7 @@ import type {
   ShelfResponse,
   TweetContext,
 } from './messages';
+import { unhandled } from './messages';
 
 const MENU_ID = 'buki-save-image';
 
@@ -707,7 +708,19 @@ chrome.runtime.onMessage.addListener((msg: BackgroundRequest, _sender, sendRespo
     return false;
   }
 
-  if (msg?.type !== 'recognize') return false;
+  if (msg?.type !== 'recognize') {
+    // TS-4. `OPENWORK.md` item 53. This was a bare `return false`, so a NINTH variant added
+    // to `BackgroundRequest` was a SILENT NO-OP: the message went, no branch matched,
+    // nothing answered, and the sender's await resolved to `undefined`. The feature is
+    // simply missing and nothing anywhere says so.
+    //
+    // `unhandled` takes `never`, so this line only compiles while every variant above has
+    // been narrowed away - which turns "somebody forgot the receiver" into a build failure
+    // at the moment they forget it. This file cannot be imported by a test, so a
+    // compile-time guard is the only kind it can have.
+    unhandled(msg);
+    return false;
+  }
 
   // THE TRUST BOUNDARY IS HERE, and the filter is applied on BOTH sides of it.
   //

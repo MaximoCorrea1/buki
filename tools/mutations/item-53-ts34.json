@@ -1,0 +1,41 @@
+{
+  "target": ["src/extension/messageContract.test.ts"],
+  "mutations": [
+    {
+      "label": "53r the background exhaustiveness check is deleted (TS-4 restored verbatim)",
+      "file": "src/extension/background.ts",
+      "from": "    unhandled(msg);\n    return false;\n  }",
+      "to": "    return false;\n  }"
+    },
+    {
+      "label": "53s the content exhaustiveness check is deleted",
+      "file": "src/extension/content.ts",
+      "from": "  unhandled(msg);\n  return undefined;\n});",
+      "to": "  return undefined;\n});"
+    },
+    {
+      "label": "53t unhandled goes silent, so a message reaching nobody says nothing",
+      "file": "src/extension/messages.ts",
+      "from": "  console.error('[Buki] unhandled message', msg);",
+      "to": "  void msg;"
+    },
+    {
+      "label": "53u the completeness proof only checks ONE direction, so a stale reply survives",
+      "file": "src/extension/messages.ts",
+      "from": "export type BackgroundRepliesAreComplete =\n  BackgroundRequest['type'] extends keyof BackgroundReplies\n    ? keyof BackgroundReplies extends BackgroundRequest['type']\n      ? true\n      : never\n    : never;",
+      "to": "export type BackgroundRepliesAreComplete =\n  BackgroundRequest['type'] extends keyof BackgroundReplies ? true : never;"
+    },
+    {
+      "label": "53v the completeness proof is short-circuited to true and checks nothing",
+      "file": "src/extension/messages.ts",
+      "from": "export const MESSAGE_CONTRACT_COMPLETE: BackgroundRepliesAreComplete &\n  ContentRepliesAreComplete = true;",
+      "to": "export const MESSAGE_CONTRACT_COMPLETE = true;"
+    },
+    {
+      "label": "53w the background listener goes back to its bare fall-through",
+      "file": "src/extension/background.ts",
+      "from": "  if (msg?.type !== 'recognize') {",
+      "to": "  if (msg?.type !== 'recognize') return false;\n  if (false) {"
+    }
+  ]
+}

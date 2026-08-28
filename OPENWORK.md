@@ -16,7 +16,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-27 (evening). `main` = `origin/main` at `640d451`, 0 ahead** (`git rev-list --count origin/main..HEAD`). **Eighteen commits went up in one go**: items 45-49 closed, item 50 taken to five of nine, the mutation harness promoted out of `zzz-`, and the whole session captured. **84 commits since `d3e5923`** (`git rev-list --count d3e5923..HEAD`). ⚠ **THIS ROW NAMED `60b98e4` UNTIL THE PUSH ABOVE HAD ALREADY LANDED**, which is the drift this file keeps paying for, in miniature, for the second time in one day - it was corrected in the same session rather than inherited. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands - that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **16.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27, second lane; 16 on 08-28 after item 51 closed.) **Ten are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, and 57 now needs his call first); six are agent work (36, 50, 52-55).** **ITEM 51 CLOSED 2026-08-28** - all nine findings, **81 mutations, 81 caught**, every plan re-run to check determinism. **Item 57 moved from agent to Maximo without closing**, because the second probe answered the engineering question and left a positioning one. **Item 60 was filed by the commit that CAUSED it**, which is the only honest moment to file a trade-off. **Items 45, 46, 47, 48 and 49 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so this number moved by one while FIVE items closed. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
+| Open items | **15.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-27, second lane; 16 on 08-28 after item 51 closed.) **Ten are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, and 57 now needs his call first); five are agent work (36, 50, 54, 55, 61).** **ITEM 51 CLOSED 2026-08-28** - all nine findings, **81 mutations, 81 caught**, every plan re-run to check determinism. **Item 57 moved from agent to Maximo without closing**, because the second probe answered the engineering question and left a positioning one. **Item 60 was filed by the commit that CAUSED it**, which is the only honest moment to file a trade-off. **Items 45, 46, 47, 48 and 49 closed 2026-08-27**, and items 58 and 59 were filed out of 47 and 48 - so this number moved by one while FIVE items closed. **Read the LANE, not this number.** It read 14 on 08-25, fell to 8 as the six P0s and item 44 closed, rose to 20 when the rest of the 08-24 review was filed as items 45-56, and is 19 now: items **1 and 26 closed on 08-27** and item **57** was added. **THE COUNT WAS 20 AND WRONG FOR HALF A DAY.** The LANE rows for 1 and 26 were struck the moment they closed and their Part 2 CHECKBOXES were not, so the file disagreed with itself and the stale half was the one a reader reaches second. Found by counting both and comparing, which is now the probe: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as the item bodies |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -51,7 +51,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~51~~ | agent | **ALL NINE DONE 2026-08-27/28** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **NOTHING REMAINS.** All nine closed, each mutation-tested twice All re-probed and confirmed still open on 08-27 | — |
 | ~~52~~ | agent | **BOTH FINDINGS CLOSED 2026-08-28.** TM-9's `data-sig` carried every book TITLE and pile on an attribute in x.com's light DOM, **readable by CSS attribute selectors with no script at all**; TM-10's `href*=` substring stored `javascript:` URLs on the shelf, defused by ONE render guard. **16 mutations, 16 caught** | — |
 | **61** | agent, **needs a browser** | **The tray's DOM is still readable by the page it sits on** — card text, class names, the injected `<style>`. The shadow root the review proposed needs the 110-selector stylesheet SPLIT first, because it also serves the Save button inside X's own markup, and the failure mode is visual with no way to verify it from node | item 3 |
-| **53** | agent | **Types that do not type** (TS-1/2/3/4/7). TS-7 is the flag that would have made the `activationId` bug red | every future silent-drop bug |
+| ~~53~~ | agent | **ALL FIVE CLOSED 2026-08-28.** `exactOptionalPropertyTypes` is ON and its wave was **eleven**, not the flood the item expected. Three storage readers stopped casting what they read — one of them exported the literal `"undefined"` into Goodreads. Both message receivers now fail to COMPILE when a variant is added and forgotten | — |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
 | **55** | agent | **The two surfaces no test can reach** (M-5 the context-menu orchestration, M-6 the whole card renderer including the paywall) | — |
 | **57** | **Maximo decides, then agent**, AFTER LAUNCH | **Find a book from a passage. PROBED TWICE 2026-08-27 AND THE SECOND ROUND OVERTURNED THE FIRST.** The floor round one said might not exist is there: field filters are dead but a **bare boolean term** scopes the query (2,228 hits → 227, the book from absent-in-the-top-3 to **rank 1**), and comparing the model's proposed title against the returned hit titles **discriminated 5/5** and refused 7 of 8 wrong-book-right-author hallucinations at **no extra request**. **The blocker is no longer ranking, it is COVERAGE** — four modern in-copyright novels, none found, two returning zero hits. `node tools/probe/passage-grounding.mjs` | **a positioning call, not a build** |
@@ -1265,7 +1265,7 @@ unblocks.
       problem. That is a real risk and a narrow one, which is why it is filed rather than
       rushed.
 
-- [ ] **53. TYPES THAT DO NOT TYPE.** *(review §4 and §5)*
+- [x] **53. TYPES THAT DO NOT TYPE.** *(review §4 and §5)* **ALL FIVE CLOSED 2026-08-28.** TS-7's wave was **eleven**, not a flood; TS-1/TS-2 found the validators were tested but NOT CONNECTED; TS-3's completeness proof went red on its first run and caught two mistakes in the map it was checking.
 
       - ~~**TS-1 · `readSettings` casts and spreads over the defaults.**~~ **DONE
         2026-08-28.** `readSettingsFrom`, exported as a pure function so it is testable — the
@@ -1289,10 +1289,27 @@ unblocks.
         `createRecognitionLog` with corrupt storage. **16 mutations, 16 caught, twice** —
         and one of the four first-pass survivors was the harness's own target list missing a
         file, which is an instrument lying rather than a hole.
-      - **TS-3 · Five of eight `BackgroundRequest` variants and all six `ContentRequest`
-        variants have no declared response type.**
-      - **TS-4 · Neither message receiver has a `never` check**, so a ninth variant is a
-        silent no-op.
+      - ~~**TS-3 · Most message variants have no declared response type.**~~ **DONE
+        2026-08-28.** `BackgroundReplies` and `ContentReplies`, **keyed by the union's own
+        `type`** — so a new variant with no answer declared is a COMPILE ERROR on the map
+        rather than a silent `any` at the call site. `MESSAGE_CONTRACT_COMPLETE` asserts each
+        map's keys are EXACTLY its union's, in BOTH directions, so a stale reply for a deleted
+        variant fails too. ⚠ **It went red on its first run and found two mistakes in the map
+        I had just written** — an invented `cancelRecognize` and a missing `catchResolve`.
+      - ~~**TS-4 · Neither message receiver has a `never` check.**~~ **DONE 2026-08-28.**
+        `unhandled(msg: never)` at the end of both listeners. The background one replaced
+        `if (msg?.type !== 'recognize') return false;` — **a bare fall-through, so a new
+        variant went, matched nothing, answered nothing, and the sender's `await` resolved to
+        `undefined`. The feature is simply missing and nothing says so.**
+        **VERIFIED BY WATCHING IT FAIL:** a ninth variant with no reply and no branch produced
+        **exactly two errors** — the completeness proof in `messages.ts` and `unhandled` in
+        `background.ts` — then was removed. Both files are untestable, so the compile-time
+        guard is the only kind they can have; `messageContract.test.ts` keeps them from being
+        DELETED, which is the failure that actually happens.
+        ⚠ **Two mutations survived first and could not have failed:** both are TYPE-level and
+        the harness runs `vitest`. Answered with a source guard naming the shape in both
+        directions, and recorded as a limit of the instrument rather than a hole. **6
+        mutations, 6 caught, twice.**
       - ~~**TS-7 · `exactOptionalPropertyTypes` is off.**~~ **DONE 2026-08-28. IT IS ON.**
         **The wave was ELEVEN**, not the flood this item expected — five in production code and
         **one of those inside a function nothing called** (X-3, deleted rather than fixed).

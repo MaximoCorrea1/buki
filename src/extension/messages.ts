@@ -191,3 +191,102 @@ export type SearchResponse =
 
 /** Answer to a shelf write. `saved` is present for saveBook, absent for removeBook. */
 export type ShelfResponse = { ok: true; saved?: SavedBook } | { ok: false; error: string };
+
+/**
+ * WHICH ANSWER GOES WITH WHICH ASK.
+ *
+ * TS-3. `OPENWORK.md` item 53. The request unions and the response types both existed, and
+ * **nothing connected them.** `chrome.runtime.sendMessage` defaults its response to `any`,
+ * so five of eight background variants and all six content variants had no declared answer
+ * at all — a renamed field compiled clean on BOTH sides and broke only at runtime. This
+ * file's own header records that happening once already, surfacing as a misleading
+ * "OCR failed".
+ *
+ * ⚠ **KEYED BY `BackgroundRequest['type']`, AND THAT IS THE ENTIRE MECHANISM.** A ninth
+ * variant added to the union without an answer declared here is a COMPILE ERROR on this
+ * object, not a silent `any` at the call site. Nothing has to remember to update it —
+ * `tsc` refuses to build until it is.
+ *
+ * `void` is a real answer and means *"nothing comes back"*: `openPage` and `cancelRecognize`
+ * are told, not asked. Writing `void` says that was decided rather than forgotten.
+ */
+export interface BackgroundReplies {
+  recognize: BackgroundResponse;
+  cancelRecognize: void;
+  saveBook: ShelfResponse;
+  searchBooks: SearchResponse;
+  removeBook: ShelfResponse;
+  coverBytes: CoverResponse;
+  openPage: void;
+  logEvent: { ok: true };
+  clearLog: { ok: boolean };
+}
+
+/** Answer to `coverBytes`. `null` is a real answer: the card draws its cloth instead. */
+export type CoverResponse = { ok: true; dataUrl: string | null };
+
+/**
+ * background → content. Every one of these is TOLD, not asked, except `ping`.
+ *
+ * `ping` is how `ensureTray` learns whether a tab already has the content script, so its
+ * answer is the whole point of sending it.
+ */
+export interface ContentReplies {
+  catchOpen: void;
+  /** The answer arriving. Told, not asked - the card repaints itself from it. */
+  catchResolve: void;
+  catchFail: void;
+  catchWall: void;
+  tweetContextFor: TweetContext | null;
+  ping: { ok: true };
+}
+
+/**
+ * The compile-time completeness proof, and it costs nothing at runtime.
+ *
+ * These two lines are what make the maps above binding. Each asserts that the map's keys are
+ * EXACTLY the union's `type` values — so a variant with no reply fails here, and a reply for
+ * a variant that no longer exists fails here too. Both directions, which is the shape
+ * `OPENWORK.md` §5 calls for whenever a guard claims coverage.
+ */
+export type BackgroundRepliesAreComplete =
+  BackgroundRequest['type'] extends keyof BackgroundReplies
+    ? keyof BackgroundReplies extends BackgroundRequest['type']
+      ? true
+      : never
+    : never;
+export type ContentRepliesAreComplete =
+  ContentRequest['type'] extends keyof ContentReplies
+    ? keyof ContentReplies extends ContentRequest['type']
+      ? true
+      : never
+    : never;
+
+/** `true` only when both maps are exact. A `never` here is a message with no contract. */
+export const MESSAGE_CONTRACT_COMPLETE: BackgroundRepliesAreComplete &
+  ContentRepliesAreComplete = true;
+
+/**
+ * The answer to one ask, by name.
+ *
+ * Callers use this instead of letting `sendMessage` hand them `any`:
+ *
+ *     const res = (await chrome.runtime.sendMessage(msg)) as ReplyTo<'saveBook'>;
+ */
+export type ReplyTo<T extends keyof BackgroundReplies> = BackgroundReplies[T];
+export type ContentReplyTo<T extends keyof ContentReplies> = ContentReplies[T];
+
+/**
+ * Say out loud that every case was handled.
+ *
+ * TS-4. Neither receiver had one, so a ninth variant added to a union was a **silent
+ * no-op**: the message was sent, no branch matched, nothing answered, and nothing anywhere
+ * said so. The sender's `await` resolves to `undefined` and the feature is simply missing.
+ *
+ * Call it after the last branch. It takes `never`, so it only compiles when TypeScript can
+ * prove there is nothing left — which is a build failure at the exact moment somebody adds
+ * a variant and forgets the receiver.
+ */
+export function unhandled(msg: never): void {
+  console.error('[Buki] unhandled message', msg);
+}
