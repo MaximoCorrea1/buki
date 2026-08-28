@@ -28,6 +28,44 @@ function makeLog() {
   return createRecognitionLog({ storage: fakeStorage(), now: () => (clock += 1000) });
 }
 
+/**
+ * TS-2, AT THE WIRING. `OPENWORK.md` item 53. Same gap as the shelf's: `storedLog.test.ts`
+ * covers `readLog` in isolation, and a mutation restoring the bare cast in `read()` survived
+ * because every test here seeds well-formed events.
+ */
+describe('the log survives what storage actually holds', () => {
+  const seeded = (rows: unknown): StorageArea => {
+    const store: Record<string, unknown> = { recognitionLog: rows };
+    return {
+      async get(key) {
+        return { [key]: store[key] };
+      },
+      async set(items) {
+        Object.assign(store, items);
+      },
+    };
+  };
+
+  const ok = {
+    at: 1,
+    ms: 1200,
+    flow: 'button',
+    source: 'vision',
+    confidence: 'high',
+    outcome: 'confirmed',
+  };
+
+  it('drops an event whose timing is NaN, which would poison every mean', async () => {
+    const log = createRecognitionLog({ storage: seeded([ok, { ...ok, at: 2, ms: Number.NaN }]), now: () => 9 });
+    expect((await log.list()).map((e) => e.at)).toEqual([1]);
+  });
+
+  it('drops an event whose outcome is invented, which would skew the denominator', async () => {
+    const log = createRecognitionLog({ storage: seeded([{ ...ok, outcome: 'kept' }]), now: () => 9 });
+    expect(await log.list()).toEqual([]);
+  });
+});
+
 /** A log whose clock only moves when the test says so. */
 function makeClockedLog() {
   let clock = 1_000_000;

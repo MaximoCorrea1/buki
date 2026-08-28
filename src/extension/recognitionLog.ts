@@ -1,6 +1,7 @@
 import type { Confidence, RecognitionSource } from '../recognizer/types';
 import type { StorageArea } from './storage';
 import { createWriteQueue } from './writeQueue';
+import { readLog } from './storedLog';
 
 /**
  * One record per recognition attempt. Local only, never transmitted: this exists so the
@@ -60,8 +61,11 @@ export function createRecognitionLog(deps: { storage: StorageArea; now: () => nu
 
   async function read(): Promise<RecognitionEvent[]> {
     const got = await deps.storage.get(KEY);
-    const raw = got[KEY];
-    return Array.isArray(raw) ? (raw as RecognitionEvent[]) : [];
+    // VALIDATED, not cast. These events feed the kept rate and the mean latency on the
+    // options page, so a single `ms: NaN` in a user-editable store makes every mean NaN and
+    // an invented `outcome` lands in the denominator and in no numerator.
+    // `OPENWORK.md` item 53, TS-2. See `storedLog.ts`.
+    return readLog(got[KEY]);
   }
 
   return {

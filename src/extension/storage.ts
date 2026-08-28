@@ -2,6 +2,7 @@ import type { Book } from '../recognizer/types';
 import { createWriteQueue } from './writeQueue';
 import { bookKey, sameBook } from './bookIdentity';
 import { mergeBook } from './mergeBook';
+import { readShelf } from './storedShelf';
 
 /**
  * What you mean to do about a book. `read` is an end state rather than an intention, but
@@ -80,8 +81,14 @@ export function createLibrary(deps: {
 
   async function read(): Promise<SavedBook[]> {
     const got = await deps.storage.get(KEY);
-    const raw = got[KEY];
-    return Array.isArray(raw) ? (raw as SavedBook[]) : [];
+    // VALIDATED, not cast. `Array.isArray(raw) ? (raw as SavedBook[]) : []` was the whole
+    // check, and a cast checks nothing at runtime - so whatever `chrome.storage.local` held
+    // became the shelf, including a corrupt `intent` that exports the literal string
+    // "undefined" into Goodreads' Exclusive Shelf column. `OPENWORK.md` item 53, TS-2.
+    //
+    // `readShelf` DROPS a bad row rather than throwing: one damaged record must not become
+    // "you have no books". See `storedShelf.ts`.
+    return readShelf(got[KEY]);
   }
 
   return {

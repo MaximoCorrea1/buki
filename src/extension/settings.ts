@@ -20,12 +20,60 @@ export const DEFAULT_SETTINGS: Settings = {
   store: 'amazon',
 };
 
+const STORES: readonly string[] = ['amazon', 'bookshop'];
+
+/**
+ * Settings, read defensively out of whatever storage holds.
+ *
+ * TS-1. `OPENWORK.md` item 53. This used to be a SPREAD OVER THE DEFAULTS:
+ *
+ *     { ...DEFAULT_SETTINGS, ...(raw as Partial<Settings>) }
+ *
+ * **A spread fills in MISSING keys and accepts any value for a PRESENT one.** So
+ * `{ apiKey: 42 }` in a user-editable store produced settings whose `apiKey` is a number,
+ * and the review named exactly where that lands: **`settings.apiKey.trim()` is called on the
+ * money path**, and `.trim` is not a function on 42. This was the only one of three storage
+ * readers that did not check field by field.
+ *
+ * **PER FIELD, not per record.** A junk `store` should not also cost you your endpoint, and
+ * taking everything back to default over one bad key hides which key was bad.
+ *
+ * Exported as a pure function of the raw value so it can be tested: the `chrome.storage`
+ * call is the part that needs a browser, and the decision is the part that does not.
+ */
+export function readSettingsFrom(raw: unknown): Settings {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return DEFAULT_SETTINGS;
+  const got = raw as Record<string, unknown>;
+
+  const str = (key: keyof Settings, allowEmpty = false): string => {
+    const v = got[key];
+    if (typeof v !== 'string') return DEFAULT_SETTINGS[key] as string;
+    return allowEmpty || v !== '' ? v : (DEFAULT_SETTINGS[key] as string);
+  };
+
+  // BLANK IS A REAL VALUE for the key and only for the key: it is what a hosted proxy build
+  // ships, and treating it as missing would put our own default endpoint's key back.
+  const apiKey = str('apiKey', true);
+  const endpoint = str('endpoint');
+  const model = str('model');
+  const store = got['store'];
+
+  return {
+    apiKey,
+    // HTTPS ONLY. This is where the key gets SENT, and a `javascript:` or plain-http
+    // endpoint sitting in a user-editable store is a credential pointed somewhere it was
+    // never meant to go.
+    endpoint: /^https:\/\//i.test(endpoint) ? endpoint : DEFAULT_SETTINGS.endpoint,
+    model,
+    store: (typeof store === 'string' && STORES.includes(store)
+      ? store
+      : DEFAULT_SETTINGS.store) as Store,
+  };
+}
+
 export async function readSettings(): Promise<Settings> {
   const got = await chrome.storage.local.get(KEY);
-  const raw = got[KEY];
-  return typeof raw === 'object' && raw !== null
-    ? { ...DEFAULT_SETTINGS, ...(raw as Partial<Settings>) }
-    : DEFAULT_SETTINGS;
+  return readSettingsFrom(got[KEY]);
 }
 
 export async function writeSettings(settings: Settings): Promise<void> {

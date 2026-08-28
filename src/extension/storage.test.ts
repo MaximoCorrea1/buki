@@ -14,16 +14,68 @@ function fakeStorage(): StorageArea {
   };
 }
 
-function makeLibrary() {
+function makeLibrary(storage: StorageArea = fakeStorage()) {
   let clock = 1000;
   let seq = 0;
   const lib = createLibrary({
-    storage: fakeStorage(),
+    storage,
     now: () => (clock += 1000),
     newId: () => `id-${++seq}`,
   });
   return lib;
 }
+
+/**
+ * TS-2, AT THE WIRING. `OPENWORK.md` item 53.
+ *
+ * ⚠ **`storedShelf.test.ts` covers `readShelf` and could not see this.** A mutation that put
+ * the bare cast back in `read()` — the finding, restored verbatim — **survived the whole
+ * suite**, because every test above hands `createLibrary` well-formed data and the validator
+ * was tested only in isolation. **A module that is tested and not CONNECTED under test is a
+ * module you can unplug for free.**
+ */
+describe('the shelf survives what storage actually holds', () => {
+  const seeded = (rows: unknown): StorageArea => {
+    const store: Record<string, unknown> = { savedBooks: rows };
+    return {
+      async get(key) {
+        return { [key]: store[key] };
+      },
+      async set(items) {
+        Object.assign(store, items);
+      },
+    };
+  };
+
+  it('drops a row whose intent is not a real pile', async () => {
+    // The named harm: a corrupt `intent` exports the literal "undefined" into Goodreads'
+    // Exclusive Shelf column, in a file the reader imports into an account they keep.
+    const lib = makeLibrary(
+      seeded([
+        { id: 'a', book: { title: 'Dune', author: 'Herbert' }, intent: 'now', savedAt: 1 },
+        { id: 'b', book: { title: 'Emma', author: 'Austen' }, intent: undefined, savedAt: 2 },
+      ]),
+    );
+
+    expect((await lib.list()).map((s) => s.id)).toEqual(['a']);
+  });
+
+  it('answers an empty shelf for storage that is not a list at all', async () => {
+    expect(await makeLibrary(seeded('books')).list()).toEqual([]);
+  });
+
+  it('keeps the good rows, so one bad record is not "you have no books"', async () => {
+    const lib = makeLibrary(
+      seeded([
+        { id: 'a', book: { title: 'Dune', author: 'Herbert' }, intent: 'now', savedAt: 1 },
+        'nonsense',
+        { id: 'c', book: { title: 'Emma', author: 'Austen' }, intent: 'read', savedAt: 3 },
+      ]),
+    );
+
+    expect((await lib.list()).map((s) => s.id)).toEqual(['a', 'c']);
+  });
+});
 
 describe('identityOf', () => {
   it('identifies the WORK, so two editions of it share one identity', () => {

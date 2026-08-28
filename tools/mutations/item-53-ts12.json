@@ -1,0 +1,107 @@
+{
+  "target": [
+    "src/extension/storedShelf.test.ts",
+    "src/extension/storedLog.test.ts",
+    "src/extension/settings.test.ts",
+    "src/extension/storage.test.ts",
+    "src/extension/recognitionLog.test.ts"
+  ],
+  "mutations": [
+    {
+      "label": "53a the shelf goes back to a bare cast (TS-2 restored verbatim)",
+      "file": "src/extension/storage.ts",
+      "from": "    return readShelf(got[KEY]);",
+      "to": "    const raw = got[KEY];\n    return Array.isArray(raw) ? (raw as SavedBook[]) : [];"
+    },
+    {
+      "label": "53b the log goes back to a bare cast",
+      "file": "src/extension/recognitionLog.ts",
+      "from": "    return readLog(got[KEY]);",
+      "to": "    const raw = got[KEY];\n    return Array.isArray(raw) ? (raw as RecognitionEvent[]) : [];"
+    },
+    {
+      "label": "53c the intent check is dropped, so \"undefined\" reaches Goodreads' Exclusive Shelf",
+      "file": "src/extension/storedShelf.ts",
+      "from": "  if (typeof intent !== 'string' || !INTENTS.includes(intent)) return null;",
+      "to": "  if (false) return null;"
+    },
+    {
+      "label": "53d the intent is checked for being a string but not for being a real pile",
+      "file": "src/extension/storedShelf.ts",
+      "from": "  if (typeof intent !== 'string' || !INTENTS.includes(intent)) return null;",
+      "to": "  if (typeof intent !== 'string') return null;"
+    },
+    {
+      "label": "53e a bad row THROWS the whole shelf away instead of being dropped",
+      "file": "src/extension/storedShelf.ts",
+      "from": "  return raw.map(record).filter((s): s is SavedBook => s !== null);",
+      "to": "  const rows = raw.map(record);\n  return rows.some((s) => s === null) ? [] : (rows as SavedBook[]);"
+    },
+    {
+      "label": "53f a malformed OPTIONAL drops the whole book instead of being stripped",
+      "file": "src/extension/storedShelf.ts",
+      "from": "  const theSource = source(raw['source']);",
+      "to": "  const theSource = source(raw['source']);\n  if (raw['source'] !== undefined && !theSource) return null;"
+    },
+    {
+      "label": "53g a stored javascript: source url is trusted again",
+      "file": "src/extension/storedShelf.ts",
+      "from": "  if (!text(url) || !/^https?:\\/\\//i.test(url)) return null;",
+      "to": "  if (!text(url)) return null;"
+    },
+    {
+      "label": "53h optionals are written as undefined instead of omitted, which is TS-7's runtime half",
+      "file": "src/extension/storedShelf.ts",
+      "from": "    ...(theSource ? { source: theSource } : {}),",
+      "to": "    source: theSource ?? undefined,"
+    },
+    {
+      "label": "53i the log stops checking that ms is finite, so one NaN poisons every mean",
+      "file": "src/extension/storedLog.ts",
+      "from": "  if (!num(raw['at']) || !num(raw['ms'])) return null;",
+      "to": "  if (typeof raw['at'] !== 'number' || typeof raw['ms'] !== 'number') return null;"
+    },
+    {
+      "label": "53j the log stops checking the outcome, so an invented one skews the denominator",
+      "file": "src/extension/storedLog.ts",
+      "from": "  if (!oneOf(raw['outcome'], OUTCOMES)) return null;",
+      "to": "  if (false) return null;"
+    },
+    {
+      "label": "53k `oneOf` accepts anything, so every dimension check is vacuous",
+      "file": "src/extension/storedLog.ts",
+      "from": "const oneOf = (v: unknown, allowed: readonly string[]): boolean =>\n  typeof v === 'string' && allowed.includes(v);",
+      "to": "const oneOf = (v: unknown, allowed: readonly string[]): boolean =>\n  typeof v === 'string' && allowed.length > 0;"
+    },
+    {
+      "label": "53l readSettings stops calling the validator and hands back raw storage",
+      "file": "src/extension/settings.ts",
+      "from": "export async function readSettings(): Promise<Settings> {\n  const got = await chrome.storage.local.get(KEY);\n  return readSettingsFrom(got[KEY]);\n}",
+      "to": "export async function readSettings(): Promise<Settings> {\n  const got = await chrome.storage.local.get(KEY);\n  return { ...DEFAULT_SETTINGS, ...(got[KEY] as Partial<Settings>) };\n}"
+    },
+    {
+      "label": "53m readSettingsFrom spreads instead of validating, so apiKey can be a number",
+      "file": "src/extension/settings.ts",
+      "from": "  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return DEFAULT_SETTINGS;\n  const got = raw as Record<string, unknown>;",
+      "to": "  if (typeof raw !== 'object' || raw === null) return DEFAULT_SETTINGS;\n  return { ...DEFAULT_SETTINGS, ...(raw as Partial<Settings>) };\n  // eslint-disable-next-line no-unreachable\n  const got = raw as Record<string, unknown>;"
+    },
+    {
+      "label": "53o the endpoint scheme check is dropped, so a javascript: endpoint is used",
+      "file": "src/extension/settings.ts",
+      "from": "    endpoint: /^https:\\/\\//i.test(endpoint) ? endpoint : DEFAULT_SETTINGS.endpoint,",
+      "to": "    endpoint,"
+    },
+    {
+      "label": "53p the endpoint accepts plain http as well as https",
+      "file": "src/extension/settings.ts",
+      "from": "    endpoint: /^https:\\/\\//i.test(endpoint) ? endpoint : DEFAULT_SETTINGS.endpoint,",
+      "to": "    endpoint: /^https?:\\/\\//i.test(endpoint) ? endpoint : DEFAULT_SETTINGS.endpoint,"
+    },
+    {
+      "label": "53q the store check is dropped, so an unbuildable buy link is configured",
+      "file": "src/extension/settings.ts",
+      "from": "    store: (typeof store === 'string' && STORES.includes(store)\n      ? store\n      : DEFAULT_SETTINGS.store) as Store,",
+      "to": "    store: (store ?? DEFAULT_SETTINGS.store) as Store,"
+    }
+  ]
+}

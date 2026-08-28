@@ -1267,13 +1267,28 @@ unblocks.
 
 - [ ] **53. TYPES THAT DO NOT TYPE.** *(review §4 and §5)*
 
-      - **TS-1 · `readSettings` casts a whole storage record and spreads it over the
-        defaults.** `settings.ts:27`. The only one of three storage readers that does not
-        validate field by field — **and its values are called as methods on the money path**
-        (`settings.apiKey.trim()`).
-      - **TS-2 · The shelf and the log cast unvalidated storage arrays.** `Array.isArray` is
-        the only check. **A corrupt `intent` exports the literal `undefined` into Goodreads'
-        "Exclusive Shelf".**
+      - ~~**TS-1 · `readSettings` casts and spreads over the defaults.**~~ **DONE
+        2026-08-28.** `readSettingsFrom`, exported as a pure function so it is testable — the
+        `chrome.storage` call needs a browser, the decision does not. **A spread fills in
+        MISSING keys and accepts any value for a PRESENT one**, so `{ apiKey: 42 }` produced
+        settings whose key is a number and `.trim()` is not a function on 42. Falls back PER
+        FIELD, so one junk key does not also cost you your endpoint. The endpoint is now
+        **https-only**: it is where the key gets SENT, and a `javascript:` endpoint in a
+        user-editable store is a credential pointed somewhere it was never meant to go.
+      - ~~**TS-2 · The shelf and the log cast unvalidated storage arrays.**~~ **DONE
+        2026-08-28.** `storedShelf.ts` and `storedLog.ts`. **DROP A BAD ROW, DO NOT THROW** —
+        one damaged record must not become *"you have no books"*, and the shelf is the
+        product. A malformed OPTIONAL is stripped rather than fatal, and optionals are
+        OMITTED rather than written as undefined, which is TS-7's rule at runtime. The log's
+        harm is quieter and arithmetic: **one `ms: NaN` makes every mean NaN** and an invented
+        `outcome` lands in the denominator and no numerator.
+        ⚠ **A MUTATION FOUND THE MODULES WERE TESTED BUT NOT CONNECTED.** Restoring the bare
+        cast at the call site survived the whole suite, because every existing test hands
+        `createLibrary` well-formed data. **A module tested only in isolation is a module you
+        can unplug for free.** Closed by driving the real `createLibrary` and
+        `createRecognitionLog` with corrupt storage. **16 mutations, 16 caught, twice** —
+        and one of the four first-pass survivors was the harness's own target list missing a
+        file, which is an instrument lying rather than a hole.
       - **TS-3 · Five of eight `BackgroundRequest` variants and all six `ContentRequest`
         variants have no declared response type.**
       - **TS-4 · Neither message receiver has a `never` check**, so a ninth variant is a
