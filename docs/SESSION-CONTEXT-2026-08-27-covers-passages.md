@@ -199,3 +199,54 @@ All nine findings were re-probed against the SYSTEM on 2026-08-27 before any wor
 - **The passage spec** — `docs/superpowers/specs/2026-08-27-passage-probe.md` — already ran three
   full-text queries and killed the naive design. This lane starts from its open question, not
   from scratch.
+
+
+---
+
+## 2026-08-28 — item 51 closed, and the instruments that lied doing it
+
+**All nine findings, 81 mutations across eight plans, 81 caught**, every plan re-run for
+determinism per §5 T22. `ls tools/mutations/item-51-*.json` is the probe for that count —
+it read *74* in the first draft of the commit and was corrected, which is the whole reason
+this file demands a probe beside a number.
+
+### The two most expensive things found, and neither is a bug
+
+11. ⭐ **A COMMENT VOUCHING FOR THE HOLE BENEATH IT — twice, in two different files.**
+    `ipCap.ts` argued at length that it needed no eviction *"because an attacker cannot mint
+    new source IPs"* (IPv4 reasoning, beside an IPv6-capable edge). `licenseHandler.ts`'s
+    `PolarValidation` docblock described the exact 403-to-a-live-subscriber failure AC-10
+    turned out to be — as a reason to be careful, not as a reason to check. **A guard with a
+    written reason reads as a guard somebody thought about**, so nobody looks. This is more
+    expensive than a wrong number, because it suppresses the inspection rather than failing it.
+
+12. **A MUTATION THAT COULD NOT FAIL, because the serialiser answered for it.**
+    `Number.isFinite` in the wire's duration check is unreachable: `JSON.stringify(Infinity)`
+    is `null`. So the mutation removing it survived and meant nothing — while the SECOND COPY
+    of the same rule, in `proState.ts` against structured-clone storage, genuinely needed it.
+    **Two copies of one rule, not equally exercised.** Answered by exporting one and importing
+    it, which kills the mutant by making it reachable rather than by arguing it away.
+
+13. **`.rejects.toThrow()` passing on the wrong error.** Loosening AC-6's guard let
+    `content: 42` reach `parseGuesses`, which throws a `TypeError` of its own — so the test
+    passed while the guard was gone. *"It threw"* and *"it threw for the right reason"* are
+    different assertions.
+
+14. **A `?raw` guard satisfied by an IMPORT line** (SEC-3's shell check) and **a test matching
+    the exclusion pattern it was written to replace** (`source.includes('api')` finds
+    `/((?!api/).*)`). Both caught before they could pass for the wrong reason.
+
+### Existing tests that went red, and were right to
+
+Four, and none of them was wrong — each had encoded a stand-in for its own rule:
+
+| Test | Stood in for | Now asserts |
+|---|---|---|
+| upstream signal `toBe(request.signal)` | "the caller can abort it" | aborting the caller aborts what the provider got |
+| relay headers `toEqual(['content-type'])` | "no upstream header crosses back" | the exact set this file writes |
+| `fakeModel(null)` → `{}` | "the reply is not what this test is about" | a well-formed reply that found nothing |
+| `licenseHandler` shape tests | Polar's answer is what we cast it to | the shape is checked, and a bad one is 502 |
+
+**The pattern: a cheap proxy for a rule breaks the moment the implementation grows a second
+reason to do the thing.** That is not the test being brittle; it is the test having asserted
+something narrower than the rule it was protecting.

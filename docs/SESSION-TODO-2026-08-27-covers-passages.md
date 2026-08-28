@@ -31,7 +31,13 @@ file owns only what the founder raised in the message that opened this lane.
 | **E1** | **PERF-6 / SEC-4** — `ipCap` IPv6 bypass + unbounded map | **[x]** | agent | `b8b33fa` · 11 mutations, 11 caught (3 survived first pass, 1 equivalent) |
 | **E2** | **SEC-3** — no per-IP cap on `/api/license` | **[x]** | agent | `fa5ab8f` · 9/9 caught. A mutation found the shell guard passed on the IMPORT line |
 | **E3** | **TM-12** — API responses carry no `no-store`, and one body is a bearer token | **[x]** | agent | `887cf50` · 8/8 caught, twice |
-| **E4** | Item 51's remaining six: AC-5, AC-6, AC-10, AC-12, AC-9/TM-6, R-6/TM-13 | **[ ]** | agent | **Next.** All re-probed 08-27 |
+| **E4** | **R-6 / TM-13** — neither edge function bounded its upstream call | **[x]** | agent | `da01ad9` · 11/11, twice |
+| **E5** | **AC-9 / TM-6** — the vision relay had no scrub and no cap | **[x]** | agent | `9e36d5f` · 11/11, twice |
+| **E6** | **AC-10** — Polar's answer cast, never validated | **[x]** | agent | `2cc9983` · 12/12, twice |
+| **E7** | **AC-6** — an unreadable answer read as "no book on that cover" | **[x]** | agent | `f639b39` · 6/6, twice |
+| **E8** | **AC-5 + AC-12** — the lifetime contract crossing the wire | **[x]** | agent | `58177a3` · 13/13, twice |
+| **E9** | ⭐ **ITEM 51 CLOSED** — all nine, **81 mutations, 81 caught** | **[x]** | agent | 2026-08-28 |
+| **G1** | **Items 52-55** and item 50's remainder | **[ ]** | agent | **Next lane rows** |
 | **F1** | §5 gained **T20, T21, T22** | **[x]** | agent | The sweep that could not run · bold-onto-slash ends a docblock · **a mutation that reads a clock** |
 
 `[x]` done+verified · `[~]` in progress · `[ ]` open · `[?]` founder decision · `[!]` blocked
