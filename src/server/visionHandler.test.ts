@@ -146,6 +146,45 @@ describe('the recognition proxy', () => {
     for (const [, value] of res.headers) expect(value).not.toContain('PROVIDER-KEY-SECRET');
   });
 
+  /**
+   * AC-9 / TM-6. `OPENWORK.md` item 51.
+   *
+   * ⚠ **THE TEST DIRECTLY ABOVE MOCKS A BODY THAT DOES NOT CONTAIN THE KEY**, so it
+   * verifies the mock rather than the handler — the identical shape the header version of
+   * this test was caught in, and the same shape `licenseHandler.test.ts` fixed by mocking a
+   * HOSTILE upstream. This one does that.
+   *
+   * `/api/license` has scrubbed and truncated its upstream body since it was written.
+   * `/api/vision` relayed `await upstream.text()` verbatim: **the endpoint holding the
+   * money-spending credential was the one without the scrub.**
+   */
+  it('scrubs the provider key out of a body that echoes it back', async () => {
+    for (const status of [200, 401, 500]) {
+      const fetch = vi.fn(
+        async () =>
+          new Response(`{"error":{"message":"key PROVIDER-KEY-SECRET rejected"}}`, { status }),
+      );
+      const res = await handleVision(post(), env({ fetch }));
+      const body = await res.text();
+
+      expect(body, `a ${status} carried the key home`).not.toContain('PROVIDER-KEY-SECRET');
+      expect(body).toContain('[redacted]');
+    }
+  });
+
+  it('refuses a success body too large to be an answer, rather than truncating it', async () => {
+    // Truncating would make it unparseable, and `llmVision` turns an unparseable success
+    // into `return []` — no books found. The reader would be told the picture had no book
+    // in it. That is AC-6's failure, manufactured by AC-9's fix.
+    const huge = `{"choices":[{"message":{"content":"${'x'.repeat(300_000)}"}}]}`;
+    const fetch = vi.fn(async () => new Response(huge, { status: 200 }));
+    const res = await handleVision(post(), env({ fetch }));
+
+    expect(res.status).toBe(502);
+    const body = (await res.json()) as { error?: { message?: string } };
+    expect(body.error?.message).toContain('more than Buki can read');
+  });
+
   it('sends the provider key to the provider, and nothing of the caller\'s', async () => {
     const fetch = vi.fn(async () => new Response('{}', { status: 200 }));
     const token = await sign({ licenseKeyId: 'lk_1', activationId: 'act_1' }, SECRET, NOW);

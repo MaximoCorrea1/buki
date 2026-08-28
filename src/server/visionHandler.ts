@@ -14,6 +14,7 @@ import { decideAccess } from './policy';
 import { MAX_BODY_BYTES, rebuildVisionBody } from './visionBody';
 import { SAFE_HEADERS } from './responseHeaders';
 import { VISION_UPSTREAM_MS, boundedSignal, timedOut } from './upstreamTimeout';
+import { relayBody } from './upstreamRelay';
 
 export interface VisionEnv {
   secret: string;
@@ -213,7 +214,17 @@ export async function handleVision(request: Request, env: VisionEnv): Promise<Re
   // extension already knows how to retry that; flattening it to 500 loses the one
   // instruction it carries. Only the body and status cross back — never a header, because
   // an upstream header is the one place our own credential could ride home.
-  return new Response(await upstream.text(), {
+  // SCRUBBED AND BOUNDED. This was `await upstream.text()` verbatim - no redaction, no
+  // length cap - while `/api/license` had scrubbed and truncated the same class of data
+  // since it was written. The endpoint holding the money-spending credential was the one
+  // without the scrub. `OPENWORK.md` item 51, AC-9 / TM-6.
+  const relayed = relayBody(await upstream.text(), upstream.status, env.providerKey);
+  if (!relayed.ok) {
+    console.error('[buki] provider body over the relay ceiling');
+    return refuse(relayed.message, 502);
+  }
+
+  return new Response(relayed.body, {
     status: upstream.status,
     // Ours, not the upstream's - no header crosses back, per the note above. The body is a
     // paid answer and must not be stored by anything between here and the extension.

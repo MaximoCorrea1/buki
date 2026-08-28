@@ -1,0 +1,71 @@
+{
+  "target": ["src/server/upstreamRelay.test.ts", "src/server/visionHandler.test.ts"],
+  "mutations": [
+    {
+      "label": "51ao the relay goes back to verbatim text (the finding, restored)",
+      "file": "src/server/visionHandler.ts",
+      "from": "  const relayed = relayBody(await upstream.text(), upstream.status, env.providerKey);",
+      "to": "  const relayed = { ok: true as const, body: await upstream.text() };"
+    },
+    {
+      "label": "51ap the scrub is handed an empty secret, so nothing is redacted",
+      "file": "src/server/visionHandler.ts",
+      "from": "  const relayed = relayBody(await upstream.text(), upstream.status, env.providerKey);",
+      "to": "  const relayed = relayBody(await upstream.text(), upstream.status, '');"
+    },
+    {
+      "label": "51aq the oversized-success refusal is dropped and the body relayed anyway",
+      "file": "src/server/visionHandler.ts",
+      "from": "  if (!relayed.ok) {\n    console.error('[buki] provider body over the relay ceiling');\n    return refuse(relayed.message, 502);\n  }",
+      "to": ""
+    },
+    {
+      "label": "51ar scrub replaces only the FIRST occurrence",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "  return secret ? text.split(secret).join('[redacted]') : text;",
+      "to": "  return secret ? text.replace(secret, '[redacted]') : text;"
+    },
+    {
+      "label": "51as scrub loses its empty-secret guard, shredding every body into characters",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "  return secret ? text.split(secret).join('[redacted]') : text;",
+      "to": "  return text.split(secret).join('[redacted]');"
+    },
+    {
+      "label": "51at scrub applies only to errors, so a 200 carrying the key goes home",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "  const clean = scrub(text, secret);",
+      "to": "  const clean = status >= 400 ? scrub(text, secret) : text;"
+    },
+    {
+      "label": "51au an oversized SUCCESS is truncated instead of refused, which is AC-6 manufactured",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "  if (new TextEncoder().encode(clean).length > MAX_RELAY_BYTES) {\n    return { ok: false, message: 'The reading service sent back more than Buki can read.' };\n  }",
+      "to": "  if (new TextEncoder().encode(clean).length > MAX_RELAY_BYTES) {\n    return { ok: true, body: clean.slice(0, MAX_RELAY_BYTES) };\n  }"
+    },
+    {
+      "label": "51av the size ceiling counts CHARACTERS, letting a body twice the size through",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "  if (new TextEncoder().encode(clean).length > MAX_RELAY_BYTES) {",
+      "to": "  if (clean.length > MAX_RELAY_BYTES) {"
+    },
+    {
+      "label": "51aw the error cap is dropped, so a 50KB diagnostic crosses back whole",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "  if (status >= 400) return { ok: true, body: clean.slice(0, MAX_ERROR_CHARS) };",
+      "to": "  if (status >= 400) return { ok: true, body: clean };"
+    },
+    {
+      "label": "51ax the error cap tightens to 100, cutting a real provider message into unparseable JSON",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "export const MAX_ERROR_CHARS = 4_000;",
+      "to": "export const MAX_ERROR_CHARS = 20;"
+    },
+    {
+      "label": "51ay the error branch is removed, so an error body is size-checked as a success",
+      "file": "src/server/upstreamRelay.ts",
+      "from": "  if (status >= 400) return { ok: true, body: clean.slice(0, MAX_ERROR_CHARS) };",
+      "to": ""
+    }
+  ]
+}
