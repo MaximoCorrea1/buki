@@ -30,12 +30,18 @@ describe('mergeBook', () => {
     // OpenLibrary records are patchy - produces `{ isbn: undefined, coverUrl: undefined }`
     // with the keys PRESENT. `{ ...previous.book, ...book }` overwrites with undefined and
     // the cover is gone, exactly as if nothing had been guarded at all.
-    const sparse: Book = {
+    // `as Book` DELIBERATELY, and this is the finding rather than a workaround.
+    // `exactOptionalPropertyTypes` now forbids WRITING this shape in TypeScript - which is
+    // the whole point of the flag - and says NOTHING about the same shape arriving at
+    // runtime from `JSON.parse`, from `chrome.storage.local`, or from any untyped caller.
+    // So the runtime guard stays, and its test has to keep building the value production
+    // code can no longer build. Item 53, TS-7.
+    const sparse = {
       title: 'Dune',
       author: 'Frank Herbert',
       isbn: undefined,
       coverUrl: undefined,
-    };
+    } as unknown as Book;
     expect(mergeBook(DUNE, sparse)).toEqual(DUNE);
   });
 

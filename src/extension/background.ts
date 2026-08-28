@@ -11,7 +11,7 @@ import { warmCovers } from './warmCovers';
 import { createLlmVision, MAX_IMAGES } from '../recognizer/llmVision';
 import { recognizeBook } from '../recognizer/recognizer';
 import type { FetchLike, RecognitionResult, Tweet, VisionClient } from '../recognizer/types';
-import { readSettings, toVisionConfig, type Settings } from './settings';
+import { readSettings, type Settings } from './settings';
 import { createLibrary, type StorageArea } from './storage';
 import { shelvedAmong } from './shelvedAmong';
 import { createRecognitionLog, type AttemptDraft, type PendingEvent } from './recognitionLog';

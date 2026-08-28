@@ -145,7 +145,13 @@ describe('shelvedAmong agrees with the scan it replaced', () => {
     const candidates: Book[] = [
       ...Array.from({ length: 40 }, (_, i) => book(i * 5)),
       ...Array.from({ length: 20 }, (_, i) => book(1000 + i)),
-      ...Array.from({ length: 10 }, (_, i) => ({ ...book(i), isbn: undefined })),
+    // `as Book` DELIBERATELY, and this is the finding rather than a workaround.
+    // `exactOptionalPropertyTypes` now forbids WRITING this shape in TypeScript - which is
+    // the whole point of the flag - and says NOTHING about the same shape arriving at
+    // runtime from `JSON.parse`, from `chrome.storage.local`, or from any untyped caller.
+    // So the runtime guard stays, and its test has to keep building the value production
+    // code can no longer build. Item 53, TS-7.
+      ...Array.from({ length: 10 }, (_, i) => ({ ...book(i), isbn: undefined }) as unknown as Book),
     ];
 
     const fast = shelvedAmong(shelf, candidates);

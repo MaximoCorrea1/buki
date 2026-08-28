@@ -69,7 +69,12 @@ describe('createLlmVision', () => {
     const img = { imageUrls: ['http://c.jpg'], text: '' };
 
     await createLlmVision({ fetch, config: CFG }).guessBooks(img);
-    await createLlmVision({ fetch, config: { ...CFG, apiKey: undefined } }).guessBooks(img);
+    // KEYLESS is the absence of the field, not a field holding undefined - which is what a
+    // proxy build actually ships. Under `exactOptionalPropertyTypes` those are different
+    // types, and this line was the only place in the suite that conflated them.
+    const { apiKey: _omitted, ...keyless } = CFG;
+    void _omitted;
+    await createLlmVision({ fetch, config: keyless }).guessBooks(img);
 
     expect(seen[0]).toBe('Bearer k-123');
     expect(seen[1]).toBeUndefined();

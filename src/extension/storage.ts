@@ -92,6 +92,11 @@ export function createLibrary(deps: {
         // written differently, and a matching work counts even when the ISBNs differ.
         const previous = existing.find((s) => sameBook(s.book, book));
 
+        // Resolved once each, so the conditional spreads below read as one decision rather
+        // than evaluating the same expression twice and asserting it away.
+        const keptSource = source ?? previous?.source;
+        const keptShot = shot ?? previous?.shot;
+
         // Re-saving a book you already have updates it in place rather than
         // stacking duplicates (easy to do when a save gives no visible feedback).
         const saved: SavedBook = {
@@ -108,11 +113,15 @@ export function createLibrary(deps: {
           // undefined. See `mergeBook.ts`.
           book: mergeBook(previous?.book, book),
           intent,
-          source: source ?? previous?.source,
+          // CONDITIONALLY SPREAD, not assigned. `source: undefined` writes the key as
+          // PRESENT-AND-UNDEFINED, which `exactOptionalPropertyTypes` now rejects and which
+          // `identityOf` reads as a key with a hole in it - the same reasoning `shelfEdit.ts`
+          // already spelled out in prose. The flag makes that prose a type. Item 53, TS-7.
+          ...(keptSource ? { source: keptSource } : {}),
           // Keep the picture across a move. Moving Someday to Now goes through add(),
           // and it carries no picture, so without this the cover would vanish the first
           // time a book changed pile.
-          shot: shot ?? previous?.shot,
+          ...(keptShot ? { shot: keptShot } : {}),
           savedAt: deps.now(),
           moved: Boolean(previous),
         };

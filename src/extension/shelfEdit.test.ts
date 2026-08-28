@@ -92,7 +92,15 @@ describe('putting a removed book back', () => {
   it('omits what was never there rather than sending undefined', () => {
     // `add` writes the record it is handed. An explicit `shot: undefined` is a key with a
     // hole in it, and `identityOf` has to reason about the difference.
-    const bare = restoreArgs(saved({ source: undefined, shot: undefined }));
+    // `as Book` DELIBERATELY, and this is the finding rather than a workaround.
+    // `exactOptionalPropertyTypes` now forbids WRITING this shape in TypeScript - which is
+    // the whole point of the flag - and says NOTHING about the same shape arriving at
+    // runtime from `JSON.parse`, from `chrome.storage.local`, or from any untyped caller.
+    // So the runtime guard stays, and its test has to keep building the value production
+    // code can no longer build. Item 53, TS-7.
+    const bare = restoreArgs(
+      saved({ source: undefined, shot: undefined } as unknown as Partial<SavedBook>),
+    );
     expect('source' in bare).toBe(false);
     expect('shot' in bare).toBe(false);
   });

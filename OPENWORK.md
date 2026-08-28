@@ -1300,8 +1300,11 @@ unblocks.
         `mark.test.ts`'s asserted seven, **in a file that CAN import `markSvg`.** This copy
         has already lied once and cost a real design detour.
       - **X-2 · `entitlement.footer()` has no caller**, and two module headers vouch for it.
-      - **X-3 · `settings.toVisionConfig` is dead code and `background.ts` still imports it.**
-        *(Confirmed 2026-08-25: still imported at `background.ts:12`, no non-test caller.)*
+      - ~~**X-3 · `settings.toVisionConfig` is dead code.**~~ **DONE 2026-08-28**, deleted
+        with TS-7 rather than fixed: it was one of the eleven sites the flag rejected
+        (`apiKey: settings.apiKey || undefined`), so the choice was to repair dead code or
+        remove it. Re-probed first — `grep -c 'toVisionConfig(' src/extension/background.ts`
+        returned **0** against an import on line 14.
       - **X-5 · `Tweet.altText` is declared in three files, threaded through two call sites,
         and never populated.**
       - **X-6 · Nine dead CSS tokens**, five of which are an unguarded fourth copy of

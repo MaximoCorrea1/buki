@@ -1,4 +1,4 @@
-import { GEMINI, type VisionConfig } from '../recognizer/llmVision';
+import { GEMINI } from '../recognizer/llmVision';
 import type { Store } from './buyLink';
 
 /** Stored under `visionSettings`. The key predates the store preference and must not move. */
@@ -32,11 +32,12 @@ export async function writeSettings(settings: Settings): Promise<void> {
   await chrome.storage.local.set({ [KEY]: settings });
 }
 
-export function toVisionConfig(settings: Settings): VisionConfig {
-  return {
-    endpoint: settings.endpoint,
-    model: settings.model,
-    // Blank means keyless, which is what a hosted proxy build looks like.
-    apiKey: settings.apiKey || undefined,
-  };
-}
+/**
+ * ⚠ `toVisionConfig` USED TO LIVE HERE and was deleted on 2026-08-28. `OPENWORK.md` item 54,
+ * X-3: `background.ts` imported it and **called it zero times.** Two module headers vouched
+ * for a function nothing used.
+ *
+ * It also happened to be one of the eleven sites `exactOptionalPropertyTypes` rejected -
+ * `apiKey: settings.apiKey || undefined` writes the key as PRESENT-AND-UNDEFINED - so the
+ * choice was to fix dead code or remove it. The best fix is a removal.
+ */

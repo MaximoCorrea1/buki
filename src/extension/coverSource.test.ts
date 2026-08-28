@@ -6,7 +6,11 @@ const saved = (extra: Partial<SavedBook> & { coverUrl?: string }): SavedBook => 
   id: '1',
   intent: 'now',
   savedAt: 1,
-  book: { title: 'Dune', author: 'Frank Herbert', coverUrl: extra.coverUrl },
+  book: {
+    title: 'Dune',
+    author: 'Frank Herbert',
+    ...(extra.coverUrl ? { coverUrl: extra.coverUrl } : {}),
+  },
   ...(extra.shot ? { shot: extra.shot } : {}),
 });
 

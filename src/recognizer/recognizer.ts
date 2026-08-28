@@ -50,7 +50,9 @@ export async function recognizeBook(
     const guesses = await deps.vision.guessBooks({
       imageUrls: tweet.imageUrls,
       text: tweet.text,
-      altText: tweet.altText,
+      // Omitted when absent. `guessBooks` declares `altText?: string`, and passing an
+      // explicit undefined is a different type under `exactOptionalPropertyTypes`.
+      ...(tweet.altText ? { altText: tweet.altText } : {}),
     });
 
     // Grounded together, not one after another, but NEVER ALL AT ONCE. The original

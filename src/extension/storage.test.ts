@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createLibrary, matchesFilter, identityOf, type StorageArea } from './storage';
+import type { Book } from '../recognizer/types';
 
 function fakeStorage(): StorageArea {
   const store: Record<string, unknown> = {};
@@ -268,8 +269,14 @@ describe('what survives re-catching a book you already have', () => {
     // undefined }` and `{ ...previous.book, ...book }` overwrites with undefined.
     const lib = makeLibrary();
     await lib.add(rich, 'next');
+    // `as Book` DELIBERATELY, and this is the finding rather than a workaround.
+    // `exactOptionalPropertyTypes` now forbids WRITING this shape in TypeScript - which is
+    // the whole point of the flag - and says NOTHING about the same shape arriving at
+    // runtime from `JSON.parse`, from `chrome.storage.local`, or from any untyped caller.
+    // So the runtime guard stays, and its test has to keep building the value production
+    // code can no longer build. Item 53, TS-7.
     const again = await lib.add(
-      { title: 'Dune', author: 'Frank Herbert', isbn: undefined, coverUrl: undefined },
+      { title: 'Dune', author: 'Frank Herbert', isbn: undefined, coverUrl: undefined } as unknown as Book,
       'now',
     );
     expect(again.book.isbn).toBe(rich.isbn);

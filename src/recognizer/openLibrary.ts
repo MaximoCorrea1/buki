@@ -38,11 +38,17 @@ const coverFor = (id: number | undefined): string | undefined =>
 
 /** Map one OpenLibrary search doc into our canonical Book. */
 function toBook(doc: OlDoc): Book {
+  const isbn = (doc.isbn ?? [])[0];
+  const coverUrl = coverFor(doc.cover_i);
+  // OMITTED, not written as undefined - which is the distinction `mergeBook.ts` exists for.
+  // This function "always writes `isbn` and `coverUrl` even when they are undefined" is a
+  // sentence storage.ts had to carry in a comment; `exactOptionalPropertyTypes` makes it a
+  // compiler error instead. Item 53, TS-7.
   return {
     title: doc.title ?? '',
     author: (doc.author_name ?? []).join(', '),
-    isbn: (doc.isbn ?? [])[0],
-    coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : undefined,
+    ...(isbn ? { isbn } : {}),
+    ...(coverUrl ? { coverUrl } : {}),
   };
 }
 
@@ -126,12 +132,14 @@ export function createOpenLibraryClient(deps: { fetch: FetchLike }): BooksDb {
     async lookupByIsbn(isbn) {
       const edition = await getJson<OlEdition>(`${SITE}/isbn/${encodeURIComponent(isbn)}.json`);
       if (!edition?.title) return null;
+      const coverUrl = coverFor(edition.covers?.[0]);
       return {
         title: edition.title,
         author: await authorName(edition),
-        // The record's own canonical form, falling back to what we were asked about.
+        // The record's own canonical form, falling back to what we were asked about. Always
+        // present on this path, because `isbn` is the argument we were called with.
         isbn: edition.isbn_13?.[0] ?? edition.isbn_10?.[0] ?? isbn,
-        coverUrl: coverFor(edition.covers?.[0]),
+        ...(coverUrl ? { coverUrl } : {}),
       };
     },
   };

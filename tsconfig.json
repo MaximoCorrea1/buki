@@ -9,6 +9,21 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
+    /**
+     * The ONE flag that makes "omitted" and "present but undefined" different types.
+     *
+     * Item 53, TS-7. Every conditional-spread comment in this repo reasons about exactly
+     * that distinction IN PROSE - storage.ts, shelfEdit.ts, mergeBook.ts, coverSource.ts -
+     * and prose is not checked. It is also the only thing that would have made the original
+     * activationId bug red: undefined does not survive JSON.stringify, so the field vanished
+     * from a signed claim and the next renewal spent another of five permanent slots.
+     *
+     * The 2026-08-24 review predicted "a wave of errors, and that wave IS the finding".
+     * MEASURED on 2026-08-28: ELEVEN, five of them in production code and one of those in a
+     * function nothing called. The conditional-spread discipline had already absorbed the
+     * rest, which is the more useful finding.
+     */
+    "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
