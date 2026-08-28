@@ -1278,12 +1278,22 @@ unblocks.
         variants have no declared response type.**
       - **TS-4 · Neither message receiver has a `never` check**, so a ninth variant is a
         silent no-op.
-      - **TS-7 · `exactOptionalPropertyTypes` is off.** *(Confirmed still absent from
-        `tsconfig.json`, 2026-08-25.)* It is the ONE compiler flag that makes "omitted" and
-        "present but undefined" different types — **the exact distinction every
-        conditional-spread comment in this repo reasons about in prose.** It is the only
-        thing that would have made the original `activationId` bug red. **Expect a wave of
-        errors when it is turned on; that wave is the finding.**
+      - ~~**TS-7 · `exactOptionalPropertyTypes` is off.**~~ **DONE 2026-08-28. IT IS ON.**
+        **The wave was ELEVEN**, not the flood this item expected — five in production code and
+        **one of those inside a function nothing called** (X-3, deleted rather than fixed).
+        The conditional-spread discipline had already absorbed the rest, which is the more
+        useful finding: those prose comments were describing something the codebase was
+        already doing correctly, and the flag turns the prose into a type.
+        **VERIFIED BY WATCHING IT FAIL:** a file typed `{ title, author, isbn: undefined } as
+        Book` was compiled twice — **1 error with the flag on, 0 with it off** — so it catches
+        the exact `activationId` shape rather than being assumed to. `src/shared/tsFlags.test.ts`
+        keeps it on, because nothing else would notice its removal: every test would still
+        pass and the build would still succeed.
+        ⚠ **THE FOUR FIXTURES THAT NOW NEED `as unknown as` ARE THE POINT, NOT A WORKAROUND.**
+        They exist to test the present-but-undefined shape, because **the flag stops
+        TypeScript SOURCE producing it and does nothing about the same shape arriving from
+        `JSON.parse`, from `chrome.storage.local`, or from an untyped caller.** The runtime
+        guards stay; the flag is a second line, not a replacement.
 
 - [ ] **54. DEAD CODE, STALE COMMENTS, AND ONE EDGE AGAINST THE GRAPH.** *(review §4 and §5)*
 
