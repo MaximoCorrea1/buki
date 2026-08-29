@@ -29,9 +29,12 @@ reached a source file. A rule nobody can read is not a rule. **That is why the s
 are spelled out below instead of pointed at, and it is why §5 needs EXTRACTING rather than
 trimming.**
 
-⚠ **SIZE BUDGET, AND IT MOVES EVERY SESSION.** `wc -l -c OPENWORK.md`. It was 196,000 chars
-/ 2,545 lines on the morning of 2026-08-27 and **227,569 / 2,895 by that evening — a 16%
-growth in one day.** Do not trust a figure written here; take the measurement. **Read it with an
+⚠ **SIZE BUDGET, AND IT MOVES EVERY SESSION.** `wc -l -c OPENWORK.md`. **196,000 chars /
+2,545 lines** on the morning of 2026-08-27; **227,569 / 2,895** that evening; **255,333 /
+3,194** on 2026-08-28. **A third bigger in two days, and §5 has moved from line 2163 to 2380 —
+217 lines FURTHER past the 2000-line Read cut.** Every session that fixes something makes the
+record of what it fixed less reachable. Do not trust a figure written here; take the
+measurement. **Read it with an
 explicit `offset`/`limit` or by section, never as one call**, or you silently lose §6 and
 most of §5. Keep THIS file small enough to survive any cut — if it grows past ~15k chars,
 move the cases to §5 and leave the law behind.
@@ -152,10 +155,27 @@ Windows + Git Bash. **These are spelled out here rather than pointed at, because
   `[32m` leaves `\x1b`, `\s` does not match it, and **every mutation reports SURVIVED
   against a harness that read nothing.**
 
+- ⚠ **A PIPE LAUNDERS AN EXIT CODE, and this repo has now paid for it twice.**
+  `node tools/control-bytes.mjs | tail` reports `tail`'s status, so a tool that
+  `process.exit(1)`s without doing its job looks clean — **the same mechanism as
+  `tsc --noEmit | head` printing `TSC=0` under ten real errors.** Run tools UNPIPED, or read
+  `${PIPESTATUS[0]}`. §5 T20.
+- ⚠ **MARKDOWN BOLD RUNNING ONTO A SLASH ENDS A DOCBLOCK.** Two asterisks against a slash spell
+  the comment terminator, so writing a CIDR prefix as bold-then-slash stops the file parsing —
+  **and the symptom is `esbuild` failing the transform, which vitest reports as "no tests" for
+  the whole file.** Say *"a /64"* with the bold opening on a letter, and spell the terminator in
+  WORDS when you must refer to it: the first attempt to warn about this re-spelled it, inside
+  backticks, which a block comment does not respect. §5 T21.
+- ⚠ **WHEN A SCRIPTED EDIT IS GUARDED, READ THE GUARD'S OUTPUT BEFORE THE COMMIT.** A guarded
+  replacement printed `MISS` in plain sight and the surrounding shell committed anyway, because
+  the exit code had already been spent by an earlier `&&` in the chain. §5 T16, third mechanism.
+
 **When mutation-testing, compare the TOTAL, not the failure count.** A mutation that does
 not compile makes the file fail to LOAD, so vitest reports a *smaller* all-green total —
 which reads as "survived" and is exactly backwards. **Make the harness ABORT when it cannot
-parse a total rather than scoring it zero.**
+parse a total rather than scoring it zero.** **And a MUTATION must be deterministic** — one that
+read `performance.now()` reported CAUGHT when redirected and SURVIVED when piped, from the same
+plan seconds apart. **If two runs of one plan disagree, suspect the plan before the code.** §5 T22.
 
 ---
 
