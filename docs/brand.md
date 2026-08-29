@@ -637,8 +637,12 @@ metric was re-derived from a ratio a day later, by someone who did not render it
 
 So the reason `#2f7fd6` ships is the one that was always sufficient: **`tools/mark.mjs` is
 the definition, it declares `#2f7fd6` for every cream ground, and three of the four already
-agreed.** `node tools/mark-sizes.mjs --extra "#candidate"` draws every ground at every
-shipping size, and exists so that the next argument about a value starts with looking at it.
+agreed.** `node tools/mark-sizes.mjs` draws every ground at every shipping size, and exists
+so that the next argument about a value starts with looking at it. *(This line read `--extra
+"#candidate"` until 2026-08-29, when the flag took a candidate caught-spine colour. There is
+no caught spine to try any more — the catcher carries one sampled gradient everywhere — so
+the flag now takes a candidate GROUND, which is the only hex a mark that owns all of its own
+colour can be argued about against. The rule above outlived the drawing.)*
 
 ### The redrawn mark (SUPERSEDED 2026-08-16, kept for the reasoning)
 

@@ -22,6 +22,11 @@ import { transform } from 'esbuild';
  * It is not a substitute for `tsc`. esbuild strips types and never checks them, which is
  * exactly why `build.mjs` typechecks first and refuses to bundle on a type error. This
  * catches the narrower and louder failure: source that is not JavaScript.
+ *
+ * It is not a substitute for RUNNING them either, and the sentence below used to end there.
+ * `toolsRun.test.mjs` beside this file runs every command README advertises, added after
+ * `tools/mark-sizes.mjs` parsed cleanly here and threw on its first line of output for
+ * eleven days while README listed it as working.
  */
 
 const ENTRIES = import.meta.glob(

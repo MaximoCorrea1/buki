@@ -1345,10 +1345,19 @@ unblocks.
       - **M-1 · `host.ts` exports `LICENSE_ENDPOINT` and `VISION_ENDPOINT` and nothing imports
         either.** Three files rebuild the paths by hand. `host.test.ts` globs for stale HOSTS
         only, **never the PATH**.
-      - **M-2 · `tools/mark-sizes.mjs` is 100% dead** — reads `MARK.cords`, retired
-        2026-08-17, `TypeError` on first use. **`README.md:103` lists it as working** and
-        `x-button-harness.mjs:7` cites it as evidence. `entryPoints.test.ts` is green because
-        it only asserts the file PARSES.
+      - ~~**M-2 · `tools/mark-sizes.mjs` is 100% dead.**~~ **DONE 2026-08-29**, and it was
+        worse than "reads `MARK.cords`". The whole file drew the mark RETIRED on 2026-08-17,
+        so `MARK.shelved`, `MARK.caught` and the per-ground `spine`/`caught` were gone too,
+        and `--extra` took a candidate caught-spine colour for a mark that has no spine.
+        Rewritten around **`markSvg`** — the function the six shipped surfaces are already
+        checked against — so the geometry is not spelled out a second time and cannot drift
+        again. `--extra` now takes a candidate GROUND. `README.md:103` and
+        `docs/brand.md:640` corrected; `brand.md:1352` and `x-button-harness.mjs:7` re-read
+        and still true. **The guard was the real defect:** `entryPoints.test.ts` said in its
+        own comment that the only thing catching a broken tool is RUNNING it, and asserted
+        parsing anyway — for eleven days. It now DERIVES the command list from `README.md`
+        (the file that lied) and runs every one, with `make-icons.mjs` named as
+        advertised-but-not-run because it writes tracked assets. Watched to fail first.
       - **M-3 · `tray-harness.mjs` hand-spells the mark** — an 8th copy outside
         `mark.test.ts`'s asserted seven, **in a file that CAN import `markSvg`.** This copy
         has already lied once and cost a real design detour.

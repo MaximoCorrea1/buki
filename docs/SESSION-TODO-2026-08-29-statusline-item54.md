@@ -22,7 +22,18 @@ Inherited from: `%TEMP%/buki-handoff-2026-08-28-covers-passages.md`, `origin/mai
 | **H1–H2** | ⭐ Item 52 — both named findings | `[x]` | agent | 16 mutations |
 | **H3–H7** | ⭐ Item 53 — all five | `[x]` | agent | 22 mutations |
 | **D1–D7** | Seven traps found and recorded | `[x]` | agent | §5 T20–T22 |
-| **G1 / 54** | Item 54 — dead code, stale comments, one edge vs the graph | `[ ]` | agent | **NEXT.** `README.md:103` lists a dead tool as working |
+| **G1 / 54** | **Item 54 — dead code, stale comments, one edge vs the graph** | `[~]` | agent | Split below; 1 of 10 closed |
+| G1·M-1 | `host.ts` exports two endpoints nothing imports | `[ ]` | agent | Re-probed 08-29: still true, zero importers |
+| G1·M-2 | `tools/mark-sizes.mjs` is 100% dead | `[x]` | agent | Drew the mark retired 08-17. Rewritten on `markSvg`; guard now RUNS it |
+| G1·M-3 | `tray-harness.mjs` hand-spells the mark (8th copy) | `[ ]` | agent | |
+| G1·X-2 | `entitlement.footer()` has no caller | `[ ]` | agent | Re-probed 08-29: still true, only the test imports it |
+| G1·X-5 | `Tweet.altText` declared in 3 files, never populated | `[ ]` | agent | Not yet re-probed |
+| G1·X-6 | Nine dead CSS tokens, five a 4th copy of `BINDING` | `[ ]` | agent | Not yet re-probed |
+| G1·D-5 | `toolbar.ts` hardcodes two brand colours | `[ ]` | agent | Not yet re-probed |
+| G1·D-7 | `bindingFor` indexes `BINDING` by `CLOTH.length` | `[ ]` | agent | Fails silently on the sixth dye |
+| G1·D-9 | `tray-harness.mjs` drops a dye; marigold invisible | `[ ]` | agent | Not yet re-probed |
+| G1·K-1 | `src/recognizer/` imports `src/extension/` | `[ ]` | agent | Documented as deliberate; may be a no-op |
+| G1·SC | Five stale comments | `[ ]` | agent | `README.md:103` was one — now corrected |
 | **G2 / 55** | Item 55 — the two surfaces no test can reach (M-5, M-6) | `[ ]` | agent | |
 | **G3 / 50** | Item 50's remainder — PERF-2 tray memo, PERF-8, PERF-10 | `[ ]` | agent | PERF-3 is a founder call |
 | **G4 / 61** | Item 61 — the tray shadow root | `[ ]` | agent | Needs a browser + the 110-selector split first |
