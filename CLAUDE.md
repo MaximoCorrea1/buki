@@ -149,8 +149,14 @@ Windows + Git Bash. **These are spelled out here rather than pointed at, because
 - **`node -e "…\s…"` inside DOUBLE quotes**: bash eats one backslash level, so `\s` becomes
   `s` and `\b` becomes a literal **0x08 backspace byte** that markdown renders as nothing.
   **Single-quote the `-e` body, or use the Write tool.**
-- **`execSync` from a node script runs under cmd.exe**, which cannot resolve `node` because
-  the inherited PATH is Unix-form. Build the command from `process.execPath`.
+- **`execSync` from a node script runs under cmd.exe, which cannot resolve `node`.** Build the
+  command from `process.execPath`. ⚠ **The MECHANISM written here until 2026-08-29 was wrong** —
+  it said the inherited PATH is Unix-form. Measured: cmd.exe gets a **Windows-form** PATH of 89
+  entries, and **one unbalanced double quote at entry 13** (a `jdk-21\bin"`) makes it read the
+  whole tail as a single quoted token, so **entries 13 to 88 are never searched** — nodejs sits
+  at 39 and system32 at 19. That is why `where` also vanishes while Git's own `usr\bin` tools at
+  index 3 keep working. **Being ON the PATH is not being FINDABLE on it**; a presence check
+  passes and the lookup still fails. `process.execPath` is right because it skips the search.
 - **When parsing vitest output, strip the ESC BYTE:** `/\x1b\[[0-9;]*m/g`. Stripping only
   `[32m` leaves `\x1b`, `\s` does not match it, and **every mutation reports SURVIVED
   against a harness that read nothing.**
