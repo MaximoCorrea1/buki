@@ -198,10 +198,15 @@ lies. **Put a fact in ONE of these; a fact in two places is a fact that will dis
 kept because the reasoning explains the product's shape, and it carries its own
 `PARTLY SUPERSEDED` banner naming what stopped being true. Do not update it; supersede it.
 
-**The newest handoff** is `C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-27-review-lane.md`
-(2026-08-27 evening, the second pair on that date: **items 45, 46, 47, 48 and 49 closed, item
-50 taken to five of nine**, items 58 and 59 filed out of 47 and 48, and the mutation harness
-promoted out of `zzz-` into `tools/`). It supersedes `buki-handoff-2026-08-27-launch-prep.md`
+**The newest handoff** is
+`C:/Users/User/AppData/Local/Temp/buki-handoff-2026-08-28-covers-passages.md`
+(2026-08-28: **items 51, 52 and 53 CLOSED**, the founder's cover rule shipped, the passage
+question answered and handed back as a positioning call, items 60 and 61 filed out of 52 and
+the cover rule, and **126 mutations added, 126 caught**). It supersedes
+`buki-handoff-2026-08-27-review-lane.md` (2026-08-27 evening, the second pair on that date:
+**items 45, 46, 47, 48 and 49 closed, item 50 taken to five of nine**, items 58 and 59 filed
+out of 47 and 48, and the mutation harness promoted out of `zzz-` into `tools/`), which
+superseded `buki-handoff-2026-08-27-launch-prep.md`
 (2026-08-25, the six P0s fixed and the rest of the review filed). It supersedes
 `buki-handoff-2026-08-24-prelaunch-review.md`, which described the same findings before any
 of them were fixed, which in turn superseded `buki-handoff-2026-08-18-launch-readiness.md`.
