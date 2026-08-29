@@ -25,7 +25,7 @@ import { handleSaveBook, type SaveBookDeps } from './saveBook';
 import { readPro, writePro, createSessionKeeper, forgetSession, type ProState } from './proState';
 import { readVisionFailure, NoKeyError, type VisionFailure } from './visionFailure';
 import { createLicense, canCatchOnHeldSession } from './license';
-import { BUKI_HOST } from '../shared/host';
+import { LICENSE_ENDPOINT } from '../shared/host';
 import { visionRoute } from './visionRoute';
 import { createTrial } from './trial';
 import { coverDataUrl } from './coverData';
@@ -107,7 +107,7 @@ const keepSession = createSessionKeeper({
   exchange: (key, activationId) =>
     createLicense({
       fetch: (url, init) => fetch(url, init),
-      endpoint: `${BUKI_HOST}/api/license`,
+      endpoint: LICENSE_ENDPOINT,
       now: () => Date.now(),
     }).exchange(key, activationId),
   save: (state) => writePro(chrome.storage.local, state),

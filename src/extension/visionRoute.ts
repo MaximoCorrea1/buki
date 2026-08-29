@@ -9,12 +9,9 @@
  *
  * Pure, and separate from `background.ts`, so all three can be tested without Chrome.
  */
-import { BUKI_HOST } from '../shared/host';
+import { VISION_ENDPOINT } from '../shared/host';
 import { isLicensed, type Session } from './license';
 import type { ProState } from './proState';
-
-/** Buki's own proxy. From `host.ts`, because that host has been renamed once already. */
-export const PROXY_URL = `${BUKI_HOST}/api/vision`;
 
 export interface Route {
   endpoint: string;
@@ -44,7 +41,7 @@ export function visionRoute(
   // day that model retired, which has already happened twice.
   const session: Session | null = pro.session;
   return {
-    endpoint: PROXY_URL,
+    endpoint: VISION_ENDPOINT,
     model: '',
     // The SESSION token, never the licence key. And still sent when it is expired but
     // inside the server's grace window: withholding it there demotes a paying customer

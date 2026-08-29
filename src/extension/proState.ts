@@ -2,7 +2,7 @@
  * What the extension knows about being Pro, and the one place it is assembled.
  *
  * `entitlement.decide` answers from a `Standing`. Three callers need one — the worker
- * before it spends a vision call, the tray before it draws a footer, the options page
+ * before it spends a vision call, the tray before it draws the wall, the options page
  * before it names the plan — and each assembling it by hand is three chances to read
  * "has a licence key" as "is Pro". They are not the same: a key that has never been
  * exchanged, or one whose session has aged past the server's grace, is not a subscription

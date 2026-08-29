@@ -6,15 +6,21 @@ import robotsTxt from '../../docs/robots.txt?raw';
 import manifestJson from '../../manifest.json?raw';
 
 /**
- * `host.ts` says it is the one definition of the production host. Nothing imports it, and
- * the landing cannot: a static page has no build step to inline a constant through. So
- * the claim was decoration, and the next rename would repeat exactly the failure that
- * file was created to prevent. It happened once already, when the Vercel project was
- * renamed off `shelfy`: the plan named three files carrying the retired domain and the
- * real number was seven, because `robots.txt`, `sitemap.xml` and `llms.txt` postdated it.
+ * `host.ts` says it is the one definition of the production host. The extension imports it;
+ * the landing cannot, because a static page has no build step to inline a constant through.
+ * So for the files that cannot import, the claim would be decoration, and the next rename
+ * would repeat exactly the failure that file was created to prevent. It happened once
+ * already, when the Vercel project was renamed off `shelfy`: the plan named three files
+ * carrying the retired domain and the real number was seven, because `robots.txt`,
+ * `sitemap.xml` and `llms.txt` postdated it.
  *
- * This is the enforcement. It cannot inline the value, but it can refuse to let the
- * copies disagree with it, and it finds the copies by looking rather than by list.
+ * This is the enforcement. It cannot inline the value, but it can refuse to let the copies
+ * disagree with it, and it finds the copies by looking rather than by list.
+ *
+ * *(The first line read "Nothing imports it" until 2026-08-29, and that was true when it
+ * was written. It stopped being true the moment M-1 was fixed and `visionRoute`,
+ * `background` and `options` began importing the endpoint constants instead of rebuilding
+ * the paths. The rule below outlived the sentence.)*
  */
 
 /**
@@ -38,6 +44,15 @@ const SHIPPED = import.meta.glob(
     '../../popup.html',
     '../../options.html',
   ],
+  { query: '?raw', import: 'default', eager: true },
+);
+
+/**
+ * The TypeScript that can import the constants, for the absence proof below. Tests are in
+ * on purpose: a test that hand-builds the URL is asserting against a path nothing ships.
+ */
+const SOURCE = import.meta.glob(
+  ['../extension/*.ts', '../server/*.ts', '../recognizer/*.ts', '../shared/*.ts', '../../api/*.ts'],
   { query: '?raw', import: 'default', eager: true },
 );
 
@@ -90,6 +105,42 @@ describe('the production host', () => {
       optional_host_permissions?: string[];
     };
     expect(manifest.host_permissions).toContain(`${new URL(BUKI_HOST).origin}/*`);
+  });
+
+  it('is never re-joined to an api path by hand', () => {
+    // THE AXIS THE GLOB ABOVE CANNOT CROSS, and it is why item 54's M-1 survived a green
+    // suite. That check fails a file naming the WRONG host — so a file naming the RIGHT
+    // host and hand-joining the path satisfies it completely. Which is the state that
+    // shipped: `host.ts` exported VISION_ENDPOINT and LICENSE_ENDPOINT, NOTHING imported
+    // either, and three files rebuilt the path themselves. A rename of the PATH would have
+    // missed all three, which is the seven-files failure one level down.
+    //
+    // Written as an ABSENCE proof — there is no second way to build the URL — rather than
+    // "the constants are imported somewhere", which one caller satisfies while the other
+    // two drift. `host.ts` itself is excluded: it is the definition.
+    // COMMENTS ARE STRIPPED FIRST, and that is not a detail. This very file explains the
+    // manifest grant by quoting both URLs in prose, so a scan of the raw text fails on its
+    // own explanation — the mirror image of the trap this repo already knows, where a
+    // `?raw` guard looking for a SAFE call is satisfied by a comment. Prose is not code in
+    // either direction. Block comments before line comments, and `[^:]` so `https://`
+    // survives.
+    const code = (body: string) =>
+      body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+    const rebuilt = Object.entries(SOURCE)
+      .filter(([path]) => !path.endsWith('host.ts'))
+      .flatMap(([path, body]) =>
+        [...code(body as string).matchAll(/\$\{BUKI_HOST\}\/api\/[a-z]+/g)].map(
+          (m) => `${path.replace(/^(\.\.\/)+/, '')} builds ${m[0]} by hand`,
+        ),
+      );
+    expect(rebuilt).toEqual([]);
+  });
+
+  it('reads real source, rather than passing on a glob that matched nothing', () => {
+    // The same vacuous pass the shipped-files check guards against. If this collapses, the
+    // absence proof above is satisfied by an empty set.
+    expect(Object.keys(SOURCE).length).toBeGreaterThan(20);
   });
 
   it('is actually named by the files whose whole job is an absolute URL', () => {

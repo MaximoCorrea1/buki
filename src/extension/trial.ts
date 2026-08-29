@@ -26,7 +26,7 @@ const KEY = 'trialSpent';
  *
  * `entitlement.TRIAL_ATTEMPTS` is the ceiling, three per advertised catch, and
  * `entitlement.trialLeft` folds both into ONE number so the wall, the plan label and the
- * tray footer cannot tell one person three different stories.
+ * popup badge cannot tell one person three different stories.
  */
 const ATTEMPTS_KEY = 'trialAttempts';
 

@@ -17,7 +17,7 @@ import {
   NO_HOSTS_YET,
   type GrantedHost,
 } from './grantedHosts';
-import { BUKI_HOST } from '../shared/host';
+import { LICENSE_ENDPOINT } from '../shared/host';
 import { PRICING_URL } from '../shared/pricing';
 import { priceLine } from '../shared/pricing';
 
@@ -85,7 +85,7 @@ async function wirePro(): Promise<void> {
     try {
       const license = createLicense({
         fetch: (url, init) => fetch(url, init),
-        endpoint: `${BUKI_HOST}/api/license`,
+        endpoint: LICENSE_ENDPOINT,
         now: () => Date.now(),
       });
       // THE WHOLE PRESS LIVES IN `activateKey.ts`, and this handler has no decision left.

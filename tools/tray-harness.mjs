@@ -27,29 +27,32 @@
  * The output is gitignored. Regenerate it rather than committing it.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import { markSvg } from './mark.mjs';
 
 /**
- * The mark, for the fixture. `content.ts` builds this with `markNode()`; this file's markup
- * is hand-kept, so a card here without it would be a card the product does not have.
- * Unique gradient id per instance for the same reason markNode has one: every url(#id) in
- * a document resolves to the FIRST match, so a shared id means every ball after the first
- * loses its fill the moment that node is removed.
+ * The mark, for the fixture. `content.ts` builds this with `markNode()`.
+ *
+ * This USED TO BE HAND-SPELLED — the gradient, both eyes and both catchlights written out
+ * as a literal — which made it an EIGHTH copy of a drawing `mark.test.ts` asserts across
+ * seven, in a file that could import the definition all along. Item 54, M-3. Both this file
+ * and `mark.mjs` are `.mjs`, so there was never anything in the way.
+ *
+ * Unique gradient id per instance for the same reason `markNode` has one: every `url(#id)`
+ * in a document resolves to the FIRST match, so a shared id means every ball after the
+ * first loses its fill the moment that node is removed.
+ *
+ * THE BUG THE OLD VERSION COST, kept because the lesson outlived the code. The sequence was
+ * once `${++markSeq}` written directly into both the id and the url, and a template
+ * interpolates each occurrence separately: the counter ran twice per call, the gradient was
+ * declared as h1 and referenced as h2, and the ball vanished leaving two eyes floating on
+ * the card. It read exactly like a design problem — a mark whose light end is 1.64:1 on
+ * white would look like two dots — so the measurement pointed at the wrong cause.
+ * `markNode()` was always correct and THIS HARNESS WAS THE THING THAT LIED. It cannot
+ * happen again here: `markSvg` takes the id once, as an argument.
  */
 let markSeq = 0;
-const MK = () => {
-  // ONE READ, INTO A VARIABLE. This was `${++markSeq}` written directly into both the id
-  // and the url, and a template interpolates each occurrence separately: the counter ran
-  // twice per call, so the gradient was declared as h1 and referenced as h2. The ball then
-  // had a fill pointing at nothing and vanished, leaving two eyes floating on the card.
-  //
-  // It cost a real detour, because it looked exactly like a design problem: the mark read
-  // as two dots, which is precisely what a mark whose light end is 1.64:1 on white WOULD
-  // look like. Two plausible causes, and the measurement pointed at the wrong one.
-  // `markNode()` in content.ts has always done it this way, so THE PRODUCT WAS CORRECT AND
-  // THIS HARNESS WAS THE THING THAT LIED.
-  const n = ++markSeq;
-  return `<svg class="buki-mk" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="h${n}" x1="14" y1="8" x2="82" y2="94" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7bcdfc"/><stop offset="0.46" stop-color="#4aa3f9"/><stop offset="1" stop-color="#013ebf"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#h${n})"/><ellipse cx="31.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/><ellipse cx="68.3" cy="45.9" rx="13.7" ry="19.5" fill="#091a3b"/><circle cx="35" cy="35.2" r="3.9" fill="#fdfdfd"/><circle cx="71.4" cy="35.2" r="3.9" fill="#fdfdfd"/></svg>`;
-};
+const MK = () =>
+  `<svg class="buki-mk" viewBox="0 0 100 100" aria-hidden="true">${markSvg(`h${++markSeq}`)}</svg>`;
 
 
 const src = readFileSync('src/extension/content.ts', 'utf8');
@@ -113,8 +116,26 @@ const wallWord = (name) => {
     .replace(/\$\{(\w+)\}/g, (whole, key) => SUBS[key] ?? whole);
 };
 
-/** The five dyes, from generatedCover.ts, so a card's spine is a real binding. */
-const CLOTH = { coral: '#ff5a47', jade: '#22b584', peri: '#6274ff', plum: '#b45ce0' };
+/**
+ * The dyes, READ OUT OF `cloth.ts` rather than retyped — same technique as the stylesheet
+ * and the wall copy above, and for the same reason.
+ *
+ * The line this replaces said *"The five dyes, from generatedCover.ts"* and was wrong three
+ * ways in one sentence. It listed FOUR. It named the wrong file: `generatedCover.ts` exports
+ * `BINDING`, the dark board colours, not `CLOTH`. And the dye it dropped was `#ffae12`,
+ * marigold — **structurally invisible to the only tool that can see the tray**, so a fifth
+ * of every shelf could not be looked at. Item 54, D-9.
+ */
+const clothSrc = readFileSync('src/extension/cloth.ts', 'utf8');
+const clothLine = clothSrc.slice(clothSrc.indexOf('export const CLOTH'));
+const CLOTH = (clothLine.slice(0, clothLine.indexOf(']')).match(/#[0-9a-f]{6}/gi) ?? []).map((h) => h);
+// Loud, not silent. A harness that quietly draws four fifths of the palette is what this
+// block exists to stop, and `toolsRun.test.mjs` now runs this file on every suite.
+if (CLOTH.length !== 5) {
+  console.error(`cloth.ts no longer yields five dyes (got ${CLOTH.length}) - update this harness.`);
+  process.exit(1);
+}
+const [CORAL, MARIGOLD, JADE, PERI, PLUM] = CLOTH;
 
 const card = (inner, cloth, book = true) => `
   <div class="buki-slot">
@@ -166,12 +187,14 @@ const TRAY = [
         </div>${closeBtn}
       </div>
       ${books(
-        row('Ficciones', 'Jorge Luis Borges', CLOTH.coral),
-        row('The Left Hand of Darkness', 'Ursula K. Le Guin', CLOTH.peri, 'next'),
-        row('Pale Fire', 'Vladimir Nabokov', CLOTH.plum),
+        row('Ficciones', 'Jorge Luis Borges', CORAL),
+        row('The Left Hand of Darkness', 'Ursula K. Le Guin', PERI, 'next'),
+        // Marigold, deliberately, in the shelf you actually look at. It was the dye D-9
+        // dropped, and a palette is only checked where the eye goes first.
+        row('Pale Fire', 'Vladimir Nabokov', MARIGOLD),
       )}
       <button class="buki-act">Save all to Someday</button>`,
-    CLOTH.coral,
+    CORAL,
   ),
   // TWENTY, which is what MAX_BOOKS allows since 2026-08-16 and what the old fixture could
   // not show. This is the card the height bound exists for: without it, 2,600px in a tray
@@ -186,19 +209,19 @@ const TRAY = [
       </div>
       ${books(
         ...Array.from({ length: 20 }, (_, i) =>
-          row(`Book number ${i + 1}`, 'A. N. Author', Object.values(CLOTH)[i % 4]),
+          row(`Book number ${i + 1}`, 'A. N. Author', CLOTH[i % CLOTH.length]),
         ),
       )}
       <button class="buki-act">Save all to Someday</button>`,
-    CLOTH.peri,
+    PERI,
   ),
   // One book, already on the shelf: the "it saved a book I already saved" answer.
   card(
     `<div class="buki-head">
         <div class="buki-who"><div class="buki-eyebrow" data-shelf="">a link in the post</div></div>${closeBtn}
       </div>
-      ${row('Solaris', 'Stanisław Lem', CLOTH.jade, 'next')}`,
-    CLOTH.jade,
+      ${row('Solaris', 'Stanisław Lem', JADE, 'next')}`,
+    JADE,
   ),
   // Looking, and the empty state, which is an invitation rather than a wall.
   card(
@@ -206,7 +229,7 @@ const TRAY = [
         <div class="buki-who"><div class="buki-t buki-plain">Reading the cover&hellip;</div></div>${closeBtn}
       </div>
       <div class="buki-wait"></div>`,
-    CLOTH.peri,
+    PERI,
     false,
   ),
   card(
@@ -218,7 +241,7 @@ const TRAY = [
         </div>${closeBtn}
       </div>
       <button class="buki-act">Try the post's words</button>`,
-    CLOTH.plum,
+    PLUM,
     false,
   ),
   // THE WALL. The only card that asks for money, and the reason its words are read out of
@@ -234,7 +257,7 @@ const TRAY = [
       </div>
       <button class="buki-act buki-buy">${wallWord('act')}</button>
       <button class="buki-act">${wallWord('free')}</button>`,
-    CLOTH.jade,
+    JADE,
     false,
   ),
 ];

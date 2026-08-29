@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **1,160 across 88 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-28). **RE-DERIVE THIS; DO NOT CARRY IT.** It read 856/71 for half a day while both the header and the handoff carried it, and it has moved on every one of the last four sessions: 860/72 → 1,019/76 → 1,160/88. **Green still is not covered.** What is different is that everything touched in the 08-27/28 lane has been shown to FAIL: **items 51, 52 and 53 closed with 126 mutations, 126 caught, every plan re-run for determinism.** ⚠ **And five of that lane's findings were guarded by a comment, a mock or a cast that pointed the WRONG WAY** — see the covers-passages CONTEXT ledger, "The pattern across items 51, 52 and 53" |
+| Tests | **1,162 across 89 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-29). **RE-DERIVE THIS; DO NOT CARRY IT.** It read 856/71 for half a day while both the header and the handoff carried it, and it has moved on every one of the last four sessions: 860/72 → 1,019/76 → 1,160/88 → 1,162/89. **Green still is not covered.** What is different is that everything touched in the 08-27/28 lane has been shown to FAIL: **items 51, 52 and 53 closed with 126 mutations, 126 caught, every plan re-run for determinism.** ⚠ **And five of that lane's findings were guarded by a comment, a mock or a cast that pointed the WRONG WAY** — see the covers-passages CONTEXT ledger, "The pattern across items 51, 52 and 53" |
 | Mutations | **231 across 26 plans** in `tools/mutations/` (counted 2026-08-28 from the files, NOT recalled — an earlier draft of this figure was written from memory as 74 against a real 81). **126 were added in the 08-27/28 covers-passages lane and 126 were caught**, every plan run twice for determinism. Across the project: **17 have survived a first pass and every one was a real hole in a test written minutes earlier**; **3 proved EQUIVALENT** and are pinned by an assertion on the invariant that makes them so; **1 ABORTED as INVALID** rather than being scored. ⚠ **Two survivors in the 08-28 lane were the INSTRUMENT, not the code** — one mutation read a clock and flipped verdict between a pipe and a redirect (§5 T22), and one plan's own target list was missing a file. The harness and every plan were promoted out of `zzz-` in `bd0e628` |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
@@ -16,7 +16,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-28. `main` = `origin/main` at `9acfc16`, 0 ahead** (`git rev-list --count origin/main..HEAD`, run AFTER the push, not before). **Twenty-one commits went up across the 08-27/28 covers-passages lane** (`0c554ae..9acfc16`): the founder's cover rule, the passage probe, **items 51, 52 and 53 all closed**, and six corrections of my own mistakes. ⚠ **THIS ROW HAS NAMED A STALE SHA TWICE**, and on 08-28 a SESSION LEDGER named a commit hash — `da01ad9` — **that does not exist in this repository at all**, written from memory about work minutes old. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands — that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **15.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-28, end of the covers-passages lane.) **Ten are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, and 57 now needs his call first); five are agent work (36, 50, 54, 55, 61).** **THREE ITEMS CLOSED IN THIS LANE — 51, 52 and 53** — and **two were filed out of them**: 60 (artless books sharing a tile, opened deliberately by the commit that caused it) and 61 (the tray's DOM is still page-readable; the shadow root needs the 110-selector stylesheet SPLIT first and cannot be verified from node). **Item 57 changed OWNER without closing** — the engineering question is answered and what is left is a positioning call. **READ THE LANE, NOT THIS NUMBER.** It has been wrong for half a day once already, when LANE rows were struck and item CHECKBOXES were not. The probe that catches it: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as `grep -o '^- \[ \] \*\*[0-9]*'` |
+| Open items | **16.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-29, mid statusline/item-54 lane.) **Eleven are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, 62, and 57 now needs his call first); five are agent work (36, 50, 54, 55, 61).** **2026-08-29: item 62 was filed out of item 54's X-2** — the tray's quiet countdown line was designed, argued for in a docblock, and never wired to anything; whether the TRAY should carry it is a positioning call, not a cleanup. **Item 54 is now 5 of 10 closed** (M-1, M-2, M-3, X-2, D-9, plus X-3 previously), so it stays open with a shorter body. **THREE ITEMS CLOSED IN THIS LANE — 51, 52 and 53** — and **two were filed out of them**: 60 (artless books sharing a tile, opened deliberately by the commit that caused it) and 61 (the tray's DOM is still page-readable; the shadow root needs the 110-selector stylesheet SPLIT first and cannot be verified from node). **Item 57 changed OWNER without closing** — the engineering question is answered and what is left is a positioning call. **READ THE LANE, NOT THIS NUMBER.** It has been wrong for half a day once already, when LANE rows were struck and item CHECKBOXES were not. The probe that catches it: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as `grep -o '^- \[ \] \*\*[0-9]*'` |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -51,6 +51,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~51~~ | agent | **ALL NINE DONE 2026-08-27/28** — `b8b33fa` (PERF-6/SEC-4), `fa5ab8f` (SEC-3), and TM-12. **The one worth reading: `ipCap` carried a written argument for why it needed no eviction, and the argument was IPv4 reasoning beside an IPv6-capable edge** — a /64 delegation gave one caller 2^64 keys, so the brake was a no-op and the map unbounded. **NOTHING REMAINS.** All nine closed, each mutation-tested twice All re-probed and confirmed still open on 08-27 | — |
 | ~~52~~ | agent | **BOTH FINDINGS CLOSED 2026-08-28.** TM-9's `data-sig` carried every book TITLE and pile on an attribute in x.com's light DOM, **readable by CSS attribute selectors with no script at all**; TM-10's `href*=` substring stored `javascript:` URLs on the shelf, defused by ONE render guard. **16 mutations, 16 caught** | — |
 | **61** | agent, **needs a browser** | **The tray's DOM is still readable by the page it sits on** — card text, class names, the injected `<style>`. The shadow root the review proposed needs the 110-selector stylesheet SPLIT first, because it also serves the Save button inside X's own markup, and the failure mode is visual with no way to verify it from node | item 3 |
+| **62** | **Maximo** | **The tray's quiet countdown line was designed and never built.** `entitlement.footer()` carried a written argument for when a trial counter should appear, and `content.ts` never imported it. Deleted with X-2 on 2026-08-29. `planBadge.badgeFor` does the same job in the POPUP masthead, so the open question is whether the TRAY should say it too | none |
 | ~~53~~ | agent | **ALL FIVE CLOSED 2026-08-28.** `exactOptionalPropertyTypes` is ON and its wave was **eleven**, not the flood the item expected. Three storage readers stopped casting what they read — one of them exported the literal `"undefined"` into Goodreads. Both message receivers now fail to COMPILE when a variant is added and forgotten | — |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
 | **55** | agent | **The two surfaces no test can reach** (M-5 the context-menu orchestration, M-6 the whole card renderer including the paywall) | — |
@@ -1253,6 +1254,37 @@ unblocks.
         It WALKS the anchors, because taking the first match let one forged anchor shadow
         the real permalink. **16 mutations, 16 caught, twice.**
 
+- [ ] **62. THE TRAY'S QUIET LINE WAS DESIGNED AND NEVER BUILT.** Filed 2026-08-29 out of
+      item 54's X-2, which recorded `entitlement.footer()` as dead code. It was, and it was
+      deleted — but *dead* undersells what the probe found, which is why this is a row rather
+      than a line in a commit message.
+
+      **What existed.** `footer(standing)` returned `''` for most of the trial and
+      `"3 catches left"` only once `trialLeft <= WARN_FROM`, with a docblock that argued the
+      case: *"a counter that ticks from ten is a countdown, and a countdown is pressure"*, and
+      *"empty means say nothing, NOT nothing to worry about"*. That is a design decision, made
+      and written down and never wired to anything.
+
+      **What shipped.** Nothing. `content.ts` never imported `entitlement` at all. The same
+      restraint lives in `planBadge.badgeFor`, which the POPUP masthead draws — so somebody
+      looking at their own shelf sees *"2 free covers left"*, and somebody catching a book in
+      the feed sees nothing at all until the wall.
+
+      **The question, and it is yours, because neither argument is an engineering one:**
+
+      - **For.** The catch surface is where the trial is actually spent. Meeting the wall
+        mid-catch is exactly the surprise that docblock set out to prevent, and the popup is
+        a place somebody may never open.
+      - **Against.** `docs/brand.md` says Buki asks for money in exactly two places, the wall
+        and the options page. A countdown in somebody else's feed is a third, and it is the
+        one that reads as pressure. **Doing nothing is a real option**, and it is the one
+        that currently ships.
+
+      Restoring it is small — the function is recoverable from `4fcada6` and `content.ts`
+      already builds the card — but it is a PAYWALL change, so it belongs with **M-6** in
+      item 55, where the renderer is unreachable by any test and the wall's four rules are
+      checked as STRINGS rather than as rendered behaviour.
+
 - [ ] **61. THE TRAY'S DOM IS STILL READABLE BY THE PAGE IT SITS ON.** Filed 2026-08-28 out
       of item 52, whose two NAMED findings are closed. This is the general hardening the
       review proposed as their mechanism — *"closed shadow root"* — and it is deliberately
@@ -1342,9 +1374,19 @@ unblocks.
 
       All confirmed **still true on 2026-08-25** by grep, not by reading the review.
 
-      - **M-1 · `host.ts` exports `LICENSE_ENDPOINT` and `VISION_ENDPOINT` and nothing imports
-        either.** Three files rebuild the paths by hand. `host.test.ts` globs for stale HOSTS
-        only, **never the PATH**.
+      - ~~**M-1 · `host.ts` exports two endpoints and nothing imports either.**~~ **DONE
+        2026-08-29.** The three files were `visionRoute.ts`, `background.ts` and
+        `options.ts`, each rebuilding the path out of `BUKI_HOST`; all three now import the
+        constant, and `PROXY_URL` is gone rather than aliased — it was a synonym for
+        `VISION_ENDPOINT` with one caller. **The guard was the hole, exactly as this line
+        said:** `host.test.ts` fails a file naming the WRONG host, so a file naming the
+        RIGHT host and hand-joining the path satisfied it completely. It now carries an
+        ABSENCE proof — no source builds `BUKI_HOST` + an api path — with comments stripped
+        first, because this very file explains the manifest grant by quoting both URLs in
+        prose. Watched to fail: the mutation names `extension/background.ts`. Also struck
+        two stale premises, `host.ts`'s *"nothing imports VISION_ENDPOINT yet ... a
+        declaration of intent rather than a live route"* (task 6 had landed; the note had
+        not) and `host.test.ts`'s own *"Nothing imports it"*.
       - ~~**M-2 · `tools/mark-sizes.mjs` is 100% dead.**~~ **DONE 2026-08-29**, and it was
         worse than "reads `MARK.cords`". The whole file drew the mark RETIRED on 2026-08-17,
         so `MARK.shelved`, `MARK.caught` and the per-ground `spine`/`caught` were gone too,
@@ -1358,10 +1400,21 @@ unblocks.
         parsing anyway — for eleven days. It now DERIVES the command list from `README.md`
         (the file that lied) and runs every one, with `make-icons.mjs` named as
         advertised-but-not-run because it writes tracked assets. Watched to fail first.
-      - **M-3 · `tray-harness.mjs` hand-spells the mark** — an 8th copy outside
-        `mark.test.ts`'s asserted seven, **in a file that CAN import `markSvg`.** This copy
-        has already lied once and cost a real design detour.
-      - **X-2 · `entitlement.footer()` has no caller**, and two module headers vouch for it.
+      - ~~**M-3 · `tray-harness.mjs` hand-spells the mark.**~~ **DONE 2026-08-29.** It now
+        imports `markSvg` from `mark.mjs` — both are `.mjs`, so nothing was ever in the way.
+        The eighth copy is deleted rather than asserted about. The detour it cost is kept in
+        the docblock, because the lesson outlived the code, with the note that the
+        double-interpolated gradient id cannot recur: `markSvg` takes the id as an argument,
+        once.
+      - ~~**X-2 · `entitlement.footer()` has no caller.**~~ **DONE 2026-08-29**, deleted
+        with its five tests. Re-probed first, and the probe changed the verdict from *dead*
+        to *superseded*: `planBadge.badgeFor` is the same rule with the same `WARN_FROM`
+        restraint and better words, for the popup masthead, and `content.ts` never imported
+        `entitlement` at all. **FIVE comments vouched for it, not two** — `entitlement.ts`
+        twice, `proState.ts`, `proState.test.ts` and `trial.ts` — all describing *"the tray
+        before it draws a footer"*. The tray consults `decide` through `gate.ts` and draws
+        the WALL, so all five now say that. ⚠ **The tray's quiet line was designed and never
+        built** — see item 62, which is a founder call, not a cleanup.
       - ~~**X-3 · `settings.toVisionConfig` is dead code.**~~ **DONE 2026-08-28**, deleted
         with TS-7 rather than fixed: it was one of the eleven sites the flag rejected
         (`apiKey: settings.apiKey || undefined`), so the choice was to repair dead code or
@@ -1375,9 +1428,14 @@ unblocks.
         them.
       - **D-7 · `bindingFor` indexes `BINDING` by `CLOTH.length`** — a cross-module length
         coupling that **fails silently on the sixth dye.**
-      - **D-9 · `tray-harness.mjs` retypes the cloth palette, names the wrong file, and drops
-        one of the five dyes** — so **marigold is structurally invisible to the only tool that
-        can see the tray.**
+      - ~~**D-9 · `tray-harness.mjs` retypes the cloth palette.**~~ **DONE 2026-08-29.** One
+        line was wrong three ways: it said *"The five dyes"* and listed FOUR, it named
+        `generatedCover.ts` when that file exports `BINDING` (the dark boards) and not
+        `CLOTH`, and the dye it dropped was `#ffae12`. The palette is now READ OUT OF
+        `cloth.ts`, the same technique the file already used for the stylesheet and the wall
+        copy and never applied here, with a loud abort if it stops yielding five. Marigold
+        went from **0 to 50 occurrences** in the output and is now in the hero shelf, where
+        the eye actually goes. Watched to fail: deleting `#ffae12` from `cloth.ts` exits 1.
       - **K-1 · `src/recognizer/` imports `src/extension/`** — the only edge running against
         the graph. *(Confirmed 2026-08-25: `groundText.ts:5` and `recognizer.ts:5`, both
         importing `sameBook` from `../extension/bookIdentity`. Deliberate — the identity rule

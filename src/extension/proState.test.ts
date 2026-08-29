@@ -22,7 +22,7 @@ const NOW = Date.UTC(2026, 7, 17, 12, 0, 0);
  * Assembling the one snapshot `entitlement.decide` answers from.
  *
  * It exists because three callers need it — the worker before it spends a vision call, the
- * tray before it draws a footer, the options page before it names the plan — and each one
+ * tray before it draws the wall, the options page before it names the plan — and each one
  * assembling it by hand is three chances to read "has a licence key" as "is Pro". Those
  * are different: a key that has never been exchanged, or whose session has aged past the
  * server's grace, is not a subscription the proxy will honour.

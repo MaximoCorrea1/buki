@@ -2,7 +2,7 @@
  * May this catch happen, and does it cost one of the free ten.
  *
  * Pure and on its own because three places need the answer: the worker before it spends a
- * vision call, the tray before it draws a footer, and the options page before it says what
+ * vision call, the tray before it draws the wall, and the options page before it says what
  * the plan is. Three copies of this arithmetic would be three chances to advertise a
  * ten-catch trial and deliver nine.
  *
@@ -123,7 +123,7 @@ export function trialLeft(standing: Standing): number {
     Math.min(
       TRIAL_CATCHES - count(standing.trialSpent),
       // The attempt ceiling reaches the same reader through the same number, so the wall,
-      // the plan label and the tray footer cannot tell one person three different stories.
+      // the plan label and the popup badge cannot tell one person three different stories.
       TRIAL_ATTEMPTS - count(standing.trialAttempts),
     ),
   );
@@ -133,7 +133,7 @@ export function trialLeft(standing: Standing): number {
  * What plan is this, in words, for the options page.
  *
  * Here rather than in the options page because it is the same arithmetic `decide` and
- * `footer` already do, and a fourth copy is a fourth chance to tell somebody who is paying
+ * `badgeFor` already do, and a third copy is a third chance to tell somebody who is paying
  * that their trial is running out.
  */
 export function planLabel(standing: Standing): string {
@@ -142,18 +142,3 @@ export function planLabel(standing: Standing): string {
   return `${trialLeft(standing)} of ${TRIAL_CATCHES} free catches left`;
 }
 
-/**
- * The quiet line under the tray. Empty for most of the trial: a counter that ticks from
- * ten is a countdown, and a countdown is pressure. It appears only when the end is close
- * enough that meeting the wall would otherwise be a surprise.
- *
- * Empty means "say nothing", NOT "nothing to worry about": it is also empty once the trial
- * is spent, because the wall says that instead. A caller must never read `''` as reassurance.
- * `decide` is the gate; this is only the label.
- */
-export function footer(standing: Standing): string {
-  if (standing.pro || standing.ownKey) return '';
-  const left = trialLeft(standing);
-  if (left === 0 || left > WARN_FROM) return '';
-  return `${left} catch${left === 1 ? '' : 'es'} left`;
-}

@@ -22,16 +22,18 @@ Inherited from: `%TEMP%/buki-handoff-2026-08-28-covers-passages.md`, `origin/mai
 | **H1–H2** | ⭐ Item 52 — both named findings | `[x]` | agent | 16 mutations |
 | **H3–H7** | ⭐ Item 53 — all five | `[x]` | agent | 22 mutations |
 | **D1–D7** | Seven traps found and recorded | `[x]` | agent | §5 T20–T22 |
-| **G1 / 54** | **Item 54 — dead code, stale comments, one edge vs the graph** | `[~]` | agent | Split below; 1 of 10 closed |
-| G1·M-1 | `host.ts` exports two endpoints nothing imports | `[ ]` | agent | Re-probed 08-29: still true, zero importers |
+| **G1 / 54** | **Item 54 — dead code, stale comments, one edge vs the graph** | `[~]` | agent | Split below; **5 of 10 closed** |
+| G1·M-1 | `host.ts` exports two endpoints nothing imports | `[x]` | agent | 3 callers now import; absence proof added, watched to fail |
 | G1·M-2 | `tools/mark-sizes.mjs` is 100% dead | `[x]` | agent | Drew the mark retired 08-17. Rewritten on `markSvg`; guard now RUNS it |
-| G1·M-3 | `tray-harness.mjs` hand-spells the mark (8th copy) | `[ ]` | agent | |
-| G1·X-2 | `entitlement.footer()` has no caller | `[ ]` | agent | Re-probed 08-29: still true, only the test imports it |
+| G1·M-3 | `tray-harness.mjs` hand-spells the mark (8th copy) | `[x]` | agent | Now imports `markSvg`; the copy is deleted, not asserted about |
+| G1·X-2 | `entitlement.footer()` has no caller | `[x]` | agent | Superseded by `badgeFor`, not merely dead. Deleted + 5 comments. **Filed item 62** |
+| **S6 / 62** | ⭐ Should the TRAY carry the quiet countdown line? | `[?]` | **Maximo** | Designed, argued for, never wired. Doing nothing is a real option |
+| **S7** | `zzz-tray-harness.html` repeats gradient ids `h1–h4` ten times each | `[ ]` | agent | Pre-existing, not from this lane. Invalid HTML; visually harmless because the duplicates are identical and nothing is removed |
 | G1·X-5 | `Tweet.altText` declared in 3 files, never populated | `[ ]` | agent | Not yet re-probed |
 | G1·X-6 | Nine dead CSS tokens, five a 4th copy of `BINDING` | `[ ]` | agent | Not yet re-probed |
 | G1·D-5 | `toolbar.ts` hardcodes two brand colours | `[ ]` | agent | Not yet re-probed |
 | G1·D-7 | `bindingFor` indexes `BINDING` by `CLOTH.length` | `[ ]` | agent | Fails silently on the sixth dye |
-| G1·D-9 | `tray-harness.mjs` drops a dye; marigold invisible | `[ ]` | agent | Not yet re-probed |
+| G1·D-9 | `tray-harness.mjs` drops a dye; marigold invisible | `[x]` | agent | Palette now read from `cloth.ts`; marigold 0 → 50 occurrences |
 | G1·K-1 | `src/recognizer/` imports `src/extension/` | `[ ]` | agent | Documented as deliberate; may be a no-op |
 | G1·SC | Five stale comments | `[ ]` | agent | `README.md:103` was one — now corrected |
 | **G2 / 55** | Item 55 — the two surfaces no test can reach (M-5, M-6) | `[ ]` | agent | |

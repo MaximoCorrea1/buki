@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { visionRoute, PROXY_URL } from './visionRoute';
-import { BUKI_HOST } from '../shared/host';
+import { visionRoute } from './visionRoute';
+import { BUKI_HOST, VISION_ENDPOINT } from '../shared/host';
 import { GEMINI } from '../recognizer/llmVision';
 
 const NOW = Date.UTC(2026, 7, 17, 12, 0, 0);
@@ -34,8 +34,8 @@ describe('where a cover read is sent', () => {
 
   it('goes to Buki when there is no key of their own', () => {
     const route = visionRoute(settings(''), { key: '', session: null });
-    expect(route.endpoint).toBe(PROXY_URL);
-    expect(PROXY_URL.startsWith(BUKI_HOST)).toBe(true);
+    expect(route.endpoint).toBe(VISION_ENDPOINT);
+    expect(VISION_ENDPOINT.startsWith(BUKI_HOST)).toBe(true);
   });
 
   it('carries NOTHING on a trial request, so the server sees an absent header', () => {

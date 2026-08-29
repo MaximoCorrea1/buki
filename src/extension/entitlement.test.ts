@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   decide,
-  footer,
   planLabel,
   trialLeft,
   TRIAL_CATCHES,
@@ -52,29 +51,6 @@ describe('decide', () => {
   });
 });
 
-describe('footer', () => {
-  it('says nothing while the trial is comfortable', () => {
-    expect(footer(free)).toBe('');
-  });
-
-  it('starts counting down only near the end', () => {
-    expect(footer({ ...free, trialSpent: TRIAL_CATCHES - WARN_FROM , trialAttempts: 0})).toBe('3 catches left');
-  });
-
-  it('says one catch, not one catchs', () => {
-    expect(footer({ ...free, trialSpent: TRIAL_CATCHES - 1 , trialAttempts: 0})).toBe('1 catch left');
-  });
-
-  it('says nothing once there are none left, because the wall says it instead', () => {
-    expect(footer({ ...free, trialSpent: TRIAL_CATCHES , trialAttempts: 0})).toBe('');
-  });
-
-  it('says nothing to Pro or to someone with their own key', () => {
-    expect(footer(pro)).toBe('');
-    expect(footer({ ...withKey, trialSpent: 9 , trialAttempts: 0})).toBe('');
-  });
-});
-
 describe('the case that actually pays', () => {
   it('lets Pro through even after the trial was exhausted first', () => {
     // How nearly every subscriber arrives: they spend ten catches, meet the wall, and
@@ -109,8 +85,7 @@ describe('the case that actually pays', () => {
     // simply write 0. Generous is both kinder and consistent with trial.ts's own read.
     const corrupt = { pro: false, ownKey: false, trialSpent: Number.NaN , trialAttempts: 0} as Standing;
     expect(decide(corrupt, 'cover')).toEqual({ allow: true, spendTrial: true });
-    // What the clamp is really for: without it this line reads "NaN catches left".
-    expect(footer(corrupt)).toBe('');
+    // What the clamp is really for: without it this line reads "NaN of 10 free catches left".
     expect(planLabel(corrupt)).toBe('10 of 10 free catches left');
   });
 });
