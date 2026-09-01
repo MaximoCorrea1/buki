@@ -1,0 +1,41 @@
+{
+  "target": "src/extension/coverQueue.test.ts",
+  "mutations": [
+    {
+      "label": "63i the memo is dropped, so every repaint goes back to the network",
+      "file": "src/extension/coverQueue.ts",
+      "from": "      const already = answered.get(url);\n      if (already) return already;",
+      "to": ""
+    },
+    {
+      "label": "63j failures are forgotten, so an artless book is retried on every keystroke",
+      "file": "src/extension/coverQueue.ts",
+      "from": "        } catch {",
+      "to": "        } catch {\n          answered.delete(url);"
+    },
+    {
+      "label": "63k the ceiling is removed, so a forty-book pile opens forty connections",
+      "file": "src/extension/coverQueue.ts",
+      "from": "    if (live < limit) {\n      live++;\n      return;\n    }",
+      "to": "    live++;\n    return;"
+    },
+    {
+      "label": "63l the queue drains newest-first, filling the bottom of the pile while the top waits",
+      "file": "src/extension/coverQueue.ts",
+      "from": "    waiting.shift()?.();",
+      "to": "    waiting.pop()?.();"
+    },
+    {
+      "label": "63m a thrown fetch escapes instead of becoming a drawn board",
+      "file": "src/extension/coverQueue.ts",
+      "from": "        } catch {\n          // Silent on purpose. `rememberCover` already logs what it could not keep, and a\n          // cover that does not arrive is a designed state - the card falls back to its\n          // cloth, or now to the photograph it was read from.\n          return null;",
+      "to": "        } catch (err) {\n          throw err;"
+    },
+    {
+      "label": "63n the slot is never released, so the shelf stalls after the first four covers",
+      "file": "src/extension/coverQueue.ts",
+      "from": "        } finally {\n          release();\n        }",
+      "to": "        } finally {\n          /* released nowhere */\n        }"
+    }
+  ]
+}

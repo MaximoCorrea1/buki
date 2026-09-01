@@ -1,0 +1,53 @@
+{
+  "target": ["src/extension/coverThumb.test.ts", "src/extension/coverSource.test.ts"],
+  "mutations": [
+    {
+      "label": "63a the two slots swap, so the card waits 2.1s for its first frame again",
+      "file": "src/extension/coverThumb.ts",
+      "from": "    ...(usable(instant) ? { instant } : {}),\n    ...(usable(book.coverUrl) ? { upgrade: book.coverUrl } : {}),",
+      "to": "    ...(usable(book.coverUrl) ? { instant: book.coverUrl } : {}),\n    ...(usable(instant) ? { upgrade: instant } : {}),"
+    },
+    {
+      "label": "63b the several-PICTURES refusal is bypassed, showing picture one for a book read from picture three",
+      "file": "src/extension/coverThumb.ts",
+      "from": "  const shot = shotFor(image, books, pictures);",
+      "to": "  const shot = image;"
+    },
+    {
+      "label": "63c the scheme check is dropped, so a javascript: url reaches the thumb",
+      "file": "src/extension/coverThumb.ts",
+      "from": "  typeof url === 'string' && /^https?:\\/\\//i.test(url);",
+      "to": "  typeof url === 'string' && url.length > 0;"
+    },
+    {
+      "label": "63d the keys are written unconditionally, so an absent picture becomes a PRESENT undefined",
+      "file": "src/extension/coverThumb.ts",
+      "from": "    ...(usable(instant) ? { instant } : {}),\n    ...(usable(book.coverUrl) ? { upgrade: book.coverUrl } : {}),",
+      "to": "    instant: usable(instant) ? instant : undefined,\n    upgrade: usable(book.coverUrl) ? book.coverUrl : undefined,"
+    },
+    {
+      "label": "63e the catalogue upgrade is dropped entirely, so the tray never shows real art",
+      "file": "src/extension/coverThumb.ts",
+      "from": "    ...(usable(book.coverUrl) ? { upgrade: book.coverUrl } : {}),",
+      "to": ""
+    },
+    {
+      "label": "63f shotFor stops refusing several pictures, the C-9 half that is still true",
+      "file": "src/extension/coverSource.ts",
+      "from": "  return books >= 1 && pictures === 1 ? image : undefined;",
+      "to": "  return books >= 1 ? image : undefined;"
+    },
+    {
+      "label": "63g the one-book rule is dropped, so three books from one photo wear three identical thumbs",
+      "file": "src/extension/coverThumb.ts",
+      "from": "  const instant = books === 1 ? shot : undefined;",
+      "to": "  const instant = shot;"
+    },
+    {
+      "label": "63h the one-book rule inverts to books > 1, refusing the exact case it is for",
+      "file": "src/extension/coverThumb.ts",
+      "from": "  const instant = books === 1 ? shot : undefined;",
+      "to": "  const instant = books > 1 ? shot : undefined;"
+    }
+  ]
+}

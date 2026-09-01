@@ -1,6 +1,7 @@
 import type { SavedBook } from './storage';
 import { bindingFor, titleStep, weaveOf } from './generatedCover';
 import { cachedCover, rememberCover, type CoverDeps } from './coverCache';
+import { createCoverQueue, SHELF_AT_ONCE, type CoverQueue } from './coverQueue';
 import { coverSources } from './coverSource';
 
 /**
@@ -32,9 +33,44 @@ const WEAVE_ROWS = 36;
 const localSrc = new Map<string, string>();
 
 /**
+ * ONE QUEUE FOR THE WHOLE POPUP, created on first use.
+ *
+ * `popup.ts` holds a single handle - `const covers = liveCoverDeps()` at module scope,
+ * because each call opens the cache again - and is this file's only caller, so binding the
+ * queue to the first deps it sees binds it to the only deps there are. **If a second caller
+ * ever arrives with its own store this has to become a parameter:** the ceiling exists to be
+ * SHARED, and a queue per caller is no ceiling at all. That is precisely how the 08-27 fix
+ * bounded the cover path at four and left the words path firing twenty-four.
+ */
+let keeping: CoverQueue<void> | undefined;
+const keepQueue = (covers: CoverDeps): CoverQueue<void> => {
+  keeping ??= createCoverQueue<void>(SHELF_AT_ONCE, async (url) => {
+    await rememberCover(url, covers);
+    return undefined;
+  });
+  return keeping;
+};
+
+/**
  * Draw from the local copy if we have it, otherwise the network, and keep what comes
- * back. See coverCache.ts: the network path is a three-hop redirect that measured 1-4
- * seconds per cover.
+ * back. See coverCache.ts: the network path is a three-hop redirect measured again on
+ * 2026-09-01 at 993 / 2140 / 2318ms, median 2140ms, with the repeat no faster.
+ *
+ * TWO THINGS THIS USED TO DO ON EVERY REPAINT, and `paint()` repaints on every KEYSTROKE
+ * in the search box because it opens with `app.replaceChildren()`.
+ *
+ * It called `rememberCover` for every missed cover with no ceiling. A forty-book pile
+ * opened forty connections to the host that answered nineteen with an HTTP 429 on
+ * 2026-08-27 and then went silent for two minutes.
+ *
+ * And it called it AGAIN for each of them on the next keystroke, because a miss leaves
+ * nothing in `localSrc` to short-circuit the next pass. Books with no catalogue art are
+ * the common case, so a five-letter search across ten artless books was fifty requests to
+ * learn ten things already known.
+ *
+ * The queue fixes both and neither changes what is drawn: the `img.src = url` line below
+ * is untouched, so a missed cover still shows over the network at the browser's own pace
+ * and with the browser's own per-host limit. Only the KEEPING is queued.
  */
 async function applyCover(
   img: HTMLImageElement,
@@ -49,7 +85,7 @@ async function applyCover(
   const blob = await cachedCover(url, covers);
   if (!blob) {
     img.src = url;
-    void rememberCover(url, covers);
+    void keepQueue(covers).get(url);
     return;
   }
   const objectUrl = URL.createObjectURL(blob);

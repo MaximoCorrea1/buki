@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **1,162 across 89 files**, all passing (`./node_modules/.bin/vitest run`, 2026-08-29). **RE-DERIVE THIS; DO NOT CARRY IT.** It read 856/71 for half a day while both the header and the handoff carried it, and it has moved on every one of the last four sessions: 860/72 → 1,019/76 → 1,160/88 → 1,162/89. **Green still is not covered.** What is different is that everything touched in the 08-27/28 lane has been shown to FAIL: **items 51, 52 and 53 closed with 126 mutations, 126 caught, every plan re-run for determinism.** ⚠ **And five of that lane's findings were guarded by a comment, a mock or a cast that pointed the WRONG WAY** — see the covers-passages CONTEXT ledger, "The pattern across items 51, 52 and 53" |
+| Tests | **1,178 across 91 files**, all passing (`./node_modules/.bin/vitest run`, 2026-09-01). **RE-DERIVE THIS; DO NOT CARRY IT.** It read 856/71 for half a day while both the header and the handoff carried it, and it has moved on every one of the last four sessions: 860/72 → 1,019/76 → 1,160/88 → 1,162/89 → 1,178/91. **Green still is not covered.** What is different is that everything touched in the 08-27/28 lane has been shown to FAIL: **items 51, 52 and 53 closed with 126 mutations, 126 caught, every plan re-run for determinism.** ⚠ **And five of that lane's findings were guarded by a comment, a mock or a cast that pointed the WRONG WAY** — see the covers-passages CONTEXT ledger, "The pattern across items 51, 52 and 53" |
 | Mutations | **231 across 26 plans** in `tools/mutations/` (counted 2026-08-28 from the files, NOT recalled — an earlier draft of this figure was written from memory as 74 against a real 81). **126 were added in the 08-27/28 covers-passages lane and 126 were caught**, every plan run twice for determinism. Across the project: **17 have survived a first pass and every one was a real hole in a test written minutes earlier**; **3 proved EQUIVALENT** and are pinned by an assertion on the invariant that makes them so; **1 ABORTED as INVALID** rather than being scored. ⚠ **Two survivors in the 08-28 lane were the INSTRUMENT, not the code** — one mutation read a clock and flipped verdict between a pipe and a redirect (§5 T22), and one plan's own target list was missing a file. The harness and every plan were promoted out of `zzz-` in `bd0e628` |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
@@ -16,7 +16,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-28. `main` = `origin/main` at `9acfc16`, 0 ahead** (`git rev-list --count origin/main..HEAD`, run AFTER the push, not before). **Twenty-one commits went up across the 08-27/28 covers-passages lane** (`0c554ae..9acfc16`): the founder's cover rule, the passage probe, **items 51, 52 and 53 all closed**, and six corrections of my own mistakes. ⚠ **THIS ROW HAS NAMED A STALE SHA TWICE**, and on 08-28 a SESSION LEDGER named a commit hash — `da01ad9` — **that does not exist in this repository at all**, written from memory about work minutes old. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands — that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **16.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-08-29, mid statusline/item-54 lane.) **Eleven are Maximo's (2, 3, 9, 35, 37, 56, 58, 59, 60, 62, and 57 now needs his call first); five are agent work (36, 50, 54, 55, 61).** **2026-08-29: item 62 was filed out of item 54's X-2** — the tray's quiet countdown line was designed, argued for in a docblock, and never wired to anything; whether the TRAY should carry it is a positioning call, not a cleanup. **Item 54 is now 5 of 10 closed** (M-1, M-2, M-3, X-2, D-9, plus X-3 previously), so it stays open with a shorter body. **THREE ITEMS CLOSED IN THIS LANE — 51, 52 and 53** — and **two were filed out of them**: 60 (artless books sharing a tile, opened deliberately by the commit that caused it) and 61 (the tray's DOM is still page-readable; the shadow root needs the 110-selector stylesheet SPLIT first and cannot be verified from node). **Item 57 changed OWNER without closing** — the engineering question is answered and what is left is a positioning call. **READ THE LANE, NOT THIS NUMBER.** It has been wrong for half a day once already, when LANE rows were struck and item CHECKBOXES were not. The probe that catches it: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as `grep -o '^- \[ \] \*\*[0-9]*'` |
+| Open items | **15.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-09-01, mid the covers-latency lane.) **Ten are Maximo's (2, 3, 9, 35, 37, 58, 59, 60, 62, and 57 now needs his call first); five are agent work (36, 50, 54, 55, 61).** **2026-09-01: item 56 CLOSED by probe** — every hop of the cover redirect returns a usable `Access-Control-Allow-Origin` and the archive.org node reflects the extension origin back, so `coverCache.ts` was right and THE LANE was stale. It was the last Maximo item that was not either the launch chain itself or a positioning call. **2026-08-29: item 62 was filed out of item 54's X-2** — the tray's quiet countdown line was designed, argued for in a docblock, and never wired to anything; whether the TRAY should carry it is a positioning call, not a cleanup. **Item 54 is now 5 of 10 closed** (M-1, M-2, M-3, X-2, D-9, plus X-3 previously), so it stays open with a shorter body. **THREE ITEMS CLOSED IN THIS LANE — 51, 52 and 53** — and **two were filed out of them**: 60 (artless books sharing a tile, opened deliberately by the commit that caused it) and 61 (the tray's DOM is still page-readable; the shadow root needs the 110-selector stylesheet SPLIT first and cannot be verified from node). **Item 57 changed OWNER without closing** — the engineering question is answered and what is left is a positioning call. **READ THE LANE, NOT THIS NUMBER.** It has been wrong for half a day once already, when LANE rows were struck and item CHECKBOXES were not. The probe that catches it: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as `grep -o '^- \[ \] \*\*[0-9]*'` |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -57,7 +57,6 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | **55** | agent | **The two surfaces no test can reach** (M-5 the context-menu orchestration, M-6 the whole card renderer including the paywall) | — |
 | **57** | **Maximo decides, then agent**, AFTER LAUNCH | **Find a book from a passage. PROBED TWICE 2026-08-27 AND THE SECOND ROUND OVERTURNED THE FIRST.** The floor round one said might not exist is there: field filters are dead but a **bare boolean term** scopes the query (2,228 hits → 227, the book from absent-in-the-top-3 to **rank 1**), and comparing the model's proposed title against the returned hit titles **discriminated 5/5** and refused 7 of 8 wrong-book-right-author hallucinations at **no extra request**. **The blocker is no longer ranking, it is COVERAGE** — four modern in-copyright novels, none found, two returning zero hits. `node tools/probe/passage-grounding.mjs` | **a positioning call, not a build** |
 | **60** | **Maximo** | **Several artless books from one photograph now show the same tile.** Opened deliberately by `cae4ad1`, which is the founder's *"when we find no cover book, we use the original image"*. Honest but repetitive on a face-out shelf. Two ways out are costed in the body; doing nothing is a real option | the shelf's first impression |
-| **56** | **Maximo** | **The CORS redirect chain has never been probed** (review §7). One curl. If it is wrong every shelf cover silently falls back to a drawn board | item 3 |
 | **35** | **Maximo** | **The affiliate tags are empty.** `AFFILIATE = { amazonTag: '', bookshopId: '' }`, so every Buy link works and earns nothing. The disclosure is already in three places, which is the half that is done. **2026-08-26: Amazon is blocked BY launch** - Associates wants the property URL and the store URL does not exist until the draft is published. Bookshop is applied for and awaiting review. **Not a launch blocker either way** | affiliate revenue, AFTER launch |
 | **37** | **Maximo**, then agent | **THE EXTENSION ID CHANGES WHEN YOU PUBLISH**, and `BUKI_EXTENSION_ID` gates both endpoints. Upload the zip as a draft FIRST, copy the public key into `manifest.json`, and the unpacked id becomes the shipped id | items 2, 3 |
 | ~~38~~ | agent | ~~`/api/vision` forwards the body verbatim.~~ **DONE 2026-08-25.** The body is REBUILT, not relayed: `src/server/visionBody.ts` pins the model, clamps `max_tokens`, caps bytes/images/prompt, and emits a three-key allowlist so `n`, `service_tier`, `stream` and `extra_body` have nowhere to go. Six mutations run against the new guards, **six caught** | — |
@@ -1564,17 +1563,31 @@ unblocks.
          Cost: touches the prompt, the response schema, the recognizer and the card — and it
          changes what the model is asked, which is item 58's territory.
 
-- [ ] **56. THE ONE THING THAT COULD NOT BE VERIFIED STATICALLY. Maximo, one command.**
-      *(review §7)*
+- [x] **56. THE ONE THING THAT COULD NOT BE VERIFIED STATICALLY.** ~~Maximo, one
+      command.~~ **PROBED 2026-09-01, and the assertion holds.** *(review §7)*
 
-      `permissions.md:153` and `coverCache.ts:36-42` assert that **every hop** of the
-      `covers.openlibrary.org → archive.org` redirect answers with permissive CORS. **That is
-      a live-network fact with no contract behind it.**
+      `permissions.md:153` and `coverCache.ts:36-42` asserted that **every hop** of the
+      `covers.openlibrary.org → archive.org` redirect answers with permissive CORS, while
+      THE LANE said it had never been probed. Two records disagreeing, settled by the system
+      rather than by picking the confident one.
 
-      Probe it once against a real cover before submitting. **If it is wrong, every shelf
-      cover silently falls back to the drawn board and nothing would tell you it had
-      happened** — which is this codebase's signature failure, on the surface the product is
-      named for.
+      `tools/probe/cover-cors.mjs`, re-runnable, sending
+      `Origin: chrome-extension://<32 chars>`:
+
+      | hop | status | Access-Control-Allow-Origin |
+      | --- | --- | --- |
+      | `covers.openlibrary.org` | 302 | `*` |
+      | `ia######.us.archive.org` (followed) | 200 | **the extension origin, reflected back** |
+
+      Both covers tested, `ok=true`, real bytes. `coverCache.ts` was right and THE LANE was
+      stale. **So the founder's 2026-09-01 report — covers sometimes showing a colour — is
+      NOT this.** It is the 2.1s catalogue latency plus the books OpenLibrary holds no art
+      for, which is what `coverThumb.ts` addresses.
+
+      ⚠ **WHAT THIS DOES NOT PROVE, stated rather than discovered later: node does not
+      ENFORCE CORS.** This reads the headers the server sends; only a real extension proves
+      the browser accepts them. That residue belongs to **item 3**, the by-hand pass, and is
+      one glance at a shelf.
 
 
 Ordered by value. 4 and 5 came out of the code review on 2026-08-13. **4 to 8, 23 and 24

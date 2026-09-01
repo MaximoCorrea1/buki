@@ -14,7 +14,16 @@ Inherited from: `%TEMP%/buki-handoff-2026-08-28-covers-passages.md`, `origin/mai
 | **S3** | Remove the stray quote from the machine's PATH | `[?]` | Maximo | Registry change. Restores 76 entries incl. system32 |
 | **S4** | Correct the mechanism recorded for this failure class | `[x]` | agent | `CLAUDE.md:152` said "PATH is Unix-form". Disproved and rewritten |
 | **S5** | Two instruments disagree about this session's context | `[ ]` | agent | Hook says 78% / 780,316; sensor says 13% / 125,195, seconds apart |
-| **A1** | No cover art → the original image | `[x]` | agent | `cae4ad1` · 7/7 |
+| **L1** | ⭐ Cover lands VISIBLY LATER than the book | `[x]` | agent | Cannot be made faster: **2,140ms median, repeat no faster**. Photograph now draws in the same paint |
+| **L2a** | Original image as fallback, **toast** | `[x]` | agent | `thumbPlan`, 8 mutations. One book + one picture only — see note |
+| **L2b** | Original image as fallback, **shelf** | `[x]` | agent | Already did: `coverSources` walks `[coverUrl, shot]` before the board. Verified, unchanged |
+| **L2c** | "when it goes to the shelf try again, maybe it finds" | `[~]` | agent | Retries per shelf OPEN now, not per keystroke. **Re-SEARCHING for art is a separate cost decision — see L5** |
+| **L3** | ⭐ Is the shelf efficient? | `[x]` | agent | Audited; two real defects found and fixed. Answers in the CONTEXT ledger |
+| **L5** | ⭐ Re-search OpenLibrary for art a book never had? | `[?]` | **Maximo** | N artless books × 1 search per shelf open, at the host that 429'd. Needs a throttle and a budget |
+| **L6** | Item 56 — cover CORS chain | `[x]` | agent | **CLOSED by probe.** Every hop usable; the origin is reflected back |
+| **56** | (was Maximo's) | `[x]` | agent | Struck in LANE and body 09-01 |
+| **L4** | Gemini billing | `[~]` | **Maximo** | Founder 09-01: *"im managing the gemini billing"*. Unblocks part of item 2 |
+| **A1** | No cover art → the original image | `[x]` | agent | `cae4ad1` · 7/7. **L2 is the FAILURE case, which A1 did not cover** |
 | **A2 / 60** | Artless books from one photo share a tile | `[?]` | Maximo | Filed by the commit that caused it |
 | **B1–B2** | Passages: probe + design | `[x]` | agent | `bd2fa38` · scoping works, 5/5 discriminate |
 | **B4 / 57** | ⭐ Does the promise survive "books old enough to be in the open library"? | `[?]` | Maximo | Owner. Coverage is the ceiling, not ranking |

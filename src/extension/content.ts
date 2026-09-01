@@ -5,6 +5,7 @@ import type { Book, RecognitionSource, Tweet } from '../recognizer/types';
 import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
 import { shotFor } from './coverSource';
+import { thumbPlan, type ThumbPlan } from './coverThumb';
 import { signature } from './cardSignature';
 import { permalinkOf } from './permalink';
 import { shiftOf, travelFrom } from './slotTravel';
@@ -322,6 +323,14 @@ const STYLE = `
   background: var(--cloth, #3a3a3c);
 }
 .buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* The catalogue cover lands about two seconds after the card - measured 2026-09-01, median
+   2140ms - so it arrives ON TOP of the photograph instead of replacing it, and fades.
+   A hard swap two seconds in, while the reader is choosing a pile, reads as a glitch.
+   200ms and ease-out: present, not asking for attention. Opacity only, so reduced motion
+   keeps it - a fade aids comprehension where movement would not. */
+.buki-thumb .buki-art { position: absolute; inset: 0; opacity: 0; transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+.buki-thumb .buki-art.buki-in { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .buki-thumb .buki-art { transition-duration: 1ms; } }
 .buki-who { flex: 1; min-width: 0; }
 
 /* The eyebrow carries WHERE the answer came from. It is the audit trail: a shelf you
@@ -1159,7 +1168,11 @@ function messageBody(card: Card): Node[] {
 function bookRow(card: Card, cand: Candidate, index: number): HTMLElement {
   const row = document.createElement('div');
   row.className = 'buki-find';
-  row.append(coverThumb(cand.book));
+  // The card knows what the catch was read from and how many pictures the post held;
+  // `thumbPlan` is the only thing that decides what that means for the thumbnail.
+  row.append(
+    coverThumb(cand.book, thumbPlan(cand.book, card.image, card.candidates.length, card.pictures)),
+  );
 
   const who = document.createElement('div');
   who.className = 'buki-who';
@@ -1214,12 +1227,43 @@ function provenanceOf(card: Card): HTMLElement {
   return eye;
 }
 
-/** A book's own cover. No falling back to the post photo: four books would wear it. */
-function coverThumb(book: Book): HTMLElement {
+/**
+ * A book's cover in the tray: the photograph now, the catalogue's art when it arrives.
+ *
+ * THE HEADLINE READ THE OTHER WAY UNTIL 2026-09-01 - *"No falling back to the post photo:
+ * four books would wear it"* - and that objection is still right, which is why
+ * `thumbPlan` refuses the photograph for a multi-book catch. What was wrong was treating
+ * it as a reason to show NOTHING for two seconds.
+ *
+ * Measured live on 2026-09-01: a catalogue cover is 993 / 2140 / 2318ms cold, median
+ * 2140ms, and the REPEAT is not faster because the last hop extracts the JPEG out of a ZIP
+ * on demand. `warmCovers` already starts that fetch as early as it can be started, one
+ * message round trip before the tray asks, which against 2.1 seconds is worth about two
+ * percent. Founder: *"is there a way to make it faster or at the same time?"* Not faster.
+ * At the same time, by drawing something that is already in the page.
+ *
+ * See `coverThumb.ts` for which picture goes in which slot and why the rule there is one
+ * step stricter than `shotFor`.
+ */
+function coverThumb(book: Book, plan: ThumbPlan): HTMLElement {
   const thumb = document.createElement('div');
   thumb.className = 'buki-thumb';
   thumb.style.setProperty('--cloth', clothFor(book));
-  if (book.coverUrl) {
+
+  // ALREADY IN THE PAGE, so no worker and no CSP problem: the host downloaded and decoded
+  // this picture to show the post, and the tray is sitting on top of it. Same technique
+  // the reading-state thumb above already uses.
+  if (plan.instant) {
+    const shot = document.createElement('img');
+    shot.src = plan.instant;
+    shot.alt = '';
+    // The cloth underneath is the floor, so a refused picture leaves a spine rather than a
+    // broken-image glyph.
+    shot.addEventListener('error', () => shot.remove());
+    thumb.append(shot);
+  }
+
+  if (plan.upgrade) {
     /**
      * THE WORKER FETCHES IT, NOT US.
      *
@@ -1230,21 +1274,26 @@ function coverThumb(book: Book): HTMLElement {
      * error handler removed the image and the reader saw the cloth colour underneath.
      *
      * So the worker reads the bytes - it has the host permission and no page CSP - and
-     * hands back a data: URL. A page that also forbids `data:` still falls through to the
-     * cloth, which is a real design rather than a broken state.
+     * hands back a data: URL. A page that also forbids `data:` still falls through to
+     * whatever is underneath, which is now the photograph rather than bare cloth.
      */
     void chrome.runtime
-      .sendMessage({ type: 'coverBytes', url: book.coverUrl } satisfies BackgroundRequest)
+      .sendMessage({ type: 'coverBytes', url: plan.upgrade } satisfies BackgroundRequest)
       .then((resp: { dataUrl?: string | null } | undefined) => {
         if (!resp?.dataUrl) return;
-        const img = document.createElement('img');
-        img.src = resp.dataUrl;
-        img.alt = '';
-        img.addEventListener('error', () => img.remove());
-        thumb.append(img);
+        const art = document.createElement('img');
+        art.className = 'buki-art';
+        art.src = resp.dataUrl;
+        art.alt = '';
+        art.addEventListener('error', () => art.remove());
+        // ON LOAD, not on append: fading in an image that has not decoded yet fades in a
+        // blank box and then pops the picture into it, which is the glitch this avoids.
+        art.addEventListener('load', () => art.classList.add('buki-in'));
+        thumb.append(art);
       })
       .catch(() => undefined);
   }
+
   return thumb;
 }
 
