@@ -1,0 +1,59 @@
+{
+  "target": ["src/recognizer/pickIsbn.test.ts", "src/recognizer/openLibrary.test.ts"],
+  "mutations": [
+    {
+      "label": "64a back to doc.isbn[0], the state that sent a Chinese ISBN to a US bookshop",
+      "file": "src/recognizer/openLibrary.ts",
+      "from": "  const isbn = pickIsbn(doc.isbn);",
+      "to": "  const isbn = (doc.isbn ?? [])[0];"
+    },
+    {
+      "label": "64b the English preference is dropped, so any ISBN-13 wins",
+      "file": "src/recognizer/pickIsbn.ts",
+      "from": "    valid.find((i) => ISBN_13.test(i) && ENGLISH_13.test(i)) ??\n",
+      "to": ""
+    },
+    {
+      "label": "64c the English range grows to include 978-7, which is China",
+      "file": "src/recognizer/pickIsbn.ts",
+      "from": "const ENGLISH_13 = /^(9780|9781|9798)/;",
+      "to": "const ENGLISH_13 = /^(9780|9781|9787|9798)/;"
+    },
+    {
+      "label": "64d shape validation is dropped, so a wiki edit reaches the spreadsheet",
+      "file": "src/recognizer/pickIsbn.ts",
+      "from": "    if (ISBN_13.test(candidate) || ISBN_10.test(candidate)) valid.push(candidate);",
+      "to": "    valid.push(candidate);"
+    },
+    {
+      "label": "64e hyphens survive into the retailer url",
+      "file": "src/recognizer/pickIsbn.ts",
+      "from": "const clean = (raw: string): string => raw.replace(/[\\s-]/g, '').toUpperCase();",
+      "to": "const clean = (raw: string): string => raw.toUpperCase();"
+    },
+    {
+      "label": "64f the tiers are sorted rather than taken in the caller's order, so the answer drifts",
+      "file": "src/recognizer/pickIsbn.ts",
+      "from": "  return (\n    valid.find((i) => ISBN_13.test(i) && ENGLISH_13.test(i)) ??",
+      "to": "  valid.sort();\n  return (\n    valid.find((i) => ISBN_13.test(i) && ENGLISH_13.test(i)) ??"
+    },
+    {
+      "label": "64g format beats market again: any-13 moves ahead of English-10",
+      "file": "src/recognizer/pickIsbn.ts",
+      "from": "    valid.find((i) => ISBN_10.test(i) && ENGLISH_10.test(i)) ??\n    valid.find((i) => ISBN_13.test(i)) ??",
+      "to": "    valid.find((i) => ISBN_13.test(i)) ??\n    valid.find((i) => ISBN_10.test(i) && ENGLISH_10.test(i)) ??"
+    },
+    {
+      "label": "64i the ISBN-13 tier is dropped entirely",
+      "file": "src/recognizer/pickIsbn.ts",
+      "from": "    valid.find((i) => ISBN_13.test(i)) ??\n",
+      "to": ""
+    }
+  ],
+  "equivalent": [
+    {
+      "label": "64h `if (!isbns?.length) return isbns?.[0];`",
+      "why": "EQUIVALENT, not a hole. The branch is only reached when the array is empty or absent, and `[]?.[0]` IS undefined - so the mutant returns exactly what the original returns, for every input that can reach it. Pinned by the assertion `expect(pickIsbn([])).toBeUndefined()`, which is the invariant that makes it equivalent. Kept here rather than deleted so nobody re-derives it as a missing test."
+    }
+  ]
+}

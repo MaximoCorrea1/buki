@@ -25,6 +25,37 @@ describe('createOpenLibraryClient', () => {
     });
   });
 
+  it('keeps the English edition when a work lists several markets', async () => {
+    /**
+     * THE MODULE WAS TESTED AND NOT CONNECTED, which is this repo's recurring shape - the
+     * previous lane closed a finding where restoring a bare cast at the call site survived
+     * the whole suite. `pickIsbn` had nine passing tests of its own while reverting
+     * `toBook` to `doc.isbn[0]` changed nothing anybody could see.
+     *
+     * The array is the real one OpenLibrary returned for The Nvidia Way on 2026-09-01, in
+     * its own order. Entry zero is a 978-7 prefix, which is China, and `buyLink` builds
+     * bookshop.org/a/<affiliate>/<isbn> out of this value verbatim.
+     */
+    const fetch: FetchLike = async () => ({
+      async json() {
+        return {
+          docs: [
+            {
+              title: 'Nvidia Way',
+              author_name: ['Tae Kim'],
+              isbn: ['9787521770162', '1324086718', '9781324086710', '7521770161'],
+            },
+          ],
+        };
+      },
+    });
+    const client = createOpenLibraryClient({ fetch });
+
+    const books = await client.search({ title: 'The Nvidia Way', author: 'Tae Kim' });
+
+    expect(books[0]?.isbn).toBe('9781324086710');
+  });
+
   it('names the author from the search itself, so the multi-book path has NO follow-up', async () => {
     /**
      * THE N+1 THAT IS NOT ONE, pinned so it stops being re-raised.

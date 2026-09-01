@@ -1,4 +1,5 @@
 import type { Book, BooksDb, FetchLike } from './types';
+import { pickIsbn } from './pickIsbn';
 
 const SITE = 'https://openlibrary.org';
 const SEARCH = `${SITE}/search.json`;
@@ -38,7 +39,10 @@ const coverFor = (id: number | undefined): string | undefined =>
 
 /** Map one OpenLibrary search doc into our canonical Book. */
 function toBook(doc: OlDoc): Book {
-  const isbn = (doc.isbn ?? [])[0];
+  // NOT `[0]`. A work lists every edition it knows and the array is in no promised
+  // order: for The Nvidia Way, entry zero is a Chinese edition, and `buyLink` builds a US
+  // bookshop url out of this value verbatim. See pickIsbn.ts for the measurement.
+  const isbn = pickIsbn(doc.isbn);
   const coverUrl = coverFor(doc.cover_i);
   // OMITTED, not written as undefined - which is the distinction `mergeBook.ts` exists for.
   // This function "always writes `isbn` and `coverUrl` even when they are undefined" is a
