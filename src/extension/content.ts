@@ -4,6 +4,7 @@
 import type { Book, RecognitionSource, Tweet } from '../recognizer/types';
 import { identityOf, type Intent, type SavedSource } from './storage';
 import { clothFor } from './cloth';
+import { bindingFor } from './generatedCover';
 import { shotFor } from './coverSource';
 import { thumbPlan, type ThumbPlan } from './coverThumb';
 import { signature } from './cardSignature';
@@ -317,18 +318,43 @@ const STYLE = `
 .buki-thumb {
   position: relative; width: 32px; height: 47px; flex: none; border-radius: 2px 3px 3px 2px;
   overflow: hidden; box-shadow: 0 1px 6px -1px #000;
-  /* Flat cloth, not a gradient. It is also the floor rather than a placeholder: a page's
-     own CSP can refuse an OpenLibrary cover, and a broken-image glyph would read as the
-     extension being broken rather than as a picture that did not load. */
-  background: var(--cloth, #3a3a3c);
+  /* THE DEEP VALUE OF THE DYE, NOT THE BRIGHT ONE, and generatedCover.ts says why in as
+     many words: the bright CLOTH values "are a highlighter by comparison", they "keep
+     their job on spine edges and rows", and "the board gets the deep value of the same
+     dye". This carried var(--cloth) until 2026-09-02 and so a book with no cover art
+     rendered as a bright purple swatch. Founder, twice: "instead of showing a color".
+     It is still the FLOOR rather than a placeholder - a page's own CSP can refuse a
+     cover, and a broken-image glyph would read as the extension being broken. */
+  background: var(--binding, #2b2b30);
 }
-.buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* The spine edge, in the bright dye, which is the job generatedCover.ts assigns it. Two
+   pixels of 32 is enough to say "the board has an edge" without becoming the thing you
+   look at. */
+.buki-thumb::before {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 2px;
+  background: var(--cloth, transparent);
+}
+/* The two stamped rules, which is the shelf's board at a fortieth of the area. No weave
+   and no title: at 32px wide the weave merges into a bar and a stamped title sets at
+   about two pixels. The deep board and the pair of rules are what survive the scale, and
+   they are enough to read as an object rather than as a colour.
+   Half of the shelf's --stamp-dim, because a 1px line on a 47px board is proportionally
+   two and a half times the weight it carries on a 118px one. */
+.buki-thumb::after {
+  content: ''; position: absolute; left: 5px; right: 5px; top: 10px; height: 4px;
+  border-top: 1px solid rgba(214, 206, 194, 0.5);
+  border-bottom: 1px solid rgba(214, 206, 194, 0.5);
+}
+/* A real cover REPLACES the board, it does not sit next to it - so every image stacks
+   above both pseudo-elements. Done with z-index rather than :has(), which would put a
+   selector's browser support between a reader and their cover. */
+.buki-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
 /* The catalogue cover lands about two seconds after the card - measured 2026-09-01, median
    2140ms - so it arrives ON TOP of the photograph instead of replacing it, and fades.
    A hard swap two seconds in, while the reader is choosing a pile, reads as a glitch.
    200ms and ease-out: present, not asking for attention. Opacity only, so reduced motion
    keeps it - a fade aids comprehension where movement would not. */
-.buki-thumb .buki-art { position: absolute; inset: 0; opacity: 0; transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+.buki-thumb .buki-art { position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1); }
 .buki-thumb .buki-art.buki-in { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .buki-thumb .buki-art { transition-duration: 1ms; } }
 .buki-who { flex: 1; min-width: 0; }
@@ -1248,7 +1274,11 @@ function provenanceOf(card: Card): HTMLElement {
 function coverThumb(book: Book, plan: ThumbPlan): HTMLElement {
   const thumb = document.createElement('div');
   thumb.className = 'buki-thumb';
+  // BOTH DYES, because the board and its spine edge are different values of one colour.
+  // `bindingFor` is the deep one and `clothFor` the bright one; the stylesheet decides
+  // which surface each lands on, and generatedCover.ts owns the reason.
   thumb.style.setProperty('--cloth', clothFor(book));
+  thumb.style.setProperty('--binding', bindingFor(book));
 
   // ALREADY IN THE PAGE, so no worker and no CSP problem: the host downloaded and decoded
   // this picture to show the post, and the tray is sitting on top of it. Same technique

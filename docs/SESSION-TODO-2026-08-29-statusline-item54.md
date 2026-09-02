@@ -20,6 +20,9 @@ Inherited from: `%TEMP%/buki-handoff-2026-08-28-covers-passages.md`, `origin/mai
 | **L2c** | "when it goes to the shelf try again, maybe it finds" | `[~]` | agent | Retries per shelf OPEN now, not per keystroke. **Re-SEARCHING for art is a separate cost decision — see L5** |
 | **L3** | ⭐ Is the shelf efficient? | `[x]` | agent | Audited; two real defects found and fixed. Answers in the CONTEXT ledger |
 | **L5** | ⭐ Re-search OpenLibrary for art a book never had? | `[?]` | **Maximo** | N artless books × 1 search per shelf open, at the host that 429'd. Needs a throttle and a budget |
+| **L7** | ⭐ **CROP the book out of the photo and use it as the cover** | `[?]` | **Maximo** | Founder 09-02. **Not overengineering — it retires item 60 and both photo refusals.** Both APIs verified. Blocked on ONE unmeasured thing: box accuracy on real photos, which needs the Gemini key |
+| **L8** | Cheap middle: let a multi-book catch show the shared photo | `[?]` | **Maximo** | One line. Trades item 60's repetition for "not a colour". Reverses the `books === 1` rule in `thumbPlan` |
+| **L9** | Option C — a second cover source | `[x]` | agent | **Tested and REJECTED on licence.** `docs/SESSION-CONTEXT-2026-09-01-covers.md`. Do not re-run |
 | **L6** | Item 56 — cover CORS chain | `[x]` | agent | **CLOSED by probe.** Every hop usable; the origin is reflected back |
 | **56** | (was Maximo's) | `[x]` | agent | Struck in LANE and body 09-01 |
 | **L4** | Gemini billing | `[~]` | **Maximo** | Founder 09-01: *"im managing the gemini billing"*. Unblocks part of item 2 |
