@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Tests | **1,178 across 91 files**, all passing (`./node_modules/.bin/vitest run`, 2026-09-01). **RE-DERIVE THIS; DO NOT CARRY IT.** It read 856/71 for half a day while both the header and the handoff carried it, and it has moved on every one of the last four sessions: 860/72 → 1,019/76 → 1,160/88 → 1,162/89 → 1,178/91. **Green still is not covered.** What is different is that everything touched in the 08-27/28 lane has been shown to FAIL: **items 51, 52 and 53 closed with 126 mutations, 126 caught, every plan re-run for determinism.** ⚠ **And five of that lane's findings were guarded by a comment, a mock or a cast that pointed the WRONG WAY** — see the covers-passages CONTEXT ledger, "The pattern across items 51, 52 and 53" |
+| Tests | **1,192 across 92 files**, all passing (`./node_modules/.bin/vitest run`, 2026-09-05). **RE-DERIVE THIS; DO NOT CARRY IT.** It read 856/71 for half a day while both the header and the handoff carried it, and it has moved on every one of the last four sessions: 860/72 → 1,019/76 → 1,160/88 → 1,162/89 → 1,178/91 → 1,192/92. **Green still is not covered.** What is different is that everything touched in the 08-27/28 lane has been shown to FAIL: **items 51, 52 and 53 closed with 126 mutations, 126 caught, every plan re-run for determinism.** ⚠ **And five of that lane's findings were guarded by a comment, a mock or a cast that pointed the WRONG WAY** — see the covers-passages CONTEXT ledger, "The pattern across items 51, 52 and 53" |
 | Mutations | **231 across 26 plans** in `tools/mutations/` (counted 2026-08-28 from the files, NOT recalled — an earlier draft of this figure was written from memory as 74 against a real 81). **126 were added in the 08-27/28 covers-passages lane and 126 were caught**, every plan run twice for determinism. Across the project: **17 have survived a first pass and every one was a real hole in a test written minutes earlier**; **3 proved EQUIVALENT** and are pinned by an assertion on the invariant that makes them so; **1 ABORTED as INVALID** rather than being scored. ⚠ **Two survivors in the 08-28 lane were the INSTRUMENT, not the code** — one mutation read a clock and flipped verdict between a pipe and a redirect (§5 T22), and one plan's own target list was missing a file. The harness and every plan were promoted out of `zzz-` in `bd0e628` |
 | Typecheck | `tsc --noEmit` exit 0 (now covers `api/` too) |
 | Build | `node build.mjs` clean |
@@ -16,7 +16,7 @@
 | Paid tier | **written, wired to a till, still switched off.** The checkout links landed 2026-08-18 (item 34) so the funnel is no longer a circle. What remains is credentials, not code: Every client and server module exists and is tested. The Polar products were created 2026-08-17; the variables (item 2, **six of them**) are what remain. See items 10–16. **The renewal bug that would have broken every subscriber took TWO fixes** — the handler on 08-18 (`cdda054`) and the storage READ the same day (`3012b30`), without which the first one was inert. See item 27 |
 | Branch | **`main`**, tree clean. **PUSHED 2026-08-28. `main` = `origin/main` at `9acfc16`, 0 ahead** (`git rev-list --count origin/main..HEAD`, run AFTER the push, not before). **Twenty-one commits went up across the 08-27/28 covers-passages lane** (`0c554ae..9acfc16`): the founder's cover rule, the passage probe, **items 51, 52 and 53 all closed**, and six corrections of my own mistakes. ⚠ **THIS ROW HAS NAMED A STALE SHA TWICE**, and on 08-28 a SESSION LEDGER named a commit hash — `da01ad9` — **that does not exist in this repository at all**, written from memory about work minutes old. **The figure beside a commit count is written INTO the commit that changes it and is therefore wrong by one the moment it lands — that has happened five times. Run the probe.** |
 | Plan | `grep -c` on `2026-08-09-buki-pro.md`: **68** done, **17** left. Task 15 closed except Step 2 (a real Chrome + a Polar test card) |
-| Open items | **15.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-09-01, mid the covers-latency lane.) **Ten are Maximo's (2, 3, 9, 35, 37, 58, 59, 60, 62, and 57 now needs his call first); five are agent work (36, 50, 54, 55, 61).** **2026-09-01: item 56 CLOSED by probe** — every hop of the cover redirect returns a usable `Access-Control-Allow-Origin` and the archive.org node reflects the extension origin back, so `coverCache.ts` was right and THE LANE was stale. It was the last Maximo item that was not either the launch chain itself or a positioning call. **2026-08-29: item 62 was filed out of item 54's X-2** — the tray's quiet countdown line was designed, argued for in a docblock, and never wired to anything; whether the TRAY should carry it is a positioning call, not a cleanup. **Item 54 is now 5 of 10 closed** (M-1, M-2, M-3, X-2, D-9, plus X-3 previously), so it stays open with a shorter body. **THREE ITEMS CLOSED IN THIS LANE — 51, 52 and 53** — and **two were filed out of them**: 60 (artless books sharing a tile, opened deliberately by the commit that caused it) and 61 (the tray's DOM is still page-readable; the shadow root needs the 110-selector stylesheet SPLIT first and cannot be verified from node). **Item 57 changed OWNER without closing** — the engineering question is answered and what is left is a positioning call. **READ THE LANE, NOT THIS NUMBER.** It has been wrong for half a day once already, when LANE rows were struck and item CHECKBOXES were not. The probe that catches it: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as `grep -o '^- \[ \] \*\*[0-9]*'` |
+| Open items | **16.** (`grep -c '^- [ ] **[0-9]' OPENWORK.md`, 2026-09-05, end of the covers lane.) **Eleven are Maximo's (2, 3, 9, 35, 37, 58, 59, 60, 62, 63, and 57 now needs his call first); five are agent work (36, 50, 54, 55, 61).** **2026-09-05: item 63 filed** - crop the book out of the photograph. SEVEN third-party cover sources were tested and rejected across two rounds, and OpenLibrary has no cover for FOUR OF TEN books measured, so the only remaining option is the one that needs nobody. It is gated on box accuracy, which needs the Gemini key. **2026-09-01: item 56 CLOSED by probe** — every hop of the cover redirect returns a usable `Access-Control-Allow-Origin` and the archive.org node reflects the extension origin back, so `coverCache.ts` was right and THE LANE was stale. It was the last Maximo item that was not either the launch chain itself or a positioning call. **2026-08-29: item 62 was filed out of item 54's X-2** — the tray's quiet countdown line was designed, argued for in a docblock, and never wired to anything; whether the TRAY should carry it is a positioning call, not a cleanup. **Item 54 is now 5 of 10 closed** (M-1, M-2, M-3, X-2, D-9, plus X-3 previously), so it stays open with a shorter body. **THREE ITEMS CLOSED IN THIS LANE — 51, 52 and 53** — and **two were filed out of them**: 60 (artless books sharing a tile, opened deliberately by the commit that caused it) and 61 (the tray's DOM is still page-readable; the shadow root needs the 110-selector stylesheet SPLIT first and cannot be verified from node). **Item 57 changed OWNER without closing** — the engineering question is answered and what is left is a positioning call. **READ THE LANE, NOT THIS NUMBER.** It has been wrong for half a day once already, when LANE rows were struck and item CHECKBOXES were not. The probe that catches it: `grep -o '^| \*\*[0-9]*\*\*' OPENWORK.md` must return the same set as `grep -o '^- \[ \] \*\*[0-9]*'` |
 
 *(Re-derived every time this header is touched, never carried. **A commit count written
 into a commit is wrong by one the moment it lands**, which is how this number has drifted
@@ -52,6 +52,7 @@ landed. **Both numbers here were corrected by the verification gate, not by noti
 | ~~52~~ | agent | **BOTH FINDINGS CLOSED 2026-08-28.** TM-9's `data-sig` carried every book TITLE and pile on an attribute in x.com's light DOM, **readable by CSS attribute selectors with no script at all**; TM-10's `href*=` substring stored `javascript:` URLs on the shelf, defused by ONE render guard. **16 mutations, 16 caught** | — |
 | **61** | agent, **needs a browser** | **The tray's DOM is still readable by the page it sits on** — card text, class names, the injected `<style>`. The shadow root the review proposed needs the 110-selector stylesheet SPLIT first, because it also serves the Save button inside X's own markup, and the failure mode is visual with no way to verify it from node | item 3 |
 | **62** | **Maximo** | **The tray's quiet countdown line was designed and never built.** `entitlement.footer()` carried a written argument for when a trial counter should appear, and `content.ts` never imported it. Deleted with X-2 on 2026-08-29. `planBadge.badgeFor` does the same job in the POPUP masthead, so the open question is whether the TRAY should say it too | none |
+| **63** | **Maximo decides, then agent**, AFTER LAUNCH | **CROP THE BOOK OUT OF THE PHOTOGRAPH AND USE IT AS THE COVER.** Founder, 2026-09-02. **OpenLibrary has no cover for 4 of 10 books, measured**, and SEVEN third-party sources were tested and rejected. This one needs nobody: Gemini returns bounding boxes and the worker can crop. **It also retires item 60 outright.** Gated on ONE unmeasured thing - box accuracy on real photos, which needs the Gemini key | item 60 |
 | ~~53~~ | agent | **ALL FIVE CLOSED 2026-08-28.** `exactOptionalPropertyTypes` is ON and its wave was **eleven**, not the flood the item expected. Three storage readers stopped casting what they read — one of them exported the literal `"undefined"` into Goodreads. Both message receivers now fail to COMPILE when a variant is added and forgotten | — |
 | **54** | agent | **Dead code, stale comments, one edge against the graph** (M-1, M-2, M-3, X-2, X-3, X-5, X-6, D-5, D-7, D-9, K-1, five stale comments). All re-confirmed by grep on 08-25 | `README.md` currently lies |
 | **55** | agent | **The two surfaces no test can reach** (M-5 the context-menu orchestration, M-6 the whole card renderer including the paywall) | — |
@@ -1131,6 +1132,17 @@ unblocks.
       repaint, which a per-session memo in `content.ts` would remove), **PERF-3**, **PERF-8**
       (`/api/vision` buffers the whole image before opening upstream), **PERF-10's remainder**.
 
+      ⚠ **THE SHELF HAD THE SAME SHAPE AND IT IS NOW CLOSED - do not read that as PERF-2.**
+      2026-09-01, found by reading `paint()`: it opens with `app.replaceChildren()` and runs
+      on **every keystroke** in the search box, so every visible book's cover was requested
+      again. A cover already held is cheap - the object URL is memoised - but a cover that
+      MISSED has nothing to memoise, so ten artless books and a five-letter search was fifty
+      requests to learn ten things already known. **And it had no ceiling at all**: a
+      forty-book pile opened forty connections to the host that answered nineteen with an
+      HTTP 429 on 08-27. `coverQueue.ts` bounds it at four and memoises the PROMISE, so a
+      repaint costs nothing. **PERF-2's remaining half is the TRAY, in `content.ts` - a
+      different file and a different fix.**
+
 - [x] **51. THE SERVER'S REMAINING CONTRACT AND EDGE GAPS.** *(review §4 and §5)* **ALL NINE CLOSED 2026-08-27/28.** Every one mutation-tested twice; **81 mutations across the item, 81 caught** (`ls tools/mutations/item-51-*.json`, counted 2026-08-28, not remembered), and five of them found real holes in tests written minutes earlier.
 
       - ~~**AC-5 · The client compiles the server's `TOKEN_TTL_MS` and `GRACE_MS`.**~~
@@ -1535,6 +1547,67 @@ unblocks.
   better coverage, a key, a quota, and **unmeasured**. Full record:
   `docs/superpowers/specs/2026-08-27-passage-probe.md`.
 
+- [ ] **63. CROP THE BOOK OUT OF THE PHOTOGRAPH AND USE IT AS THE COVER.** Founder,
+      2026-09-02: *"we just cut those 200px x 500px and compress and use as cover. i think is
+      over engineering maybe"*. It is not overengineering. It is the only remaining option
+      that needs nobody's permission, and it RETIRES item 60 rather than trading it.
+
+      **THE SIZE OF THE PROBLEM, measured 2026-09-01** (`tools/probe/cover-coverage.mjs`, ten
+      books spanning trade, technical, academic and translated): **OpenLibrary has no cover
+      for FOUR OF TEN.** Its metadata comes from library records and its covers from
+      contributed scans; the two datasets are unrelated, and recent titles fall in the gap.
+
+      **WHY NOT A SECOND SOURCE. Seven candidates, two rounds, all rejected.** Each had to
+      clear four bars - coverage, access, CORS, licence - and the third is item 56's lesson
+      from the other side: `rememberCover` reads the bytes with `fetch()`, so **a source
+      whose bytes cannot be read caches nothing and silently draws a board**, which is the
+      symptom being fixed.
+
+      | source | why it is out |
+      | --- | --- |
+      | Google Books v1 | HTTP 429 on every keyless call; the docs require a key or OAuth token |
+      | Google Dynamic Links | best coverage of anything tested, **and `ACAO=null`** - unreadable, uncacheable, unusable in the tray |
+      | Apple iTunes Search | keyless, `ACAO=*`, aspect-correct, covered 3 of the 4 - **and the terms forbid it**: artwork only beside a "Download on iTunes" badge, on a page promoting that content, never to promote other goods. The shelf carries Amazon and Bookshop links |
+      | bookcover-api | **HTTP 522, origin down**, all six requests. A single hobby instance, and it SCRAPES Goodreads |
+      | ISBNdb | paid; pricing page 403'd so the tiers are **unverified** |
+      | Hardcover | docs 403'd; needs an account and key. **Unverified** |
+      | OpenLibrary by isbn/olid | 404 with `default=false` - **and 200 with a 43-byte blank without it** |
+
+      ⚠ **THE PLACEHOLDER TRAP, because it would have shipped green.**
+      `covers.openlibrary.org` answers a MISSING cover with **HTTP 200 and 43 bytes** unless
+      `?default=false` is passed, and `rememberCover` keeps anything with `res.ok`. So
+      "just build the url from the isbn" would have cached a blank and drawn a grey rectangle
+      instead of a board - worse than the complaint, and no test would have failed.
+
+      **WHAT IS ALREADY VERIFIED, so the next session does not re-derive it:**
+
+      - **Gemini returns bounding boxes.** Documented, `[ymin, xmin, ymax, xmax]` normalised
+        to **0-1000**. https://ai.google.dev/gemini-api/docs/image-understanding
+      - **An MV3 worker can crop with no offscreen document.**
+        `WorkerGlobalScope.createImageBitmap()` and `OffscreenCanvas` are worker-available.
+        **Tainting does not arise**: the worker fetches the bytes itself (it holds
+        `pbs.twimg.com`), so the bitmap comes from a Blob, and a Blob has no origin.
+
+      **WHY IT IS WORTH MORE THAN ONE COVER.** A box removes TWO refusals that currently cost
+      real quality. `shotFor` discards the photograph entirely when a post holds several
+      PICTURES (*"nothing says WHICH one holds this book"*), and `thumbPlan` refuses it when
+      a catch found several BOOKS, because three books would wear three identical thumbnails.
+      **With a box each book gets its own crop**, so item 60 is solved rather than traded.
+
+      **THE ONE UNMEASURED THING, and it gates everything else: are the boxes accurate on a
+      real book photograph?** A wrong crop is a photograph of somebody's hand presented as a
+      cover, which is the one lie this product cannot tell. **It needs the Gemini key, so it
+      is Maximo's to unblock.** About twenty minutes: five real photos, boxes requested,
+      plausibility eyeballed. It either greenlights a day of work or kills it cheaply.
+
+      **Sized honestly if it goes ahead:** `VisionGuess` gains a box and an image index;
+      `llmVision` asks for and validates it; a new pure `cropCover` module owns the
+      plausibility rules (minimum size, aspect sanity, clamp to bounds); the worker crops via
+      `OffscreenCanvas`; and **the crop is BYTES, not a URL** - so it lands in the Cache API
+      under a synthetic key, which `coversToKeep` and `pruneCovers` both have to learn
+      about. That prune path already has a bug history (C-8). Roughly five files, two new
+      modules, plus tests and mutations. **A day, not ten minutes.**
+
 - [ ] **60. SEVERAL ARTLESS BOOKS FROM ONE PHOTOGRAPH NOW SHOW THE SAME TILE.**
       **Opened deliberately on 2026-08-27 by `cae4ad1`**, and filed in the same commit rather
       than discovered later.
@@ -1548,7 +1621,14 @@ unblocks.
       **How often:** only when SEVERAL books from ONE photograph ALL lack catalogue art. Any
       book with art shows its art, because `coverSources` puts `coverUrl` first.
 
-      **Three ways out, and doing nothing is a real one:**
+      **2026-09-02, TWO THINGS CHANGED and neither closes this.** The TRAY no longer draws a
+      flat colour for an artless book - it draws the shelf's board, hashed per book, so the
+      tray case is distinct again (`da0f7fd`). **The SHELF is untouched**: `coverSources`
+      still puts `shot` ahead of the drawn board, so several artless books from one
+      photograph still read as several copies of it there. And **item 63 would retire this
+      outright**, because a per-book crop is a per-book picture.
+
+      **Four ways out, and doing nothing is a real one:**
 
       1. **Accept it.** The tile is true — that book was read out of that picture. Cost: 0.
       2. **Stamp the title over the photograph**, exactly as `drawnCover` already stamps it.

@@ -1,7 +1,19 @@
 # SESSION TODO — 2026-08-29, the status line + item 54 lane
 
-Pair file: `docs/SESSION-CONTEXT-2026-08-29-statusline-item54.md`
+**THIS LANE OUTLIVED ITS FILENAME.** It opened 2026-08-29 and ran to **2026-09-05**, and the
+scope moved twice: status line, then item 54, then covers. The date in the name is when it
+STARTED. ONE task table for the whole lane is deliberate - splitting it by date would have put
+the covers rows in a file the item-54 rows could not see.
+
+**Two context files, both live, neither superseding the other:**
+
+| file | owns |
+|---|---|
+| `docs/SESSION-CONTEXT-2026-08-29-statusline-item54.md` | the status line root cause, and the sixteen instruments that lied |
+| `docs/SESSION-CONTEXT-2026-09-01-covers.md` | **seven cover sources tested and REJECTED.** Do not re-run it |
+
 Inherited from: `%TEMP%/buki-handoff-2026-08-28-covers-passages.md`, `origin/main` at `3d643a4`.
+Ends at `origin/main` **`da0f7fd`** plus this lane's final docs commit. **16 open items, LANE identical to BODY.**
 
 `[x]` done+verified · `[~]` in progress · `[ ]` open · `[?]` founder decision · `[!]` blocked
 
@@ -17,17 +29,19 @@ Inherited from: `%TEMP%/buki-handoff-2026-08-28-covers-passages.md`, `origin/mai
 | **L1** | ⭐ Cover lands VISIBLY LATER than the book | `[x]` | agent | Cannot be made faster: **2,140ms median, repeat no faster**. Photograph now draws in the same paint |
 | **L2a** | Original image as fallback, **toast** | `[x]` | agent | `thumbPlan`, 8 mutations. One book + one picture only — see note |
 | **L2b** | Original image as fallback, **shelf** | `[x]` | agent | Already did: `coverSources` walks `[coverUrl, shot]` before the board. Verified, unchanged |
-| **L2c** | "when it goes to the shelf try again, maybe it finds" | `[~]` | agent | Retries per shelf OPEN now, not per keystroke. **Re-SEARCHING for art is a separate cost decision — see L5** |
+| **L2c** | "when it goes to the shelf try again, maybe it finds" | `[x]` | agent | Retries per shelf OPEN, not per keystroke. Re-SEARCHING for art is a different thing and is L5 |
 | **L3** | ⭐ Is the shelf efficient? | `[x]` | agent | Audited; two real defects found and fixed. Answers in the CONTEXT ledger |
 | **L5** | ⭐ Re-search OpenLibrary for art a book never had? | `[?]` | **Maximo** | N artless books × 1 search per shelf open, at the host that 429'd. Needs a throttle and a budget |
-| **L7** | ⭐ **CROP the book out of the photo and use it as the cover** | `[?]` | **Maximo** | Founder 09-02. **Not overengineering — it retires item 60 and both photo refusals.** Both APIs verified. Blocked on ONE unmeasured thing: box accuracy on real photos, which needs the Gemini key |
-| **L8** | Cheap middle: let a multi-book catch show the shared photo | `[?]` | **Maximo** | One line. Trades item 60's repetition for "not a colour". Reverses the `books === 1` rule in `thumbPlan` |
+| **L7 / 63** | ⭐ **CROP the book out of the photo and use it as the cover** | `[?]` | **Maximo** | **FILED AS ITEM 63** with all the evidence. Not overengineering: it retires item 60 and both photo refusals. Gemini boxes and worker cropping are both VERIFIED. Gated on box accuracy, which needs the key |
+| **L8** | Cheap middle: let a multi-book catch show the shared photo | `[x]` | agent | **NOT DONE, and deliberately.** L10 made it unnecessary: a drawn board is hashed PER BOOK, so it is both not-a-colour AND distinguishable. Identical photographs were only the first |
+| **L10** | ⭐ The tray drew the HIGHLIGHTER value as a board | `[x]` | agent | `da0f7fd`. `generatedCover.ts` already said the bright dye belongs on spine edges and the board gets the deep value. ⚠ **UNVERIFIED VISUALLY - needs the founder eye, item 3** |
+| **L11** | ⭐ `openLibrary` stored an arbitrary edition ISBN | `[x]` | agent | A CHINESE ISBN for an English book, and `buyLink` builds the Bookshop url from it verbatim. `pickIsbn`, 8 mutations. **Only affects NEW catches** |
 | **L9** | Option C — a second cover source | `[x]` | agent | **Tested and REJECTED on licence.** `docs/SESSION-CONTEXT-2026-09-01-covers.md`. Do not re-run |
 | **L6** | Item 56 — cover CORS chain | `[x]` | agent | **CLOSED by probe.** Every hop usable; the origin is reflected back |
 | **56** | (was Maximo's) | `[x]` | agent | Struck in LANE and body 09-01 |
 | **L4** | Gemini billing | `[~]` | **Maximo** | Founder 09-01: *"im managing the gemini billing"*. Unblocks part of item 2 |
 | **A1** | No cover art → the original image | `[x]` | agent | `cae4ad1` · 7/7. **L2 is the FAILURE case, which A1 did not cover** |
-| **A2 / 60** | Artless books from one photo share a tile | `[?]` | Maximo | Filed by the commit that caused it |
+| **A2 / 60** | Artless books from one photo share a tile | `[?]` | Maximo | **TRAY half fixed by L10** (a board is hashed per book). **SHELF half unchanged** - `coverSources` still puts `shot` first. Item 63 would retire it outright |
 | **B1–B2** | Passages: probe + design | `[x]` | agent | `bd2fa38` · scoping works, 5/5 discriminate |
 | **B4 / 57** | ⭐ Does the promise survive "books old enough to be in the open library"? | `[?]` | Maximo | Owner. Coverage is the ceiling, not ranking |
 | **E1–E9** | ⭐ Item 51 — all nine | `[x]` | agent | 81 mutations |
@@ -51,7 +65,7 @@ Inherited from: `%TEMP%/buki-handoff-2026-08-28-covers-passages.md`, `origin/mai
 | **G2 / 55** | Item 55 — the two surfaces no test can reach (M-5, M-6) | `[ ]` | agent | |
 | **G3 / 50** | Item 50's remainder — PERF-2 tray memo, PERF-8, PERF-10 | `[ ]` | agent | PERF-3 is a founder call |
 | **G4 / 61** | Item 61 — the tray shadow root | `[ ]` | agent | Needs a browser + the 110-selector split first |
-| **G5** | `applyCover` double-fetch | `[ ]` | agent | Unmeasurable from node |
+| **G5** | `applyCover` double-fetch | `[ ]` | agent | Still open and still unmeasurable from node. The miss path sets `img.src` AND queues `rememberCover`; `coverQueue` bounded and de-duplicated the SECOND, it did not remove the first |
 | **G6 / 36** | Item 36 — launch day | `[ ]` | agent | |
 | **F1–F6** | Items 57, 58, 59, 60, PERF-3, the §5 extraction | `[?]` | Maximo | Six decisions. §5 extraction is the oldest open problem |
 | **M1–M5** | Launch chain: 37 → 2 → 3, plus 9, 35, 56 | `[ ]` | Maximo | 37 heads it; nothing an agent does moves it |
